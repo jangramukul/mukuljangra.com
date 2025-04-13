@@ -1,8 +1,8 @@
 ---
-title: Sample Note
+title: Coming Soon
 layout: post
 tags:
   - Android
 ---
 
-This is sample note.
+Coming Soon.
