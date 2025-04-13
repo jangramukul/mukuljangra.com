@@ -1,5 +1,10 @@
 url: "https://maxxprotocol.github.io"
 
+# Site-wide variables
+site_name: "Maxx"
+site_tagline: "Code for Android. Fight for Digital Rights & Privacy. Resist Surveillance."
+site_github: "https://github.com/maxxprotocol"
+
 highlighter: rouge
 permalink: /:title/
 markdown: kramdown
