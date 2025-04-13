@@ -3,6 +3,34 @@ title: Posts
 layout: default
 ---
 
+<style>
+  body {
+    background-color: #000;
+  }
+  .content {
+    background-color: #000;
+  }
+  .presentation-list {
+    background-color: #000;
+  }
+  .presentation-list .presentation {
+    margin-bottom: 20px;
+  }
+  .presentation-list .presentation a {
+    color: #00ff00; /* Bright green */
+    font-size: 1.1em;
+  }
+  .presentation-list .presentation a:hover {
+    color: #00cc00; /* Slightly darker green on hover */
+  }
+  .presentation-list .date {
+    color: #ffffff; /* White color for dates */
+  }
+  .presentation-list small {
+    color: #00aa00; /* Darker green for small text */
+  }
+</style>
+
 <ul class="presentation-list list-unstyled">
 {% for post in site.categories.post %}
   <li class="presentation">
