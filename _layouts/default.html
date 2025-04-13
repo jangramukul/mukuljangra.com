@@ -12,12 +12,20 @@
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#111111">
     <style type="text/css">
+      body {
+        background-color: #111 !important;
+        background: url('static/bg.png') no-repeat center center;
+        background-size: cover;
+      }
+      header {
+        background-color: transparent !important;
+      }
       .header-label {
         color: #fff !important;
         font-size: 0.9em;
         margin: 5px 0;
         text-align: left;
-        font-family: 'Merriweather Sans', sans-serif;
+        font-family: 'Source Code Pro', monospace;
         opacity: 0.9;
         padding-left: 5px;
         text-transform: uppercase;
@@ -25,9 +33,6 @@
         position: relative;
         z-index: 1;
         letter-spacing: 1px;
-      }
-      header {
-        padding: 30px 40px;
       }
     </style>
 
