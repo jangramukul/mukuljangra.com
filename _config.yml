@@ -21,6 +21,10 @@ collections:
 
   podcasts:
 
+  notes:
+    output: true
+    permalink: /:title/
+
 include:
   - '.well-known'
   - '_redirects'
