@@ -5,7 +5,9 @@ layout: default
 
 <style>
   body {
-    background-color: #000;
+    background-color: #111 !important;
+    background: url('static/bg.png') no-repeat center center;
+    background-size: cover;
   }
   .content {
     background-color: #000;
@@ -24,9 +26,53 @@ layout: default
     color: var(--link-color-hover);
   }
   .presentation-list .date {
-    color: #ffffff; /* White color for dates */
+    color: #ffffff;
   }
   .presentation-list small {
+    color: var(--link-color);
+  }
+  /* Header styling to match homepage */
+  header {
+    background-color: transparent !important;
+    padding: 30px 40px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5em;
+    margin: 0;
+    color: #fff;
+  }
+  header h1 a {
+    color: #fff;
+    text-decoration: none;
+  }
+  .header-label {
+    color: #fff !important;
+    font-size: 0.9em;
+    margin: 5px 0;
+    text-align: left;
+    font-family: 'Source Code Pro', monospace;
+    opacity: 0.9;
+    padding-left: 5px;
+    text-transform: uppercase;
+    display: block;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
+  }
+  .list-inline {
+    margin-top: 15px;
+  }
+  .list-inline li {
+    margin-right: 20px;
+  }
+  .list-inline a {
+    color: #fff;
+    text-decoration: none;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.9em;
+  }
+  .list-inline a span {
     color: var(--link-color);
   }
 </style>
