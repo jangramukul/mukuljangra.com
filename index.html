@@ -7,7 +7,7 @@ layout: null
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Maxx Protocol</title>
+    <title>{{ site.site_name }}</title>
     <link rel="stylesheet" href="static/bootstrap-3.1.1.min.css" type="text/css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
     <link rel="stylesheet" href="static/app.css" type="text/css">
@@ -45,29 +45,19 @@ layout: null
     </style>
 
     <meta name="og:type" content="website">
-    <meta name="og:title" content="maxxprotocol.github.io">
-    <meta name="og:description" content="Blog posts, GitHub, and more.">
-    <meta name="og:site_name" content="Maxx Protocol">
+    <meta name="og:title" content="{{ site.site_name }}">
+    <meta name="og:description" content="{{ site.site_tagline }}">
+    <meta name="og:site_name" content="{{ site.site_name }}">
     <meta name="og:url" content="{{ site.url }}">
     <meta name="og:image" content="http://www.gravatar.com/avatar/e68309f117985270285ade8082f4877d?s=200">
-
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:site" content="@MaxxProtocol">
-    <meta name="twitter:domain" content="maxxprotocol.github.io">
-    <meta name="twitter:title" content="maxxprotocol.github.io">
-    <meta name="twitter:description" content="Blog posts, GitHub, and more.">
-    <meta name="twitter:image" content="http://www.gravatar.com/avatar/e68309f117985270285ade8082f4877d?s=200">
-    <meta name="twitter:url" content="{{ site.url }}">
-    <meta name="twitter:label1" content="Posts">
-    <meta name="twitter:data1" content="{{ site.posts | size }}">
   </head>
   <body>
     <header>
-      <h1>Maxx Protocol</h1>
-      <div class="header-label">Code for Android.  Fight for Digital Rights & Privacy.  Resist Surveillance.</div>
+      <h1>{{ site.site_name }}</h1>
+      <div class="header-label">{{ site.site_tagline }}</div>
       <ul class="list-inline">
         <li><a href="/blog"><span>read</span>Blog</a></li>
-        <li><a href="https://github.com/maxxprotocol"><span>fork</span>GitHub</a></li>
+        <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
       </ul>
     </header>
   </body>
