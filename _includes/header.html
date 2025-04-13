@@ -1,0 +1,61 @@
+{% if page.title == "Home" or page.title == "Início" or page.title == "Blog" or page.title == "Projects" or page.title ==
+"Projetos" or page.title == "Tags" or page.title == "Categorias" %}{% assign showHeader = true %}{% endif %} {% if showHeader
+== true %}
+<header class="header-home {% if site.animation %}animated{% endif %}">
+    {% if site.about %}
+    <a class="link" href="{{ site.url }}/about">
+        <img class="selfie" alt="{{ site.name }}" src="{% if site.external-image %}{{ site.picture }}{% else %}{{ site.url }}/{{ site.picture }}{% endif %}"
+        />
+    </a>
+    {% else %}
+    <span class="link">
+        <img class="selfie" alt="{{ site.name }}" src="{% if site.external-image %}{{ site.picture }}{% else %}{{ site.url }}/{{ site.picture }}{% endif %}"
+        />
+    </span>
+    {% endif %}
+
+    <h1 class="title">{{ site.name }}</h1>
+    <h2 class="description">{{ site.bio }}</h2>
+
+    {% include social-links.html %}
+</header>
+{% endif %} {% include nav.html %}
+
+<script async src="https://unpkg.com/blip-chat-widget" type="text/javascript"></script>
+<script async>
+    (function () {
+        window.onload = function () {
+            var setBottom = function (q, v) {
+                if (q.matches) {
+                    console.log('change bottom to ' + v);
+                    document.getElementById('blip-chat-container').setAttribute('style', 'bottom:' + v + ' !important');
+                } else {
+                    console.log('change bottom to auto');
+                    document.getElementById('blip-chat-container').setAttribute('style', 'bottom:auto !important');
+                }
+            };
+
+            
+        }
+    })();
+</script>
+
+<!--
+    var client = new BlipChat()
+                .withAppKey('cGFjaGVjb2JvdDo0MUNDQzRDRS02Rjk4LTQ4NEQtOEM1MC02MTEzRDkzMUE5Q0Y=')
+                .withButton({ "color": '#222222' })
+                .withEventHandler(BlipChat.ENTER_EVENT, function () {
+                    var q = window.matchMedia('(max-width: 480px)');
+                    setBottom(q, '0px') ;
+                    q.addListener(setBottom);
+                })
+                .withEventHandler(BlipChat.LEAVE_EVENT, function () {
+                    var q = window.matchMedia('(max-width: 480px)');
+                    setBottom(q, 'auto') ;
+                    q.addListener(setBottom);
+                })
+                .withEventHandler(BlipChat.LOAD_EVENT, function (client) {
+                    client.toogleChat();
+                })
+                .build();
+-->
