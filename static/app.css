@@ -51,7 +51,7 @@ blockquote {
 header {
   background-color: var(--header-background-color);
   color: var(--header-foreground-color);
-  padding: 40px;
+  padding: 30px 40px;
 }
 header h1 {
   text-transform: uppercase;
