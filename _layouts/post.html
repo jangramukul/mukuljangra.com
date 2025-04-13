@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title }} - Maxx Protocol</title>
     <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,300,700" type="text/css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
     <link rel="stylesheet" href="/static/app.css" type="text/css">
     <link rel="stylesheet" href="/static/syntax.css" type="text/css">
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
@@ -15,10 +15,10 @@
     <style type="text/css">
       .header-label {
         color: #fff !important;
-        font-size: 0.9em;
+        font-size: 0.9em !important;
         margin: 5px 0;
         text-align: left;
-        font-family: 'Merriweather Sans', sans-serif;
+        font-family: 'Source Code Pro', monospace;
         opacity: 0.9;
         padding-left: 5px;
         text-transform: uppercase;
@@ -29,6 +29,13 @@
       }
       header {
         padding: 30px 40px;
+      }
+      header h1 {
+        font-family: 'Playfair Display', serif;
+        font-weight: 700 !important;
+      }
+      body header h1 {
+        font-weight: 700 !important;
       }
     </style>
     {% if page.external %}<meta name="robots" content="noindex nofollow">
