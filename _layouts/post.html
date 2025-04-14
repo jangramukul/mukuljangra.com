@@ -49,15 +49,14 @@
         border: none;
         cursor: pointer;
         padding: 8px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.3s ease;
+        color: var(--link-color);
+        font-size: 16px;
+        font-weight: 500;
+        transition: color 0.3s ease;
       }
 
       .theme-toggle:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+        color: var(--link-color-hover);
       }
 
       .theme-toggle svg {
@@ -194,14 +193,7 @@
   </head>
   <body>
     <header>
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
-          <path d="M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-12c-.28 0-.5-.22-.5-.5V2c0-.28.22-.5.5-.5s.5.22.5.5v2.5c0 .28-.22.5-.5.5zm0 14c-.28 0-.5.22-.5.5V22c0 .28.22.5.5.5s.5-.22.5-.5v-2.5c0-.28-.22-.5-.5-.5zM3.5 12c0 .28-.22.5-.5.5H.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5H3c.28 0 .5.22.5.5zm18 0c0 .28.22.5.5.5h2.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H22c-.28 0-.5.22-.5.5z"/>
-        </svg>
-        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M12 3c.28 0 .5-.22.5-.5V1c0-.28-.22-.5-.5-.5S11.5.72 11.5 1v1.5c0 .28.22.5.5.5zm0 18c-.28 0-.5.22-.5.5V23c0 .28.22.5.5.5s.5-.22.5-.5v-1.5c0-.28-.22-.5-.5-.5zM3.5 12c0-.28-.22-.5-.5-.5H1c-.28 0-.5.22-.5.5s.22.5.5.5H3c.28 0 .5-.22.5-.5zm18 0c0 .28.22.5.5.5h2.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H22c-.28 0-.5.22-.5.5z"/>
-        </svg>
-      </button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">Theme</button>
       <h1><a href="/">{{ site.site_name }}</a></h1>
       <div class="header-label">{{ site.site_tagline }}</div>
     </header>
@@ -225,13 +217,11 @@
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.querySelector('.sun-icon');
-        const moonIcon = document.querySelector('.moon-icon');
         
         // Check for saved theme preference or use dark theme by default
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
-        updateIcons(savedTheme);
+        updateButtonText(savedTheme);
 
         themeToggle.addEventListener('click', () => {
           const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -239,17 +229,11 @@
           
           document.documentElement.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
-          updateIcons(newTheme);
+          updateButtonText(newTheme);
         });
 
-        function updateIcons(theme) {
-          if (theme === 'dark') {
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'block';
-          } else {
-            sunIcon.style.display = 'block';
-            moonIcon.style.display = 'none';
-          }
+        function updateButtonText(theme) {
+          themeToggle.textContent = theme === 'dark' ? 'Light Theme' : 'Dark Theme';
         }
       });
     </script>
