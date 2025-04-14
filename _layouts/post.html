@@ -13,6 +13,21 @@
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#111111">
     <style type="text/css">
+      :root {
+        --background-color: #111111;
+        --foreground-color: #eeeeee;
+        --link-color-hue: 151;
+        --link-color: hsl(var(--link-color-hue),44.7%,60%);
+        --link-color-hover: hsl(var(--link-color-hue),44.7%,70%);
+        --signature-color: #999;
+        --date-color: #888;
+        --header-background-color: #111;
+        --header-foreground-color: #eee;
+        --header-link-color: #ddd;
+        --code-background-color: #1a1a1a;
+        --code-foreground-color: #ddd;
+      }
+
       .header-label {
         color: #fff !important;
         font-size: 1em !important;
@@ -28,12 +43,32 @@
         letter-spacing: 1px;
       }
       header {
+        background-color: var(--header-background-color);
+        color: var(--header-foreground-color);
         padding: 30px 40px;
       }
       header h1 {
+        text-transform: uppercase;
+        font-size: 50px;
+        letter-spacing: 15px;
+        margin: 0 0 0 4px;
         font-family: 'Source Code Pro', monospace;
-        font-weight: 700 !important;
-        font-size: 2.5em !important;
+        color: var(--header-foreground-color);
+      }
+      header h1 a, header h1 a:focus {
+        color: #eee;
+      }
+      header h1 a:hover {
+        text-decoration: none;
+      }
+      @media (max-width: 767px) {
+        header {
+          padding: 30px;
+        }
+        header h1 {
+          letter-spacing: 5px;
+          font-size: 40px;
+        }
       }
       body header h1 {
         font-weight: 700 !important;
@@ -45,26 +80,42 @@
         max-width: none;
         padding: 0 40px;
         margin: 40px auto;
+        color: var(--foreground-color);
       }
       .content.post h2 {
         font-family: 'Source Code Pro', monospace;
         font-size: 2em;
         margin-bottom: 0.5em;
+        color: var(--foreground-color);
       }
       .content.post p {
         margin-bottom: 1.5em;
+        color: var(--foreground-color);
       }
       .content.post ul,
       .content.post ol {
         margin-top: 0.5em;
         margin-bottom: 1.5em;
         padding-left: 1.5em;
+        color: var(--foreground-color);
       }
       .content.post li {
         margin-bottom: 0.5em;
       }
       .content.post li:last-child {
         margin-bottom: 0;
+      }
+      .content.post code {
+        background-color: var(--code-background-color);
+        color: var(--code-foreground-color);
+      }
+      .content.post pre {
+        background-color: var(--code-background-color);
+      }
+      .content.post blockquote {
+        border-left: 4px solid var(--link-color);
+        color: var(--foreground-color);
+        opacity: 0.9;
       }
       @media (max-width: 768px) {
         .content.post {
