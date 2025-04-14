@@ -6,7 +6,7 @@ tags:
   - Architecture
 ---
 
-```kotlin
+```
 A factory is responsible for creating objects. For example, TicketStatusFactory creates different ticket status instances. 
 
 Utils are utility functions that provide general-purpose reusable methods, like FileUtils for handling file-related operations. 

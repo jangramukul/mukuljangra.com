@@ -12,7 +12,7 @@ When building Android applications that load images from URLs, implementing an e
 **Memory Cache** which stores data in the application's memory (cleared when app is destroyed) and **Disk Cache** which stores data in device storage (persists after app destruction)
 
 #### **Implementation**
-In simple Cache implementation using memory cache manager:
+Let's explore multiple solutions for cache management:
 
 ```kotlin
 class CacheManager<T> {
@@ -33,9 +33,9 @@ manager.put("key_1", User(id = 1))
 val user = manager.get("key_1")
 ```
 
-**In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.**
-
 ```kotlin
+// In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.
+
 // Create LruCache with size limit
 val lruCache = LruCache<String, User>(1000) // maxSize = 1000
 
@@ -44,19 +44,17 @@ lruCache.put("key_1", User(id = 1))
 val user = lruCache.get("key_1")
 ```
 
-**To avoid OOM exceptions, calculate cache size based on available memory:**
-
 ```kotlin
+// To avoid OOM exceptions, calculate cache size based on available memory:
+
 val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 val sizeInBytes = activityManager.memoryClass * 1024 * 1024
 // Use 1/8th of available memory for cache
 val cache = LruCache<String, User>(sizeInBytes / 8)
 ```
 
-**For persistent storage, disk caching is essential. Here's how to implement it using Okio:**
-
 ```kotlin
-// Create cache file
+// For persistent storage, disk caching is essential. Here's how to implement it using Okio:
 val file = File("${externalCacheDir}/cache12.txt")
 if(!file.exists()) {
    file.createNewFile()

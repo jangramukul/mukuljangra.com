@@ -1,5 +1,5 @@
 ---
-title: Best Practises at ViewModel Level
+title: Kotlin Best Practises
 layout: post
 categories: post
 tags:
