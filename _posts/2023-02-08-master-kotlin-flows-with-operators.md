@@ -9,35 +9,27 @@ tags:
 
 Coroutines And Flow are one of the ways to deal with asynchronous programming with multiple operators like RxJava. In Android, We use coroutines for dealing with multi-threading, concurrency, thread locks etc. And Kotlin Flow used used for asynchronous data streams like RxJava. In this article, we are heading towards Kotlin Flow.
 
-## Kotlin Flow
-
 Kotlin Flow is a data emitter who can emit values. Kotlin Flows built on top of kotlin coroutines to support concurrency. There are three main components in kotlin flows in order to understand the mechanism of kotlin flows :
 
 - **Producer or Emitter** - It emit values.
 - **Middleware** - It can modify values that will consumed by a consumer.
 - **Consumer** - Emitted values will later consumed by consumer.
 
-## Hot vs Cold Flow
+### Hot vs Cold Flow
 
-### Cold Flows
 Cold Flows are those producers that doesn't starting emitting values until unless it has a collector or consumer. Simple Flow builder is a cold flow.
-
 - It emits data only when there is a collector or consumer.
 - It does not store data.
 - It cannot have multiple collectors or consumers.
 
-### Hot Flows
 Hot Flows are those producers that emit data even there is not collector or consumer. StateFlow is a hot flow. You can convert a cold flow into hot flow using shareIn function.
-
 - It emit data even when there is not collector or consumer.
 - It is possible to store values.
 - It can have multiple collectors or consumers.
 
 ## Flow vs StateFlow vs SharedFlow
-
 In Kotlin, there are multiple flows types and it's usecases. Lets try to understand these types one by one.
 
-### Flow
 
 Flow is a simplest flow you can create using flow builder or some extensions. Flow is a cold flow that cannot have multiple collectors. For simple usecases, like making a api call using repository pattern, we can use simple flow to handle these usecases.
 
@@ -69,8 +61,6 @@ val flow = flow {
 }
 ```
 
-### StateFlow
-
 StateFlow is a flow hot that can have multiple collectors at same time. StateFlow behave like a value holder which emits the last value to all known collectors. While creating stateflow, we need to gave a initial value. Like Livedata, we can configure it with lifecycle aware coroutines scopes to attach with lifecycle. It has value property to access.
 
 ```kotlin
@@ -87,8 +77,6 @@ state.collectLatest {
 val newState = state.value
 ```
 
-### SharedFlow
-
 SharedFlow is a hot flow that can have multiple collectors at same time. Unlike StateFlow, It doesn't behave like a data holder like stateflow does. It doesn't have any value property like stateflow has. Also, Unlike StateFlow, you cannot attach it with lifecycle components.
 
 ```kotlin
@@ -102,12 +90,9 @@ sharedFlow.collect {
 }
 ```
 
-## Operators In Kotlin Flow
-
 There are multiple operators in Kotlin Flow like RxJava. We will go one by one and understand the usecases of these operators.
 
-### Retry Operator
-
+#### Retry Operator
 You can retry or rerun the flow when some certain condition meet.
 
 ```kotlin
@@ -133,8 +118,7 @@ flow.retryWhen { cause, attempt
 }
 ```
 
-### With Timeout
-
+#### With Timeout
 You can timeout and cancel the flow collector.
 
 ```kotlin
@@ -146,8 +130,7 @@ withTimeout(3000L) {
 }
 ```
 
-### Catch Operator
-
+#### Catch Operator
 In Kotlin flows, you able to catch the exceptions from streams.
 
 ```kotlin
@@ -158,8 +141,7 @@ flow.catch {
 }
 ```
 
-### Debounce Operator
-
+#### Debounce Operator
 In Kotlin Flows, you able to debounce the each emitted item with specific time frame.
 
 ```kotlin
@@ -170,8 +152,7 @@ flow.debounce(1000L)
 }
 ```
 
-### Zip Operator
-
+#### Zip Operator
 Zip used for combine the multiple flows emissions into single flow. It only emits an item when all flows have emitted an item, and the resulting flow completes only when all input flows complete.
 
 ```kotlin
@@ -187,8 +168,7 @@ flow1.zip(flow2) { a, b ->
 }
 ```
 
-### Combine Operator
-
+#### Combine Operator
 Combine operator is same as zip operator. But it emits an item as soon as one of the flows emits item and only completes the flow when all flows gets completed.
 
 ```kotlin
@@ -199,16 +179,14 @@ flow1.combine(flow2) { a, b ->
 }
 ```
 
-### Merge Operator
-
+#### Merge Operator
 Merge operator is same as combine operator. It emits item as soon as one of the flows emits item and only completes the flow when all flows gets completed. It keeps the order of items as they emitted from flows. But it doesn't guarantee the order of items.
 
 ```kotlin
 val mergedflows = merge(flow1, flow2)
 ```
 
-### FlatMapConcat Operator
-
+#### FlatMapConcat Operator
 FlatMapConcat combines the emissions of all resulting flows and convert them into a single flow. It wait for the flow to complete before starting a new one.
 
 ```kotlin
@@ -226,8 +204,7 @@ flow.flatMapConcat { value ->
 }
 ```
 
-### FlatMapMerge Operator
-
+#### FlatMapMerge Operator
 FlatMapMerge combines the emissions of all resulting flows and convert them into single flow. It merge the all flows and emit them at once.
 
 ```kotlin
@@ -244,8 +221,7 @@ flow.flatMapMerge { value ->
 }
 ```
 
-### FlatMapLatest Operator
-
+#### FlatMapLatest Operator
 FlatMapLatest combines the emissions of all resuting flows and convert them into single flow. It discord the current flow if latest flow comes in and emit it.
 
 ```kotlin
@@ -262,8 +238,7 @@ flow.flatMapLatest { value ->
 }
 ```
 
-### Transform Operator
-
+#### Transform Operator
 Like map operator, it is used to transform the one data type to another data type by emiting the transformed value.
 
 ```kotlin
@@ -279,8 +254,7 @@ flow.transform<Int, String>() { value ->
 }
 ```
 
-### Drop And Take Operator
-
+#### Drop And Take Operator
 Drop operator used for dropping the first emitted values and take used for taking the first emitted values in kotlin flow.
 
 ```kotlin
@@ -291,5 +265,3 @@ val flow = (0..10).asFlow()
 flow.drop(2) //drop first 2 emitted values 
 .take(3) //take only 3 emitted values
 ```
-
-Thanks for reading! 
