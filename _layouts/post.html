@@ -200,11 +200,10 @@
 
     <div class="content post">
       <h2>{{ page.title }}</h2>
-      <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
+      <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
 
       {{ content }}
 
-      <p class="signature">&mdash; {{ site.site_name }}</p>
     </div>
 
     <script>
