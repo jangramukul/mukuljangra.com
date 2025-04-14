@@ -13,12 +13,65 @@
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#111111">
     <style type="text/css">
-      body {
-        background-color: #000000;
-        color: #ffffff;
+      :root {
+        --background-color: #000000;
+        --text-color: #ffffff;
+        --header-bg: #111111;
+        --code-bg: #1a1a1a;
+        --blockquote-color: #999;
+        --blockquote-border: #333;
+        --link-color: hsl(151,44.7%,50%);
+        --link-color-hover: hsl(151,44.7%,45%);
       }
+
+      [data-theme="light"] {
+        --background-color: #ffffff;
+        --text-color: #333333;
+        --header-bg: #111111;
+        --code-bg: #f6f6f6;
+        --blockquote-color: #666;
+        --blockquote-border: #ddd;
+        --link-color: hsl(151,44.7%,50%);
+        --link-color-hover: hsl(151,44.7%,45%);
+      }
+
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s ease;
+      }
+
+      .theme-toggle:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .theme-toggle svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--link-color);
+      }
+
+      .theme-toggle:hover svg {
+        fill: var(--link-color-hover);
+      }
+
       .header-label {
-        color: #fff !important;
+        color: #ffffff !important;
         font-size: 1em !important;
         margin: 5px 0;
         text-align: center;
@@ -30,20 +83,34 @@
         z-index: 1;
         letter-spacing: 1px;
       }
+
       header {
         padding: 30px 40px;
-        background-color: #000000 !important;
+        background-color: #111111 !important;
         text-align: center;
+        position: relative;
       }
+
       header h1 {
         font-family: 'Source Code Pro', monospace;
         font-weight: 700 !important;
         font-size: 3.2em !important;
         text-align: center;
       }
+
+      header h1 a {
+        color: #ffffff !important;
+        text-decoration: none;
+      }
+
+      header h1 a:hover {
+        color: var(--link-color) !important;
+      }
+
       body header h1 {
         font-weight: 700 !important;
       }
+
       .content.post {
         font-size: 1.2em;
         line-height: 1.6;
@@ -51,48 +118,61 @@
         max-width: 850px;
         margin: 40px auto;
         padding: 0 20px;
-        color: #ffffff;
+        color: var(--text-color);
       }
+
       .content.post h2 {
         font-family: 'Source Code Pro', monospace;
         font-size: 2em;
         margin-bottom: 0.5em;
-        color: #ffffff;
+        color: var(--text-color);
       }
+
       .content.post p {
         margin-bottom: 1.5em;
-        color: #ffffff;
+        color: var(--text-color);
       }
+
       .content.post ul,
       .content.post ol {
         margin-top: 0.5em;
         margin-bottom: 1.5em;
         padding-left: 1.5em;
-        color: #ffffff;
+        color: var(--text-color);
       }
+
       .content.post li {
         margin-bottom: 0.5em;
-        color: #ffffff;
+        color: var(--text-color);
       }
+
       .content.post li:last-child {
         margin-bottom: 0;
       }
+
       .content.post code {
-        background-color: #1a1a1a;
-        color: #ffffff;
+        background-color: var(--code-bg);
+        color: var(--text-color);
       }
+
       .content.post pre {
-        background-color: #1a1a1a;
-        color: #ffffff;
+        background-color: var(--code-bg);
+        color: var(--text-color);
       }
+
       .content.post blockquote {
-        border-left: 4px solid #333;
+        border-left: 4px solid var(--blockquote-border);
         padding-left: 1em;
-        color: #999;
+        color: var(--blockquote-color);
       }
+
       @media (max-width: 768px) {
         .content.post {
           padding: 0 20px;
+        }
+        .theme-toggle {
+          top: 15px;
+          right: 15px;
         }
       }
     </style>
@@ -114,6 +194,14 @@
   </head>
   <body>
     <header>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
+          <path d="M12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-12c-.28 0-.5-.22-.5-.5V2c0-.28.22-.5.5-.5s.5.22.5.5v2.5c0 .28-.22.5-.5.5zm0 14c-.28 0-.5.22-.5.5V22c0 .28.22.5.5.5s.5-.22.5-.5v-2.5c0-.28-.22-.5-.5-.5zM3.5 12c0 .28-.22.5-.5.5H.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5H3c.28 0 .5.22.5.5zm18 0c0 .28.22.5.5.5h2.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H22c-.28 0-.5.22-.5.5z"/>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 3c.28 0 .5-.22.5-.5V1c0-.28-.22-.5-.5-.5S11.5.72 11.5 1v1.5c0 .28.22.5.5.5zm0 18c-.28 0-.5.22-.5.5V23c0 .28.22.5.5.5s.5-.22.5-.5v-1.5c0-.28-.22-.5-.5-.5zM3.5 12c0-.28-.22-.5-.5-.5H1c-.28 0-.5.22-.5.5s.22.5.5.5H3c.28 0 .5-.22.5-.5zm18 0c0 .28.22.5.5.5h2.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5H22c-.28 0-.5.22-.5.5z"/>
+        </svg>
+      </button>
       <h1><a href="/">{{ site.site_name }}</a></h1>
       <div class="header-label">{{ site.site_tagline }}</div>
     </header>
@@ -126,11 +214,44 @@
 
       <p class="signature">&mdash; {{ site.site_name }}</p>
     </div>
+
     <script>
       (function () {
         anchors.options.placement = 'right';
         anchors.add('.content > h3, .content > h4, .content > h5, .content > h6');
       })();
+    </script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.querySelector('.sun-icon');
+        const moonIcon = document.querySelector('.moon-icon');
+        
+        // Check for saved theme preference or use dark theme by default
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateIcons(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          updateIcons(newTheme);
+        });
+
+        function updateIcons(theme) {
+          if (theme === 'dark') {
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'block';
+          } else {
+            sunIcon.style.display = 'block';
+            moonIcon.style.display = 'none';
+          }
+        }
+      });
     </script>
   </body>
 </html>
