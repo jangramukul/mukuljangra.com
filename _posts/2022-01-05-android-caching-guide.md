@@ -10,7 +10,7 @@ When building Android applications that load images from URLs, implementing an e
 
 **Memory Cache** which stores data in the application's memory (cleared when app is destroyed) and **Disk Cache** which stores data in device storage (persists after app destruction)
 
-#### Implementation
+#### **Implementation**
 In simple Cache implementation using memory cache manager:
 
 ```kotlin
@@ -32,8 +32,7 @@ manager.put("key_1", User(id = 1))
 val user = manager.get("key_1")
 ```
 
-**In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.
-**
+**In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.**
 
 ```kotlin
 // Create LruCache with size limit
@@ -75,7 +74,7 @@ val content = bufferSource.readUtf8()
 bufferSource.close()
 ```
 
-There're few things to remember when:
+**There're few things to remember when:**
 
 **Memory Cache**:
 - Use LruCache for memory-efficient caching
@@ -94,6 +93,6 @@ There're few things to remember when:
 - Handle cache misses gracefully
 - Monitor cache size and memory usage
 
-In Conclusion, Implementing proper caching strategies is essential for building performant Android applications. By using both memory and disk caching appropriately, you can significantly improve your app's performance and user experience while preventing common issues like OOM exceptions.
+In conclusion, Implementing proper caching strategies is essential for building performant Android applications. By using both memory and disk caching appropriately, you can significantly improve your app's performance and user experience while preventing common issues like OOM exceptions.
 
 Remember to choose the right caching strategy based on your specific use case and data requirements. Whether you're caching images, API responses, or other data, a well-implemented caching system will make your app more efficient and responsive. 

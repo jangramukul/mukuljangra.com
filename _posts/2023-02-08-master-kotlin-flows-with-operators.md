@@ -27,9 +27,8 @@ Hot Flows are those producers that emit data even there is not collector or cons
 - It is possible to store values.
 - It can have multiple collectors or consumers.
 
-## Flow vs StateFlow vs SharedFlow
+### Flow vs StateFlow vs SharedFlow
 In Kotlin, there are multiple flows types and it's usecases. Lets try to understand these types one by one.
-
 
 Flow is a simplest flow you can create using flow builder or some extensions. Flow is a cold flow that cannot have multiple collectors. For simple usecases, like making a api call using repository pattern, we can use simple flow to handle these usecases.
 
@@ -92,7 +91,7 @@ sharedFlow.collect {
 
 There are multiple operators in Kotlin Flow like RxJava. We will go one by one and understand the usecases of these operators.
 
-#### Retry Operator
+#### **Retry Operator**
 You can retry or rerun the flow when some certain condition meet.
 
 ```kotlin
@@ -118,7 +117,7 @@ flow.retryWhen { cause, attempt
 }
 ```
 
-#### With Timeout
+#### **With Timeout**
 You can timeout and cancel the flow collector.
 
 ```kotlin
@@ -130,7 +129,7 @@ withTimeout(3000L) {
 }
 ```
 
-#### Catch Operator
+#### **Catch Operator**
 In Kotlin flows, you able to catch the exceptions from streams.
 
 ```kotlin
@@ -141,7 +140,7 @@ flow.catch {
 }
 ```
 
-#### Debounce Operator
+#### **Debounce Operator**
 In Kotlin Flows, you able to debounce the each emitted item with specific time frame.
 
 ```kotlin
@@ -152,7 +151,7 @@ flow.debounce(1000L)
 }
 ```
 
-#### Zip Operator
+#### **Zip Operator**
 Zip used for combine the multiple flows emissions into single flow. It only emits an item when all flows have emitted an item, and the resulting flow completes only when all input flows complete.
 
 ```kotlin
@@ -168,7 +167,7 @@ flow1.zip(flow2) { a, b ->
 }
 ```
 
-#### Combine Operator
+#### **Combine Operator**
 Combine operator is same as zip operator. But it emits an item as soon as one of the flows emits item and only completes the flow when all flows gets completed.
 
 ```kotlin
@@ -179,14 +178,14 @@ flow1.combine(flow2) { a, b ->
 }
 ```
 
-#### Merge Operator
+#### **Merge Operator**
 Merge operator is same as combine operator. It emits item as soon as one of the flows emits item and only completes the flow when all flows gets completed. It keeps the order of items as they emitted from flows. But it doesn't guarantee the order of items.
 
 ```kotlin
 val mergedflows = merge(flow1, flow2)
 ```
 
-#### FlatMapConcat Operator
+#### **FlatMapConcat Operator**
 FlatMapConcat combines the emissions of all resulting flows and convert them into a single flow. It wait for the flow to complete before starting a new one.
 
 ```kotlin
@@ -204,7 +203,7 @@ flow.flatMapConcat { value ->
 }
 ```
 
-#### FlatMapMerge Operator
+#### **FlatMapMerge Operator**
 FlatMapMerge combines the emissions of all resulting flows and convert them into single flow. It merge the all flows and emit them at once.
 
 ```kotlin
@@ -221,7 +220,7 @@ flow.flatMapMerge { value ->
 }
 ```
 
-#### FlatMapLatest Operator
+#### **FlatMapLatest Operator**
 FlatMapLatest combines the emissions of all resuting flows and convert them into single flow. It discord the current flow if latest flow comes in and emit it.
 
 ```kotlin
@@ -238,7 +237,7 @@ flow.flatMapLatest { value ->
 }
 ```
 
-#### Transform Operator
+#### **Transform Operator**
 Like map operator, it is used to transform the one data type to another data type by emiting the transformed value.
 
 ```kotlin
@@ -254,7 +253,7 @@ flow.transform<Int, String>() { value ->
 }
 ```
 
-#### Drop And Take Operator
+#### **Drop And Take Operator**
 Drop operator used for dropping the first emitted values and take used for taking the first emitted values in kotlin flow.
 
 ```kotlin
