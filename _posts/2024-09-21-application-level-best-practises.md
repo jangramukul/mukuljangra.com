@@ -1,5 +1,5 @@
 ---
-title: Best Practises at Application Level
+title: Application Level Best Practises
 layout: post
 categories: post
 tags:
