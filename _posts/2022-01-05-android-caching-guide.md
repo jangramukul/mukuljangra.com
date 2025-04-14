@@ -10,8 +10,7 @@ When building Android applications that load images from URLs, implementing an e
 
 **Memory Cache** which stores data in the application's memory (cleared when app is destroyed) and **Disk Cache** which stores data in device storage (persists after app destruction)
 
-## Implementation
-
+#### Implementation
 In simple Cache implementation using memory cache manager:
 
 ```kotlin
@@ -33,7 +32,8 @@ manager.put("key_1", User(id = 1))
 val user = manager.get("key_1")
 ```
 
-In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.
+**In LruCache (Least Recently Used Cache) is Android's recommended way to implement memory caching. It automatically manages cache size and removes least recently used items when the cache is full.
+**
 
 ```kotlin
 // Create LruCache with size limit
@@ -44,7 +44,7 @@ lruCache.put("key_1", User(id = 1))
 val user = lruCache.get("key_1")
 ```
 
-To avoid OOM exceptions, calculate cache size based on available memory:
+**To avoid OOM exceptions, calculate cache size based on available memory:**
 
 ```kotlin
 val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -53,7 +53,7 @@ val sizeInBytes = activityManager.memoryClass * 1024 * 1024
 val cache = LruCache<String, User>(sizeInBytes / 8)
 ```
 
-For persistent storage, disk caching is essential. Here's how to implement it using Okio:
+**For persistent storage, disk caching is essential. Here's how to implement it using Okio:**
 
 ```kotlin
 // Create cache file
@@ -74,6 +74,8 @@ val bufferSource = source.buffer()
 val content = bufferSource.readUtf8()
 bufferSource.close()
 ```
+
+There're few things to remember when:
 
 **Memory Cache**:
 - Use LruCache for memory-efficient caching
