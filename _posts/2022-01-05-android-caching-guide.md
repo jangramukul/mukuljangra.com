@@ -1,11 +1,12 @@
 ---
+title: Memory and Disk Caching in Android
 layout: post
-title: "Caching in Android: Memory and Disk Cache Implementation"
 categories: post
 tags:
   - Android
   - Cache
 ---
+
 When building Android applications that load images from URLs, implementing an efficient caching strategy is crucial for performance and user experience. Without proper caching, your app might repeatedly download the same images, leading to poor performance and potential Out of Memory (OOM) exceptions. Caching is a technique to store frequently accessed data for quick retrieval. In Android, we have two main types of caching:
 
 **Memory Cache** which stores data in the application's memory (cleared when app is destroyed) and **Disk Cache** which stores data in device storage (persists after app destruction)
