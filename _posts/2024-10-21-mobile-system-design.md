@@ -55,15 +55,15 @@ Additional requirements different from features that play an important role in t
 
 Resources include additional requirement gathering like team size, locale, number of users etc. While gathering resource information, you can ask questions like:
 
-#### How big is the engineering team?
+**How big is the engineering team?**
 
 Building a product for a small team is always different from a product designed for a large team. A large team's product is more structured and modularized to scale and better manage the product.
 
-#### What is the expected number of total users?
+**What is the expected number of total users?**
 
 A large number of users is expected to create server load. This question might make sense while managing the API clients and server-side issues.
 
-#### Are we targeting a specific area like India?
+**Are we targeting a specific area like India?**
 
 This question might make sense while designing the product for different internet connectivity areas. A low internet connectivity area requires minimum API connections to reduce bandwidth.
 
@@ -77,28 +77,28 @@ Before you move into high-level design, ask your interviewer: "Should I start wi
 
 At first glance, it's recommended to start with features, server-client communication, models, then come down to low system design. Let's understand this one by one:
 
-#### Functional Requirements
+1. **Functional Requirements**
 - What features are required?
 
-#### Client-Server Communication
+2. **Client-Server Communication**
 Define the communication frameworks like HTTPS, WebSocket, Nats, HTTPS Polling etc.
 - Which one should be used — HTTPS, GraphQL etc.?
 - Why choose Nats over WebSocket?
 - What are the disadvantages of using HTTP Polling?
 - What are the advantages of using WebSocket?
 
-#### API Design
+3. **API Design**
 Define the API used to implement the feature on server client. For instance, fetching the chat list using `/chats` API.
 
-#### Data Models
+4. **Data Models**
 Define the data models:
 - Draw and choose the properties inside data model
 - Can we have a list inside a data model that will be stored in the local database?
 
-#### Repository, Local and Network
+5. **Repository, Local and Network**
 Define the communication between repository, local database and network data source.
 
-#### Non-Functional Requirements
+6. **Non-Functional Requirements**
 Explain how to manage non-functional requirements like realtime sync, realtime notifications etc:
 - What are the disadvantages of using server-side notifications?
 - What are the issues caused during realtime sync? And how to deal with them?
@@ -112,45 +112,45 @@ After diving into high-level design, let's try to understand the low-level desig
 
 ### How to approach the low-level design?
 
-#### Architecture
+1. **Architecture**
 Define the architecture design that should be followed according to application requirements:
 - Why choose MVVM over MVC?
 
-#### Dependency Injection
+2. **Dependency Injection**
 Define the dependency injection:
 - Why do we need dependency injection?
 
-#### Pagination or Remote Mediator
+3. **Pagination or Remote Mediator**
 Define how pagination will work.
 
-#### Usecase
+4. **Usecase**
 Define the usecase which is responsible for reducing the complexity of business logic.
 
-#### ViewModel & State
+5. **ViewModel & State**
 Define the ViewModel and its usages if we are following the MVVM architecture. For instance, how will the screen or UI communicate with the ViewModel?
 
-#### Out of Scope
+6. **Out of Scope**
 Explain the out-of-scope requirements:
 - How to secure the application?
 - How to gather data like events and use as analytics?
 - Explain Security practices
 - What are the advantages of using Analytics?
 
-#### Performance
+7. **Performance**
 Define the performance matrix:
 - How will large images affect scrolling performance?
 - How will threading affect performance?
 - How to load large amounts of data?
 
-#### Accessibility
+8. **Accessibility**
 Define the accessibility:
 - How will UI component sizing and colors affect users?
 - How will color contrast and small text size affect some users?
 
-#### Localization
+9. **Localization**
 Define the localization. Localization means enabling local languages in the application to make it more usable.
 
-#### Security
+10. **Security**
 Define the security matrix:
 - How to secure secret keys like API Keys?
 - How to secure local backup or local database data?
