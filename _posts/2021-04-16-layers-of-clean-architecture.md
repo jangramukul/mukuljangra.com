@@ -46,3 +46,19 @@ In the presentation layer, UI components observe state changes from the ViewMode
 The key benefit of this approach is that the UI can focus solely on displaying data, not on data transformation or business logic. The UI should never modify state directly unless it's the sole source of that data. Only the owner of the data (typically the ViewModel) should be allowed to update it.
 
 This principle of immutability and controlled data flow helps prevent bugs, makes the code more testable, and ensures a predictable UI state. The presentation layer depends on the domain layer, not vice versa, maintaining the dependency rule of Clean Architecture. 
+
+
+Thank You!
+
+
+
+
+
+
+
+
+
+
+
+
+

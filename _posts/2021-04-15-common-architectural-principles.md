@@ -20,3 +20,14 @@ When a new data type is defined in your app, you should assign a Single Source o
 
 ### Exposing data
 While defining a new data type, you should not expose network data directly to UI. While making an API call, you should only expose the UI state or UI-related data model to the Presentation layer. By adding immutability, it makes UI only focus on a single role — reading and displaying the data. As a result, you should never modify the UI state in the UI directly unless the UI itself is the sole source of its data. The most common mistake we make is by sharing mutable data to UI or passing data from UI to ViewModel directly via params. 
+
+
+Thank You!
+
+
+
+
+
+
+
+

@@ -14,3 +14,8 @@ Imagine that, we have to create lots of objects which are depends on one another
 By using DI, We able to inject dependencies into testing frameworks to provide better and safe environment for testing. And also, no doubt, It’s makes object access thread-safe.
 
 If we provide manually injected dependencies into global context that is can accessible from anywhere, anytime. This comes with cost of thread-safety and tight coupling of dependencies. It also makes the testing harder, as all our instances are tight coupled.
+
+
+
+
+

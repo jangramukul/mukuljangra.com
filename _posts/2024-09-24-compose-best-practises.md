@@ -38,3 +38,13 @@ Avoid passing mutable lists to composables. Use `ImmutableList` or wrap data in 
 
 8. **Use @Stable or @Immutable**
 Annotate data classes with `@Stable` or `@Immutable` to optimize Jetpack Compose performance. These annotations signal that the object’s properties rarely change, reducing unnecessary recompositions.
+
+
+Thank You!
+
+
+
+
+
+
+

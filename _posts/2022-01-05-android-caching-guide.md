@@ -95,3 +95,13 @@ bufferSource.close()
 In conclusion, Implementing proper caching strategies is essential for building performant Android applications. By using both memory and disk caching appropriately, you can significantly improve your app's performance and user experience while preventing common issues like OOM exceptions.
 
 Remember to choose the right caching strategy based on your specific use case and data requirements. Whether you're caching images, API responses, or other data, a well-implemented caching system will make your app more efficient and responsive. 
+
+Thank You!
+
+
+
+
+
+
+
+

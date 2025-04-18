@@ -15,3 +15,12 @@ It's a practise of organizing a code base into loosely coupled and self-containe
 You might think, can we have multiple databases according to app features? Or should we only hold one database for an app? As a solution to this, you can adopt both approaches. It depends on your app needs. You should not go for the multiple databases approach if your app needs database tables join-related data. If your app doesn't have to deal with multiple database's tables joins, you can adopt the multiple databases approach easily.
 
 While dealing with app navigation, you should hold a central place where all your navigation screens are combined to make awesome app navigation. You can choose App Module as the central place and easily manage your app navigation into this.
+
+
+Thank You!
+
+
+
+
+
+
