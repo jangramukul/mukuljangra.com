@@ -1,5 +1,5 @@
 ---
-title: Common Architectural Principles In Android
+title: Common Architectural Principles Guide
 layout: post
 categories: post
 tags:

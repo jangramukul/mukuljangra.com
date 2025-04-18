@@ -1,5 +1,5 @@
 ---
-title: Kotlin Best Practises
+title: Kotlin Best Practises Guide
 layout: post
 categories: post
 tags:

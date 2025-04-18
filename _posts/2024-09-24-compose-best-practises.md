@@ -1,5 +1,5 @@
 ---
-title: Jetpack Compose Best Practises
+title: Jetpack Compose Best Practises Guide
 layout: post
 categories: post
 tags:

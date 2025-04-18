@@ -1,5 +1,5 @@
 ---
-title: Mobile System Design
+title: Mobile System Design Guide
 layout: post
 categories: post
 tags:
