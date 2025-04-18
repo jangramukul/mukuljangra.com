@@ -1,5 +1,5 @@
 ---
-title: Modularization Basics
+title: Modularization Basics Guide
 layout: post
 categories: post
 tags:

@@ -1,5 +1,5 @@
 ---
-title: Design Patterns in Kotlin
+title: Design Patterns Guide in Kotlin
 layout: post
 categories: post
 tags:

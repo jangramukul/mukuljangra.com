@@ -1,5 +1,5 @@
 ---
-title: Gradle Build Process
+title: Gradle Build Process Guide
 layout: post
 categories: post
 

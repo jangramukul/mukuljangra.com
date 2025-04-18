@@ -1,5 +1,5 @@
 ---
-title: Memory and Disk Caching in Android
+title: How To Cache In Android?
 layout: post
 categories: post
 tags:
