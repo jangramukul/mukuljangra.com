@@ -39,3 +39,16 @@ To check if cached data is outdated, developers often use two methods. The first
 In OOP, It's a good practice for objects to work with high-level APIs instead of directly accessing low-level components. This approach keeps the API modular and easier to manage. Take the example of three classes: Car, Engine, and Power. In this design, the Power class should not access the Engine or Car classes. The Car class is allowed to interact with the Engine, and the Engine can interact with Power. However, the Car should not directly access Power, and the Engine should not access the Car.
 
 
+Thank You!
+
+
+
+
+
+
+
+
+
+
+
+

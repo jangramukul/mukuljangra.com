@@ -31,3 +31,11 @@ Clean Architecture follows something called SOLID principles. These're guideline
 - **D**ependency Inversion: High-level modules don't depend on low-level ones
 
 Remember, the goal isn't to make your code look fancy - it's to make it work well and be easy to maintain. Clean Architecture is like having a well-organized toolbox - everything has its place, and you can find what you need when you need it.
+
+
+Thank You!
+
+
+
+
+

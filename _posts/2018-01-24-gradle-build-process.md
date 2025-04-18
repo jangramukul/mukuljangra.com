@@ -34,3 +34,12 @@ In general, Plugins has two types — Binary and scripts plugins.
 Binary Plugins : Binary plugins are written in Gradle’s DSL languages. These plugins are used with build scripts or project hierarchy to add some extra tasks. Generally, these are created by implementing Plugin interface.
 
 Script Plugins : Script plugins are are additional build scripts used for manipulating the build process.
+
+
+Thank You!
+
+
+
+
+
+

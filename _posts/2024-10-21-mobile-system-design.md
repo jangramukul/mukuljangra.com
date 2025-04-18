@@ -157,4 +157,12 @@ Define the security matrix:
 - How will app permissions affect security measures?
 - How to encrypt data?
 
-And here we are done! Thanks for reading!
+And here we are done! 
+Thanks for reading!
+
+
+
+
+
+
+

@@ -25,3 +25,16 @@ A usecase represents a specific action that needs to be performed, like SendMess
 
 An observer listens for changes and responds to them, for example, MessagesPagingObserver reacts to updates in message paging.
 ```
+
+
+Thank You!
+
+
+
+
+
+
+
+
+
+

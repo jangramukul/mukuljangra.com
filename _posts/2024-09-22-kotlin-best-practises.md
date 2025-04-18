@@ -30,4 +30,15 @@ Use `check()` and `requireNotNull()` for concise argument validation and early f
 Initialize heavy objects lazily with `by lazy` to defer creation until their first use, improving launch performance. For instance, You could initialize shared preferences by lazy at higher level of activity or fragment to reduce the launch time.
 
 
+Thank You!
+
+
+
+
+
+
+
+
+
+
 

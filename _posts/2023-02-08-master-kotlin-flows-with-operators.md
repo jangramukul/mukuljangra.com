@@ -264,3 +264,11 @@ val flow = (0..10).asFlow()
 flow.drop(2) //drop first 2 emitted values 
 .take(3) //take only 3 emitted values
 ```
+
+Thank You!
+
+
+
+
+
+
