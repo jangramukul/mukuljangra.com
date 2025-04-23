@@ -1,0 +1,160 @@
+<div class="search-container">
+  <button class="search-icon" onclick="toggleSearch()">
+    <span>search</span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  </button>
+  <div class="search-box" style="display: none;">
+    <input type="text" id="searchInput" placeholder="Search blogs..." onkeyup="searchBlogs()">
+    <div id="searchResults" class="search-results"></div>
+  </div>
+</div>
+
+<style>
+  .search-container {
+    position: relative;
+    margin-top: 15px;
+  }
+
+  .search-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+    text-decoration: none;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 1.1em;
+    width: 100%;
+  }
+
+  .search-icon span {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-right: 8px;
+  }
+
+  .search-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .search-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--background-color);
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 10px;
+  }
+
+  #searchInput {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--code-bg);
+    border-radius: 4px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.9em;
+    background: var(--background-color);
+    color: var(--text-color);
+  }
+
+  .search-results {
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .search-result-item {
+    padding: 8px;
+    border-bottom: 1px solid var(--code-bg);
+    cursor: pointer;
+  }
+
+  .search-result-item:hover {
+    background-color: var(--code-bg);
+  }
+
+  .search-result-item h3 {
+    margin: 0;
+    font-size: 1em;
+    color: var(--text-color);
+  }
+
+  .search-result-item p {
+    margin: 4px 0 0;
+    font-size: 0.9em;
+    color: var(--blockquote-color);
+  }
+</style>
+
+<script>
+  function toggleSearch() {
+    const searchBox = document.querySelector('.search-box');
+    searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
+    if (searchBox.style.display === 'block') {
+      document.getElementById('searchInput').focus();
+    }
+  }
+
+  function searchBlogs() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const resultsContainer = document.getElementById('searchResults');
+    resultsContainer.innerHTML = '';
+
+    if (filter.length < 2) return;
+
+    // Fetch all blog posts
+    fetch('/search.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(posts => {
+        const filteredPosts = posts.filter(post => {
+          const content = (post.title + ' ' + post.content).toLowerCase();
+          return content.includes(filter);
+        });
+
+        if (filteredPosts.length === 0) {
+          resultsContainer.innerHTML = '<div class="search-result-item">No results found</div>';
+          return;
+        }
+
+        filteredPosts.forEach(post => {
+          const resultItem = document.createElement('div');
+          resultItem.className = 'search-result-item';
+          resultItem.innerHTML = `
+            <h3>${post.title}</h3>
+            <p>${post.date}</p>
+          `;
+          resultItem.onclick = () => window.location.href = post.url;
+          resultsContainer.appendChild(resultItem);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching search data:', error);
+        resultsContainer.innerHTML = '<div class="search-result-item">Error loading search results</div>';
+      });
+  }
+
+  // Close search when clicking outside
+  document.addEventListener('click', (e) => {
+    const searchContainer = document.querySelector('.search-container');
+    const searchBox = document.querySelector('.search-box');
+    if (!searchContainer.contains(e.target) && searchBox.style.display === 'block') {
+      searchBox.style.display = 'none';
+    }
+  });
+</script> 
