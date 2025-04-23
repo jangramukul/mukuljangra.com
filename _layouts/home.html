@@ -10,96 +10,18 @@
     <link rel="stylesheet" href="/static/app.css" type="text/css">
     <meta name="theme-color" content="#111111">
     <style type="text/css">
-      :root {
-        --background-color: #ffffff;
-        --text-color: #333333;
-        --sidebar-bg: #f5f5f5;
-        --code-bg: #f6f6f6;
-        --blockquote-color: #666;
-        --blockquote-border: #ddd;
-        --link-color: #333333;
-        --link-color-hover: #000000;
-      }
-
-      body {
-        background-color: var(--background-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 0;
-        display: flex;
-        min-height: 100vh;
-      }
-
-      .left-column {
-        width: 300px;
-        background-color: var(--sidebar-bg);
-        padding: 40px;
-        position: fixed;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-
-      .right-column {
-        margin-left: 300px;
-        flex: 1;
-        padding: 40px;
-        background-color: #ffffff;
-      }
-
-      .profile-section {
-        color: var(--text-color);
-      }
-
-      .profile-section h1 {
-        font-family: 'Source Code Pro', monospace;
-        font-weight: 700;
-        font-size: 2.5em;
-        margin-bottom: 10px;
-      }
-
-      .profile-section .header-label {
-        font-family: 'Source Code Pro', monospace;
-        font-size: 1em;
-        opacity: 0.9;
-        margin-bottom: 30px;
-      }
-
-      .nav-links {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .nav-links li {
-        margin-bottom: 15px;
-      }
-
-      .nav-links a {
-        color: var(--text-color);
-        text-decoration: none;
-        font-family: 'Source Code Pro', monospace;
-        font-size: 1.1em;
-        display: flex;
-        align-items: center;
-      }
-
-      .nav-links a span {
-        font-size: 0.9em;
-        opacity: 0.8;
-        margin-right: 8px;
-      }
-
       .blog-list {
-        max-width: 700px;
+        max-width: 600px;
         margin: 0 auto;
+        padding: 0;
       }
 
       .blog-post {
-        margin-bottom: 40px;
-        padding-bottom: 40px;
+        margin-bottom: 30px;
+        padding-bottom: 30px;
         border-bottom: 1px solid #eee;
+        padding-left: 0;
+        padding-right: 0;
       }
 
       .blog-post:last-child {
@@ -131,47 +53,17 @@
         color: #333;
         line-height: 1.6;
       }
-
-      @media (max-width: 768px) {
-        body {
-          flex-direction: column;
-        }
-        .left-column {
-          width: 100%;
-          height: auto;
-          position: relative;
-        }
-        .right-column {
-          margin-left: 0;
-        }
-      }
     </style>
   </head>
   <body>
-    <div class="left-column">
-      <div class="profile-section">
-        <h1>{{ site.site_name }}</h1>
-        <div class="header-label">{{ site.site_tagline }}</div>
-        <ul class="nav-links">
-          <li><a href="/"><span>home</span>Home</a></li>
-          <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
-          <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
-          <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
-          <li><a href="{{ site.site_mailto }}"><span>contact</span>Me</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="right-column">
-      <div class="blog-list">
-        {% for post in site.posts %}
-        <article class="blog-post">
-          <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
-          <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
-          <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
-        </article>
-        {% endfor %}
-      </div>
+    <div class="blog-list">
+      {% for post in site.posts %}
+      <article class="blog-post">
+        <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+        <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
+        <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
+      </article>
+      {% endfor %}
     </div>
   </body>
 </html> 
