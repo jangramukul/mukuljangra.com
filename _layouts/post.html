@@ -105,11 +105,43 @@ layout: default
     padding-left: 1em;
     color: var(--blockquote-color);
   }
+
+  .category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .category-chip {
+    padding: 6px 12px;
+    background-color: #f0f0f0;
+    border-radius: 16px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .category-chip:hover {
+    background-color: #e0e0e0;
+  }
+
+  .category-chip.active {
+    background-color: #333;
+    color: white;
+  }
 </style>
 
 <div class="content post">
   <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2>{{ page.title }}</h2>
   <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
+  {% if page.tags %}
+  <div class="category-chips">
+    {% for tag in page.tags %}
+    <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip">{{ tag }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
   {{ content }}
 </div>
