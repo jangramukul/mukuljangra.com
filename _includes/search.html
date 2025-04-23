@@ -194,14 +194,7 @@
             <h3>${post.title}</h3>
             <p>${post.date}</p>
           `;
-          resultItem.onclick = () => {
-            const searchBox = document.querySelector('.search-box');
-            searchBox.classList.remove('active');
-            setTimeout(() => {
-              searchBox.style.display = 'none';
-              window.location.href = post.url;
-            }, 200);
-          };
+          resultItem.onclick = () => window.location.href = post.url;
           resultsContainer.appendChild(resultItem);
           
           // Add visible class with delay for each item
