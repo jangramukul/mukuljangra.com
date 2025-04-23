@@ -46,12 +46,13 @@
       }
 
       .header-label {
-        color: #ffffff !important;
+        color: #fff !important;
         font-size: 1em !important;
         margin: 5px 0;
-        text-align: center;
+        text-align: left;
         font-family: 'Source Code Pro', monospace;
         opacity: 0.9;
+        padding-left: 5px;
         text-transform: uppercase;
         display: block;
         position: relative;
@@ -60,26 +61,29 @@
       }
 
       header {
+        background-color: var(--header-background-color);
+        color: var(--header-foreground-color);
         padding: 30px 40px;
-        background-color: var(--header-bg) !important;
-        text-align: center;
-        position: relative;
+        text-align: left;
       }
 
       header h1 {
+        text-transform: uppercase;
+        font-size: 50px;
+        letter-spacing: 15px;
+        margin: 0 0 0 4px;
         font-family: 'Source Code Pro', monospace;
         font-weight: 700 !important;
-        font-size: 3.2em !important;
-        text-align: center;
       }
 
       header h1 a {
-        color: #ffffff !important;
+        color: #eee;
         text-decoration: none;
       }
 
       header h1 a:hover {
         color: var(--link-color) !important;
+        text-decoration: none;
       }
 
       body header h1 {
@@ -91,9 +95,10 @@
         line-height: 1.6;
         width: 100%;
         max-width: 850px;
-        margin: 40px auto;
-        padding: 0 20px;
+        margin: 40px 0;
+        padding: 0 40px;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post h2 {
@@ -102,6 +107,7 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post h3 {
@@ -110,6 +116,7 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post h4 {
@@ -118,11 +125,13 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post p {
         margin-bottom: 1.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post ul,
@@ -131,11 +140,13 @@
         margin-bottom: 1.5em;
         padding-left: 1.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post li {
         margin-bottom: 0.5em;
         color: var(--text-color);
+        text-align: left;
       }
 
       .content.post li:last-child {
@@ -158,9 +169,13 @@
         color: var(--blockquote-color);
       }
 
-      @media (max-width: 768px) {
-        .content.post {
-          padding: 0 20px;
+      @media (max-width: 767px) {
+        header {
+          padding: 30px;
+        }
+        header h1 {
+          letter-spacing: 5px;
+          font-size: 40px;
         }
       }
     </style>
