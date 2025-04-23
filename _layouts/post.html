@@ -9,6 +9,9 @@ layout: default
     color: var(--text-color);
     padding: 0 40px;
     padding-right: 20%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   .nav-links a span {
@@ -95,11 +98,17 @@ layout: default
   .content.post code {
     background-color: var(--code-bg);
     color: var(--text-color);
+    word-wrap: break-word;
+    white-space: pre-wrap;
   }
 
   .content.post pre {
     background-color: var(--code-bg);
     color: var(--text-color);
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
   }
 
   .content.post blockquote {
