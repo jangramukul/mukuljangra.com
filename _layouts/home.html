@@ -94,6 +94,7 @@
       .blog-list {
         margin: 0 auto;
         padding: 0 40px;
+        padding-right: 20%;
       }
 
       .blog-list-header {
@@ -108,6 +109,8 @@
         margin-bottom: 40px;
         padding-bottom: 40px;
         border-bottom: 1px solid #eee;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .blog-post:last-child {
@@ -121,11 +124,14 @@
         border-bottom: 5px solid var(--link-color);
         padding-bottom: 2px;
         display: inline-block;
+        width: auto;
       }
 
       .blog-post h2 a {
         color: var(--text-color);
         text-decoration: none;
+        display: inline-block;
+        width: auto;
       }
 
       .blog-post h2 a:hover {
@@ -142,6 +148,11 @@
         color: #333;
         line-height: 1.6;
         font-size: 1.1em;
+        width: 100%;
+        display: block;
+        padding-right: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       @media (max-width: 768px) {
