@@ -11,6 +11,23 @@ layout: default
     padding-right: 20%;
   }
 
+  .back-header {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    font-weight: normal;
+  }
+
+  .back-header a {
+    color: var(--text-color);
+    text-decoration: none;
+  }
+
+  .back-header a:hover {
+    color: var(--link-color-hover);
+  }
+
   .content.post h2 {
     font-family: 'Source Code Pro', monospace;
     font-size: 1.6em;
@@ -80,6 +97,7 @@ layout: default
 </style>
 
 <div class="content post">
+  <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2>{{ page.title }}</h2>
   <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
   {{ content }}
