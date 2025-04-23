@@ -96,6 +96,14 @@
         padding: 0 40px;
       }
 
+      .blog-list-header {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        color: var(--text-color);
+        font-weight: normal;
+      }
+
       .blog-post {
         margin-bottom: 40px;
         padding-bottom: 40px;
@@ -164,6 +172,7 @@
 
     <div class="right-column">
       <div class="blog-list">
+        <h1 class="blog-list-header">Blog</h1>
         {% for post in site.posts %}
         <article class="blog-post">
           <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
