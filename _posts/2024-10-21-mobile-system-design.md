@@ -3,7 +3,6 @@ title: Mobile System Design Guide
 layout: post
 categories: post
 tags:
-  - Interview
   - Android
 ---
 

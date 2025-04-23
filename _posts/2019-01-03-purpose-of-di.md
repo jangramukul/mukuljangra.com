@@ -5,7 +5,6 @@ categories: post
 
 tags:
   - Android
-  - DI
 
 ---
 
