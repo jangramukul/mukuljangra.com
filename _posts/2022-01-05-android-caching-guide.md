@@ -7,11 +7,11 @@ tags:
   - Cache
 ---
 
-When building Android applications that load images from URLs, implementing an efficient caching strategy is crucial for performance and user experience. Without proper caching, your app might repeatedly download the same images, leading to poor performance and potential Out of Memory (OOM) exceptions. Caching is a technique to store frequently accessed data for quick retrieval. In Android, we have two main types of caching:
+When building Android applications that load images from URLs, implementing an efficient caching strategy is crucial for performance and user experience. Without proper caching, your app might repeatedly download the same images, leading to poor performance and potential Out of Memory (OOM) exceptions. Caching is a technique to store frequently accessed data for quick retrieval. In Android, we have two main types of caching: 
 
-**Memory Cache** which stores data in the application's memory (cleared when app is destroyed) and **Disk Cache** which stores data in device storage (persists after app destruction)
+Memory Cache which stores data in the application's memory (cleared when app is destroyed) and Disk Cache which stores data in device storage (persists after app destruction).
 
-#### **Implementation**
+#### Implementation
 Let's explore multiple solutions for cache management:
 
 ```kotlin
@@ -73,7 +73,7 @@ val content = bufferSource.readUtf8()
 bufferSource.close()
 ```
 
-**There're few things to remember when:**
+#### Gotcha!
 
 **Memory Cache**:
 - Use LruCache for memory-efficient caching
