@@ -16,23 +16,12 @@
       :root {
         --background-color: #ffffff;
         --text-color: #333333;
-        --header-bg: #111111;
+        --sidebar-bg: #f5f5f5;
         --code-bg: #f6f6f6;
         --blockquote-color: #666;
         --blockquote-border: #ddd;
-        --link-color: hsl(151,44.7%,50%);
-        --link-color-hover: hsl(151,44.7%,45%);
-      }
-
-      [data-theme="dark"] {
-        --background-color: #000000;
-        --text-color: #ffffff;
-        --header-bg: #111111;
-        --code-bg: #1a1a1a;
-        --blockquote-color: #999;
-        --blockquote-border: #333;
-        --link-color: hsl(151,44.7%,50%);
-        --link-color-hover: hsl(151,44.7%,45%);
+        --link-color: #333333;
+        --link-color-hover: #000000;
       }
 
       body {
@@ -46,8 +35,7 @@
 
       .left-column {
         width: 300px;
-        background: url('/static/bg.png') no-repeat center center;
-        background-size: cover;
+        background-color: var(--sidebar-bg);
         padding: 40px;
         position: fixed;
         height: 100vh;
@@ -64,7 +52,7 @@
       }
 
       .profile-section {
-        color: #ffffff;
+        color: var(--text-color);
       }
 
       .profile-section h1 {
@@ -92,7 +80,7 @@
       }
 
       .nav-links a {
-        color: #ffffff;
+        color: var(--text-color);
         text-decoration: none;
         font-family: 'Source Code Pro', monospace;
         font-size: 1.1em;
@@ -109,7 +97,7 @@
       .content.post {
         font-size: 1.2em;
         line-height: 1.6;
-        max-width: 800px;
+        max-width: 700px;
         margin: 0 auto;
         color: var(--text-color);
       }
