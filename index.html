@@ -1,85 +1,17 @@
 ---
-layout: null
+layout: home
 ---
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ site.site_name }}</title>
-    <link rel="stylesheet" href="static/bootstrap-3.1.1.min.css" type="text/css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
-    <link rel="stylesheet" href="static/app.css" type="text/css">
-    <meta name="theme-color" content="#111111">
-    <style type="text/css">
-      body {
-        background-color: #111 !important;
-        background: url('static/bg.png') no-repeat center center;
-        background-size: cover;
-      }
-      header {
-        background-color: transparent !important;
-        padding: 30px 40px;
-      }
-      .header-label {
-        color: #fff !important;
-        font-size: 1em !important;
-        margin: 5px 0;
-        text-align: left;
-        font-family: 'Source Code Pro', monospace;
-        opacity: 0.9;
-        padding-left: 5px;
-        text-transform: uppercase;
-        display: block;
-        position: relative;
-        z-index: 1;
-        letter-spacing: 1px;
-      }
-      header h1 {
-        font-family: 'Source Code Pro', monospace;
-        font-weight: 700 !important;
-        font-size: 2.5em !important;
-      }
-      body header h1 {
-        font-weight: 700 !important;
-      }
-      .list-inline {
-        margin-top: 30px;
-      }
-      .list-inline li {
-        margin-right: 20px;
-      }
-      .list-inline li a {
-        font-size: 1.2em;
-        font-weight: 500;
-        font-family: 'Source Code Pro', monospace;
-      }
-      .list-inline li a span {
-        font-size: 0.9em;
-        opacity: 0.8;
-        font-family: 'Source Code Pro', monospace;
-      }
-    </style>
 
-    <meta name="og:type" content="website">
-    <meta name="og:title" content="{{ site.site_name }}">
-    <meta name="og:description" content="{{ site.site_tagline }}">
-    <meta name="og:site_name" content="{{ site.site_name }}">
-    <meta name="og:url" content="{{ site.url }}">
-    <meta name="og:image" content="http://www.gravatar.com/avatar/e68309f117985270285ade8082f4877d?s=200">
-  </head>
-  <body>
-    <header>
-      <h1>{{ site.site_name }}</h1>
-      <div class="header-label">{{ site.site_tagline }}</div>
-      <ul class="list-inline">
-        <li><a href="/blog"><span>read</span>Blogs</a></li>
-        <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
-        <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
-        <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
-        <li><a href="{{ site.site_mailto }}"><span>contact</span>Me</a></li>
-      </ul>
-    </header>
-  </body>
-</html>
+<div class="post-list">
+    {% for post in site.posts %}
+    <article class="post-item">
+        <h2 class="post-title">
+            <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        </h2>
+        <div class="post-date">{{ post.date | date: "%B %d, %Y" }}</div>
+        <div class="post-excerpt">
+            {{ post.excerpt | strip_html | truncatewords: 50 }}
+        </div>
+    </article>
+    {% endfor %}
+</div>
