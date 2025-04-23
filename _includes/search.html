@@ -50,6 +50,7 @@
     transform: translate(-50%, -50%);
     width: 600px;
     max-width: 90vw;
+    height: 400px;
     background: #ffffff;
     padding: 20px;
     border-radius: 4px;
@@ -101,8 +102,7 @@
   }
 
   .search-results {
-    margin-top: 10px;
-    max-height: 60vh;
+    height: calc(100% - 60px);
     overflow-y: auto;
     position: relative;
   }
@@ -124,6 +124,10 @@
   .search-result-item:hover {
     background-color: #fafafa;
     transform: translateX(5px);
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
   }
 
   .search-result-item h3 {
