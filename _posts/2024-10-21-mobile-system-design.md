@@ -3,7 +3,7 @@ title: Mobile System Design Guide
 layout: post
 categories: post
 tags:
-  - Kotlin
+  - Interview
   - Android
 ---
 

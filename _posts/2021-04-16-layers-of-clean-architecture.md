@@ -5,7 +5,6 @@ categories: post
 tags:
   - Android
   - Architecture
-  - Clean Architecture
 ---
 Clean Architecture typically consists of three main layers: Data, Domain, and Presentation, each with distinct responsibilities and dependencies.
 
