@@ -4,7 +4,7 @@ layout: post
 categories: post
 tags:
   - Android
-  - Cache
+  
 ---
 
 When building Android applications that load images from URLs, implementing an efficient caching strategy is crucial for performance and user experience. Without proper caching, your app might repeatedly download the same images, leading to poor performance and potential Out of Memory (OOM) exceptions. Caching is a technique to store frequently accessed data for quick retrieval. In Android, we have two main types of caching: 
