@@ -250,29 +250,45 @@
         const chips = document.querySelectorAll('.category-chip');
         const posts = document.querySelectorAll('.blog-post');
 
-        chips.forEach(chip => {
-          chip.addEventListener('click', function() {
-            // Remove active class from all chips
-            chips.forEach(c => c.classList.remove('active'));
-            // Add active class to clicked chip
-            this.classList.add('active');
-            
-            const selectedTag = this.dataset.tag;
-            
-            posts.forEach(post => {
-              if (selectedTag === 'all') {
+        // Function to handle tag selection
+        function selectTag(tag) {
+          // Remove active class from all chips
+          chips.forEach(c => c.classList.remove('active'));
+          // Add active class to clicked chip
+          const selectedChip = Array.from(chips).find(c => c.dataset.tag === tag);
+          if (selectedChip) {
+            selectedChip.classList.add('active');
+          }
+          
+          posts.forEach(post => {
+            if (tag === 'all') {
+              post.classList.remove('hidden');
+            } else {
+              const postTags = post.dataset.tags.split('|');
+              const normalizedTag = tag.replace(/_/g, ' ');
+              if (postTags.includes(normalizedTag)) {
                 post.classList.remove('hidden');
               } else {
-                const postTags = post.dataset.tags.split('|');
-                if (postTags.includes(selectedTag.replace(/_/g, ' '))) {
-                  post.classList.remove('hidden');
-                } else {
-                  post.classList.add('hidden');
-                }
+                post.classList.add('hidden');
               }
-            });
+            }
+          });
+        }
+
+        // Handle click events
+        chips.forEach(chip => {
+          chip.addEventListener('click', function() {
+            const selectedTag = this.dataset.tag;
+            selectTag(selectedTag);
           });
         });
+
+        // Check URL for tag parameter on page load
+        const urlParams = new URLSearchParams(window.location.search);
+        const tagParam = urlParams.get('tag');
+        if (tagParam) {
+          selectTag(tagParam);
+        }
       });
     </script>
   </body>
