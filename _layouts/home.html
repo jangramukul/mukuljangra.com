@@ -1,16 +1,13 @@
 <!DOCTYPE html>
-
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page.title }} - {{ site.site_name }}</title>
+    <title>{{ site.site_name }}</title>
     <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
     <link rel="stylesheet" href="/static/app.css" type="text/css">
-    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
-    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#111111">
     <style type="text/css">
       :root {
@@ -20,17 +17,6 @@
         --code-bg: #f6f6f6;
         --blockquote-color: #666;
         --blockquote-border: #ddd;
-        --link-color: hsl(151,44.7%,50%);
-        --link-color-hover: hsl(151,44.7%,45%);
-      }
-
-      [data-theme="dark"] {
-        --background-color: #000000;
-        --text-color: #ffffff;
-        --header-bg: #111111;
-        --code-bg: #1a1a1a;
-        --blockquote-color: #999;
-        --blockquote-border: #333;
         --link-color: hsl(151,44.7%,50%);
         --link-color-hover: hsl(151,44.7%,45%);
       }
@@ -106,74 +92,36 @@
         margin-right: 8px;
       }
 
-      .content.post {
-        font-size: 1.2em;
-        line-height: 1.6;
+      .blog-list {
         max-width: 800px;
         margin: 0 auto;
-        color: var(--text-color);
       }
 
-      .content.post h2 {
+      .blog-post {
+        margin-bottom: 40px;
+        padding-bottom: 40px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .blog-post:last-child {
+        border-bottom: none;
+      }
+
+      .blog-post h2 {
         font-family: 'Source Code Pro', monospace;
-        font-size: 2em;
-        margin-top: 1.5em;
-        margin-bottom: 0.5em;
-        color: var(--text-color);
+        font-size: 1.8em;
+        margin-bottom: 10px;
       }
 
-      .content.post h3 {
-        font-family: 'Source Code Pro', monospace;
-        font-size: 1.5em;
-        margin-top: 1.5em;
-        margin-bottom: 0.5em;
-        color: var(--text-color);
+      .blog-post .date {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 15px;
       }
 
-      .content.post h4 {
-        font-family: 'Source Code Pro', monospace;
-        font-size: 1.2em;
-        margin-top: 1.5em;
-        margin-bottom: 0.5em;
-        color: var(--text-color);
-      }
-
-      .content.post p {
-        margin-bottom: 1.5em;
-        color: var(--text-color);
-      }
-
-      .content.post ul,
-      .content.post ol {
-        margin-top: 0.5em;
-        margin-bottom: 1.5em;
-        padding-left: 1.5em;
-        color: var(--text-color);
-      }
-
-      .content.post li {
-        margin-bottom: 0.5em;
-        color: var(--text-color);
-      }
-
-      .content.post li:last-child {
-        margin-bottom: 0;
-      }
-
-      .content.post code {
-        background-color: var(--code-bg);
-        color: var(--text-color);
-      }
-
-      .content.post pre {
-        background-color: var(--code-bg);
-        color: var(--text-color);
-      }
-
-      .content.post blockquote {
-        border-left: 4px solid var(--blockquote-border);
-        padding-left: 1em;
-        color: var(--blockquote-color);
+      .blog-post .excerpt {
+        color: #333;
+        line-height: 1.6;
       }
 
       @media (max-width: 768px) {
@@ -190,21 +138,6 @@
         }
       }
     </style>
-    {% if page.external %}<meta name="robots" content="noindex nofollow">
-{% endif %}
-    <meta name="og:type" content="article">
-    <meta name="og:title" content="{{ page.title }} – {{ site.site_name }}">
-    <meta name="og:description" content="{{ page.lead }}">
-    <meta name="og:site_name" content="{{ site.site_name }}">
-    <meta name="og:url" content="{{ site.url }}{{ page.url }}">
-    {% if page.image %}
-    <meta name="og:image" content="{{ site.url }}{{ page.image }}">
-    {% else %}
-    <meta name="og:image" content="{{ site.url }}/static/default_image.png">
-    {% endif %}
-    <meta property="article:published_time" content="{{ page.date | date: "%Y-%m-%d" }}">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
   </head>
   <body>
     <div class="left-column">
@@ -222,28 +155,15 @@
     </div>
 
     <div class="right-column">
-      <div class="content post">
-        <h2>{{ page.title }}</h2>
-        <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
-        {{ content }}
+      <div class="blog-list">
+        {% for post in site.posts %}
+        <article class="blog-post">
+          <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+          <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
+          <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
+        </article>
+        {% endfor %}
       </div>
     </div>
-
-    <script>
-      (function () {
-        anchors.options.placement = 'right';
-        anchors.add('.content > h3, .content > h4, .content > h5, .content > h6');
-      })();
-    </script>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const themeToggle = document.getElementById('themeToggle');
-        
-        // Set light theme as default
-        document.documentElement.setAttribute('data-theme', 'light');
-        localStorage.setItem('theme', 'light');
-      });
-    </script>
   </body>
-</html>
+</html> 
