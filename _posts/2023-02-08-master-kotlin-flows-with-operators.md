@@ -4,7 +4,7 @@ layout: post
 categories: post
 tags:
   - Android
-  - Kotlin
+  - Kotlin Coroutines
 ---
 
 Coroutines And Flow are one of the ways to deal with asynchronous programming with multiple operators like RxJava. In Android, We use coroutines for dealing with multi-threading, concurrency, thread locks etc. And Kotlin Flow used used for asynchronous data streams like RxJava. In this article, we are heading towards Kotlin Flow.

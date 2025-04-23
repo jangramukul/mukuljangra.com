@@ -4,6 +4,7 @@ layout: post
 categories: post
 tags:
   - Android
+  - Kotlin
   - Best Practices
 ---
 
