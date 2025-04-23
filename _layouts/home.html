@@ -13,12 +13,12 @@
       :root {
         --background-color: #ffffff;
         --text-color: #333333;
-        --sidebar-bg: #f5f5f5;
+        --sidebar-bg: #302c2c;
         --code-bg: #f6f6f6;
         --blockquote-color: #666;
         --blockquote-border: #ddd;
-        --link-color: #333333;
-        --link-color-hover: #000000;
+        --link-color: #ffffff;
+        --link-color-hover: #ffffff;
       }
 
       body {
@@ -44,12 +44,12 @@
       .right-column {
         margin-left: 300px;
         flex: 1;
-        padding: 40px;
+        padding: 20px;
         background-color: #ffffff;
       }
 
       .profile-section {
-        color: var(--text-color);
+        color: #ffffff;
       }
 
       .profile-section h1 {
@@ -77,22 +77,14 @@
       }
 
       .nav-links a {
-        color: var(--text-color);
+        color: #ffffff;
         text-decoration: none;
         font-family: 'Source Code Pro', monospace;
         font-size: 1.1em;
-        display: flex;
-        align-items: center;
-      }
-
-      .nav-links a span {
-        font-size: 0.9em;
-        opacity: 0.8;
-        margin-right: 8px;
       }
 
       .blog-list {
-        max-width: 700px;
+        max-width: 600px;
         margin: 0 auto;
       }
 
@@ -153,11 +145,11 @@
         <h1>{{ site.site_name }}</h1>
         <div class="header-label">{{ site.site_tagline }}</div>
         <ul class="nav-links">
-          <li><a href="/"><span>home</span>Home</a></li>
-          <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
-          <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
-          <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
-          <li><a href="{{ site.site_mailto }}"><span>contact</span>Me</a></li>
+          <li><a href="/">Home</a></li>
+          <li><a href="{{ site.site_github }}">Fork GitHub</a></li>
+          <li><a href="{{ site.site_nostr }}">Follow Nostr</a></li>
+          <li><a href="{{ site.site_mastodon }}">Follow Mastodon</a></li>
+          <li><a href="{{ site.site_mailto }}">Contact Me</a></li>
         </ul>
       </div>
     </div>
