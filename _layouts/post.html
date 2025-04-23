@@ -24,49 +24,9 @@
         --link-color-hover: hsl(151,44.7%,45%);
       }
 
-      [data-theme="light"] {
-        --background-color: #ffffff;
-        --text-color: #333333;
-        --header-bg: #111111;
-        --code-bg: #f6f6f6;
-        --blockquote-color: #666;
-        --blockquote-border: #ddd;
-        --link-color: hsl(151,44.7%,50%);
-        --link-color-hover: hsl(151,44.7%,45%);
-      }
-
       body {
         background-color: var(--background-color);
         color: var(--text-color);
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
-
-      .theme-toggle {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 8px;
-        color: var(--link-color);
-        font-size: 16px;
-        font-weight: 500;
-        transition: color 0.3s ease;
-      }
-
-      .theme-toggle:hover {
-        color: var(--link-color-hover);
-      }
-
-      .theme-toggle svg {
-        width: 24px;
-        height: 24px;
-        fill: var(--link-color);
-      }
-
-      .theme-toggle:hover svg {
-        fill: var(--link-color-hover);
       }
 
       .header-label {
@@ -186,10 +146,6 @@
         .content.post {
           padding: 0 20px;
         }
-        .theme-toggle {
-          top: 15px;
-          right: 15px;
-        }
       }
     </style>
     {% if page.external %}<meta name="robots" content="noindex nofollow">
@@ -210,7 +166,6 @@
   </head>
   <body>
     <header>
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">Theme</button>
       <h1><a href="/">{{ site.site_name }}</a></h1>
       <div class="header-label">{{ site.site_tagline }}</div>
     </header>
@@ -228,30 +183,6 @@
         anchors.options.placement = 'right';
         anchors.add('.content > h3, .content > h4, .content > h5, .content > h6');
       })();
-    </script>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const themeToggle = document.getElementById('themeToggle');
-        
-        // Check for saved theme preference or use dark theme by default
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateButtonText(savedTheme);
-
-        themeToggle.addEventListener('click', () => {
-          const currentTheme = document.documentElement.getAttribute('data-theme');
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-          
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-          updateButtonText(newTheme);
-        });
-
-        function updateButtonText(theme) {
-          themeToggle.textContent = theme === 'dark' ? 'Light Theme' : 'Dark Theme';
-        }
-      });
     </script>
   </body>
 </html>
