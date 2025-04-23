@@ -6,6 +6,8 @@ tags:
   - Architecture
 ---
 
+This explores common naming patterns used in software architecture and explains their purposes. Each pattern serves a specific role in creating maintainable and well-structured code. Understanding these patterns helps developers choose appropriate names that clearly communicate a component's responsibility.
+
 ```
 A factory is responsible for creating objects. For example, TicketStatusFactory creates different ticket status instances. 
 
