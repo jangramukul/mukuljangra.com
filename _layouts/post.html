@@ -32,11 +32,12 @@ layout: default
 
   .back-header a {
     color: var(--text-color);
-    text-decoration: none;
+    text-decoration: underline;
   }
 
   .back-header a:hover {
     color: var(--link-color-hover);
+    text-decoration: underline;
   }
 
   .content.post h2 {
@@ -121,10 +122,12 @@ layout: default
     cursor: pointer;
     transition: all 0.2s ease;
     color: white;
+    text-decoration: none;
   }
 
   .category-chip:hover {
     background-color: #e0e0e0;
+    color: #333;
   }
 
   .category-chip.active {
@@ -140,7 +143,7 @@ layout: default
   {% if page.tags %}
   <div class="category-chips">
     {% for tag in page.tags %}
-    <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip">{{ tag }}</a>
+    <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</a>
     {% endfor %}
   </div>
   {% endif %}
