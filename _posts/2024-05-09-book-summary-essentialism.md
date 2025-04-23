@@ -5,6 +5,7 @@ categories: post
 tags:
   - Book
 ---
+
 In Essentialism, Greg McKeown draws on experience and insight from working with the leaders of the most innovative companies in the world to show how to achieve the disciplined pursuit of less.
 
 ### Core Mindset of Essentialist
