@@ -155,6 +155,39 @@
         box-sizing: border-box;
       }
 
+      .category-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .category-chip {
+        padding: 6px 12px;
+        background-color: #f0f0f0;
+        border-radius: 16px;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .category-chip:hover {
+        background-color: #e0e0e0;
+      }
+
+      .category-chip.active {
+        background-color: #333;
+        color: white;
+      }
+
+      .blog-post {
+        transition: opacity 0.3s ease;
+      }
+
+      .blog-post.hidden {
+        display: none;
+      }
+
       @media (max-width: 768px) {
         body {
           flex-direction: column;
@@ -189,8 +222,22 @@
     <div class="right-column">
       <div class="blog-list">
         <h1 class="blog-list-header">Blog</h1>
+        <div class="category-chips">
+          <div class="category-chip active" data-tag="all">All</div>
+          {% assign all_tags = "" | split: "" %}
+          {% for post in site.posts %}
+            {% for tag in post.tags %}
+              {% unless all_tags contains tag %}
+                {% assign all_tags = all_tags | push: tag %}
+              {% endunless %}
+            {% endfor %}
+          {% endfor %}
+          {% for tag in all_tags %}
+            <div class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</div>
+          {% endfor %}
+        </div>
         {% for post in site.posts %}
-        <article class="blog-post">
+        <article class="blog-post" data-tags="{{ post.tags | join: '|' }}">
           <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
           <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
           <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
@@ -198,5 +245,35 @@
         {% endfor %}
       </div>
     </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const chips = document.querySelectorAll('.category-chip');
+        const posts = document.querySelectorAll('.blog-post');
+
+        chips.forEach(chip => {
+          chip.addEventListener('click', function() {
+            // Remove active class from all chips
+            chips.forEach(c => c.classList.remove('active'));
+            // Add active class to clicked chip
+            this.classList.add('active');
+            
+            const selectedTag = this.dataset.tag;
+            
+            posts.forEach(post => {
+              if (selectedTag === 'all') {
+                post.classList.remove('hidden');
+              } else {
+                const postTags = post.dataset.tags.split('|');
+                if (postTags.includes(selectedTag.replace(/_/g, ' '))) {
+                  post.classList.remove('hidden');
+                } else {
+                  post.classList.add('hidden');
+                }
+              }
+            });
+          });
+        });
+      });
+    </script>
   </body>
 </html> 
