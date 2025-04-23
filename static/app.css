@@ -9,8 +9,8 @@
   --header-background-color: #111;
   --header-foreground-color: #eee;
   --header-link-color: #ddd;
-  --code-background-color: #f6f6f6;
-  --code-foreground-color: #444;
+  --code-background-color: #282828;
+  --code-foreground-color: #ebdbb2;
 }
 
 html {
@@ -38,11 +38,13 @@ ul, ol {
 code {
   color: var(--code-foreground-color);
   background-color: var(--code-background-color);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
 }
 pre code {
+  padding: 1em;
+  display: block;
   overflow-x: auto;
-  overflow-wrap: normal;
-  white-space: pre;
 }
 blockquote {
   font-size: 14px;
