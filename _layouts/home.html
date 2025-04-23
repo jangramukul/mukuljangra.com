@@ -233,7 +233,8 @@
               {% endunless %}
             {% endfor %}
           {% endfor %}
-          {% for tag in all_tags %}
+          {% assign sorted_tags = all_tags | sort %}
+          {% for tag in sorted_tags %}
             <div class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</div>
           {% endfor %}
         </div>
