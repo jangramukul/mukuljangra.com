@@ -1,16 +1,16 @@
 :root {
-  --background-color: #fff;
-  --foreground-color: #333;
+  --background-color: #1a1a1a;
+  --foreground-color: #e0e0e0;
   --link-color-hue: 151;
-  --link-color: hsl(var(--link-color-hue),44.7%,50%);
-  --link-color-hover: hsl(var(--link-color-hue),44.7%,45%);
-  --signature-color: #666;
-  --date-color: #aaa;
-  --header-background-color: #111;
-  --header-foreground-color: #eee;
+  --link-color: hsl(var(--link-color-hue),44.7%,60%);
+  --link-color-hover: hsl(var(--link-color-hue),44.7%,70%);
+  --signature-color: #999;
+  --date-color: #888;
+  --header-background-color: #000;
+  --header-foreground-color: #fff;
   --header-link-color: #ddd;
-  --code-background-color: #f6f6f6;
-  --code-foreground-color: #444;
+  --code-background-color: #2d2d2d;
+  --code-foreground-color: #e0e0e0;
 }
 
 html {
@@ -46,6 +46,9 @@ pre code {
 }
 blockquote {
   font-size: 14px;
+  border-left: 4px solid #444;
+  padding-left: 15px;
+  color: #bbb;
 }
 
 header {
@@ -137,6 +140,7 @@ header ul a span {
 }
 .content img {
   max-width: 100%;
+  filter: brightness(0.9);
 }
 .content .footnotes {
   margin-top: 60px;
@@ -180,6 +184,7 @@ p.signature {
 .presentation-list .date {
   font-family: monospace;
   padding-right: 10px;
+  color: var(--date-color);
 }
 .presentation-list small {
   padding-left: 5px;

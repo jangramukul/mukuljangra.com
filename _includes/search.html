@@ -16,8 +16,8 @@
   .search-container {
     position: relative;
     margin-top: 15px;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
+    background-color: var(--background-color);
+    border: 1px solid #444;
     border-radius: 4px;
     padding: 8px;
   }
@@ -29,7 +29,7 @@
     padding: 0;
     display: flex;
     align-items: center;
-    color: #999999;
+    color: var(--foreground-color);
     text-decoration: none;
     font-family: 'Source Code Pro', monospace;
     font-size: 0.9em;
@@ -57,11 +57,11 @@
     width: 500px;
     max-width: 90vw;
     height: 300px;
-    background: #ffffff;
+    background: var(--background-color);
     padding: 20px;
     border-radius: 4px;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #444;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     display: none;
     opacity: 0;
@@ -79,7 +79,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.5);
     z-index: -1;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
@@ -92,18 +92,18 @@
   #searchInput {
     width: 100%;
     padding: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #444;
     border-radius: 4px;
     font-family: 'Source Code Pro', monospace;
     font-size: 1em;
-    background: #ffffff;
-    color: var(--text-color);
+    background: var(--background-color);
+    color: var(--foreground-color);
     margin-bottom: 10px;
     transition: border-color 0.2s ease-in-out;
   }
 
   #searchInput:focus {
-    border-color: #999999;
+    border-color: var(--link-color);
     outline: none;
   }
 
@@ -115,7 +115,7 @@
 
   .search-result-item {
     padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #444;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     opacity: 0;
@@ -128,7 +128,7 @@
   }
 
   .search-result-item:hover {
-    background-color: #fafafa;
+    background-color: #2d2d2d;
     transform: translateX(5px);
   }
 
@@ -139,14 +139,14 @@
   .search-result-item h3 {
     margin: 0;
     font-size: 1.1em;
-    color: var(--text-color);
+    color: var(--foreground-color);
     transition: color 0.2s ease-in-out;
   }
 
   .search-result-item p {
     margin: 4px 0 0;
     font-size: 0.9em;
-    color: #999999;
+    color: var(--date-color);
   }
 </style>
 
