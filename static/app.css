@@ -1,16 +1,17 @@
 :root {
-  --background-color: #fff;
-  --foreground-color: #333;
+  --background-color: #040404;
+  --foreground-color: #e0e0e0;
   --link-color-hue: 151;
-  --link-color: hsl(var(--link-color-hue),44.7%,50%);
-  --link-color-hover: hsl(var(--link-color-hue),44.7%,45%);
-  --signature-color: #666;
-  --date-color: #aaa;
-  --header-background-color: #111;
-  --header-foreground-color: #eee;
-  --header-link-color: #ddd;
-  --code-background-color: #f6f6f6;
-  --code-foreground-color: #444;
+  --link-color: hsl(var(--link-color-hue),44.7%,60%);
+  --link-color-hover: hsl(var(--link-color-hue),44.7%,70%);
+  --signature-color: #888;
+  --date-color: #888;
+  --header-background-color: #1c1c1c;
+  --header-foreground-color: #e0e0e0;
+  --header-link-color: #e0e0e0;
+  --code-background-color: #1c1c1c;
+  --code-foreground-color: #e0e0e0;
+  --border-color: #343434;
 }
 
 html {
@@ -21,6 +22,7 @@ body {
   font-family: 'Source Code Pro', monospace;
   background-color: var(--background-color);
   color: var(--foreground-color);
+  border-color: var(--border-color);
 }
 
 a, a:focus {
@@ -38,6 +40,7 @@ ul, ol {
 code {
   color: var(--code-foreground-color);
   background-color: var(--code-background-color);
+  border: 1px solid var(--border-color);
 }
 pre code {
   overflow-x: auto;
@@ -52,6 +55,7 @@ header {
   background-color: var(--header-background-color);
   color: var(--header-foreground-color);
   padding: 30px 40px;
+  border-bottom: 1px solid var(--border-color);
 }
 header h1 {
   text-transform: uppercase;
@@ -103,6 +107,7 @@ header ul a span {
   padding: 40px;
   line-height: 24px;
   margin-bottom: 100px;
+  border-color: var(--border-color);
 }
 @media (max-width: 767px) {
   .content {
