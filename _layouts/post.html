@@ -5,12 +5,11 @@ layout: default
   .content.post {
     font-size: 1.08em;
     line-height: 1.6;
-    margin-top: 32px;
-    margin-left: 40px;
+    margin: 0 auto;
     color: var(--text-color);
-    padding: 40px 20px 20px 40px;
-    width: 80%;
-    max-width: 900px;
+    padding: 0 40px;
+    padding-right: 20%;
+    max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
     background: #fafbfc;
@@ -18,7 +17,7 @@ layout: default
     border-radius: 0;
     box-shadow: none;
     min-height: 200px;
-    position: relative;
+    margin-top: 32px;
   }
 
   .nav-links a span {
@@ -29,31 +28,25 @@ layout: default
 
   .back-header {
     font-family: 'Source Code Pro', monospace;
-    font-size: 1em;
-    color: #888;
-    font-weight: 600;
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-weight: normal;
     text-decoration: none;
-    background: #f3f3f3;
-    border: 1px solid #e0e0e0;
-    border-radius: 0 0 8px 0;
-    padding: 8px 16px 8px 12px;
-    box-shadow: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 0;
-    z-index: 2;
+  }
+
+  .back-header:hover {
+    color: var(--link-color-hover);
   }
 
   .back-header a {
-    color: inherit;
-    text-decoration: none;
+    color: var(--text-color);
+    text-decoration: underline;
   }
 
-  .back-header:hover, .back-header a:hover {
-    background: #eaeaea;
-    color: #111;
-    text-decoration: none;
+  .back-header a:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
   }
 
   .content.post h2 {
@@ -169,7 +162,7 @@ layout: default
 </style>
 
 <div class="content post">
-  <div class="back-header"><a href="javascript:history.back()">Back</a></div>
+  <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2>{{ page.title }}</h2>
   <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
   {% if page.tags %}
