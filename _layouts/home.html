@@ -55,15 +55,27 @@
       .profile-section h1 {
         font-family: 'Source Code Pro', monospace;
         font-weight: 700;
-        font-size: 2.5em;
+        font-size: 1.5em;
         margin-bottom: 10px;
+        text-align: center;
       }
 
       .profile-section .header-label {
         font-family: 'Source Code Pro', monospace;
-        font-size: 1em;
+        font-size: 0.9em;
         opacity: 0.9;
         margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .profile-photo {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+        margin: 0 auto 20px auto;
+        border: 3px solid #e0e0e0;
       }
 
       .nav-links {
@@ -211,6 +223,7 @@
   <body>
     <div class="left-column">
       <div class="profile-section">
+        <img src="/static/default_image.png" alt="Profile Photo" class="profile-photo" />
         <h1>{{ site.site_name }}</h1>
         <div class="header-label">{{ site.site_tagline }}</div>
         <ul class="nav-links">
