@@ -142,6 +142,9 @@
         display: block;
         width: auto;
         font-weight: bold;
+        border-bottom: 4px solid #666666;
+        padding-bottom: 2px;
+        width: fit-content;
       }
 
       .blog-post h2 a {
@@ -156,16 +159,16 @@
       }
 
       .blog-post .date-box {
-        min-width: 70px;
-        min-height: 70px;
+        min-width: 120px;
+        min-height: 38px;
         background: #f7f7f7;
         color: #333;
         border-radius: 8px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
-        font-size: 0.95em;
+        font-size: 1em;
         font-family: 'Source Code Pro', monospace;
         font-weight: 600;
         box-shadow: 0 1px 4px rgba(0,0,0,0.03);
@@ -173,6 +176,8 @@
         margin-left: 32px;
         margin-right: 0;
         text-align: center;
+        padding: 0 18px;
+        gap: 6px;
       }
 
       .blog-post .excerpt {
@@ -233,12 +238,12 @@
           margin-left: 0;
         }
         .blog-post {
-          flex-direction: column;
-          align-items: flex-start;
+          flex-direction: row;
+          align-items: center;
         }
         .blog-post .date-box {
-          margin-left: 0;
-          margin-top: 12px;
+          margin-left: 16px;
+          margin-top: 0;
         }
       }
     </style>
@@ -285,9 +290,7 @@
             <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
           </div>
           <div class="date-box">
-            <span>{{ post.date | date:"%d" }}</span>
-            <span style="font-size:0.8em;opacity:0.7;">{{ post.date | date:"%b" }}</span>
-            <span style="font-size:0.8em;opacity:0.7;">{{ post.date | date:"%Y" }}</span>
+            {{ post.date | date:"%d %b %Y" }}
           </div>
         </article>
         {% endfor %}
