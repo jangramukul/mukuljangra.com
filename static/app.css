@@ -261,7 +261,7 @@ b, strong {
   position: absolute;
   left: 0;
   bottom: -3px;
-  background: linear-gradient(270deg, grey, black, red, blue, yellow, grey);
+  background: linear-gradient(270deg, #ff6ec4, #7873f5, #42e695, #ff6ec4);
   background-size: 300% 100%;
   border-radius: 1px;
   animation: underlineFlow 3s linear infinite;
