@@ -54,15 +54,15 @@ Additional requirements different from features that play an important role in t
 
 Resources include additional requirement gathering like team size, locale, number of users etc. While gathering resource information, you can ask questions like:
 
-**How big is the engineering team?**
+#### How big is the engineering team?
 
 Building a product for a small team is always different from a product designed for a large team. A large team's product is more structured and modularized to scale and better manage the product.
 
-**What is the expected number of total users?**
+#### What is the expected number of total users?
 
 A large number of users is expected to create server load. This question might make sense while managing the API clients and server-side issues.
 
-**Are we targeting a specific area like India?**
+#### Are we targeting a specific area like India?
 
 This question might make sense while designing the product for different internet connectivity areas. A low internet connectivity area requires minimum API connections to reduce bandwidth.
 
