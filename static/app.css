@@ -238,3 +238,9 @@ img.float-right {
 .anchorjs-link, .anchorjs-link:hover {
   text-decoration: none;
 }
+
+b, strong {
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+}
