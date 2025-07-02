@@ -1,6 +1,6 @@
-# Jekyll Blog Template
+# Mukul Jangra
 
-This is a simple, modern, and responsive Jekyll blog template. You can use it to quickly launch your own blog or personal site. It supports posts, custom pages, search, and easy deployment to GitHub Pages or any static hosting.
+This is a simple, modern, and responsive Jekyll website. It supports posts, custom pages, search, and easy deployment to GitHub Pages or any static hosting.
 
 ## Getting Started
 
