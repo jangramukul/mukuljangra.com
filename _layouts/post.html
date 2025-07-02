@@ -125,24 +125,33 @@ layout: default
   }
 
   .category-chip {
-    padding: 6px 12px;
-    background-color: #333;
-    border-radius: 20px;
-    font-size: 0.7em;
+    padding: 6px 16px;
+    background: linear-gradient(145deg, #f0f0f0 60%, #e0e0e0 100%);
+    border-radius: 16px;
+    font-size: 0.9em;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: white;
+    transition: all 0.2s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 6px 0 rgba(0,0,0,0.10), 0 1.5px 0 #e0e0e0 inset;
+    border: 1px solid #e0e0e0;
+    font-weight: 600;
+    color: #333;
+    position: relative;
     text-decoration: none;
   }
 
   .category-chip:hover {
-    background-color: #e0e0e0;
-    color: #333;
+    background: linear-gradient(145deg, #e0e0e0 60%, #f0f0f0 100%);
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.12), 0 1.5px 0 #d0d0d0 inset;
+    transform: translateY(1px) scale(0.98);
+    color: #111;
   }
 
   .category-chip.active {
-    background-color: #333;
-    color: white;
+    background: linear-gradient(145deg, #333 60%, #222 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px 0 rgba(51,51,51,0.18), 0 1.5px 0 #111 inset;
+    border: 1px solid #222;
+    transform: translateY(2px) scale(0.97);
   }
 </style>
 
