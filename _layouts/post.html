@@ -5,11 +5,12 @@ layout: default
   .content.post {
     font-size: 1.08em;
     line-height: 1.6;
-    margin: 0 auto;
+    margin: 32px 0 0 0;
     color: var(--text-color);
     padding: 0 40px;
     padding-right: 20%;
-    max-width: 100%;
+    width: 70%;
+    max-width: none;
     overflow-x: hidden;
     box-sizing: border-box;
     background: #fafbfc;
@@ -17,7 +18,6 @@ layout: default
     border-radius: 0;
     box-shadow: none;
     min-height: 200px;
-    margin-top: 32px;
   }
 
   .nav-links a span {
@@ -28,25 +28,29 @@ layout: default
 
   .back-header {
     font-family: 'Source Code Pro', monospace;
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    color: var(--text-color);
-    font-weight: normal;
+    font-size: 1em;
+    margin-bottom: 18px;
+    color: #888;
+    font-weight: 600;
     text-decoration: none;
-  }
-
-  .back-header:hover {
-    color: var(--link-color-hover);
+    background: #f3f3f3;
+    border: 1px solid #e0e0e0;
+    border-radius: 0 0 8px 0;
+    padding: 8px 16px 8px 12px;
+    display: inline-block;
+    box-shadow: none;
+    margin-top: 24px;
   }
 
   .back-header a {
-    color: var(--text-color);
-    text-decoration: underline;
+    color: inherit;
+    text-decoration: none;
   }
 
-  .back-header a:hover {
-    color: var(--link-color-hover);
-    text-decoration: underline;
+  .back-header:hover, .back-header a:hover {
+    background: #eaeaea;
+    color: #111;
+    text-decoration: none;
   }
 
   .content.post h2 {
