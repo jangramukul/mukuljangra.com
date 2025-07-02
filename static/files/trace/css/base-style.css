@@ -1,4 +1,3 @@
-
 body {
     margin: 0;
     padding: 0;
@@ -7,7 +6,7 @@ body {
 }
 
 body, a, a:visited {
-    color: #303030;
+    color: #e8e6e3;
 }
 
 #content {
@@ -29,7 +28,7 @@ body, a, a:visited {
 }
 
 #footer, #footer a {
-    color: #a0a0a0;
+    color: #888;
 }
 
 #line-wrapping-toggle {
@@ -74,17 +73,17 @@ ul.tabLinks li {
     -moz-border-radius: 7px;
     border-radius: 7px;
     margin-right: 25px;
-    border: solid 1px #d4d4d4;
-    background-color: #f0f0f0;
+    border: solid 1px #444;
+    background-color: #23272a;
 }
 
 ul.tabLinks li:hover {
-    background-color: #fafafa;
+    background-color: #2c2f34;
 }
 
 ul.tabLinks li.selected {
-    background-color: #c5f0f5;
-    border-color: #c5f0f5;
+    background-color: #3a3f4b;
+    border-color: #3a3f4b;
 }
 
 ul.tabLinks a {
@@ -120,7 +119,7 @@ div.tab table {
 }
 
 div.tab th, div.tab table {
-    border-bottom: solid #d0d0d0 1px;
+    border-bottom: solid #444 1px;
 }
 
 div.tab th {
@@ -161,8 +160,8 @@ span.code pre {
     padding-left: 10px;
     padding-right: 10px;
     margin: 0;
-    background-color: #f7f7f7;
-    border: solid 1px #d0d0d0;
+    background-color: #181a1b;
+    border: solid 1px #444;
     min-width: 700px;
     width: auto !important;
     width: 700px;

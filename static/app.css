@@ -1,16 +1,16 @@
 :root {
-  --background-color: #fff;
-  --foreground-color: #333;
+  --background-color: #181a1b;
+  --foreground-color: #e8e6e3;
   --link-color-hue: 151;
-  --link-color: hsl(var(--link-color-hue),44.7%,50%);
-  --link-color-hover: hsl(var(--link-color-hue),44.7%,45%);
-  --signature-color: #666;
-  --date-color: #aaa;
-  --header-background-color: #111;
-  --header-foreground-color: #eee;
-  --header-link-color: #ddd;
-  --code-background-color: #f6f6f6;
-  --code-foreground-color: #444;
+  --link-color: hsl(var(--link-color-hue), 44.7%, 60%);
+  --link-color-hover: hsl(var(--link-color-hue), 44.7%, 70%);
+  --signature-color: #aaa;
+  --date-color: #888;
+  --header-background-color: #23272a;
+  --header-foreground-color: #f5f6fa;
+  --header-link-color: #b9bbbe;
+  --code-background-color: #23272a;
+  --code-foreground-color: #e8e6e3;
 }
 
 html {
@@ -74,7 +74,7 @@ header h1 {
 }
 
 header h1 a, header h1 a:focus {
-  color: #eee;
+  color: var(--header-foreground-color);
 }
 header h1 a:hover {
   text-decoration: none;
@@ -86,7 +86,7 @@ header ul li {
   padding-bottom: 20px;
 }
 header ul a {
-  color: var(--header-link-color-primary);
+  color: var(--header-link-color);
   font-weight: 700;
 }
 header ul a:hover, header ul a:active {
