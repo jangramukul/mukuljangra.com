@@ -49,7 +49,10 @@ layout: default
     margin-top: 1.5em;
     margin-bottom: 0.5em;
     color: var(--text-color);
-    border-bottom: none;
+    border-bottom: 5px solid #666666;
+    padding-bottom: 2px;
+    display: inline-block;
+    width: auto;
     font-weight: bold;
   }
 
@@ -147,7 +150,7 @@ layout: default
 </style>
 
 <div class="content post">
-  <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
+  <h1 class="back-header"><a href="javascript:history.back()"><svg width="18" height="18" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:6px;color:#000;" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.5 15L6 9L11.5 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</a></h1>
   <h2>{{ page.title }}</h2>
   <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
   {% if page.tags %}
