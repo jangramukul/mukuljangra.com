@@ -244,35 +244,3 @@ b, strong {
   padding: 0;
   font-weight: bold;
 }
-
-.blog-post h2 {
-  position: relative;
-  overflow: visible;
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 10px;
-}
-
-.blog-post h2::after {
-  content: '';
-  display: block;
-  height: 2px;
-  width: 100%;
-  position: absolute;
-  left: 0;
-  bottom: -3px;
-  background: linear-gradient(270deg, #ff6ec4, #7873f5, #42e695, #ff6ec4);
-  background-size: 300% 100%;
-  border-radius: 1px;
-  animation: underlineFlow 3s linear infinite;
-  z-index: 1;
-}
-
-@keyframes underlineFlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
