@@ -6,6 +6,8 @@ site_github: "https://github.com/jangramukul"
 site_nostr: "https://primal.net/p/npub1nxzck4kpc3pegzajcktvvfe85rc3mxqgffc0swfw556hwf7g9c3s2c6epl"
 site_mastodon: "https://mastodon.social/@mukuljangra"
 site_twitter: "https://x.com/iammukuljangra"
+site_linkedin: "https://www.linkedin.com/in/jangramukul/"
+site_medium: "https://medium.com/@mukuljangra"
 
 highlighter: rouge
 permalink: /:title/
