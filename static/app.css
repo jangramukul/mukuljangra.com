@@ -244,3 +244,26 @@ b, strong {
   padding: 0;
   font-weight: bold;
 }
+
+/* Blog post date and tag styles */
+.date-tag-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-left: 10px;
+}
+
+.post-tag {
+  padding: 3px 8px;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  font-size: 0.8em;
+  color: #333;
+  display: inline-block;
+}
