@@ -3,7 +3,7 @@ layout: default
 ---
 <style type="text/css">
   .content.post {
-    font-size: 1.08em;
+    font-size: 16px; /* Changed from 1.08em to absolute value for better base sizing */
     line-height: 1.6;
     margin: 0 auto;
     color: var(--text-color);
@@ -83,11 +83,11 @@ layout: default
   .content.post h2 + ol,
   .content.post h3 + ol,
   .content.post h4 + ol {
-    font-size: 1em;
+    font-size: 1.08em;
   }
 
   .content.post p {
-    font-size: 1em;
+    font-size: 1.08em;
     margin-bottom: 1.5em;
     color: var(--text-color);
   }
@@ -101,7 +101,7 @@ layout: default
   }
 
   .content.post li {
-    font-size: 1em; /* Changed from 1.08em to 1em to match regular text */
+    font-size: 1.08em; /* Restored to 1.08em to match regular text */
     margin-bottom: 0.5em;
     color: var(--text-color);
   }
