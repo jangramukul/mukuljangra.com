@@ -12,6 +12,7 @@ layout: default
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
+    position: relative; /* For positioning the timeline */
   }
 
   .nav-links a span {
@@ -172,9 +173,57 @@ layout: default
     display: inline-block;
     margin-top: 0.5em !important;
   }
+
+  /* Timeline Styles */
+  .scroll-timeline {
+    position: fixed;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 250px;
+    background-color: #e0e0e0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .timeline-point {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    transition: background-color 0.3s ease;
+    margin-left: -4.5px;
+    position: relative;
+  }
+
+  .timeline-point.active {
+    background-color: #f9bf3b;
+  }
+
+  .timeline-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 0%;
+    background-color: #f9bf3b;
+    z-index: -1;
+  }
 </style>
 
 <div class="content post">
+  <div class="scroll-timeline">
+    <div class="timeline-bar"></div>
+    <div class="timeline-point" data-position="0"></div>
+    <div class="timeline-point" data-position="25"></div>
+    <div class="timeline-point" data-position="50"></div>
+    <div class="timeline-point" data-position="75"></div>
+    <div class="timeline-point" data-position="100"></div>
+  </div>
   <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2 class="post-title">{{ page.title }}</h2>
   <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
@@ -186,4 +235,37 @@ layout: default
   </div>
   {% endif %}
   {{ content }}
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const timelinePoints = document.querySelectorAll('.timeline-point');
+      const timelineBar = document.querySelector('.timeline-bar');
+      
+      function updateTimeline() {
+        // Calculate how far down the page the user has scrolled
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrollPercent = (scrollTop / docHeight) * 100;
+        
+        // Update the timeline bar height
+        timelineBar.style.height = scrollPercent + '%';
+        
+        // Update the active points
+        timelinePoints.forEach(point => {
+          const position = parseInt(point.getAttribute('data-position'));
+          if (scrollPercent >= position) {
+            point.classList.add('active');
+          } else {
+            point.classList.remove('active');
+          }
+        });
+      }
+      
+      // Update timeline on scroll
+      window.addEventListener('scroll', updateTimeline);
+      
+      // Initialize timeline on page load
+      updateTimeline();
+    });
+  </script>
 </div>
