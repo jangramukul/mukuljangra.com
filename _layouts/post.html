@@ -36,11 +36,22 @@ layout: default
   .back-header a {
     color: var(--text-color);
     text-decoration: underline;
+    position: relative;
+    padding-right: 5px;
+    transition: padding-right 0.3s ease;
   }
 
   .back-header a:hover {
     color: var(--link-color-hover);
     text-decoration: underline;
+    padding-right: 25px;
+  }
+  
+  .back-header a:hover::after {
+    content: "←";
+    position: absolute;
+    right: 5px;
+    opacity: 1;
   }
 
   .content.post h2 {
