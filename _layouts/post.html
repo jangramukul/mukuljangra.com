@@ -94,6 +94,7 @@ layout: default
 
   .content.post ul,
   .content.post ol {
+    font-size: 1.08em;
     margin-top: 0.5em;
     margin-bottom: 1.5em;
     padding-left: 1.5em;
@@ -101,14 +102,9 @@ layout: default
   }
 
   .content.post li {
-    font-size: 1.08em; /* Restored to 1.08em to match regular text */
+    font-size: 1.08em;
     margin-bottom: 0.5em;
     color: var(--text-color);
-  }
-  
-  /* Fix for nested lists to ensure consistent font size */
-  .content.post li li {
-    font-size: 1em; /* Ensures nested list items have the same relative size as their parent */
   }
 
   .content.post li:last-child {
