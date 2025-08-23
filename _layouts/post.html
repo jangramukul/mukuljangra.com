@@ -36,11 +36,15 @@ layout: default
   .back-header a {
     color: var(--text-color);
     text-decoration: underline;
+    transition: all 0.3s ease;
   }
 
   .back-header a:hover {
     color: var(--link-color-hover);
     text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 5px;
   }
 
   .content.post h2 {
@@ -90,6 +94,20 @@ layout: default
     font-size: 1.08em;
     margin-bottom: 1.5em;
     color: var(--text-color);
+  }
+  
+  .content.post a {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: all 0.3s ease;
+  }
+  
+  .content.post a:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 5px;
   }
 
   .content.post ul,
@@ -154,6 +172,10 @@ layout: default
   .category-chip:hover {
     background-color: #e0e0e0;
     color: #333;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
   }
 
   .category-chip.active {
