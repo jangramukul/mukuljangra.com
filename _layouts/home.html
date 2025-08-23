@@ -109,32 +109,6 @@
         margin-bottom: 20px;
         color: var(--text-color);
         font-weight: normal;
-        margin-right: 10px;
-      }
-      
-      .blog-header-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      
-      .blog-search-icon-container {
-        margin-left: 10px;
-      }
-      
-      .blog-search-icon-container .search-container {
-        margin-top: 0;
-        background-color: transparent;
-        border: none;
-        padding: 0;
-      }
-      
-      .blog-search-icon-container .search-icon {
-        color: #666;
-      }
-      
-      .blog-search-icon-container .search-icon span {
-        display: none;
       }
 
       .blog-post {
@@ -172,7 +146,6 @@
       .blog-post h2 a:hover {
         color: var(--text-color); /* Keep original text color */
         text-decoration: underline;
-        text-decoration-color: #666666; /* Keep the same color as the border */
         text-decoration-style: solid;
         text-decoration-thickness: 3px;
         text-underline-offset: 5px;
@@ -271,17 +244,23 @@
   </head>
   <body>
     <div class="left-column">
-      {% include sidebar.html %}
+      <div class="profile-section">
+        <h1>👋 Hi, I'm {{ site.site_name }}</h1>
+        <div class="header-label">{{ site.site_tagline }}</div>
+        <ul class="nav-links">
+          <li><a href="/"><span>to</span>Home</a></li>
+          <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
+          <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
+          <li><a href="{{ site.site_twitter }}"><span>follow</span>X</a></li>
+          <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
+        </ul>
+        {% include search.html %}
+      </div>
     </div>
 
     <div class="right-column">
       <div class="blog-list">
-        <div class="blog-header-container">
-          <h1 class="blog-list-header">Blog</h1>
-          <div class="blog-search-icon-container">
-            {% include search.html %}
-          </div>
-        </div>
+        <h1 class="blog-list-header">Blog</h1>
         <div class="category-chips">
           <div class="category-chip active" data-tag="all">All</div>
           {% assign all_tags = "" | split: "" %}
