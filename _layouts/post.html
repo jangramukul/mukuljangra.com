@@ -199,6 +199,25 @@ layout: default
     margin-left: -4.5px;
     position: relative;
   }
+  
+  .timeline-time {
+    position: absolute;
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+  }
+  
+  .timeline-total-time {
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .timeline-left-time {
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 
   .timeline-point.active {
     background-color: #f9bf3b;
@@ -218,11 +237,13 @@ layout: default
 <div class="content post">
   <div class="scroll-timeline">
     <div class="timeline-bar"></div>
+    <div class="timeline-time timeline-total-time" id="total-read-time"></div>
     <div class="timeline-point" data-position="0"></div>
     <div class="timeline-point" data-position="25"></div>
     <div class="timeline-point" data-position="50"></div>
     <div class="timeline-point" data-position="75"></div>
     <div class="timeline-point" data-position="100"></div>
+    <div class="timeline-time timeline-left-time" id="time-left"></div>
   </div>
   <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2 class="post-title">{{ page.title }}</h2>
@@ -240,6 +261,20 @@ layout: default
     document.addEventListener('DOMContentLoaded', function() {
       const timelinePoints = document.querySelectorAll('.timeline-point');
       const timelineBar = document.querySelector('.timeline-bar');
+      const totalReadTimeEl = document.getElementById('total-read-time');
+      const timeLeftEl = document.getElementById('time-left');
+      
+      // Calculate reading time (average reading speed: 200 words per minute)
+      function calculateReadingTime() {
+        const content = document.querySelector('.content.post');
+        const text = content.textContent || content.innerText;
+        const wordCount = text.trim().split(/\s+/).length;
+        const readingTime = Math.ceil(wordCount / 200);
+        return readingTime;
+      }
+      
+      const totalReadingTime = calculateReadingTime();
+      totalReadTimeEl.textContent = totalReadingTime + ' min';
       
       function updateTimeline() {
         // Calculate how far down the page the user has scrolled
@@ -249,6 +284,10 @@ layout: default
         
         // Update the timeline bar height
         timelineBar.style.height = scrollPercent + '%';
+        
+        // Calculate time left based on scroll percentage
+        const timeLeft = Math.ceil(totalReadingTime * (1 - scrollPercent / 100));
+        timeLeftEl.textContent = timeLeft + ' min';
         
         // Update the active points
         timelinePoints.forEach(point => {
