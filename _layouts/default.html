@@ -110,15 +110,6 @@
         }
       }
 
-      .profile-photo {
-        width: 100px;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 50%;
-        display: block;
-        margin: 0 auto 20px auto;
-        border: 3px solid #e0e0e0;
-      }
       .profile-name {
         font-size: 1.5em;
         margin-bottom: 8px;
@@ -142,8 +133,7 @@
   <body>
     <div class="left-column">
       <div class="profile-section">
-        <img src="/static/default_image.png" alt="Profile Photo" class="profile-photo" />
-        <h1>{{ site.site_name }}</h1>
+        <h1>👋 Hi, I'm {{ site.site_name }}</h1>
         <div class="header-label">{{ site.site_tagline }}</div>
         <ul class="nav-links">
           <li><a href="/"><span>to</span>Home</a></li>
