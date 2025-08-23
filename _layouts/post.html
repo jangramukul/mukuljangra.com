@@ -141,18 +141,31 @@ layout: default
   .category-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 20px;
+    gap: 4px;
+    align-items: center;
   }
 
   .category-chip {
-    padding: 4px 10px;
+    padding: 2px 8px;
     background-color: #f0f0f0;
     border-radius: 16px;
-    font-size: 0.8em;
+    font-size: 0.7em;
     transition: all 0.2s ease;
     user-select: none;
     color: #333;
+  }
+  
+  .date-tag-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .content.post p.date {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 0;
+    margin-right: 10px;
   }
   
   .post-title {
@@ -166,13 +179,15 @@ layout: default
 <div class="content post">
   <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2 class="post-title">{{ page.title }}</h2>
-  <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
-  {% if page.tags %}
-  <div class="category-chips">
-    {% for tag in page.tags %}
-    <span class="category-chip">{{ tag }}</span>
-    {% endfor %}
+  <div class="date-tag-container">
+    <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
+    {% if page.tags %}
+    <div class="category-chips">
+      {% for tag in page.tags %}
+      <span class="category-chip">{{ tag }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
   {{ content }}
 </div>
