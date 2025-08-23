@@ -100,20 +100,15 @@ layout: default
     color: var(--text-color);
   }
 
-  /* Base style for all list items */
-  .content.post ul li,
-  .content.post ol li {
-    font-size: 1.08em;
+  .content.post li {
+    font-size: 1.08em; /* Restored to 1.08em to match regular text */
     margin-bottom: 0.5em;
     color: var(--text-color);
   }
   
-  /* Override for nested list items to prevent compounding sizes */
-  .content.post ul ul li,
-  .content.post ul ol li,
-  .content.post ol ul li, 
-  .content.post ol ol li {
-    font-size: 1em;
+  /* Fix for nested lists to ensure consistent font size */
+  .content.post li li {
+    font-size: 1em; /* Ensures nested list items have the same relative size as their parent */
   }
 
   .content.post li:last-child {
