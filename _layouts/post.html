@@ -73,17 +73,20 @@ layout: default
     font-weight: bold;
   }
 
-  /* Ensure text after headings maintains the same font size */
+  .content.post h1 + p,
   .content.post h2 + p,
   .content.post h3 + p,
-  .content.post h4 + p,
+  .content.post h4 + p {
+    font-size: 1.08em;
+  }
+
   .content.post h2 + ul,
   .content.post h3 + ul,
   .content.post h4 + ul,
   .content.post h2 + ol,
   .content.post h3 + ol,
   .content.post h4 + ol {
-    font-size: 1.08em;
+    font-size: 1.03em;
   }
 
   .content.post p {
@@ -101,7 +104,7 @@ layout: default
   }
 
   .content.post li {
-    font-size: 1.08em; /* Restored to 1.08em to match regular text */
+    font-size: 1.03em;
     margin-bottom: 0.5em;
     color: var(--text-color);
   }
