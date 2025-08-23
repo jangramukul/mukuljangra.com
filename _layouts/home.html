@@ -142,6 +142,7 @@
         display: inline-block;
         width: auto;
         font-weight: bold;
+        transition: transform 0.3s ease, border-color 0.3s ease;
       }
 
       .blog-post h2 a {
@@ -149,10 +150,16 @@
         text-decoration: none;
         display: inline-block;
         width: auto;
+        transition: color 0.3s ease;
       }
 
       .blog-post h2 a:hover {
-        color: var(--link-color-hover);
+        color: #8a2be2; /* Modern purple/AI color */
+      }
+      
+      .blog-post h2:hover {
+        transform: translateY(-5px);
+        border-bottom-color: #8a2be2; /* Same purple color for the underline */
       }
 
       .blog-post .date {
