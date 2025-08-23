@@ -155,6 +155,7 @@ header ul a span {
 
 p.date {
   color: var(--date-color);
+  margin: 0;
 }
 p.date a, p.date a:visited {
   color: var(--date-color) !important;
@@ -196,7 +197,7 @@ p.signature {
 
 .presentation section {
   margin-top: 20px;
-  margin-botom: 20px;
+  margin-bottom: 20px;
 }
 .presentation .description {
   margin-bottom: 50px;
