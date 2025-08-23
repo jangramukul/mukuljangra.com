@@ -18,7 +18,7 @@ html {
 }
 body {
   min-height: 100%;
-  font-family: 'Source Code Pro', monospace;
+  font-family: 'Roboto', sans-serif;
   background-color: var(--background-color);
   color: var(--foreground-color);
 }
@@ -38,6 +38,7 @@ ul, ol {
 code {
   color: var(--code-foreground-color);
   background-color: var(--code-background-color);
+  font-family: 'Roboto Mono', monospace;
 }
 pre code {
   overflow-x: auto;
@@ -58,7 +59,7 @@ header h1 {
   font-size: 50px;
   letter-spacing: 15px;
   margin: 0 0 0 4px;
-  font-family: 'Source Code Pro', monospace;
+  font-family: 'Roboto Mono', monospace;
 }
 @media (max-width: 767px) {
   header {
@@ -110,7 +111,7 @@ header ul a span {
   }
 }
 .content h2, .content h3, .content h4 {
-  font-family: 'Source Code Pro', monospace;
+  font-family: 'Roboto', sans-serif;
 }
 .content h2 {
   margin-top: 0;
@@ -174,11 +175,11 @@ p.signature {
 
 .date-header {
   font-weight: bold;
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
 }
 
 .presentation-list .date {
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
   padding-right: 10px;
 }
 .presentation-list small {
@@ -196,7 +197,7 @@ p.signature {
 
 .presentation section {
   margin-top: 20px;
-  margin-botom: 20px;
+  margin-bottom: 20px;
 }
 .presentation .description {
   margin-bottom: 50px;
