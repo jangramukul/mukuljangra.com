@@ -73,8 +73,21 @@ layout: default
     font-weight: bold;
   }
 
+  /* Ensure text after headings maintains the same font size */
+  .content.post h2 + p,
+  .content.post h3 + p,
+  .content.post h4 + p,
+  .content.post h2 + ul,
+  .content.post h3 + ul,
+  .content.post h4 + ul,
+  .content.post h2 + ol,
+  .content.post h3 + ol,
+  .content.post h4 + ol {
+    font-size: 1em;
+  }
+
   .content.post p {
-    font-size: 1.08em;
+    font-size: 1em;
     margin-bottom: 1.5em;
     color: var(--text-color);
   }
@@ -88,8 +101,14 @@ layout: default
   }
 
   .content.post li {
+    font-size: 1em; /* Changed from 1.08em to 1em to match regular text */
     margin-bottom: 0.5em;
     color: var(--text-color);
+  }
+  
+  /* Fix for nested lists to ensure consistent font size */
+  .content.post li li {
+    font-size: 1em; /* Ensures nested list items have the same relative size as their parent */
   }
 
   .content.post li:last-child {
