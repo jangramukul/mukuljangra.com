@@ -138,25 +138,20 @@ layout: default
     align-items: center;
     margin-bottom: 20px;
     flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .separator {
-    color: var(--date-color);
-    font-size: 1.2em;
+    gap: 15px;
   }
 
   .category-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
   }
 
   .category-chip {
-    padding: 4px 8px;
+    padding: 6px 12px;
     background-color: #333;
-    border-radius: 16px;
-    font-size: 0.65em;
+    border-radius: 20px;
+    font-size: 0.7em;
     cursor: pointer;
     transition: all 0.2s ease;
     color: white;
@@ -180,7 +175,6 @@ layout: default
   <div class="date-tag-container">
     <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
     {% if page.tags %}
-    <span class="separator">•</span>
     <div class="category-chips">
       {% for tag in page.tags %}
       <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</a>
