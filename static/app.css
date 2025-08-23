@@ -154,11 +154,11 @@ header ul a span {
 }
 
 p.date {
-  color: var(--date-color);
-  font-size: 0.85em;
+  color: #666;
+  font-size: 0.9em;
 }
 p.date a, p.date a:visited {
-  color: var(--date-color) !important;
+  color: #666 !important;
   text-decoration: underline;
 }
 p.date a:hover, p.date a:active {
