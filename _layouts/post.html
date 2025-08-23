@@ -133,18 +133,11 @@ layout: default
     color: var(--blockquote-color);
   }
 
-  .date-tag-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-
   .category-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-bottom: 20px;
   }
 
   .category-chip {
@@ -172,15 +165,13 @@ layout: default
 <div class="content post">
   <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
   <h2>{{ page.title }}</h2>
-  <div class="date-tag-container">
-    <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
-    {% if page.tags %}
-    <div class="category-chips">
-      {% for tag in page.tags %}
-      <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</a>
-      {% endfor %}
-    </div>
-    {% endif %}
+  <p class="date">{{ site.site_name }} · {{ page.date | date:"%d %B %Y" }}</p>
+  {% if page.tags %}
+  <div class="category-chips">
+    {% for tag in page.tags %}
+    <a href="/?tag={{ tag | replace: ' ', '_' }}" class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</a>
+    {% endfor %}
   </div>
+  {% endif %}
   {{ content }}
 </div>
