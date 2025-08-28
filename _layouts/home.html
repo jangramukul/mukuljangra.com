@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/static/app.css" type="text/css">
     <link rel="stylesheet" href="/static/syntax.css" type="text/css">
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
-    <link rel="stylesheet" href="/static/layout.css" type="text/css">
     <meta name="theme-color" content="#121212">
     <style type="text/css">
       :root {
@@ -25,11 +24,87 @@
         --date-color: #aaa;
         --excerpt-color: #aaaaaa;
       }
-    </style>
+
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .left-column {
+        width: 300px;
+        background-color: var(--sidebar-bg);
+        padding: 40px;
+        position: fixed;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .right-column {
+        margin-left: 300px;
+        flex: 1;
+        padding: 40px;
+        background-color: #121212;
+      }
+
+      .profile-section {
+        color: var(--text-color);
+      }
+
+      .profile-section h1 {
+        font-family: 'Source Code Pro', monospace;
+        font-weight: 700;
+        font-size: 1.4em;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+
+      .profile-section .header-label {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .nav-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .nav-links li {
+        margin-bottom: 7px;
+      }
+
+      .nav-links a {
+        color: var(--text-color);
+        text-decoration: none;
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.1em;
+        display: flex;
+        align-items: center;
+      }
+
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+
+      .nav-links a span {
+        font-size: 0.9em;
+        opacity: 0.8;
+        margin-right: 4px;
+      }
 
       .blog-list {
         margin: 0 auto;
-      }
+        padding: 0 40px;
+        padding-right: 20%;
       }
 
       .blog-list-header {
@@ -170,20 +245,22 @@
     </style>
   </head>
   <body>
-    <div class="top-header">
-      <h1 class="site-title">{{ site.site_name }}</h1>
-      <div class="site-description">{{ site.site_tagline }}</div>
-      <ul class="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="{{ site.site_github }}">GitHub</a></li>
-        <li><a href="{{ site.site_mastodon }}">Mastodon</a></li>
-        <li><a href="{{ site.site_twitter }}">X</a></li>
-        <li><a href="{{ site.site_nostr }}">Nostr</a></li>
-      </ul>
-      {% include search.html %}
+    <div class="left-column">
+      <div class="profile-section">
+        <h1>{{ site.site_name }}</h1>
+        <div class="header-label">{{ site.site_tagline }}</div>
+        <ul class="nav-links">
+          <li><a href="/"><span>to</span>Home</a></li>
+          <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
+          <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
+          <li><a href="{{ site.site_twitter }}"><span>follow</span>X</a></li>
+          <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
+        </ul>
+        {% include search.html %}
+      </div>
     </div>
 
-    <div class="main-content">
+    <div class="right-column">
       <div class="blog-list">
         <h1 class="blog-list-header">Blog</h1>
         <div class="category-chips">
