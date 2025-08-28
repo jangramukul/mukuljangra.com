@@ -226,22 +226,6 @@
         display: none;
       }
       
-      .minimal-nav {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-      }
-      
-      .nav-link {
-        color: var(--link-color);
-        text-decoration: none;
-        font-size: 0.9em;
-      }
-      
-      .nav-link:hover {
-        text-decoration: underline;
-      }
-
       @media (max-width: 768px) {
         .right-column {
           padding: 20px;
@@ -257,18 +241,71 @@
           max-width: 100%;
         }
       }
+    
+      /* Introduction section styling */
+      .intro-section {
+        padding: 40px 0;
+        text-align: left;
+        max-width: 800px;
+        margin: 0 auto 30px;
+      }
+      
+      .intro-greeting {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.8em;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+      
+      .intro-tagline {
+        font-size: 1.1em;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        color: var(--text-color);
+        opacity: 0.9;
+      }
+      
+      .intro-social {
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        font-size: 0.9em;
+      }
+      
+      .intro-social a {
+        color: var(--link-color);
+        text-decoration: none;
+      }
+      
+      .intro-social a:hover {
+        text-decoration: underline;
+      }
+      
+      .social-divider {
+        color: var(--text-color);
+        opacity: 0.5;
+      }
     </style>
   </head>
   <body>
     <div class="right-column">
+      <!-- Introduction Section -->
+      <div class="intro-section">
+        <div class="intro-greeting">Hi, I'm {{ site.site_name }} 🐝</div>
+        <div class="intro-tagline">{{ site.site_tagline }}</div>
+        <div class="intro-social">
+          <a href="{{ site.site_github }}">GitHub</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_mastodon }}">Mastodon</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_twitter }}">X</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_nostr }}">Nostr</a>
+        </div>
+      </div>
+      
       <div class="blog-list">
         <h1 class="blog-list-header">Blog</h1>
-        <div class="minimal-nav">
-          <a href="{{ site.site_github }}" class="nav-link">GitHub</a>
-          <a href="{{ site.site_mastodon }}" class="nav-link">Mastodon</a>
-          <a href="{{ site.site_twitter }}" class="nav-link">X</a>
-          <a href="{{ site.site_nostr }}" class="nav-link">Nostr</a>
-        </div>
         <div class="category-chips">
           <div class="category-chip active" data-tag="all">All</div>
           {% assign all_tags = "" | split: "" %}

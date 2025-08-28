@@ -1,199 +1,261 @@
----
-layout: default
----
-<style type="text/css">
-  .content.post {
-    font-size: 16px; /* Changed from 1.08em to absolute value for better base sizing */
-    line-height: 1.6;
-    margin: 0 auto;
-    color: var(--text-color);
-    max-width: 800px;
-    overflow-x: hidden;
-    box-sizing: border-box;
-  }
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.site_name }}</title>
+    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
+    <link rel="stylesheet" href="/static/app.css" type="text/css">
+    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
+    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
+    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
+    <meta name="theme-color" content="#121212">
+    <style type="text/css">
+      :root {
+        --background-color: #121212;
+        --text-color: #e0e0e0;
+        --sidebar-bg: #1a1a1a;
+        --code-bg: #2a2a2a;
+        --blockquote-color: #aaa;
+        --blockquote-border: #444;
+        --link-color: #90caf9;
+        --link-color-hover: #bbdefb;
+      }
 
-  .nav-links a span {
-    font-size: 0.9em;
-    opacity: 0.8;
-    margin-right: 4px;
-  }
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        min-height: 100vh;
+      }
 
-  .back-header {
-    font-family: 'Source Code Pro', monospace;
-    font-size: 1.1em;
-    margin-bottom: 15px;
-    color: var(--text-color);
-    font-weight: normal;
-    text-decoration: none;
-  }
+      .right-column {
+        width: 100%;
+        flex: 1;
+        padding: 40px;
+        background-color: #121212;
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      
+      /* Ensure all main content has consistent width across the site */
+      .content {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      
+      .content.post {
+        font-size: 16px; /* Changed from 1.08em to absolute value for better base sizing */
+        line-height: 1.6;
+        margin: 0 auto;
+        color: var(--text-color);
+        max-width: 800px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+      }
 
-  .back-header:hover {
-    color: var(--link-color-hover);
-  }
+      .back-header {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.1em;
+        margin-bottom: 15px;
+        color: var(--text-color);
+        font-weight: normal;
+        text-decoration: none;
+      }
 
-  .back-header a {
-    color: var(--text-color);
-    text-decoration: underline;
-  }
+      .back-header:hover {
+        color: var(--link-color-hover);
+      }
 
-  .back-header a:hover {
-    color: var(--link-color-hover);
-    text-decoration: underline;
-  }
+      .back-header a {
+        color: var(--text-color);
+        text-decoration: underline;
+      }
 
-  .content.post h2 {
-    font-family: 'Source Code Pro', monospace;
-    font-size: 1.4em;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
-    border-bottom: none;
-    font-weight: bold;
-  }
+      .back-header a:hover {
+        color: var(--link-color-hover);
+        text-decoration: underline;
+      }
 
-  .content.post h3 {
-    font-family: 'Source Code Pro', monospace;
-    font-size: 1.2em;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
-    border-bottom: none;
-    font-weight: bold;
-  }
+      .content.post h2 {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.4em;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        color: var(--text-color);
+        border-bottom: none;
+        font-weight: bold;
+      }
 
-  .content.post h4 {
-    font-family: 'Source Code Pro', monospace;
-    font-size: 1.1em;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
-    border-bottom: none;
-    font-weight: bold;
-  }
+      .content.post h3 {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.2em;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        color: var(--text-color);
+        border-bottom: none;
+        font-weight: bold;
+      }
 
-  /* Ensure text after headings maintains the same font size */
-  .content.post h2 + p,
-  .content.post h3 + p,
-  .content.post h4 + p,
-  .content.post h2 + ul,
-  .content.post h3 + ul,
-  .content.post h4 + ul,
-  .content.post h2 + ol,
-  .content.post h3 + ol,
-  .content.post h4 + ol {
-    font-size: 1.08em;
-  }
+      .content.post h4 {
+        font-family: 'Source Code Pro', monospace;
+        font-size: 1.1em;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        color: var(--text-color);
+        border-bottom: none;
+        font-weight: bold;
+      }
 
-  .content.post p {
-    font-size: 1.08em;
-    margin-bottom: 1.5em;
-    color: var(--text-color);
-  }
+      /* Ensure text after headings maintains the same font size */
+      .content.post h2 + p,
+      .content.post h3 + p,
+      .content.post h4 + p,
+      .content.post h2 + ul,
+      .content.post h3 + ul,
+      .content.post h4 + ul,
+      .content.post h2 + ol,
+      .content.post h3 + ol,
+      .content.post h4 + ol {
+        font-size: 1.08em;
+      }
 
-  .content.post p.date {
-    font-size: 0.9em;
-    color: #666;
-  }
+      .content.post p {
+        font-size: 1.08em;
+        margin-bottom: 1.5em;
+        color: var(--text-color);
+      }
 
-  .content.post ul,
-  .content.post ol {
-    font-size: 1.01em;
-    margin-top: 0.5em;
-    margin-bottom: 1.5em;
-    padding-left: 1.5em;
-    color: var(--text-color);
-  }
+      .content.post p.date {
+        font-size: 0.9em;
+        color: #666;
+      }
 
-  .content.post li {
-    font-size: 1.01em;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
-  }
+      .content.post ul,
+      .content.post ol {
+        font-size: 1.01em;
+        margin-top: 0.5em;
+        margin-bottom: 1.5em;
+        padding-left: 1.5em;
+        color: var(--text-color);
+      }
 
-  .content.post li:last-child {
-    margin-bottom: 0;
-  }
+      .content.post li {
+        font-size: 1.01em;
+        margin-bottom: 0.5em;
+        color: var(--text-color);
+      }
 
-  .content.post code {
-    background-color: var(--code-bg);
-    color: var(--text-color);
-    word-wrap: break-word;
-    white-space: pre-wrap;
-  }
+      .content.post li:last-child {
+        margin-bottom: 0;
+      }
 
-  .content.post pre {
-    background-color: var(--code-bg);
-    color: var(--text-color);
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
+      .content.post code {
+        background-color: var(--code-bg);
+        color: var(--text-color);
+        word-wrap: break-word;
+        white-space: pre-wrap;
+      }
 
-  .content.post blockquote {
-    border-left: 4px solid var(--blockquote-border);
-    padding-left: 1em;
-    color: var(--blockquote-color);
-  }
+      .content.post pre {
+        background-color: var(--code-bg);
+        color: var(--text-color);
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
 
-  .category-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    align-items: center;
-  }
+      .content.post blockquote {
+        border-left: 4px solid var(--blockquote-border);
+        padding-left: 1em;
+        color: var(--blockquote-color);
+      }
 
-  .category-chip {
-    padding: 2px 8px;
-    background-color: #f0f0f0;
-    border-radius: 16px;
-    font-size: 0.7em;
-    transition: all 0.2s ease;
-    user-select: none;
-    color: #333;
-  }
-  
-  .date-tag-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .content.post p.date {
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 0;
-    margin-right: 10px;
-  }
-  
-  .post-title {
-    border-bottom: none !important;
-    padding-bottom: 2px;
-    display: inline-block;
-    margin-top: 0.5em !important;
-    text-decoration: none !important;
-  }
-  
-  @media (max-width: 768px) {
-    .content.post {
-      padding: 0;
-      max-width: 100%;
-    }
-  }
-</style>
+      .category-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+      }
 
-<div class="content post">
-  <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
-  <h2 class="post-title">{{ page.title }}</h2>
-  <div class="date-tag-container">
-    <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
-    {% if page.tags %}
-    <div class="category-chips">
-      {% for tag in page.tags %}
-      <span class="category-chip">{{ tag }}</span>
-      {% endfor %}
+      .category-chip {
+        padding: 2px 8px;
+        background-color: #f0f0f0;
+        border-radius: 16px;
+        font-size: 0.7em;
+        transition: all 0.2s ease;
+        user-select: none;
+        color: #333;
+      }
+      
+      .date-tag-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .content.post p.date {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 0;
+        margin-right: 10px;
+      }
+      
+      .post-title {
+        border-bottom: none !important;
+        padding-bottom: 2px;
+        display: inline-block;
+        margin-top: 0.5em !important;
+        text-decoration: none !important;
+      }
+      
+      @media (max-width: 768px) {
+        .right-column {
+          padding: 20px;
+        }
+        
+        .content {
+          padding: 0;
+          max-width: 100%;
+        }
+        
+        .content.post {
+          padding: 0;
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="right-column">
+      <div class="content post">
+        <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
+        <h2 class="post-title">{{ page.title }}</h2>
+        <div class="date-tag-container">
+          <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
+          {% if page.tags %}
+          <div class="category-chips">
+            {% for tag in page.tags %}
+            <span class="category-chip">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {{ content }}
+      </div>
     </div>
-    {% endif %}
-  </div>
-  {{ content }}
-</div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // Set dark theme as default
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      });
+    </script>
+  </body>
+</html>
