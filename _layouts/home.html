@@ -21,6 +21,8 @@
         --blockquote-border: #444;
         --link-color: #90caf9;
         --link-color-hover: #bbdefb;
+        --date-color: #aaa;
+        --excerpt-color: #aaaaaa;
       }
 
       body {
@@ -129,7 +131,7 @@
         font-family: 'Source Code Pro', monospace;
         font-size: 1.4em;
         margin-bottom: 10px;
-        border-bottom: 5px solid #666666;
+        border-bottom: none !important;
         padding-bottom: 2px;
         display: inline-block;
         width: auto;
@@ -139,7 +141,7 @@
 
       .blog-post h2 a {
         color: var(--text-color);
-        text-decoration: none;
+        text-decoration: none !important;
         display: inline-block;
         width: auto;
         transition: color 0.3s ease;
@@ -152,11 +154,11 @@
       
       .blog-post h2:hover {
         transform: translateY(-5px);
-        border-bottom-color: #666666;
+        border-bottom: none !important;
       }
 
       .blog-post .date {
-        color: #666;
+        color: var(--date-color);
         font-size: 0.9em;
       }
       
@@ -183,7 +185,7 @@
       }
 
       .blog-post .excerpt {
-        color: #333;
+        color: var(--excerpt-color);
         line-height: 1.6;
         font-size: 1.05em;
         width: 100%;
@@ -202,20 +204,21 @@
 
       .category-chip {
         padding: 6px 12px;
-        background-color: #f0f0f0;
+        background-color: #2a2a2a;
         border-radius: 16px;
         font-size: 0.9em;
         cursor: pointer;
         transition: all 0.2s ease;
+        color: #e0e0e0;
       }
 
       .category-chip:hover {
-        background-color: #e0e0e0;
+        background-color: #3a3a3a;
       }
 
       .category-chip.active {
-        background-color: #333;
-        color: white;
+        background-color: #90caf9;
+        color: #121212;
       }
 
       .blog-post {
