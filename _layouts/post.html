@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#121212">
+    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
     <style type="text/css">
       :root {
         --background-color: #121212;
@@ -24,8 +25,13 @@
         --link-color-hover: #bbdefb;
       }
 
+      /* Ensure backgrounds are transparent to show gradient */
+      body, .right-column, .content, .content.post {
+        background-color: transparent !important;
+      }
+
       body {
-        background-color: var(--background-color);
+        /* background-color removed to show gradient */
         color: var(--text-color);
         margin: 0;
         padding: 0;
@@ -37,7 +43,7 @@
         width: 100%;
         flex: 1;
         padding: 40px;
-        background-color: #121212;
+        /* background-color removed to allow gradient to show through */
         max-width: 960px;
         margin: 0 auto;
       }
@@ -244,8 +250,10 @@
     </style>
   </head>
   <body>
+    <div class="gradient-bg" style="z-index: -1;"></div>
+    <div class="main-background" style="z-index: -2;"></div>
     <div class="right-column">
-      <div class="content post">
+      <div class="content post" style="background-color: transparent !important;">
         <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
         <h2 class="post-title">{{ page.title }}</h2>
         <div class="date-tag-container">

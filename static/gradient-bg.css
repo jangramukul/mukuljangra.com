@@ -15,7 +15,7 @@
     transparent 100%
   );
   filter: blur(80px); /* Very high blur for an extremely soft effect */
-  z-index: -10; /* Ensure it's behind all content */
+  z-index: -999; /* Ensure it's behind ALL content */
   animation: pulse 15s infinite alternate;
   pointer-events: none; /* Ensures it doesn't interfere with mouse events */
 }
@@ -28,7 +28,7 @@
   right: 0;
   bottom: 0;
   background-color: #121212; /* Dark background color */
-  z-index: -15; /* Between gradient and content */
+  z-index: -1000; /* Between gradient and content, but behind everything */
   pointer-events: none; /* Ensures it doesn't interfere with mouse events */
 }
 
