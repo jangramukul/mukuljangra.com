@@ -8,10 +8,10 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(65, 105, 225, 0.15) 0%, /* Royal blue with extremely low opacity */
-    rgba(30, 144, 255, 0.12) 30%, /* Dodger blue with extremely low opacity */
-    rgba(100, 149, 237, 0.09) 60%, /* Cornflower blue with extremely low opacity */
-    rgba(135, 206, 250, 0.03) 80%, /* Light sky blue with barely visible opacity */
+    rgba(162, 224, 44, 0.15) 0%, /* Lime Green with extremely low opacity */
+    rgba(162, 224, 44, 0.12) 30%, /* Lime Green with extremely low opacity */
+    rgba(162, 224, 44, 0.09) 60%, /* Lime Green with extremely low opacity */
+    rgba(162, 224, 44, 0.03) 80%, /* Lime Green with barely visible opacity */
     transparent 100%
   );
   filter: blur(80px); /* Very high blur for an extremely soft effect */
