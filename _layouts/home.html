@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/static/app.css" type="text/css">
     <link rel="stylesheet" href="/static/syntax.css" type="text/css">
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
+    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
     <meta name="theme-color" content="#121212">
     <style type="text/css">
       :root {
@@ -32,15 +33,18 @@
         padding: 0;
         display: flex;
         min-height: 100vh;
+        position: relative; /* Add position relative to body */
       }
 
       .right-column {
         width: 100%;
         flex: 1;
         padding: 40px;
-        background-color: #121212;
+        background-color: transparent; /* Changed from solid color to transparent */
         max-width: 960px;
         margin: 0 auto;
+        position: relative; /* Add position relative */
+        z-index: 1; /* Ensure content is above gradient but content is still visible */
       }
 
       .profile-section {
@@ -288,6 +292,9 @@
     </style>
   </head>
   <body>
+    <div class="gradient-bg"></div>
+    <!-- Main background that sits behind content but above gradients -->
+    <div class="main-background"></div>
     <div class="right-column">
       <!-- Introduction Section -->
       <div class="intro-section">
