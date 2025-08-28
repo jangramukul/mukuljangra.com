@@ -1,16 +1,16 @@
 :root {
-  --background-color: #fff;
-  --foreground-color: #333;
-  --link-color-hue: 151;
-  --link-color: hsl(var(--link-color-hue),44.7%,50%);
-  --link-color-hover: hsl(var(--link-color-hue),44.7%,45%);
-  --signature-color: #666;
-  --date-color: #aaa;
-  --header-background-color: #111;
+  --background-color: #121212;
+  --foreground-color: #e0e0e0;
+  --link-color-hue: 210;
+  --link-color: hsl(var(--link-color-hue),80%,75%);
+  --link-color-hover: hsl(var(--link-color-hue),80%,85%);
+  --signature-color: #aaa;
+  --date-color: #999;
+  --header-background-color: #1a1a1a;
   --header-foreground-color: #eee;
   --header-link-color: #ddd;
-  --code-background-color: #f6f6f6;
-  --code-foreground-color: #444;
+  --code-background-color: #2a2a2a;
+  --code-foreground-color: #e0e0e0;
 }
 
 html {
@@ -262,9 +262,9 @@ b, strong {
 
 .post-tag {
   padding: 3px 8px;
-  background-color: #f0f0f0;
+  background-color: #2a2a2a;
   border-radius: 12px;
   font-size: 0.8em;
-  color: #333;
+  color: #e0e0e0;
   display: inline-block;
 }
