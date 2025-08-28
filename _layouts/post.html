@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#121212">
+    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
     <style type="text/css">
       :root {
         --background-color: #121212;
@@ -244,6 +245,9 @@
     </style>
   </head>
   <body>
+    <div class="gradient-bg"></div>
+    <!-- Main background that sits behind content but above gradients -->
+    <div class="main-background"></div>
     <div class="right-column">
       <div class="content post">
         <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
