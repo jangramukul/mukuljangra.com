@@ -34,22 +34,13 @@
         min-height: 100vh;
       }
 
-      .left-column {
-        width: 300px;
-        background-color: var(--sidebar-bg);
-        padding: 40px;
-        position: fixed;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-
       .right-column {
-        margin-left: 300px;
+        width: 100%;
         flex: 1;
         padding: 40px;
         background-color: #121212;
+        max-width: 960px;
+        margin: 0 auto;
       }
 
       .profile-section {
@@ -103,8 +94,14 @@
 
       .blog-list {
         margin: 0 auto;
-        padding: 0 40px;
-        padding-right: 20%;
+        padding: 0;
+        max-width: 800px;
+      }
+      
+      /* Ensure all content has consistent width */
+      .content {
+        max-width: 800px;
+        margin: 0 auto;
       }
 
       .blog-list-header {
@@ -228,41 +225,50 @@
       .blog-post.hidden {
         display: none;
       }
+      
+      .minimal-nav {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      
+      .nav-link {
+        color: var(--link-color);
+        text-decoration: none;
+        font-size: 0.9em;
+      }
+      
+      .nav-link:hover {
+        text-decoration: underline;
+      }
 
       @media (max-width: 768px) {
-        body {
-          flex-direction: column;
-        }
-        .left-column {
-          width: 100%;
-          height: auto;
-          position: relative;
-        }
         .right-column {
-          margin-left: 0;
+          padding: 20px;
+        }
+        
+        .blog-list {
+          padding: 0;
+          max-width: 100%;
+        }
+        
+        .content {
+          padding: 0;
+          max-width: 100%;
         }
       }
     </style>
   </head>
   <body>
-    <div class="left-column">
-      <div class="profile-section">
-        <h1>{{ site.site_name }}</h1>
-        <div class="header-label">{{ site.site_tagline }}</div>
-        <ul class="nav-links">
-          <li><a href="/"><span>to</span>Home</a></li>
-          <li><a href="{{ site.site_github }}"><span>fork</span>GitHub</a></li>
-          <li><a href="{{ site.site_mastodon }}"><span>follow</span>Mastodon</a></li>
-          <li><a href="{{ site.site_twitter }}"><span>follow</span>X</a></li>
-          <li><a href="{{ site.site_nostr }}"><span>follow</span>Nostr</a></li>
-        </ul>
-        {% include search.html %}
-      </div>
-    </div>
-
     <div class="right-column">
       <div class="blog-list">
         <h1 class="blog-list-header">Blog</h1>
+        <div class="minimal-nav">
+          <a href="{{ site.site_github }}" class="nav-link">GitHub</a>
+          <a href="{{ site.site_mastodon }}" class="nav-link">Mastodon</a>
+          <a href="{{ site.site_twitter }}" class="nav-link">X</a>
+          <a href="{{ site.site_nostr }}" class="nav-link">Nostr</a>
+        </div>
         <div class="category-chips">
           <div class="category-chip active" data-tag="all">All</div>
           {% assign all_tags = "" | split: "" %}
