@@ -277,15 +277,30 @@
           margin: 0 auto 15px; /* Reduced bottom margin from 20px to 15px */
         }
         
-        /* Simplified mobile styling for social links */
         .intro-social {
-          margin: 10px 0 15px 0;
-          padding: 6px 10px;
-          text-align: left;
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          gap: 8px;
+          margin-top: 10px;
+          margin-bottom: 15px;
+          font-size: 0.85em;
         }
         
         .intro-social a {
-          font-size: 0.9em;
+          padding: 5px 0;
+        }
+      }
+      
+      /* Additional styling for medium-sized screens like 13-inch MacBooks */
+      @media (min-width: 769px) and (max-width: 1280px) {
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          gap: 10px;
+          margin-top: 10px;
+          margin-bottom: 15px;
         }
       }
     
@@ -315,21 +330,22 @@
       }
       
       .intro-social {
-        display: block; /* Change to block display */
-        margin: 10px 0 20px 0; /* Better margins */
-        width: 100%; /* Full width */
-        background-color: rgba(42, 42, 42, 0.3); /* Slight background to make it visible */
-        padding: 8px 12px; /* Add some padding */
-        border-radius: 4px; /* Rounded corners */
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        font-size: 0.9em;
+        flex-wrap: wrap;
+        margin-top: 15px;
+        margin-bottom: 20px;
+        width: 100%; /* Ensure full width */
       }
       
       .intro-social a {
         color: var(--link-color);
         text-decoration: none;
-        padding: 4px 2px;
+        padding: 4px 0;
         display: inline-block;
-        font-weight: 600; /* Make links more bold */
-        font-size: 0.95em; /* Slightly larger font */
+        font-weight: 500; /* Add some weight to make links more visible */
       }
       
       .intro-social a:hover {
@@ -373,7 +389,8 @@
       <!-- Introduction Section -->
       <div class="intro-section">
         <div class="intro-greeting" id="typed-greeting"></div>
-        <div class="intro-social" id="social-links" style="display: block !important; visibility: visible !important;">
+        <div class="intro-tagline" id="typed-tagline"></div>
+        <div class="intro-social">
           <a href="{{ site.site_github }}">GitHub</a>
           <span class="social-divider">/</span>
           <a href="{{ site.site_mastodon }}">Mastodon</a>
@@ -381,8 +398,6 @@
           <a href="{{ site.site_twitter }}">X</a>
           <span class="social-divider">/</span>
           <a href="{{ site.site_nostr }}">Nostr</a>
-        </div>
-        <div class="intro-tagline" id="typed-tagline"></div>
         </div>
       </div>
       
@@ -490,13 +505,8 @@
         // Typing animation
         const typedGreeting = document.getElementById('typed-greeting');
         const typedTagline = document.getElementById('typed-tagline');
-        const socialLinks = document.getElementById('social-links');
         const greetingText = "Hi, I'm {{ site.site_name }} 🐝";
         const taglineText = "{{ site.site_tagline }}";
-        
-        // Ensure social links are visible immediately
-        socialLinks.style.visibility = 'visible';
-        socialLinks.style.opacity = '1';
         
         // Function to create typing effect
         function typeText(element, text, speed, callback) {
