@@ -1,0 +1,69 @@
+/* Option 3: Small Icon and Colored Text */
+
+.content.post h2 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.4em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: #a2e02c;
+  padding-bottom: 5px;
+  font-weight: bold;
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  position: relative;
+  padding-left: 24px;
+}
+
+.content.post h2::before {
+  content: "▶";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.7em;
+  color: #a2e02c;
+}
+
+.content.post h3 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.2em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: #a2e02c;
+  padding-bottom: 3px;
+  font-weight: bold;
+  display: block;
+  position: relative;
+  padding-left: 20px;
+}
+
+.content.post h3::before {
+  content: "▷";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  font-size: 0.7em;
+  color: #a2e02c;
+}
+
+.content.post h4 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.1em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: #a2e02c;
+  padding-bottom: 2px;
+  font-weight: bold;
+  display: block;
+  position: relative;
+  padding-left: 16px;
+}
+
+.content.post h4::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  font-size: 0.8em;
+  color: #a2e02c;
+}

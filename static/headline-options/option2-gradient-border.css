@@ -1,0 +1,42 @@
+/* Option 2: Gradient Bottom Border Style */
+
+.content.post h2 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.4em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--text-color);
+  border-bottom: 2px solid;
+  border-image: linear-gradient(to right, #a2e02c, transparent) 1;
+  padding-bottom: 5px;
+  font-weight: bold;
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+.content.post h3 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.2em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--text-color);
+  border-bottom: 1px solid;
+  border-image: linear-gradient(to right, #a2e02c, transparent) 1;
+  padding-bottom: 3px;
+  font-weight: bold;
+  display: block;
+}
+
+.content.post h4 {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1.1em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  color: var(--text-color);
+  border-bottom: 1px solid;
+  border-image: linear-gradient(to right, #a2e02c, transparent) 1;
+  padding-bottom: 2px;
+  font-weight: bold;
+  display: block;
+}

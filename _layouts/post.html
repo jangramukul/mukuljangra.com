@@ -95,44 +95,47 @@
         font-family: 'Source Code Pro', monospace;
         font-size: 1.4em;
         margin-top: 1.5em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.8em; /* Increased bottom margin */
         color: var(--text-color);
-        border-bottom: 2px dotted #a2e02c;
-        border-bottom-style: dotted;
-        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 4px, transparent 4px, transparent 12px) 0 0 2;
-        padding-bottom: 5px;
+        border-left: 4px solid #a2e02c;
+        padding: 4px 0 4px 10px;
+        background-color: rgba(162, 224, 44, 0.07);
+        border-bottom: none;
+        border-image: none;
         font-weight: bold;
         width: 100%;
         max-width: 100%;
-        display: inline-block;
+        display: block;
       }
 
       .content.post h3 {
         font-family: 'Source Code Pro', monospace;
         font-size: 1.2em;
         margin-top: 1.5em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.8em; /* Increased bottom margin */
         color: var(--text-color);
-        border-bottom: 1px dotted #a2e02c;
-        border-bottom-style: dotted;
-        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 3px, transparent 3px, transparent 10px) 0 0 1;
-        padding-bottom: 3px;
+        border-left: 3px solid #a2e02c;
+        padding: 2px 0 2px 8px;
+        background-color: rgba(162, 224, 44, 0.05);
+        border-bottom: none;
+        border-image: none;
         font-weight: bold;
-        display: inline-block;
+        display: block;
       }
 
       .content.post h4 {
         font-family: 'Source Code Pro', monospace;
         font-size: 1.1em;
         margin-top: 1.5em;
-        margin-bottom: 0.5em;
+        margin-bottom: 0.8em; /* Increased bottom margin */
         color: var(--text-color);
-        border-bottom: 1px dotted #a2e02c;
-        border-bottom-style: dotted;
-        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 2px, transparent 2px, transparent 8px) 0 0 1;
-        padding-bottom: 2px;
+        border-left: 2px solid #a2e02c;
+        padding: 1px 0 1px 6px;
+        background-color: rgba(162, 224, 44, 0.03);
+        border-bottom: none;
+        border-image: none;
         font-weight: bold;
-        display: inline-block;
+        display: block;
       }
 
       /* Ensure text after headings maintains the same font size */
@@ -166,16 +169,29 @@
         font-size: 1.01em;
         margin-top: 0.5em;
         margin-bottom: 1.5em;
-        padding-left: 1.5em;
+        padding-left: 2em; /* Increased padding to ensure list markers are visible */
         color: var(--text-color);
         max-width: 100%;
         box-sizing: border-box;
+        list-style-position: outside; /* Ensure list markers are outside the text flow */
+      }
+
+      /* Fix lists that come directly after headings */
+      .content.post h2 + ul,
+      .content.post h2 + ol,
+      .content.post h3 + ul,
+      .content.post h3 + ol,
+      .content.post h4 + ul,
+      .content.post h4 + ol {
+        padding-left: 2.5em; /* Extra padding for lists after headings */
+        margin-top: 1em; /* Add a bit more margin to separate from heading */
       }
 
       .content.post li {
         font-size: 1.01em;
         margin-bottom: 0.5em;
         color: var(--text-color);
+        padding-left: 0.25em; /* Small padding to prevent marker overlap */
       }
 
       .content.post li:last-child {
@@ -303,20 +319,43 @@
         margin-right: 10px;
       }
       
+      /* Simple post title without any decorations */
       .post-title {
+        border: none !important;
         border-bottom: none !important;
         border-image: none !important;
-        padding-bottom: 2px;
-        display: inline-block;
+        border-left: none !important;
+        background: none !important;
+        display: block !important;
         margin-top: 0.5em !important;
+        margin-bottom: 0.5em !important;
+        padding: 0 !important;
         text-decoration: none !important;
+        font-size: 2em !important;
+        color: var(--text-color) !important;
       }
       
-      /* Override headings styling for post title */
+      /* Override headings styling for post title - remove all decorations */
       h2.post-title {
+        border: none !important;
         border-bottom: none !important;
         border-image: none !important;
+        border-left: none !important;
+        background: none !important;
+        padding: 0 !important;
         text-decoration: none !important;
+        display: block !important;
+        color: var(--text-color) !important;
+        position: static !important;
+      }
+      
+      /* Extra selector to override any ::before or ::after decorations */
+      h2.post-title::before,
+      h2.post-title::after,
+      .post-title::before,
+      .post-title::after {
+        display: none !important;
+        content: none !important;
       }
       
       /* Table of Contents Styles */
