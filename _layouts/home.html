@@ -275,6 +275,14 @@
           padding: 60px 0 30px 0; /* Reduced top padding from 80px to 60px and bottom from 40px to 30px */
           margin: 0 auto 15px; /* Reduced bottom margin from 20px to 15px */
         }
+        
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 15px;
+          width: 100%;
+        }
       }
     
       /* Introduction section styling */
@@ -307,11 +315,15 @@
         justify-content: flex-start;
         gap: 10px;
         font-size: 0.9em;
+        flex-wrap: wrap;
+        margin-top: 15px;
       }
       
       .intro-social a {
         color: var(--link-color);
         text-decoration: none;
+        padding: 4px 0;
+        display: inline-block;
       }
       
       .intro-social a:hover {
@@ -321,6 +333,8 @@
       .social-divider {
         color: var(--text-color);
         opacity: 0.5;
+        display: inline-block;
+        padding: 4px 0;
       }
     </style>
   </head>
