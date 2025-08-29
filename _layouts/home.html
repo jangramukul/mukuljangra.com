@@ -7,14 +7,22 @@
     <title>{{ site.site_name }}</title>
     <!-- Emoji favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐝</text></svg>">
-    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Code+Pro:wght@400;600&display=swap" type="text/css">
-    <link rel="stylesheet" href="/static/app.css" type="text/css">
-    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
-    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
-    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
-    <link rel="stylesheet" href="/static/binary-animation.css" type="text/css">
-    <link rel="stylesheet" href="/static/footer.css" type="text/css">
+    <!-- Inline critical CSS for faster loading -->
+    <link rel="stylesheet" href="/static/critical.css" type="text/css">
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <!-- Preload critical JS -->
+    <link rel="preload" href="/static/js/encryption-animation.js" as="script">
+    <!-- Non-critical CSS loaded asynchronously -->
+    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/app.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/syntax.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/binary-animation.css" type="text/css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/footer.css" type="text/css" media="print" onload="this.media='all'">
     <meta name="theme-color" content="#121212">
     <style type="text/css">
       :root {
@@ -505,6 +513,16 @@
         
         // Function to create typing effect
         function typeText(element, text, speed, callback) {
+          // On mobile, just show the text immediately
+          if (window.innerWidth < 768) {
+            element.textContent = text;
+            element.classList.add('typing-complete');
+            if (callback) {
+              setTimeout(callback, 100);
+            }
+            return;
+          }
+          
           let i = 0;
           element.textContent = ''; // Clear the element first
           
@@ -532,8 +550,8 @@
       });
     </script>
     
-    <!-- Animation scripts -->
-    <script src="/static/js/binary-animation.js"></script>
+    <!-- Animation scripts with async/defer -->
+    <script src="/static/js/binary-animation.js" defer></script>
     <script src="/static/js/encryption-animation.js"></script>
     
     {% include footer.html %}

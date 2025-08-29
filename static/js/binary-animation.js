@@ -1,5 +1,10 @@
 // Binary animation script
 document.addEventListener('DOMContentLoaded', function() {
+  // Skip animation on mobile devices
+  if (window.innerWidth < 768) {
+    return;
+  }
+  
   // Check if animation container already exists (to avoid duplicates)
   let container = document.querySelector('.binary-animation-container');
   
@@ -67,13 +72,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }, duration * 1000);
   }
   
-  // Create digits at intervals (slightly more frequently for top-left area)
-  setInterval(createBinarySequence, 300);
+  // Create digits at intervals (reduced frequency)
+  const animationInterval = setInterval(createBinarySequence, 600); // Changed from 300ms to 600ms
   
-  // Create initial set of digits
-  for (let i = 0; i < 12; i++) {
+  // Create initial set of digits (reduced number)
+  for (let i = 0; i < 6; i++) { // Changed from 12 to 6
     setTimeout(() => {
       createBinarySequence();
-    }, i * 150);
+    }, i * 200);
   }
+  
+  // Stop animation after 30 seconds to save resources
+  setTimeout(() => {
+    clearInterval(animationInterval);
+  }, 30000);
 });
