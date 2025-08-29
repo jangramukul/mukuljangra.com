@@ -4,11 +4,13 @@
     {% if page.previous.url %}
     <a class="prev-post" href="{{ page.previous.url }}" aria-label="Previous post">
       <span class="nav-arrow">←</span>
+      <span class="nav-text">Prev</span>
     </a>
     {% endif %}
     
     {% if page.next.url %}
     <a class="next-post" href="{{ page.next.url }}" aria-label="Next post">
+      <span class="nav-text">Next</span>
       <span class="nav-arrow">→</span>
     </a>
     {% endif %}
@@ -34,17 +36,19 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 40px;
-    height: 40px;
+    width: auto;
+    height: 36px;
     background-color: transparent;
-    border-radius: 50%;
+    border-radius: 0; /* Changed to 0 for completely square corners */
     text-decoration: none;
     color: #a2e02c;
-    font-size: 24px;
+    font-size: 14px;
     transition: background-color 0.3s, transform 0.2s;
     border: 2px solid #a2e02c;
-    line-height: 0; /* Reset line-height to prevent vertical offset */
-    padding: 0; /* Remove any padding that might affect centering */
+    line-height: 0;
+    padding: 0 12px;
+    font-family: 'Source Code Pro', monospace;
+    gap: 6px; /* Add spacing between arrow and text */
   }
   
   .prev-post:hover, .next-post:hover {
@@ -65,14 +69,28 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    transform: translateY(-1px); /* Fine-tune vertical alignment if needed */
+    transform: translateY(-1px);
+    font-size: 18px; /* Arrow size */
+  }
+  
+  .nav-text {
+    font-size: 13px;
+    font-weight: 600;
   }
   
   @media (max-width: 600px) {
     .prev-post, .next-post {
-      width: 36px;
-      height: 36px;
-      font-size: 20px;
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+    
+    .nav-arrow {
+      font-size: 16px;
+    }
+    
+    .nav-text {
+      font-size: 12px;
     }
   }
 </style>
