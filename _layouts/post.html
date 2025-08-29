@@ -299,6 +299,103 @@
         text-decoration: none !important;
       }
       
+      /* Table of Contents Styles */
+      .toc-container {
+        margin: 1.5em 0 2em;
+        background-color: rgba(42, 42, 42, 0.5);
+        border-left: 3px solid #a2e02c;
+        padding: 0;
+        border-radius: 0;
+        font-family: 'Source Code Pro', monospace;
+        transition: all 0.3s ease;
+      }
+      
+      .toc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95em;
+      }
+      
+      .toc-toggle {
+        background: none;
+        border: none;
+        color: #a2e02c;
+        font-size: 1.2em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        transition: transform 0.3s ease;
+      }
+      
+      .toc-toggle-icon {
+        display: inline-block;
+        transition: transform 0.3s ease;
+      }
+      
+      .toc-toggle.active .toc-toggle-icon {
+        transform: rotate(180deg);
+      }
+      
+      .toc-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      
+      .toc-content.open {
+        max-height: 1000px;
+        padding: 0 15px 15px;
+      }
+      
+      .toc-content ul {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 0;
+      }
+      
+      .toc-content ul ul {
+        padding-left: 15px;
+      }
+      
+      .toc-content li {
+        margin-bottom: 8px;
+        font-size: 0.9em;
+        line-height: 1.4;
+      }
+      
+      .toc-content a {
+        color: #e0e0e0;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        display: inline-block;
+        padding: 2px 0;
+      }
+      
+      .toc-content a:hover {
+        color: #a2e02c;
+      }
+      
+      .toc-content .toc-h2 {
+        font-weight: 600;
+      }
+      
+      .toc-content .toc-h3 {
+        font-weight: normal;
+      }
+      
+      .toc-content .toc-h4 {
+        font-weight: normal;
+        font-size: 0.9em;
+      }
+      
       @media (max-width: 768px) {
         .right-column {
           padding: 20px;
@@ -340,6 +437,18 @@
           </div>
           {% endif %}
         </div>
+        
+        <!-- Table of Contents -->
+        <div class="toc-container">
+          <div class="toc-header">
+            <span>Table of Contents</span>
+            <button class="toc-toggle" aria-label="Toggle table of contents">
+              <span class="toc-toggle-icon">↓</span>
+            </button>
+          </div>
+          <div class="toc-content"></div>
+        </div>
+        
                 {{ content }}
         
         {% include post-navigation.html %}
@@ -357,7 +466,64 @@
           // Save current scroll position before navigating
           localStorage.setItem('scrollPosition', window.scrollY);
         });
+        
+        // Generate Table of Contents
+        generateTableOfContents();
+        
+        // Toggle TOC visibility
+        const tocHeader = document.querySelector('.toc-header');
+        const tocToggle = document.querySelector('.toc-toggle');
+        const tocContent = document.querySelector('.toc-content');
+        
+        if (tocHeader && tocToggle && tocContent) {
+          tocHeader.addEventListener('click', () => {
+            tocContent.classList.toggle('open');
+            tocToggle.classList.toggle('active');
+          });
+        }
       });
+      
+      function generateTableOfContents() {
+        const postContent = document.querySelector('.content.post');
+        const tocContent = document.querySelector('.toc-content');
+        const tocContainer = document.querySelector('.toc-container');
+        
+        if (!postContent || !tocContent) return;
+        
+        // Get all headings in the post
+        const headings = postContent.querySelectorAll('h2, h3, h4');
+        
+        if (headings.length < 2) {
+          // Hide TOC if there are fewer than 2 headings
+          if (tocContainer) tocContainer.style.display = 'none';
+          return;
+        }
+        
+        // Generate the TOC HTML
+        const tocHTML = document.createElement('ul');
+        
+        headings.forEach((heading, index) => {
+          // Skip the post title which is h2
+          if (heading.classList.contains('post-title')) return;
+          
+          // Add ID to the heading if it doesn't have one
+          if (!heading.id) {
+            heading.id = 'heading-' + index;
+          }
+          
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#' + heading.id;
+          a.textContent = heading.textContent;
+          a.classList.add('toc-' + heading.tagName.toLowerCase());
+          li.appendChild(a);
+          tocHTML.appendChild(li);
+        });
+        
+        tocContent.appendChild(tocHTML);
+        
+        // TOC is collapsed by default (no need to add any classes)
+      }
     </script>
     
     {% include footer.html %}
