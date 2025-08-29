@@ -432,12 +432,23 @@
         font-size: 0.8em;
         line-height: 1.3;
         position: relative;
-        padding-left: 20px; /* Increased padding to create more space after dash */
+        padding-left: 24px; /* Increased padding to create more space after dash */
       }
       
       /* Top level items should not have left padding */
       .toc-content > ul > li {
         padding-left: 0;
+      }
+      
+      /* Add an extra spacer element to ensure separation between dash and text */
+      .toc-content li[data-level="3"]::after,
+      .toc-content li[data-level="4"]::after {
+        content: "";
+        display: inline-block;
+        width: 6px; /* Explicit spacing between dash and text */
+        position: absolute;
+        left: 8px;
+        top: 0.7em;
       }
       
       /* Fix connector positioning - continuous vertical line */
@@ -457,7 +468,7 @@
         position: absolute;
         left: 0; /* Adjusted position */
         top: 0.7em;
-        width: 10px;
+        width: 8px; /* Slightly shorter line */
         height: 2px;
         background-color: #a2e02c;
       }
@@ -471,7 +482,7 @@
       .toc-content ul ul > li:last-child::before {
         left: 0; /* Adjusted position to match other list items */
         top: 0.7em;
-        width: 10px;
+        width: 8px; /* Match the width from li::before */
         height: 2px;
       }
       
@@ -483,7 +494,7 @@
       .toc-content a {
         display: inline-block;
         white-space: pre-wrap;
-        margin-left: 5px; /* Add margin to the left of the link text */
+        margin-left: 12px; /* Increased margin to the left of the link text */
       }
       
       /* Adjust spacing for top-level links */
@@ -504,6 +515,17 @@
       .toc-content a:hover {
         color: #b5eb5a;
         border-bottom: 1px solid #b5eb5a;
+      }
+      
+      /* Ensure proper spacing between dash and text for different heading levels */
+      .toc-content li[data-level="3"] > a {
+        position: relative;
+        margin-left: 16px; /* Increased margin for h3 items */
+      }
+      
+      .toc-content li[data-level="4"] > a {
+        position: relative;
+        margin-left: 20px; /* Even more margin for h4 items */
       }
       
       .toc-content .toc-h2 {
@@ -675,6 +697,10 @@
           a.href = '#' + heading.id;
           a.textContent = heading.textContent;
           a.classList.add('toc-' + heading.tagName.toLowerCase());
+          
+          // Add data attribute to track heading level for styling
+          li.setAttribute('data-level', headingLevel);
+          
           li.appendChild(a);
           container.appendChild(li);
         });
