@@ -362,13 +362,57 @@
       }
       
       .toc-content ul ul {
-        padding-left: 15px;
+        padding-left: 16px;
+        position: relative;
+        margin-top: 6px;
       }
       
       .toc-content li {
         margin-bottom: 6px;
         font-size: 0.8em;
         line-height: 1.3;
+        position: relative;
+        padding-left: 12px;
+      }
+      
+      /* Fix connector positioning - continuous vertical line */
+      .toc-content ul ul::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: -6px;
+        bottom: 0;
+        width: 2px;
+        background-color: #a2e02c;
+      }
+      
+      /* Make sure the horizontal lines align properly with the vertical lines */
+      .toc-content li::before {
+        content: "";
+        position: absolute;
+        left: -2px;
+        top: 0.7em;
+        width: 10px;
+        height: 2px;
+        background-color: #a2e02c;
+      }
+      
+      /* Connect vertical line all the way through */
+      .toc-content ul ul > li:last-child::before {
+        left: -2px;
+        top: 0.7em;
+        width: 10px;
+        height: 2px;
+      }
+      
+      .toc-content li:last-child {
+        margin-bottom: 0;
+      }
+      
+      /* Add spacing for the prefix */
+      .toc-content a {
+        display: inline-block;
+        white-space: pre-wrap;
       }
       
       .toc-content a {
@@ -497,14 +541,21 @@
         // Get all headings in the post
         const headings = postContent.querySelectorAll('h2, h3, h4');
         
-        if (headings.length < 2) {
-          // Hide TOC if there are fewer than 2 headings
+        // Filter out the post title
+        const contentHeadings = Array.from(headings).filter(heading => !heading.classList.contains('post-title'));
+        
+        if (contentHeadings.length < 2) {
+          // Hide TOC if there are fewer than 2 headings (excluding the post title)
           if (tocContainer) tocContainer.style.display = 'none';
           return;
         }
         
-        // Generate the TOC HTML
+        // Create hierarchical TOC structure
         const tocHTML = document.createElement('ul');
+        
+        let currentLevel = 2;
+        let container = tocHTML;
+        let prevContainer = null;
         
         headings.forEach((heading, index) => {
           // Skip the post title which is h2
@@ -515,13 +566,40 @@
             heading.id = 'heading-' + index;
           }
           
+          const headingLevel = parseInt(heading.tagName.substring(1));
+          
+          // Handle hierarchy changes
+          if (headingLevel > currentLevel) {
+            // Moving deeper in hierarchy
+            prevContainer = container;
+            const subList = document.createElement('ul');
+            prevContainer.lastChild.appendChild(subList);
+            container = subList;
+          } else if (headingLevel < currentLevel) {
+            // Moving up in hierarchy
+            container = tocHTML;
+            if (headingLevel === 3) {
+              // If we're at h3 and were previously deeper, find the appropriate ul
+              const h2Items = tocHTML.querySelectorAll(':scope > li');
+              if (h2Items.length > 0) {
+                const lastH2 = h2Items[h2Items.length - 1];
+                const subList = lastH2.querySelector('ul');
+                if (subList) {
+                  container = subList;
+                }
+              }
+            }
+          }
+          
+          currentLevel = headingLevel;
+          
           const li = document.createElement('li');
           const a = document.createElement('a');
           a.href = '#' + heading.id;
           a.textContent = heading.textContent;
           a.classList.add('toc-' + heading.tagName.toLowerCase());
           li.appendChild(a);
-          tocHTML.appendChild(li);
+          container.appendChild(li);
         });
         
         tocContent.appendChild(tocHTML);
