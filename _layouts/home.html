@@ -276,6 +276,32 @@
           padding: 60px 0 30px 0; /* Reduced top padding from 80px to 60px and bottom from 40px to 30px */
           margin: 0 auto 15px; /* Reduced bottom margin from 20px to 15px */
         }
+        
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          gap: 8px;
+          margin-top: 10px;
+          margin-bottom: 15px;
+          font-size: 0.85em;
+        }
+        
+        .intro-social a {
+          padding: 5px 0;
+        }
+      }
+      
+      /* Additional styling for medium-sized screens like 13-inch MacBooks */
+      @media (min-width: 769px) and (max-width: 1280px) {
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          gap: 10px;
+          margin-top: 10px;
+          margin-bottom: 15px;
+        }
       }
     
       /* Introduction section styling */
@@ -310,6 +336,8 @@
         font-size: 0.9em;
         flex-wrap: wrap;
         margin-top: 15px;
+        margin-bottom: 20px;
+        width: 100%; /* Ensure full width */
       }
       
       .intro-social a {
@@ -317,10 +345,12 @@
         text-decoration: none;
         padding: 4px 0;
         display: inline-block;
+        font-weight: 500; /* Add some weight to make links more visible */
       }
       
       .intro-social a:hover {
         text-decoration: underline;
+        opacity: 0.9;
       }
       
       .social-divider {
