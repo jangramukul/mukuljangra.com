@@ -254,7 +254,7 @@
     <div class="main-background" style="z-index: -2;"></div>
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
-        <h1 class="back-header"><a href="javascript:history.back()">Back</a></h1>
+        <h1 class="back-header"><a href="/" id="back-to-home">Back</a></h1>
         <h2 class="post-title">{{ page.title }}</h2>
         <div class="date-tag-container">
           <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
@@ -277,6 +277,12 @@
         // Set dark theme as default
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
+        
+        // Handle back button click to preserve scroll position
+        document.getElementById('back-to-home').addEventListener('click', function(e) {
+          // Save current scroll position before navigating
+          localStorage.setItem('scrollPosition', window.scrollY);
+        });
       });
     </script>
   
