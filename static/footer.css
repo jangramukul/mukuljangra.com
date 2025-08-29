@@ -1,0 +1,16 @@
+/* Footer Styling */
+.site-footer {
+  margin-top: 60px;
+  padding: 20px 0;
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  clear: both;
+}
+
+.footer-content {
+  font-size: 0.9em;
+  color: var(--date-color);
+}

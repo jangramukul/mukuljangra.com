@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/syntax.css" type="text/css">
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
+    <link rel="stylesheet" href="/static/footer.css" type="text/css">
     <meta name="theme-color" content="#121212">
     <style type="text/css">
       :root {
@@ -31,9 +32,10 @@
         color: var(--text-color);
         margin: 0;
         padding: 0;
-        display: flex;
         min-height: 100vh;
         position: relative; /* Add position relative to body */
+        display: flex;
+        flex-direction: column; /* Make flex direction column */
       }
 
       .right-column {
@@ -419,5 +421,7 @@
         }
       });
     </script>
+    
+    {% include footer.html %}
   </body>
 </html> 
