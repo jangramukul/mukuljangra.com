@@ -148,11 +148,27 @@
         display: inline-block;
         width: auto;
         transition: color 0.3s ease;
+        position: relative;
+      }
+
+      .blog-post h2 a::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: #a2e02c;
+        transition: width 0.3s ease;
       }
 
       .blog-post h2 a:hover {
         color: var(--text-color);
         text-decoration: none;
+      }
+      
+      .blog-post h2 a:hover::after {
+        width: 100%;
       }
       
       .blog-post h2:hover {
