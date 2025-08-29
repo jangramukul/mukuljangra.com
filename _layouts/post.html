@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
     <link rel="stylesheet" href="/static/binary-animation.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
+    <link rel="stylesheet" href="/static/reading-timer.css" type="text/css">
     <style type="text/css">
       :root {
         --background-color: #121212;
@@ -231,10 +232,9 @@
       
       /* Back button styles matching the next/prev navigation */
       .back-navigation {
-        margin-bottom: 20px;
-        width: 100%;
-        padding-top: 70px;
-        padding-bottom: 70px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
       }
       
       .back-button {
@@ -716,6 +716,9 @@
     
     <!-- Binary animation script -->
     <script src="/static/js/binary-animation.js"></script>
+    
+    <!-- Reading timer script -->
+    <script src="/static/js/reading-timer.js"></script>
     
     {% include footer.html %}
   </body>
