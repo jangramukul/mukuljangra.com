@@ -73,8 +73,6 @@
         list-style: none;
         padding: 0;
         margin: 0;
-        position: relative;
-        z-index: 5;
       }
 
       .nav-links li {
@@ -88,7 +86,6 @@
         font-size: 1.1em;
         display: flex;
         align-items: center;
-        padding: 4px 8px;
       }
 
       .nav-links a:hover {
@@ -285,18 +282,6 @@
           gap: 10px;
           margin-top: 15px;
           width: 100%;
-          overflow: visible; /* Ensure links are always visible */
-          position: relative; /* Fix positioning */
-          z-index: 10; /* Make sure links are above other elements */
-        }
-        
-        .intro-social a {
-          display: inline-block; /* Ensure each link is displayed */
-          padding: 6px 10px; /* Add more padding for easier tapping */
-          color: var(--link-color);
-          text-decoration: none;
-          background-color: rgba(0, 0, 0, 0.1); /* Add subtle background for better visibility */
-          border-radius: 4px;
         }
       }
     
@@ -332,8 +317,6 @@
         font-size: 0.9em;
         flex-wrap: wrap;
         margin-top: 15px;
-        position: relative; /* Add positioning context */
-        z-index: 5; /* Ensure links appear above other elements */
       }
       
       .intro-social a {
@@ -341,13 +324,10 @@
         text-decoration: none;
         padding: 4px 0;
         display: inline-block;
-        transition: transform 0.2s ease, color 0.2s ease;
       }
       
       .intro-social a:hover {
         text-decoration: underline;
-        transform: translateY(-2px);
-        color: var(--link-color-hover);
       }
       
       .social-divider {
@@ -373,32 +353,6 @@
       @keyframes blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0; }
-      }
-      
-      /* Extra small screen adjustments */
-      @media (max-width: 480px) {
-        .nav-links {
-          background-color: rgba(18, 18, 18, 0.8); /* Semi-transparent background */
-          padding: 8px;
-          border-radius: 6px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-          z-index: 100; /* Very high z-index to ensure visibility */
-        }
-        
-        .intro-social {
-          background-color: rgba(18, 18, 18, 0.8); /* Semi-transparent background */
-          padding: 8px;
-          border-radius: 6px;
-          margin-top: 20px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-          z-index: 100; /* Very high z-index to ensure visibility */
-        }
-        
-        .intro-social a {
-          font-size: 1em;
-          padding: 6px 10px;
-          margin: 2px 0;
-        }
       }
     </style>
   </head>

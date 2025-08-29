@@ -8,24 +8,9 @@
   margin-left: auto;
   margin-right: auto;
   clear: both;
-  position: relative; /* Add position relative */
-  z-index: 10; /* Ensure footer is above other elements */
 }
 
 .footer-content {
   font-size: 0.9em;
   color: var(--date-color);
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .site-footer {
-    margin-top: 40px;
-    padding: 15px 10px;
-    background-color: rgba(0, 0, 0, 0.2); /* Add subtle background for visibility */
-  }
-  
-  .footer-content {
-    font-size: 0.8em;
-  }
 }
