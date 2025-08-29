@@ -273,43 +273,38 @@
         }
         
         .intro-section {
-          padding: 60px 0 30px 0; /* Reduced top padding from 80px to 60px and bottom from 40px to 30px */
-          margin: 0 auto 15px; /* Reduced bottom margin from 20px to 15px */
+          padding: 60px 0 15px 0; /* Reduced bottom padding from 30px to 15px */
+          margin: 0 auto 10px; /* Reduced bottom margin from 15px to 10px */
         }
         
-        .intro-social {
-          display: flex;
-          flex-wrap: wrap;
-          width: 100%;
-          gap: 8px;
-          margin-top: 10px;
-          margin-bottom: 15px;
-          font-size: 0.85em;
+        .contact-links {
+          margin: 10px 0 0 0; /* Removed bottom margin */
+          padding: 6px 0;
         }
         
-        .intro-social a {
-          padding: 5px 0;
+        .contact-link {
+          font-size: 0.9em;
+          padding: 3px 0;
+        }
+        
+        .link-divider {
+          padding: 3px 4px;
         }
       }
       
       /* Additional styling for medium-sized screens like 13-inch MacBooks */
       @media (min-width: 769px) and (max-width: 1280px) {
-        .intro-social {
-          display: flex;
-          flex-wrap: wrap;
-          width: 100%;
-          gap: 10px;
-          margin-top: 10px;
-          margin-bottom: 15px;
+        .contact-links {
+          margin: 12px 0 0 0; /* Removed bottom margin */
         }
       }
     
       /* Introduction section styling */
       .intro-section {
-        padding: 90px 0 40px 0; /* Reduced top padding from 120px to 90px and bottom from 50px to 40px */
+        padding: 90px 0 20px 0; /* Reduced bottom padding from 40px to 20px */
         text-align: left;
         max-width: 800px;
-        margin: 0 auto 25px; /* Reduced bottom margin from 30px to 25px */
+        margin: 0 auto 15px; /* Reduced bottom margin from 25px to 15px */
       }
       
       .intro-greeting {
@@ -329,35 +324,32 @@
         max-width: 100%; 
       }
       
-      .intro-social {
-        display: flex;
-        justify-content: flex-start;
-        gap: 10px;
-        font-size: 0.9em;
-        flex-wrap: wrap;
-        margin-top: 15px;
-        margin-bottom: 20px;
-        width: 100%; /* Ensure full width */
+      /* Contact links styling */
+      .contact-links {
+        margin: 15px 0 0 0;  /* Removed bottom margin */
+        padding: 8px 0;
+        width: 100%;
       }
       
-      .intro-social a {
+      .contact-link {
         color: var(--link-color);
         text-decoration: none;
         padding: 4px 0;
         display: inline-block;
-        font-weight: 500; /* Add some weight to make links more visible */
+        font-weight: 500;
+        transition: opacity 0.2s ease;
       }
       
-      .intro-social a:hover {
+      .contact-link:hover {
+        opacity: 0.8;
         text-decoration: underline;
-        opacity: 0.9;
       }
       
-      .social-divider {
+      .link-divider {
         color: var(--text-color);
         opacity: 0.5;
         display: inline-block;
-        padding: 4px 0;
+        padding: 4px 6px;
       }
       
       /* Typing animation cursor effect */
@@ -390,14 +382,15 @@
       <div class="intro-section">
         <div class="intro-greeting" id="typed-greeting"></div>
         <div class="intro-tagline" id="typed-tagline"></div>
-        <div class="intro-social">
-          <a href="{{ site.site_github }}">GitHub</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_mastodon }}">Mastodon</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_twitter }}">X</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_nostr }}">Nostr</a>
+        <div class="contact-links">
+          <a href="{{ site.site_github }}" rel="noopener" class="contact-link">GitHub</a>
+          <span class="link-divider">/</span>
+          <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link">Mastodon</a>
+          <span class="link-divider">/</span>
+          <a href="{{ site.site_twitter }}" rel="noopener" class="contact-link">X</a>
+          <span class="link-divider">/</span>
+          <a href="{{ site.site_nostr }}" rel="noopener" class="contact-link">Nostr</a>
+        </div>
         </div>
       </div>
       
