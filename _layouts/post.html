@@ -307,11 +307,7 @@
         padding: 0;
         border-radius: 0;
         font-family: 'Source Code Pro', monospace;
-        transition: all 0.3s ease, border-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .toc-container:hover {
-        border-left-width: 5px;
+        transition: all 0.3s ease;
       }
       
       .toc-header {
@@ -341,7 +337,7 @@
       
       .toc-toggle-icon {
         display: inline-block;
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.3s ease;
       }
       
       .toc-toggle.active .toc-toggle-icon {
@@ -351,17 +347,12 @@
       .toc-content {
         max-height: 0;
         overflow: hidden;
-        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, transform 0.3s ease;
+        transition: max-height 0.3s ease;
         padding: 0;
-        opacity: 0;
-        transform: translateY(-10px);
       }
       
       .toc-content.open {
         max-height: 1000px;
-        opacity: 1;
-        transform: translateY(0);
-        padding-bottom: 15px;
       }
       
       .toc-content ul {
