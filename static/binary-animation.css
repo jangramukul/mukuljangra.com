@@ -1,0 +1,42 @@
+/* Binary animation styling */
+.binary-animation-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;  /* Limit width to top-left area */
+  height: 250px; /* Limit height to top-left area */
+  pointer-events: none; /* Ensures it doesn't interfere with mouse events */
+  z-index: -990; /* Above the gradient background but below content */
+  overflow: hidden;
+}
+
+.binary-digit {
+  position: absolute;
+  color: rgba(128, 128, 128, 0.2); /* Grey color with opacity */
+  font-family: 'Source Code Pro', monospace;
+  font-weight: 600;
+  font-size: 14px;
+  animation: float-digit var(--float-duration, 8s) ease-out;
+  opacity: 0;
+  text-shadow: 0 0 1px rgba(128, 128, 128, 0.1);
+  transform-origin: center;
+}
+
+@keyframes float-digit {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) translateX(0) scale(0.8);
+  }
+  20% {
+    opacity: 0.7;
+    transform: translateY(10px) translateX(var(--x-drift, 5px)) scale(0.9);
+  }
+  80% {
+    opacity: 0.3;
+    transform: translateY(-20px) translateX(calc(var(--x-drift, 5px) * 2)) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) translateX(calc(var(--x-drift, 5px) * 3)) scale(1.2) rotate(var(--rotation, 0deg));
+  }
+}
