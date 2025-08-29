@@ -198,7 +198,74 @@
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
+      }
+      
+      /* Back button styles matching the next/prev navigation */
+      .back-navigation {
+        margin-bottom: 20px;
+        width: 100%;
+        padding-top: 70px;
+        padding-bottom: 70px;
+      }
+      
+      .back-button {
+        display: flex;
+        justify-content: center;
         align-items: center;
+        width: auto;
+        height: 36px;
+        background-color: transparent;
+        border-radius: 0;
+        text-decoration: none;
+        color: #a2e02c;
+        font-size: 14px;
+        transition: background-color 0.3s, transform 0.2s;
+        border: 2px solid #a2e02c;
+        line-height: 0;
+        padding: 0 12px;
+        font-family: 'Source Code Pro', monospace;
+        gap: 6px;
+        float: left;
+      }
+      
+      .back-button:hover {
+        background-color: rgba(162, 224, 44, 0.2);
+        transform: translateY(-2px);
+      }
+      
+      .back-button .nav-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        transform: translateY(-1px);
+        font-size: 18px;
+      }
+      
+      .back-button .nav-text {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      
+      @media (max-width: 600px) {
+        .back-navigation {
+          padding-top: 40px;
+          padding-bottom: 40px;
+        }
+        
+        .back-button {
+          height: 32px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+        
+        .back-button .nav-arrow {
+          font-size: 16px;
+        }
+        
+        .back-button .nav-text {
+          font-size: 12px;
+        }
       }
 
       .category-chip {
@@ -256,7 +323,12 @@
     <div class="main-background" style="z-index: -2;"></div>
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
-        <h1 class="back-header"><a href="/" id="back-to-home">Back</a></h1>
+        <div class="back-navigation">
+          <a href="/" id="back-to-home" class="back-button">
+            <span class="nav-arrow">←</span>
+            <span class="nav-text">Back</span>
+          </a>
+        </div>
         <h2 class="post-title">{{ page.title }}</h2>
         <div class="date-tag-container">
           <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
