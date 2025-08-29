@@ -4,25 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const encryptedChars = '!@#$%^&*()_+-=[]{}|;:,./<>?~`1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   
   // Function to create encryption/decryption effect
-  window.encryptDecryptText = function(element, finalText, callback) {
-    // On mobile, simply show the text without animation
-    if (window.innerWidth < 768) {
-      element.textContent = finalText;
-      element.classList.add('typing-complete');
-      if (callback) {
-        callback();
-      }
-      return;
-    }
-    
+  function encryptDecryptText(element, finalText, callback) {
     const originalText = finalText;
     element.textContent = '';
     let decryptedIndices = [];
     let interval;
     let fullEncryptionDone = false;
-    
-    // For shorter texts, use a simplified animation
-    const isShortText = originalText.length < 30;
     
     // First phase: encrypt the text (show random characters)
     function encryptionPhase() {
@@ -47,11 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // Clear the current interval and start decryption
           clearInterval(interval);
-          
-          // Use faster speed for shorter texts
-          const decryptSpeed = isShortText ? 15 : 25;
-          interval = setInterval(decryptionPhase, decryptSpeed);
-        }, isShortText ? 500 : 1000); // Shorter encryption phase for short texts
+          interval = setInterval(decryptionPhase, 25); // Speed up decryption (reduced from 50ms)
+        }, 1000); // Encryption phase reduced from 2000ms to 1000ms
       }
     }
     
@@ -81,10 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       if (availableIndices.length > 0) {
-        // Pick multiple random indices to decrypt (more for shorter texts)
-        const charsToDecryptPerIteration = isShortText ? 
-          Math.min(3, availableIndices.length) : 
-          Math.min(2, availableIndices.length);
+        // Pick multiple random indices to decrypt (2 at a time)
+        const charsToDecryptPerIteration = Math.min(2, availableIndices.length);
         
         for (let i = 0; i < charsToDecryptPerIteration; i++) {
           const randomIndex = Math.floor(Math.random() * availableIndices.length);
@@ -112,8 +94,10 @@ document.addEventListener('DOMContentLoaded', function() {
       element.textContent = newText;
     }
     
-    // Start with encryption phase - faster for shorter texts
-    const encryptSpeed = isShortText ? 30 : 50;
-    interval = setInterval(encryptionPhase, encryptSpeed);
+    // Start with encryption phase
+    interval = setInterval(encryptionPhase, 50); // Speed up from 100ms to 50ms
   }
+  
+  // Make the function globally available
+  window.encryptDecryptText = encryptDecryptText;
 });
