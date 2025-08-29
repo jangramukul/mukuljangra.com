@@ -507,14 +507,15 @@
         
         // Start the animation sequence
         typeText(typedGreeting, greetingText, 70, function() {
-          // After greeting is typed, start typing the tagline
-          typeText(typedTagline, taglineText, 30);
+          // After greeting is typed, start the encryption/decryption effect for the tagline
+          encryptDecryptText(typedTagline, taglineText, null);
         });
       });
     </script>
     
-    <!-- Binary animation script -->
+    <!-- Animation scripts -->
     <script src="/static/js/binary-animation.js"></script>
+    <script src="/static/js/encryption-animation.js"></script>
     
     {% include footer.html %}
   </body>
