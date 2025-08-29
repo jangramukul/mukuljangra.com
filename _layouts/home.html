@@ -336,6 +336,24 @@
         display: inline-block;
         padding: 4px 0;
       }
+      
+      /* Typing animation cursor effect */
+      #typed-greeting::after,
+      #typed-tagline::after {
+        content: '|';
+        display: inline-block;
+        animation: blink 0.7s infinite;
+      }
+      
+      #typed-greeting.typing-complete::after,
+      #typed-tagline.typing-complete::after {
+        display: none;
+      }
+      
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
     </style>
   </head>
   <body>
@@ -345,8 +363,8 @@
     <div class="right-column">
       <!-- Introduction Section -->
       <div class="intro-section">
-        <div class="intro-greeting">Hi, I'm {{ site.site_name }} 🐝</div>
-        <div class="intro-tagline">{{ site.site_tagline }}</div>
+        <div class="intro-greeting" id="typed-greeting"></div>
+        <div class="intro-tagline" id="typed-tagline"></div>
         <div class="intro-social">
           <a href="{{ site.site_github }}">GitHub</a>
           <span class="social-divider">/</span>
@@ -458,9 +476,42 @@
           // Clear the stored position after restoring
           localStorage.removeItem('scrollPosition');
         }
+        
+        // Typing animation
+        const typedGreeting = document.getElementById('typed-greeting');
+        const typedTagline = document.getElementById('typed-tagline');
+        const greetingText = "Hi, I'm {{ site.site_name }} 🐝";
+        const taglineText = "{{ site.site_tagline }}";
+        
+        // Function to create typing effect
+        function typeText(element, text, speed, callback) {
+          let i = 0;
+          element.textContent = ''; // Clear the element first
+          
+          function typing() {
+            if (i < text.length) {
+              element.textContent += text.charAt(i);
+              i++;
+              setTimeout(typing, speed);
+            } else {
+              element.classList.add('typing-complete');
+              if (callback) {
+                setTimeout(callback, 500); // Wait a bit before starting the next animation
+              }
+            }
+          }
+          
+          typing();
+        }
+        
+        // Start the animation sequence
+        typeText(typedGreeting, greetingText, 70, function() {
+          // After greeting is typed, start typing the tagline
+          typeText(typedTagline, taglineText, 30);
+        });
       });
     </script>
     
     {% include footer.html %}
   </body>
-</html> 
+</html>
