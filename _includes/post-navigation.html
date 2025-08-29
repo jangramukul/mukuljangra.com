@@ -1,0 +1,78 @@
+<!-- Post Navigation -->
+<div class="post-navigation">
+  <div class="nav-links">
+    {% if page.previous.url %}
+    <a class="prev-post" href="{{ page.previous.url }}" aria-label="Previous post">
+      <span class="nav-arrow">←</span>
+    </a>
+    {% endif %}
+    
+    {% if page.next.url %}
+    <a class="next-post" href="{{ page.next.url }}" aria-label="Next post">
+      <span class="nav-arrow">→</span>
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .post-navigation {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+  }
+  
+  .nav-links {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: relative;
+  }
+  
+  .prev-post, .next-post {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    text-decoration: none;
+    color: #a2e02c;
+    font-size: 24px;
+    transition: background-color 0.3s, transform 0.2s;
+    border: 2px solid #a2e02c;
+    line-height: 0; /* Reset line-height to prevent vertical offset */
+    padding: 0; /* Remove any padding that might affect centering */
+  }
+  
+  .prev-post:hover, .next-post:hover {
+    background-color: rgba(162, 224, 44, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .prev-post {
+    margin-right: auto;
+  }
+  
+  .next-post {
+    margin-left: auto;
+  }
+  
+  .nav-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    transform: translateY(-1px); /* Fine-tune vertical alignment if needed */
+  }
+  
+  @media (max-width: 600px) {
+    .prev-post, .next-post {
+      width: 36px;
+      height: 36px;
+      font-size: 20px;
+    }
+  }
+</style>

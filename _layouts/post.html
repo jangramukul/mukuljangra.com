@@ -266,7 +266,9 @@
           </div>
           {% endif %}
         </div>
-        {{ content }}
+                {{ content }}
+        
+        {% include post-navigation.html %}
       </div>
     </div>
 
@@ -277,5 +279,6 @@
         localStorage.setItem('theme', 'dark');
       });
     </script>
+  
   </body>
 </html>
