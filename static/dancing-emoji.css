@@ -1,0 +1,92 @@
+/* Dancing emoji styles */
+.dancing-emoji {
+  display: inline-block;
+  font-size: 1.1em;
+  margin-right: 0.3em;
+  transform-origin: center;
+  position: relative;
+  transition: transform 0.3s ease;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+}
+
+/* Animation for emoji exiting */
+.emoji-exit {
+  animation: emoji-exit-anim 0.5s ease-in forwards;
+}
+
+/* Animation for emoji entering */
+.emoji-entrance {
+  animation: emoji-entrance-anim 0.5s ease-out forwards;
+}
+
+/* When hovering over post title, make the emoji dance */
+.post-title:hover .dancing-emoji {
+  animation: emoji-dance 1s infinite ease-in-out;
+}
+
+/* Different themes for emojis */
+.dancing-emoji[data-emoji-theme="tech"] {
+  color: #64b5f6; /* Light blue */
+}
+
+.dancing-emoji[data-emoji-theme="nature"] {
+  color: #81c784; /* Light green */
+}
+
+.dancing-emoji[data-emoji-theme="fun"] {
+  color: #e57373; /* Light red */
+}
+
+.dancing-emoji[data-emoji-theme="idea"] {
+  color: #ffb74d; /* Light orange */
+}
+
+.dancing-emoji[data-emoji-theme="motivation"] {
+  color: #ba68c8; /* Light purple */
+}
+
+/* Keyframes for emoji exit animation */
+@keyframes emoji-exit-anim {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg) translateY(20px);
+  }
+}
+
+/* Keyframes for emoji entrance animation */
+@keyframes emoji-entrance-anim {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(45deg) translateY(-20px);
+  }
+  60% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+  80% {
+    transform: scale(0.9) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Keyframes for emoji dance animation */
+@keyframes emoji-dance {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(-10deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(10deg);
+  }
+}
