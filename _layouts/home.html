@@ -277,23 +277,30 @@
           margin: 0 auto 15px; /* Reduced bottom margin from 20px to 15px */
         }
         
-        /* Mobile styling for social container */
-        .social-container {
-          margin: 0 0 12px 0;
-          padding: 5px 0 5px 8px;
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          gap: 8px;
+          margin-top: 10px;
+          margin-bottom: 15px;
+          font-size: 0.85em;
         }
         
-        .social-link {
-          font-size: 0.9em;
-          padding: 4px 3px 4px 0;
+        .intro-social a {
+          padding: 5px 0;
         }
       }
       
       /* Additional styling for medium-sized screens like 13-inch MacBooks */
       @media (min-width: 769px) and (max-width: 1280px) {
-        .social-container {
-          margin: 0 0 15px 0;
+        .intro-social {
+          display: flex;
+          flex-wrap: wrap;
           width: 100%;
+          gap: 10px;
+          margin-top: 10px;
+          margin-bottom: 15px;
         }
       }
     
@@ -308,31 +315,8 @@
       .intro-greeting {
         font-family: 'Source Code Pro', monospace;
         font-size: 2.2em; /* Increased from 1.8em to 2.2em */
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         font-weight: 600;
-      }
-      
-      /* New social container styles */
-      .social-container {
-        display: block;
-        margin: 0 0 15px 0;
-        padding: 5px 0;
-        background-color: rgba(50, 50, 50, 0.2);
-        border-left: 3px solid var(--link-color);
-        padding-left: 10px;
-      }
-      
-      .social-link {
-        color: var(--link-color);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.95em;
-        display: inline-block;
-        padding: 3px 5px 3px 0;
-      }
-      
-      .social-link:hover {
-        text-decoration: underline;
       }
       
       .intro-tagline {
@@ -405,17 +389,15 @@
       <!-- Introduction Section -->
       <div class="intro-section">
         <div class="intro-greeting" id="typed-greeting"></div>
-        <!-- Social links in a standalone container -->
-        <div class="social-container">
-          <a href="{{ site.site_github }}" class="social-link">GitHub</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_mastodon }}" class="social-link">Mastodon</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_twitter }}" class="social-link">X</a>
-          <span class="social-divider">/</span>
-          <a href="{{ site.site_nostr }}" class="social-link">Nostr</a>
-        </div>
         <div class="intro-tagline" id="typed-tagline"></div>
+        <div class="intro-social">
+          <a href="{{ site.site_github }}">GitHub</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_mastodon }}">Mastodon</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_twitter }}">X</a>
+          <span class="social-divider">/</span>
+          <a href="{{ site.site_nostr }}">Nostr</a>
         </div>
       </div>
       
