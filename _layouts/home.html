@@ -117,13 +117,11 @@
       }
 
       .blog-post {
-        margin-bottom: 12px;
-        padding-bottom: 12px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
         border-bottom: 1px solid #444;
         width: 100%;
         box-sizing: border-box;
-        display: flex;
-        align-items: center;
       }
 
       .blog-post:last-child {
@@ -132,14 +130,14 @@
 
       .blog-post h2 {
         font-family: 'Source Code Pro', monospace;
-        font-size: 1.2em;
-        margin: 0;
+        font-size: 1.4em;
+        margin-bottom: 10px;
         border-bottom: none !important;
-        padding-bottom: 0;
+        padding-bottom: 2px;
         display: inline-block;
         width: auto;
         font-weight: bold;
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, border-color 0.3s ease, text-decoration 0.3s ease;
       }
 
       .blog-post h2 a {
@@ -152,21 +150,52 @@
 
       .blog-post h2 a:hover {
         color: var(--text-color);
-        text-decoration: underline;
+        text-decoration: none;
+      }
+      
+      .blog-post h2:hover {
+        transform: translateY(-5px);
+        border-bottom: none !important;
       }
 
       .blog-post .date {
-        color: var(--link-color);
+        color: var(--date-color);
         font-size: 0.9em;
-        margin-right: 15px;
-        min-width: 110px;
       }
       
-      .category-chips {
+      .date-tag-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      
+      .post-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 20px;
+        gap: 5px;
+        margin-left: 10px;
+      }
+      
+      .post-tag {
+        padding: 3px 8px;
+        background-color: #f0f0f0;
+        border-radius: 12px;
+        font-size: 0.8em;
+        color: #333;
+        display: inline-block;
+      }
+
+      .blog-post .excerpt {
+        color: var(--excerpt-color);
+        line-height: 1.6;
+        font-size: 1.05em;
+        width: 100%;
+        display: block;
+        padding-right: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
       .category-chips {
         display: flex;
         flex-wrap: wrap;
@@ -307,8 +336,11 @@
         </div>
         {% for post in site.posts %}
         <article class="blog-post" data-tags="{{ post.tags | join: '|' }}">
-          <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
           <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+          <div class="date-tag-container">
+            <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
+          </div>
+          <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
         </article>
         {% endfor %}
       </div>
@@ -380,5 +412,4 @@
       });
     </script>
   </body>
-</html>
 </html> 
