@@ -375,6 +375,11 @@
         padding-left: 12px;
       }
       
+      /* Top level items should not have left padding */
+      .toc-content > ul > li {
+        padding-left: 0;
+      }
+      
       /* Fix connector positioning - continuous vertical line */
       .toc-content ul ul::before {
         content: "";
@@ -397,6 +402,11 @@
         background-color: #a2e02c;
       }
       
+      /* Remove lines/indicators for top-level items */
+      .toc-content > ul > li::before {
+        display: none;
+      }
+      
       /* Connect vertical line all the way through */
       .toc-content ul ul > li:last-child::before {
         left: -2px;
@@ -413,6 +423,11 @@
       .toc-content a {
         display: inline-block;
         white-space: pre-wrap;
+      }
+      
+      /* Adjust spacing for top-level links */
+      .toc-content > ul > li > a {
+        padding-left: 0;
       }
       
       .toc-content a {
