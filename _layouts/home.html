@@ -122,6 +122,8 @@
         border-bottom: 1px solid #444;
         width: 100%;
         box-sizing: border-box;
+        display: flex;
+        align-items: center;
       }
 
       .blog-post:last-child {
@@ -159,8 +161,10 @@
       }
 
       .blog-post .date {
-        color: var(--date-color);
+        color: var(--link-color);
         font-size: 0.9em;
+        margin-right: 15px;
+        min-width: 110px;
       }
       
       .date-tag-container {
@@ -336,11 +340,12 @@
         </div>
         {% for post in site.posts %}
         <article class="blog-post" data-tags="{{ post.tags | join: '|' }}">
+          <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
           <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
-          <div class="date-tag-container">
-            <div class="date">{{ post.date | date:"%d %B %Y" }}</div>
+          <div class="date-tag-container" style="display:none;">
+            <div class="date" style="display:none;">{{ post.date | date:"%d %B %Y" }}</div>
           </div>
-          <div class="excerpt">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
+          <div class="excerpt" style="display:none;">{{ post.excerpt | strip_html | truncatewords: 50 }}</div>
         </article>
         {% endfor %}
       </div>
