@@ -97,10 +97,14 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
-        border-bottom: none;
+        border-bottom: 2px dotted #a2e02c;
+        border-bottom-style: dotted;
+        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 4px, transparent 4px, transparent 12px) 0 0 2;
+        padding-bottom: 5px;
         font-weight: bold;
         width: 100%;
         max-width: 100%;
+        display: inline-block;
       }
 
       .content.post h3 {
@@ -109,8 +113,12 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
-        border-bottom: none;
+        border-bottom: 1px dotted #a2e02c;
+        border-bottom-style: dotted;
+        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 3px, transparent 3px, transparent 10px) 0 0 1;
+        padding-bottom: 3px;
         font-weight: bold;
+        display: inline-block;
       }
 
       .content.post h4 {
@@ -119,8 +127,12 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         color: var(--text-color);
-        border-bottom: none;
+        border-bottom: 1px dotted #a2e02c;
+        border-bottom-style: dotted;
+        border-image: repeating-linear-gradient(to right, #a2e02c 0, #a2e02c 2px, transparent 2px, transparent 8px) 0 0 1;
+        padding-bottom: 2px;
         font-weight: bold;
+        display: inline-block;
       }
 
       /* Ensure text after headings maintains the same font size */
@@ -293,9 +305,17 @@
       
       .post-title {
         border-bottom: none !important;
+        border-image: none !important;
         padding-bottom: 2px;
         display: inline-block;
         margin-top: 0.5em !important;
+        text-decoration: none !important;
+      }
+      
+      /* Override headings styling for post title */
+      h2.post-title {
+        border-bottom: none !important;
+        border-image: none !important;
         text-decoration: none !important;
       }
       
