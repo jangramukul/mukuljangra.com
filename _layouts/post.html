@@ -331,7 +331,7 @@
         margin-bottom: 0.5em !important;
         padding: 0 !important;
         text-decoration: none !important;
-        font-size: 2em !important;
+        font-size: 1.7em !important; /* Reduced from 2em to 1.7em */
         color: var(--text-color) !important;
       }
       
@@ -347,6 +347,7 @@
         display: block !important;
         color: var(--text-color) !important;
         position: static !important;
+        font-size: 1.7em !important; /* Ensure consistency with .post-title */
       }
       
       /* Extra selector to override any ::before or ::after decorations */
@@ -431,7 +432,7 @@
         font-size: 0.8em;
         line-height: 1.3;
         position: relative;
-        padding-left: 12px;
+        padding-left: 20px; /* Increased padding to create more space after dash */
       }
       
       /* Top level items should not have left padding */
@@ -443,7 +444,7 @@
       .toc-content ul ul::before {
         content: "";
         position: absolute;
-        left: 4px;
+        left: 6px; /* Adjusted position */
         top: -6px;
         bottom: 0;
         width: 2px;
@@ -454,7 +455,7 @@
       .toc-content li::before {
         content: "";
         position: absolute;
-        left: -2px;
+        left: 0; /* Adjusted position */
         top: 0.7em;
         width: 10px;
         height: 2px;
@@ -468,7 +469,7 @@
       
       /* Connect vertical line all the way through */
       .toc-content ul ul > li:last-child::before {
-        left: -2px;
+        left: 0; /* Adjusted position to match other list items */
         top: 0.7em;
         width: 10px;
         height: 2px;
@@ -482,11 +483,13 @@
       .toc-content a {
         display: inline-block;
         white-space: pre-wrap;
+        margin-left: 5px; /* Add margin to the left of the link text */
       }
       
       /* Adjust spacing for top-level links */
       .toc-content > ul > li > a {
         padding-left: 0;
+        margin-left: 0; /* No extra margin for top-level items */
       }
       
       .toc-content a {
