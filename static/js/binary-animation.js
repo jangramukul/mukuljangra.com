@@ -1,9 +1,17 @@
 // Binary animation script
 document.addEventListener('DOMContentLoaded', function() {
-  // Create container for binary digits
-  const container = document.createElement('div');
-  container.className = 'binary-animation-container';
-  document.body.appendChild(container);
+  // Check if animation container already exists (to avoid duplicates)
+  let container = document.querySelector('.binary-animation-container');
+  
+  // If it doesn't exist, create it
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'binary-animation-container';
+    document.body.appendChild(container);
+  } else {
+    // Clear existing container if it exists
+    container.innerHTML = '';
+  }
 
   // Binary characters to use (mostly 0s and 1s)
   const binaryChars = ['0', '1', '0', '1', '0', '1', '0', '1', '0', '1'];

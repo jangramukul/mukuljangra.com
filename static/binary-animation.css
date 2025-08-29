@@ -6,7 +6,7 @@
   width: 300px;  /* Limit width to top-left area */
   height: 250px; /* Limit height to top-left area */
   pointer-events: none; /* Ensures it doesn't interfere with mouse events */
-  z-index: -990; /* Above the gradient background but below content */
+  z-index: 1; /* Changed from -990 to 1 to be above background layers */
   overflow: hidden;
 }
 
