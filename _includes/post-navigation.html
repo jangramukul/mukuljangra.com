@@ -19,7 +19,7 @@
 
 <style>
   .post-navigation {
-    margin-top: 40px;
+    margin-top: 80px; /* Increased from 40px to 80px for more space */
     padding-top: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     width: 100%;
@@ -79,6 +79,10 @@
   }
   
   @media (max-width: 600px) {
+    .post-navigation {
+      margin-top: 60px; /* Slightly reduced for mobile but still more than original */
+    }
+    
     .prev-post, .next-post {
       height: 32px;
       padding: 0 10px;
