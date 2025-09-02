@@ -15,7 +15,6 @@
     <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
     <meta name="theme-color" content="#121212">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
-    <link rel="stylesheet" href="/static/binary-animation.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
     <style type="text/css">
       :root {
@@ -565,8 +564,6 @@
   <body>
     <div class="gradient-bg" style="z-index: -1;"></div>
     <div class="main-background" style="z-index: -2;"></div>
-    <!-- Binary animation container will be populated by JavaScript -->
-    <div class="binary-animation-container"></div>
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
         <div class="back-navigation">
@@ -712,9 +709,6 @@
         // TOC is collapsed by default (no need to add any classes)
       }
     </script>
-    
-    <!-- Binary animation script -->
-    <script src="/static/js/binary-animation.js"></script>
     
     {% include footer.html %}
   </body>
