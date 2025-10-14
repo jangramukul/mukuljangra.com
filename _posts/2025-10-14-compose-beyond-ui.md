@@ -122,7 +122,7 @@ class LoginViewModel(
 }
 ```
 
-#### Single Field States
+#### Single Field States + Combine
 
 This technique combines multiple streams of data into a single UI state output. This is very similar as above as it exposes a UI state class like above. The only difference is that it combines multiple stateflows using `combine` function and then creating a UI state class. This solves one problem if we need to filter or observe individual fields. But creates another problem because having multiple state flows for each field which can be quite complex for large screens. (Note: Single value from UI state class can also be observed or collected using `distinctUntilChanged()`)
 
