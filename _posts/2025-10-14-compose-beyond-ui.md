@@ -51,8 +51,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
 	val username by viewModel.username.collectAsStateWithLifecycle()
 	
 	Text(
-		modifier = Modifier,
-		text = username
+	 modifier = Modifier,
+	 text = username,
 	)
 }
 
