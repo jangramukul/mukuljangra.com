@@ -8,6 +8,7 @@ site_github: "https://github.com/jangramukul"
 site_linkedin: "https://linkedin.com/in/jangramukul"
 site_mastodon: "https://mastodon.social/@mukuljangra"
 site_twitter: "https://x.com/iammukuljangra"
+site_medium: "https://medium.com/@mukuljangra"
 
 highlighter: rouge
 permalink: /:title/
