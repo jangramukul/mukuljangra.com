@@ -51,8 +51,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
 	val username by viewModel.username.collectAsStateWithLifecycle()
 	
 	Text(
-		modifier = Modifier,
-		text = username,
+	modifier = Modifier,
+	text = username,
 	)
 }
 
@@ -64,11 +64,11 @@ class LoginViewModel: ViewModel() {
     val name = _name.asStateFlow()
 
     fun updateUsername(value: String) {
-	     _username.value = value  
+	_username.value = value  
     }
     
     fun updateName(value: String) {
-		 _name.value = value 
+	_name.value = value 
 	}
 }
 ```
