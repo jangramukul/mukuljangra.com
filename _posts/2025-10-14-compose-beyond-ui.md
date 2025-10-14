@@ -49,9 +49,10 @@ The main problem with this pattern is that it leads to a proliferation of fields
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
 	val username by viewModel.username.collectAsStateWithLifecycle()
+	
 	Text(
-	 modifier = Modifier,
-	 text = username,
+	  modifier = Modifier,
+	  text = username,
 	)
 }
 
@@ -63,12 +64,12 @@ class LoginViewModel: ViewModel() {
     val name = _name.asStateFlow()
 
     fun updateUsername(value: String) {
-	 _username.value = value  
-    }
+	  _username.value = value  
+	}
     
     fun updateName(value: String) {
-	 _name.value = value 
-	}
+	  _name.value = value 
+    }
 }
 ```
 
@@ -88,16 +89,16 @@ fun LoginScreen(viewModel: LoginViewModel) {
 	val state by viewModel.uiState.collectAsStateWithLifecycle()
 	
 	Text(
-		modifier = Modifier,
-		text = state.username,
+	   modifier = Modifier,
+	   text = state.username,
 	)
 }
 
 @Stable
 data class LoginUiState(
-	val username: String, 
-	val name: String,
-	val totalUsers: Int,
+   val username: String, 
+   val name: String,
+   val totalUsers: Int,
 )
 
 class LoginViewModel(
