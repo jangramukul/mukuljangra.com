@@ -307,3 +307,5 @@ class LoginViewModel: ViewModel() {
 The compose way definitely makes the code much cleaner. But there are some trade-offs. Testing presenters or viewmodels written with Molecule requires understanding of Turbine or similar libraries to test flows properly. Though once you set it up, it's not too bad.
 
 To me, using the compose runtime like compose states in viewmodel or presenters itself doesn't seem a bad practice or anti-pattern or any bad architectural decision because clearly, fundamentally, compose runtime and UI have been separated from the bottom. Jake Wharton has written extensively about this separation in his post "A Jetpack Compose by any other name." if you want to read more.
+
+Thanks for reading through all of this :) Happy Coding!
