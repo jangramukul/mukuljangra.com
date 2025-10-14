@@ -109,16 +109,16 @@ class LoginViewModel(
 
 	init {
 		viewModelScope.launch {
-			observeUsers().collectLatest { users ->
-				_state.update {
-					it.copy(totalUsers = users.size)
-				}
+		   observeUsers().collectLatest { users ->
+              _state.update {
+			     it.copy(totalUsers = users.size)
+               }
 			}
 		}
 	}
 
     fun updateUsername(value: String) {
-        _state.update { it.copy(username = value) }
+	   _state.update { it.copy(username = value) }
     }
 }
 ```
