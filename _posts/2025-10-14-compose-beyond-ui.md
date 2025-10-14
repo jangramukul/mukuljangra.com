@@ -270,7 +270,7 @@ class Presenter() {
 }
 ```
 
-In Molecule, it allows you to build a `StateFlow` or `Flow` stream using Compose's runtime. Here you would see `launchMolecule` function launches a coroutine that continually recomposes the body to produce a StateFlow stream of values. Here are a few examples:
+You could do similar thing with Molecule, FYI, It allows you to build a `StateFlow` or `Flow` stream using Compose's runtime. Here you would see `launchMolecule` function launches a coroutine that continually recomposes the body to produce a StateFlow stream of values. Here are a few examples If you want to check them out:
 
 ```kotlin
 class LoginViewModel: ViewModel() {
