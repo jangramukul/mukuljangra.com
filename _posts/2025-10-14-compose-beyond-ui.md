@@ -45,11 +45,10 @@ The main problem with this pattern is that it leads to a proliferation of fields
 
 > **Note**: The pipeline assembly must be **lifecycle aware**. Use `collectAsStateWithLifecycle()` in the UI to collect state or `SharingStarted.WhileSubscribed()` while using `stateIn` or `shareIn` in viewmodel to avoid leaking resources.
 
-```kotlin
+```groovy
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
 	val username by viewModel.username.collectAsStateWithLifecycle()
-	
 	Text(
 	 modifier = Modifier,
 	 text = username,
@@ -64,11 +63,11 @@ class LoginViewModel: ViewModel() {
     val name = _name.asStateFlow()
 
     fun updateUsername(value: String) {
-		_username.value = value  
+	 _username.value = value  
     }
     
     fun updateName(value: String) {
-		_name.value = value 
+	 _name.value = value 
 	}
 }
 ```
