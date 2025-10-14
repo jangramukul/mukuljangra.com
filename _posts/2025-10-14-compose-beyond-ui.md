@@ -65,7 +65,7 @@ class LoginViewModel: ViewModel() {
 
     fun updateUsername(value: String) {
 	  _username.value = value  
-	}
+    }
     
     fun updateName(value: String) {
 	  _name.value = value 
@@ -102,23 +102,23 @@ data class LoginUiState(
 )
 
 class LoginViewModel(
-	private val observeUsers: ObserveUsers
+    private val observeUsers: ObserveUsers
 ): ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
     val uiState = _state.asStateFlow()
-
-	init {
-		viewModelScope.launch {
-		   observeUsers().collectLatest { users ->
-              _state.update {
-			     it.copy(totalUsers = users.size)
-               }
-			}
-		}
-	}
-
+    
+    init {
+        viewModelScope.launch {
+            observeUsers().collectLatest { users ->
+                _state.update {
+                    it.copy(totalUsers = users.size)
+                }
+            }
+        }
+    }
+    
     fun updateUsername(value: String) {
-	   _state.update { it.copy(username = value) }
+        _state.update { it.copy(username = value) }
     }
 }
 ```
