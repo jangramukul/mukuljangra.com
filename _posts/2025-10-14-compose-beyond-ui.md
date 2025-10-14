@@ -174,45 +174,44 @@ One practical reason I've found for using compose state in viewmodel is that the
 ```kotlin
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
-	TextField(
-		value = viewModel.username,
-		onValueChange = { viewModel.username = it },
-		//...
-	)
-	
-	TextField(
-		value = viewModel.password,
-		onValueChange = { viewModel.password = it },
-		//...
-	)
+    TextField(
+        value = viewModel.username,
+        onValueChange = { viewModel.username = it },
+        //...
+    )
+    
+    TextField(
+        value = viewModel.password,
+        onValueChange = { viewModel.password = it },
+        //...
+    )
 }
 
 class LoginViewModel(
-	private val repository: LoginRepository,
+    private val repository: LoginRepository,
 ) : ViewModel() {
-	var username by mutableStateOf("")
-		private set
-
-	var password by mutableStateOf("")
-		private set
-		
+    var username by mutableStateOf("")
+        private set
+    var password by mutableStateOf("")
+        private set
+        
     val isUsernameValid by derivedStateOf {
         repository.isUsernameValid(username)
     }
-		
+        
     val isPasswordValid: StateFlow<Boolean> =
         snapshotFlow { password }
-        .mapLatest { repository.isPasswordValid(it) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = false
-        )
-	
+            .mapLatest { repository.isPasswordValid(it) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = false
+            )
+    
     fun login() {
-	    viewModelScope.launch {
-		    // login
-	    }
+        viewModelScope.launch {
+            // login
+        }
     }
 }
 ```
@@ -223,19 +222,19 @@ class LoginViewModel(
 
 ```kotlin
 class LoginViewModel(
-	private val defaultDispatcher: Dispatcher	
+    private val defaultDispatcher: Dispatcher    
 ) : ViewModel() {
-	var isLoggedIn by mutableStateOf(false)
-		private set
-
+    var isLoggedIn by mutableStateOf(false)
+        private set
+        
     fun login() {
-	    viewModelScope.launch {
-		    withContext(defaultDispatcher) {
-			    Snapshot.withMutableSnapshot {
-				    isLoggedIn = true
-			    }
-		    }
-	    }
+        viewModelScope.launch {
+            withContext(defaultDispatcher) {
+                Snapshot.withMutableSnapshot {
+                    isLoggedIn = true
+                }
+            }
+        }
     }
 }
 ```
@@ -244,16 +243,16 @@ The real benefits come when compose states are combined with the recomposition p
 
 ```kotlin
 class Presenter() {
-	private val stateFlow = MutableStateFlow<State>()
-	
-	fun state(): StateFlow<State> {
-		scope.launch {
-			events.collectLatest { event ->
-				stateFlow.update { it.copy(search = event.query) }
-			}
-		}
-		return stateFlow
-	}
+    private val stateFlow = MutableStateFlow<State>()
+    
+    fun state(): StateFlow<State> {
+        scope.launch {
+            events.collectLatest { event ->
+                stateFlow.update { it.copy(search = event.query) }
+            }
+        }
+        return stateFlow
+    }
 }
 ```
 
@@ -261,14 +260,14 @@ This could be replaced with something much simpler, cleaner, and more readable i
 
 ```kotlin
 class Presenter() {
-	@Composable
-	fun state(): State {
-		var query by remember { mutableStateOf("") }
-		
-		return State(search = query) { event ->
-			query = event.query
-		}
-	}
+    @Composable
+    fun state(): State {
+        var query by remember { mutableStateOf("") }
+        
+        return State(search = query) { event ->
+            query = event.query
+        }
+    }
 }
 ```
 
@@ -279,7 +278,7 @@ class LoginViewModel: ViewModel() {
     private val usernameState = mutableStateOf("")
     private val nameState = mutableStateOf("")
     private val passwordState = MutableStateFlow("")
-
+    
     // Example 1: Using state from ViewModel
     val uiState: StateFlow<UiState> = viewModelScope.launchMolecule(mode = ContextClock) {
         val username by usernameState
@@ -287,12 +286,12 @@ class LoginViewModel: ViewModel() {
         val password by passwordState.collectAsState()
         
         UiState(
-	        username = username, 
-	        name = name, 
-	        password = password,
+            username = username, 
+            name = name, 
+            password = password,
         )
     }
-
+    
     // Example 2: Using remember and side effects internally
     val uiState2: StateFlow<UiState> = viewModelScope.launchMolecule(mode = ContextClock) {
         var username by remember { mutableStateOf("") }
