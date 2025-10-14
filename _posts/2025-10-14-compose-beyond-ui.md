@@ -216,9 +216,7 @@ class LoginViewModel(
 }
 ```
 
-> **Note:** When required to convert any compose state to flow, `snapshotFlow` can be used. When this is paired with `stateIn`, it can be converted to hot StateFlow (see the above example). Also, `derivedStateOf` is used for safely producing derived state. Please check [this article](https://medium.com/androiddevelopers/jetpack-compose-when-should-i-use-derivedstateof-63ce7954c11b) to learn more about when to use it.
-
-> **Warning:** Updating compose state from a background thread is risky. For guaranteed atomic updates and thread safety when using Compose State, please use `Snapshot.withMutableSnapshot`.
+When required to convert any compose state to flow, `snapshotFlow` can be used. When this is paired with `stateIn`, it can be converted to hot StateFlow (see the above example). Also, `derivedStateOf` is used for safely producing derived state. Please check [this article](https://medium.com/androiddevelopers/jetpack-compose-when-should-i-use-derivedstateof-63ce7954c11b) to learn more about when to use it. Also, Updating compose state from a background thread is risky. For guaranteed atomic updates and thread safety when using Compose State, please use `Snapshot.withMutableSnapshot`.
 
 ```kotlin
 class LoginViewModel(
@@ -239,7 +237,8 @@ class LoginViewModel(
 }
 ```
 
-**The real benefits** come when compose states are combined with the recomposition part, instead of just writing compose state fields in viewmodel. Business logic written in compose way is much cleaner than traditional viewmodel with coroutines. One example is retaining values during process-death – using compose state with `rememberSaveable` is much cleaner and simpler than using flows with `SavedStateHandle`. For example, If we write the presenter in traditional way:
+#### Any Benefits?
+The real benefits come when compose states are combined with the recomposition part, instead of just writing compose state fields in viewmodel. Business logic written in compose way is much cleaner than traditional viewmodel with coroutines. One example is retaining values during process-death – using compose state with `rememberSaveable` is much cleaner and simpler than using flows with `SavedStateHandle`. For example, If we write the presenter in traditional way:
 
 ```kotlin
 class Presenter() {
@@ -256,7 +255,7 @@ class Presenter() {
 }
 ```
 
-**This could be replaced** with something much simpler, cleaner, and more readable if we write it in compose way :) You could write the same using Molecule or Circuit. Please check their official documentation for more details.
+This could be replaced with something much simpler, cleaner, and more readable if we write it in compose way :) You could write the same using Molecule or Circuit. Please check their official documentation for more details.
 
 ```kotlin
 class Presenter() {
@@ -271,7 +270,7 @@ class Presenter() {
 }
 ```
 
-> In Molecule, it allows you to build a `StateFlow` or `Flow` stream using Compose's runtime. Here you would see `launchMolecule` function launches a coroutine that continually recomposes the body to produce a StateFlow stream of values. Here are a few examples:
+In Molecule, it allows you to build a `StateFlow` or `Flow` stream using Compose's runtime. Here you would see `launchMolecule` function launches a coroutine that continually recomposes the body to produce a StateFlow stream of values. Here are a few examples:
 
 ```kotlin
 class LoginViewModel: ViewModel() {
