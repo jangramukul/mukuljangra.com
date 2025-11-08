@@ -6,7 +6,6 @@ site_title: "Mukul"
 site_tagline: "By day, I work as an Android Engineer. I'm passionate about Android, Security, Architecture, Privacy, and Opensource technologies."
 site_github: "https://github.com/jangramukul"
 site_mastodon: "https://mastodon.social/@mukuljangra"
-site_twitter: "https://x.com/iammukuljangra"
 
 highlighter: rouge
 permalink: /:title/
