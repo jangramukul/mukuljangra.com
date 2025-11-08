@@ -160,7 +160,7 @@
 
       .blog-post .date {
         color: var(--date-color);
-        font-size: 0.85em;
+        font-size: 1.05em;
         white-space: nowrap;
         opacity: 0.7;
         font-family: 'Source Code Pro', monospace;
@@ -376,8 +376,8 @@
         </div>
         {% for post in site.posts %}
         <article class="blog-post" data-tags="{{ post.tags | join: '|' }}">
-          <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
           <div class="date">{{ post.date | date:"%d %b %Y" }}</div>
+          <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
         </article>
         {% endfor %}
       </div>
