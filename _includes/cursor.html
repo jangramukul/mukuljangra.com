@@ -1,0 +1,69 @@
+<style>
+  /* Custom cursor effect */
+  #cursor-follower {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(162, 224, 44, 0.4) 0%, rgba(162, 224, 44, 0.2) 50%, rgba(162, 224, 44, 0) 100%);
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease-out;
+    opacity: 0;
+    mix-blend-mode: screen;
+  }
+
+  body.cursor-active #cursor-follower {
+    opacity: 1;
+  }
+</style>
+
+<div id="cursor-follower"></div>
+
+<script>
+  (function() {
+    const cursorFollower = document.getElementById('cursor-follower');
+    let mouseX = 0;
+    let mouseY = 0;
+    let cursorX = 0;
+    let cursorY = 0;
+    const speed = 0.15; // Lower value = smoother/slower following
+
+    // Track mouse position
+    document.addEventListener('mousemove', function(e) {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+
+      // Show cursor on first movement
+      if (!document.body.classList.contains('cursor-active')) {
+        document.body.classList.add('cursor-active');
+      }
+    });
+
+    // Smooth animation loop
+    function animate() {
+      // Lerp (linear interpolation) for smooth following
+      cursorX += (mouseX - cursorX) * speed;
+      cursorY += (mouseY - cursorY) * speed;
+
+      cursorFollower.style.left = cursorX + 'px';
+      cursorFollower.style.top = cursorY + 'px';
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start animation
+    animate();
+
+    // Hide cursor when leaving the window
+    document.addEventListener('mouseleave', function() {
+      document.body.classList.remove('cursor-active');
+    });
+
+    // Show cursor when entering the window
+    document.addEventListener('mouseenter', function() {
+      document.body.classList.add('cursor-active');
+    });
+  })();
+</script>
