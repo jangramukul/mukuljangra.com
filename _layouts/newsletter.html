@@ -456,9 +456,16 @@
           for (var i = 0; i < name.length; i++) { hash = ((hash * 7) + name.charCodeAt(i)) | 0; }
           return Math.abs(hash) % TAG_COLORS.length;
         }
+        const TAG_COLOR_MAP = {
+          'android': 3,
+          'kotlin coroutines': 0,
+          'gradle': 6,
+          'jetpack compose': 2,
+        };
         document.querySelectorAll('.category-chip').forEach(function(el) {
           var tag = el.textContent.trim();
-          var c = TAG_COLORS[hashTagName(tag)];
+          var idx = TAG_COLOR_MAP[tag.toLowerCase()];
+          var c = idx !== undefined ? TAG_COLORS[idx] : TAG_COLORS[hashTagName(tag)];
           el.style.backgroundColor = c.bg;
           el.style.borderColor = c.border;
           el.style.color = c.color;

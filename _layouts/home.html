@@ -735,6 +735,13 @@
           return Math.abs(hash) % TAG_COLORS.length;
         }
 
+        const TAG_COLOR_MAP = {
+          'android': 3,
+          'kotlin coroutines': 0,
+          'gradle': 6,
+          'jetpack compose': 2,
+        };
+
         function applyTagColor(el) {
           var tag = el.textContent.trim();
           if (tag.toLowerCase() === 'all') {
@@ -743,7 +750,8 @@
             el.style.color = '#d1d5db';
             return;
           }
-          var c = TAG_COLORS[hashTagName(tag)];
+          var idx = TAG_COLOR_MAP[tag.toLowerCase()];
+          var c = idx !== undefined ? TAG_COLORS[idx] : TAG_COLORS[hashTagName(tag)];
           el.style.backgroundColor = c.bg;
           el.style.borderColor = c.border;
           el.style.color = c.color;
