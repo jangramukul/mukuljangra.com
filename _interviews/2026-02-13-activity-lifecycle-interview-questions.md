@@ -1,5 +1,5 @@
 ---
-title: "Activity & Fragment Lifecycle — Top Interview Questions"
+title: "Activity & Fragment Lifecycle"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]

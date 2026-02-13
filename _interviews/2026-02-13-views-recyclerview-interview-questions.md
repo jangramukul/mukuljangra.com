@@ -1,5 +1,5 @@
 ---
-title: "Views, RecyclerView & UI Fundamentals — Top Interview Questions"
+title: "Views, RecyclerView & UI Fundamentals"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]

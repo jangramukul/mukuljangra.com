@@ -1,5 +1,5 @@
 ---
-title: "Android Components — Top Interview Questions"
+title: "Android Components"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]

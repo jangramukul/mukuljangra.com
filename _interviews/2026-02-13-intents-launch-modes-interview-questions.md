@@ -1,5 +1,5 @@
 ---
-title: "Intents, Intent Filters & Launch Modes — Top Interview Questions"
+title: "Intents, Intent Filters & Launch Modes"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]

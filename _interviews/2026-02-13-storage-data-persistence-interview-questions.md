@@ -1,5 +1,5 @@
 ---
-title: "Storage & Data Persistence — Top Interview Questions"
+title: "Storage & Data Persistence"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
