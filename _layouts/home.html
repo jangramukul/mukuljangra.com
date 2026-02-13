@@ -351,6 +351,189 @@
         50% { opacity: 0; }
       }
 
+      /* Newsletter chips & card */
+      .newsletter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .newsletter-chip {
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        background-color: rgba(55, 65, 81, 0.4);
+        color: #9ca3af;
+        border: 1px solid rgba(75, 85, 99, 0.4);
+        user-select: none;
+      }
+
+      .newsletter-chip:hover {
+        background-color: rgba(96, 165, 250, 0.15);
+        border-color: rgba(96, 165, 250, 0.4);
+        color: #d1d5db;
+      }
+
+      .newsletter-chip.active {
+        background-color: rgba(96, 165, 250, 0.2);
+        border-color: rgba(96, 165, 250, 0.5);
+        color: #ffffff;
+      }
+
+      .newsletter-card {
+        background-color: rgba(17, 24, 39, 0.6);
+        border: 1px solid rgba(75, 85, 99, 0.3);
+        border-radius: 16px;
+        padding: 32px;
+        display: none;
+      }
+
+      .newsletter-card.active {
+        display: block;
+      }
+
+      .newsletter-card-header {
+        margin-bottom: 16px;
+      }
+
+      .newsletter-card-number {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.6em;
+        font-weight: 700;
+        color: #60a5fa;
+        display: inline;
+      }
+
+      .newsletter-card-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.3em;
+        font-weight: 500;
+        color: #e5e7eb;
+        margin-left: 8px;
+      }
+
+      .newsletter-card-date {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9em;
+        color: #6b7280;
+        margin-bottom: 12px;
+      }
+
+      .newsletter-card-divider {
+        width: 60px;
+        height: 3px;
+        background: #60a5fa;
+        border-radius: 2px;
+        margin-bottom: 24px;
+      }
+
+      .newsletter-card-body {
+        color: #d1d5db;
+        font-size: 1em;
+        line-height: 1.7;
+      }
+
+      .newsletter-card-body h2 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.3em;
+        color: #ffffff;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+        font-weight: 700;
+        border: none;
+        padding: 0;
+      }
+
+      .newsletter-card-body h3 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.15em;
+        color: #ffffff;
+        margin-top: 1.3em;
+        margin-bottom: 0.6em;
+        font-weight: 600;
+      }
+
+      .newsletter-card-body p {
+        margin-bottom: 1em;
+      }
+
+      .newsletter-card-body ul, .newsletter-card-body ol {
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+      }
+
+      .newsletter-card-body li {
+        margin-bottom: 0.4em;
+      }
+
+      .newsletter-card-body a {
+        color: #60a5fa;
+      }
+
+      .newsletter-card-body a:hover {
+        color: #93c5fd;
+      }
+
+      .newsletter-card-body hr {
+        border: none;
+        border-top: 1px solid rgba(75, 85, 99, 0.4);
+        margin: 1.5em 0;
+      }
+
+      .newsletter-card-body blockquote {
+        border-left: 3px solid rgba(96, 165, 250, 0.4);
+        padding: 8px 16px;
+        color: #9ca3af;
+        background-color: rgba(30, 41, 59, 0.3);
+        border-radius: 0 8px 8px 0;
+        margin: 1em 0;
+      }
+
+      .newsletter-card-body code {
+        background-color: #1e293b;
+        color: #e5e7eb;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+
+      .newsletter-card-body pre {
+        background-color: #1e293b;
+        padding: 16px;
+        border-radius: 12px;
+        overflow-x: auto;
+        border: 1px solid rgba(55, 65, 81, 0.4);
+      }
+
+      .newsletter-card-body pre code {
+        padding: 0;
+        background: transparent;
+      }
+
+      @media (max-width: 768px) {
+        .newsletter-card {
+          padding: 20px;
+        }
+
+        .newsletter-card-number {
+          font-size: 1.3em;
+        }
+
+        .newsletter-card-label {
+          font-size: 1.1em;
+        }
+
+        .newsletter-chip {
+          padding: 8px 14px;
+          font-size: 0.82em;
+        }
+      }
+
       @media (max-width: 768px) {
         .right-column {
           padding: 20px;
@@ -443,7 +626,7 @@
         <!-- Tabs -->
         <div class="section-tabs">
           <div class="section-tab active" data-tab="articles">Articles</div>
-          <div class="section-tab" data-tab="newsletter">Newsletter</div>
+          <div class="section-tab" data-tab="newsletter">Weekly Newsletter</div>
         </div>
 
         <!-- Articles tab -->
@@ -498,31 +681,23 @@
         <div class="tab-content" id="tab-newsletter">
           {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
           {% if newsletters.size > 0 %}
+            <div class="newsletter-chips">
+              {% for newsletter in newsletters %}
+              <div class="newsletter-chip{% if forloop.first %} active{% endif %}" data-newsletter="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
+              {% endfor %}
+            </div>
             {% for newsletter in newsletters %}
-            <a href="{{ newsletter.url }}" class="list-post-link">
-              <article class="list-post">
-                <div class="list-post-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                </div>
-                <div class="list-post-content">
-                  <h2>{{ newsletter.title }}</h2>
-                  {% if newsletter.tags.size > 0 %}
-                  <div class="list-post-tags">
-                    {% for tag in newsletter.tags %}
-                    <span class="list-post-tag">{{ tag }}</span>
-                    {% endfor %}
-                  </div>
-                  {% endif %}
-                  <div class="date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
-                </div>
-                <div class="list-post-arrow">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </div>
-              </article>
-            </a>
+            <div class="newsletter-card{% if forloop.first %} active{% endif %}" id="newsletter-{{ forloop.index0 }}">
+              <div class="newsletter-card-header">
+                <span class="newsletter-card-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
+                <span class="newsletter-card-label">Weekly</span>
+              </div>
+              <div class="newsletter-card-date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
+              <div class="newsletter-card-divider"></div>
+              <div class="newsletter-card-body">
+                {{ newsletter.content }}
+              </div>
+            </div>
             {% endfor %}
           {% else %}
             <div class="empty-state">
@@ -605,6 +780,20 @@
         // Tag filtering (articles only)
         const chips = document.querySelectorAll('.category-chip');
         const posts = document.querySelectorAll('#tab-articles .list-post-link');
+
+        // Newsletter chip switching
+        const nlChips = document.querySelectorAll('.newsletter-chip');
+        const nlCards = document.querySelectorAll('.newsletter-card');
+
+        nlChips.forEach(chip => {
+          chip.addEventListener('click', function() {
+            nlChips.forEach(c => c.classList.remove('active'));
+            nlCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            const idx = this.dataset.newsletter;
+            document.getElementById('newsletter-' + idx).classList.add('active');
+          });
+        });
 
         function selectTag(tag) {
           chips.forEach(c => c.classList.remove('active'));
