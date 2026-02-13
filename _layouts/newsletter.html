@@ -396,33 +396,20 @@
   </head>
   <body>
     <div class="gradient-bg"></div>
-    <!-- Orbital circle animation -->
-    <div class="orbital-container">
-      <div class="orbital-ring orbital-ring-1"></div>
-      <div class="orbital-ring orbital-ring-2"></div>
-      <div class="orbital-ring orbital-ring-3"></div>
-      <div class="orbital-dots">
-        <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="200" cy="200" r="190" stroke="rgba(148,163,184,0.15)" stroke-width="0.5" stroke-dasharray="3 6" />
-          <circle cx="200" cy="200" r="190" stroke="rgba(148,163,184,0.3)" stroke-width="1" stroke-dasharray="1 12" stroke-dashoffset="0" />
-        </svg>
-      </div>
-    </div>
-    <!-- Stars overlay -->
-    <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
-      <div class="star-subtle" style="left:10%;top:15%;animation-delay:0.5s;animation-duration:3.8s"></div>
-      <div class="star-subtle" style="left:30%;top:10%;animation-delay:1.5s;animation-duration:4.2s"></div>
-      <div class="star-subtle" style="left:55%;top:20%;animation-delay:2.2s;animation-duration:3.5s"></div>
-      <div class="star-subtle" style="left:75%;top:8%;animation-delay:0.8s;animation-duration:4.5s"></div>
-      <div class="star-subtle" style="left:90%;top:25%;animation-delay:3.0s;animation-duration:3.9s"></div>
-      <div class="star-subtle" style="left:20%;top:45%;animation-delay:1.2s;animation-duration:4.1s"></div>
-      <div class="star-subtle" style="left:65%;top:50%;animation-delay:2.8s;animation-duration:3.6s"></div>
-      <div class="star-subtle" style="left:85%;top:60%;animation-delay:0.3s;animation-duration:4.4s"></div>
-      <div class="star-subtle" style="left:40%;top:70%;animation-delay:1.8s;animation-duration:3.7s"></div>
-      <div class="star-subtle" style="left:5%;top:80%;animation-delay:2.5s;animation-duration:4.0s"></div>
+    <!-- Stars overlay (top 50% only) -->
+    <div style="position:fixed;top:0;left:0;right:0;height:50vh;z-index:0;pointer-events:none;overflow:hidden;">
+      <div class="star-subtle" style="left:8%;top:12%;animation-delay:0.2s;animation-duration:3.5s"></div>
+      <div class="star-subtle" style="left:22%;top:20%;animation-delay:1.8s;animation-duration:4.2s"></div>
+      <div class="star-subtle" style="left:45%;top:30%;animation-delay:0.5s;animation-duration:3.8s"></div>
+      <div class="star-subtle" style="left:68%;top:10%;animation-delay:2.5s;animation-duration:4.5s"></div>
+      <div class="star-subtle" style="left:88%;top:40%;animation-delay:1.1s;animation-duration:3.3s"></div>
+      <div class="star-subtle" style="left:35%;top:55%;animation-delay:0.8s;animation-duration:3.6s"></div>
+      <div class="star-subtle" style="left:58%;top:65%;animation-delay:2s;animation-duration:4.3s"></div>
+      <div class="star-subtle" style="left:78%;top:75%;animation-delay:1.5s;animation-duration:3.9s"></div>
+      <div class="star-subtle" style="left:12%;top:70%;animation-delay:3.2s;animation-duration:4s"></div>
+      <div class="star-subtle" style="left:95%;top:25%;animation-delay:2.8s;animation-duration:4.1s"></div>
     </div>
     <div class="main-background" style="z-index: -2;"></div>
-
 
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
