@@ -1,5 +1,5 @@
 ---
-title: Compose State Management — ViewModel vs Presenters
+title: Do You Still Need ViewModel in Compose?
 layout: post
 categories: post
 tags:
@@ -33,7 +33,7 @@ These are real, practical benefits. Any alternative needs to address them.
 
 Here's the thing. ViewModel was designed for the Fragment/Activity world. It predates Compose. When you use it with Compose, you get a few awkward interactions.
 
-**You can't scope a ViewModel to a composable.** ViewModels must be scoped to an Activity, Fragment, or NavBackStackEntry. This means your composable hierarchy and your state hierarchy don't always align cleanly.
+**You can't scope a ViewModel to a composable.** ViewModels are scoped to a `ViewModelStoreOwner`. The framework provides `ComponentActivity`, `Fragment`, and `NavBackStackEntry` as built-in implementations, but any custom `ViewModelStoreOwner` is also a valid scope. Since composables don't implement `ViewModelStoreOwner`, your composable hierarchy and your state hierarchy don't always align cleanly.
 
 **State conversion overhead.** ViewModel exposes `StateFlow`, but Compose works with snapshot state. Every collection point needs `collectAsStateWithLifecycle()`. With compose state directly, the composable just reads the value — no conversion, no lifecycle awareness boilerplate.
 
