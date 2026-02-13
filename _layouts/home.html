@@ -944,13 +944,13 @@
             <div class="category-chip interview-chip" data-itag="DSA">DSA</div>
             <div class="category-chip interview-chip" data-itag="Take_Home">Take-Home Assignment</div>
           </div>
-          {% assign interviews = site.interviews | sort: 'date' | reverse %}
+          {% assign interviews = site.interviews | sort: 'order' %}
           {% if interviews.size > 0 %}
           <div class="interviews-list">
           {% for interview in interviews %}
           <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon interview-number">{{ forloop.index }}</div>
+              <div class="list-post-icon interview-number">{{ interview.order }}</div>
               <div class="list-post-content">
                 <h2>{{ interview.title }}</h2>
                 {% if interview.tags.size > 0 %}

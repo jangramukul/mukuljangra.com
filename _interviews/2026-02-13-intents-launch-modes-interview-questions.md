@@ -10,13 +10,13 @@ order: 3
 
 Intents and launch modes come up in almost every Android technical round. Interviewers use them to gauge whether you actually understand how Android components communicate, how the system manages tasks, and whether you've dealt with real navigation bugs in production.
 
-### 🔑 Core Questions (Beginner → Intermediate)
+### Core Questions (Beginner → Intermediate)
 
-**Q1: What is an Intent in Android?**
+#### Q1: What is an Intent in Android?
 
 An Intent is a messaging object that Android uses to request an action from another component. You can think of it as the communication bridge between Activities, Services, and BroadcastReceivers. It carries an action to perform, optional data (as a URI), extras (key-value pairs), and flags that control behavior. Every time you start an Activity, bind a Service, or send a broadcast, you're using an Intent under the hood.
 
-**Q2: What's the difference between explicit and implicit intents?**
+#### Q2: What's the difference between explicit and implicit intents?
 
 An explicit intent specifies the exact component by class name. You use it for communication within your own app — starting a specific Activity or Service where you know the target.
 
@@ -38,7 +38,7 @@ startActivity(Intent.createChooser(shareIntent, "Share via"))
 
 The key distinction interviewers look for: explicit intents bypass intent filter matching entirely. The system delivers them directly to the named component. Implicit intents trigger the full resolution process — action test, category test, and data test — against every declared intent filter on the device. One common mistake candidates make is saying "implicit intents are for other apps and explicit intents are for your app." That's the common pattern, but it's not a rule. You can use an explicit intent to start a component in another app if you know the package and class name.
 
-**Q3: What are intent extras, and how do you pass data between Activities?**
+#### Q3: What are intent extras, and how do you pass data between Activities?
 
 Extras are key-value pairs bundled inside the Intent. You use `putExtra()` to attach data and `getStringExtra()`, `getIntExtra()`, etc., to retrieve it on the receiving end. Under the hood, extras are stored in a `Bundle`, which is essentially a mapping of string keys to typed values.
 
@@ -59,7 +59,7 @@ val isPremium = intent.getBooleanExtra("isPremiumUser", false)
 
 For complex objects, you need either `Parcelable` or `Serializable`. This is a natural follow-up interviewers love to chain into.
 
-**Q4: Parcelable vs Serializable — when do you use which?**
+#### Q4: Parcelable vs Serializable — when do you use which?
 
 Both convert objects to byte streams so they can travel through Intents and Bundles. The difference is how they do it and what it costs.
 
@@ -78,7 +78,7 @@ data class OrderItem(
 
 In interviews, the answer is straightforward: always use `Parcelable` on Android. Use `@Parcelize` to eliminate the boilerplate argument. The only situation where `Serializable` makes sense is if you're sharing model classes with a pure Java/Kotlin backend module that has no Android dependency.
 
-**Q5: What's the difference between `setData()` and `putExtra()`?**
+#### Q5: What's the difference between `setData()` and `putExtra()`?
 
 `setData()` sets the Intent's data as a URI. The system uses this URI during intent filter matching — it's checked against the `<data>` elements in the filter. You typically use it with `ACTION_VIEW` to point to a resource: a web URL, a content URI, a custom scheme.
 
@@ -99,7 +99,7 @@ val detailIntent = Intent(this, ProductActivity::class.java).apply {
 
 A common gotcha: calling `setData()` and `setType()` separately clears the other. If you need both a URI and a MIME type, use `setDataAndType()`.
 
-**Q6: What is an Intent Filter? How does the system match them?**
+#### Q6: What is an Intent Filter? How does the system match them?
 
 An intent filter is declared in the manifest to advertise what kinds of implicit intents a component can handle. When the system receives an implicit intent, it runs three tests against every declared filter.
 
@@ -123,7 +123,7 @@ An intent filter is declared in the manifest to advertise what kinds of implicit
 
 A component can have multiple intent filters. Only one filter needs to match for the component to receive the intent. A mistake candidates often make is forgetting `CATEGORY_DEFAULT` — without it, your Activity will never receive implicit intents from `startActivity()`.
 
-**Q7: What is a PendingIntent?**
+#### Q7: What is a PendingIntent?
 
 A PendingIntent is a wrapper around an Intent that grants another application or system component the ability to execute that Intent on your behalf, with your app's identity and permissions. It's essentially a token for future execution.
 
@@ -151,7 +151,7 @@ val broadcastPending = PendingIntent.getBroadcast(
 
 The three primary use cases are notifications (the system executes the intent when the user taps it), AlarmManager (the system fires the intent at a scheduled time), and AppWidgets (the launcher process executes it on widget interaction). The critical thing interviewers want to hear is that PendingIntent delegates execution to another process — the NotificationManager, AlarmManager, or a home screen launcher — and that process acts with your app's permissions.
 
-**Q8: What are FLAG_IMMUTABLE and FLAG_MUTABLE, and when do you use each?**
+#### Q8: What are FLAG_IMMUTABLE and FLAG_MUTABLE, and when do you use each?
 
 Starting with Android 12 (API 31), every PendingIntent must explicitly declare whether it's mutable or immutable. If you don't specify one, the system throws an `IllegalArgumentException`.
 
@@ -161,13 +161,13 @@ Starting with Android 12 (API 31), every PendingIntent must explicitly declare w
 
 The security angle matters in interviews — a mutable PendingIntent handed to another app means that app can modify the intent's data before it fires. That's a potential privilege escalation vector.
 
-**Q9: What is a Sticky Intent? Is it still relevant?**
+#### Q9: What is a Sticky Intent? Is it still relevant?
 
 A sticky intent is a broadcast that remains in the system after being sent. Other components can retrieve the last broadcast data at any time without needing to be registered when the broadcast was originally sent. The classic example is `ACTION_BATTERY_CHANGED` — you can get the current battery level even if you register your receiver after the system broadcast it.
 
 The important detail for interviews: `sendStickyBroadcast()` is deprecated since API 21. It was never a great API — it offered no security (any app could access or modify the sticky data), no protection against spoofing, and no way to know who sent it. Modern alternatives are `LiveData`, `StateFlow`, or checking system services directly (like `BatteryManager`). If an interviewer asks about sticky intents, acknowledge what they were, then explain why they were deprecated and what replaced them. That shows you understand the evolution of the platform.
 
-**Q10: What are the four launch modes? Explain each.**
+#### Q10: What are the four launch modes? Explain each.
 
 Launch modes control how new instances of an Activity are created and associated with tasks. They're set via `android:launchMode` in the manifest.
 
@@ -179,15 +179,15 @@ Launch modes control how new instances of an Activity are created and associated
 
 **singleInstance** — Same as singleTask, but the activity is the sole member of its task. No other activity can ever be launched into that task. Any activity started from a singleInstance activity will open in a separate task. This is rare — the phone dialer is the classic example.
 
-### 🧠 Deep Dive Questions (Advanced → Expert)
+### Deep Dive Questions (Advanced → Expert)
 
-**Q11: What is singleInstancePerTask and how does it differ from singleInstance?**
+#### Q11: What is singleInstancePerTask and how does it differ from singleInstance?
 
 Introduced in Android 12 (API 31), `singleInstancePerTask` acts as the root activity of a task and allows only one instance per task — similar to singleInstance. The key difference is that it can have multiple instances, each in a different task. With singleInstance, there's exactly one instance system-wide. With singleInstancePerTask, if you use `FLAG_ACTIVITY_MULTIPLE_TASK` or `FLAG_ACTIVITY_NEW_DOCUMENT`, the system can create additional instances in new tasks.
 
 This was added because singleInstance was too restrictive for multi-window scenarios (split screen, freeform windows on tablets and Chromebooks). singleInstancePerTask gives you the "sole activity in its task" isolation without the global singleton constraint. Like singleTask, it also destroys all activities above the starting activity when the existing instance receives a new intent.
 
-**Q12: How do Intent flags interact with manifest launch modes? Which takes priority?**
+#### Q12: How do Intent flags interact with manifest launch modes? Which takes priority?
 
 Intent flags override manifest attributes when there's a conflict. If Activity A launches Activity B with a flag, and B has a different launch mode declared in its manifest, the flag from A's intent is honored.
 
@@ -210,7 +210,7 @@ startActivity(intent)
 
 A gotcha that trips up candidates: `FLAG_ACTIVITY_CLEAR_TOP` with a `standard` mode activity doesn't reuse the existing instance. It finishes the old one and creates a new one. You need to pair it with `FLAG_ACTIVITY_SINGLE_TOP` (or set `singleTop` in the manifest) to get the `onNewIntent()` behavior.
 
-**Q13: What is task affinity and how does it affect launch behavior?**
+#### Q13: What is task affinity and how does it affect launch behavior?
 
 Task affinity is a string attribute (`android:taskAffinity`) that determines which task an activity "prefers" to belong to. By default, all activities in the same app share the app's package name as their affinity. Two situations make affinity relevant.
 
@@ -220,7 +220,7 @@ Second, when an activity has `allowTaskReparenting="true"`, it can move from one
 
 In interviews, the key point is that task affinity is only meaningful alongside `FLAG_ACTIVITY_NEW_TASK` or `allowTaskReparenting`. On its own, changing the affinity string does nothing visible.
 
-**Q14: Walk through the back stack behavior for each launch mode with a concrete example.**
+#### Q14: Walk through the back stack behavior for each launch mode with a concrete example.
 
 Start with a task stack: `HomeActivity → SearchActivity → ProductActivity`.
 
@@ -232,7 +232,7 @@ Start with a task stack: `HomeActivity → SearchActivity → ProductActivity`.
 
 **singleInstance** — If ProductActivity is singleInstance, it lives in its own task. If you launch `SettingsActivity` from it, Settings opens in a different task. The user pressing back from Settings doesn't go back to Product — it goes to the previous activity in that other task. This is the most confusing mode for users and developers alike.
 
-**Q15: How do you handle deep links vs App Links? What's the real-world difference?**
+#### Q15: How do you handle deep links vs App Links? What's the real-world difference?
 
 Both use intent filters to route URIs to your app, but they differ in trust and user experience.
 
@@ -265,7 +265,7 @@ Both use intent filters to route URIs to your app, but they differ in trust and 
 
 The `android:autoVerify="true"` attribute triggers the verification process. Without it, even HTTPS links behave like regular deep links with the disambiguation dialog. A common interview mistake is conflating deep links and App Links — they're related but the verification mechanism is what separates them.
 
-**Q16: What happens inside onNewIntent()? What do you need to be careful about?**
+#### Q16: What happens inside onNewIntent()? What do you need to be careful about?
 
 When a launch mode or flag prevents a new instance from being created, the system calls `onNewIntent()` on the existing Activity with the new Intent. The critical detail is that `getIntent()` still returns the original Intent that first created the Activity — not the new one. You must call `setIntent(newIntent)` explicitly if you want `getIntent()` to reflect the latest data.
 
@@ -282,7 +282,7 @@ The lifecycle implication is also important: `onNewIntent()` is called before `o
 
 Another gotcha: the user cannot press Back to return to the state before `onNewIntent()` was called. The previous intent data is gone. If your activity behavior depends heavily on the incoming intent, make sure the user experience makes sense when the underlying data changes without a navigation transition.
 
-**Q17: How do you handle deep links in a single-Activity architecture with Navigation Component?**
+#### Q17: How do you handle deep links in a single-Activity architecture with Navigation Component?
 
 In a single-Activity app using Jetpack Navigation, deep links map to navigation destinations rather than Activities. You define them in the navigation graph using `<deepLink>` elements, and the NavController handles routing.
 
@@ -311,7 +311,7 @@ val pendingIntent = NavDeepLinkBuilder(context)
 
 The advantage here is that `NavDeepLinkBuilder` creates a synthetic back stack. If the user lands on the product screen via a notification and presses Back, they navigate to the parent destination (like Home) instead of exiting the app. Without this, deep links into the middle of your app leave users stranded with no logical back navigation.
 
-**Q18: Explain deferred deep links. How do you handle a deep link when your app isn't installed?**
+#### Q18: Explain deferred deep links. How do you handle a deep link when your app isn't installed?
 
 A deferred deep link is a link that should route to specific content in your app, but the app isn't installed yet. The standard flow is: user clicks a link, gets redirected to the Play Store, installs the app, opens it, and then sees the intended content — not just the home screen.
 
@@ -319,7 +319,7 @@ Android doesn't have a built-in deferred deep linking mechanism. The system can 
 
 The implementation pattern is: your server redirects to the Play Store with a referrer parameter, the Play Store passes that referrer to your app after installation via the Install Referrer API, and your app reads it on first launch to navigate to the intended content. It's a multi-hop flow with no single clean API, which is exactly why interviewers ask about it — they want to see if you understand the real-world complexity beyond the happy path.
 
-**Q19: What security concerns exist with implicit intents and PendingIntents?**
+#### Q19: What security concerns exist with implicit intents and PendingIntents?
 
 Implicit intents have a fundamental security gap: any app can declare an intent filter to intercept them. If you send sensitive data via an implicit intent, a malicious app could register a matching filter and capture it. This is why you should always use explicit intents for Services — starting with Android 5.0, the system actually throws an exception if you try to bind a Service with an implicit intent.
 
@@ -329,7 +329,7 @@ The `FLAG_MUTABLE` concern is another layer — a mutable PendingIntent allows t
 
 Another subtle point: intent filters declared in the manifest are not a security mechanism. Even with `android:exported="true"` and intent filters, any app that knows the component name can send an explicit intent directly to it, bypassing the filter entirely. If you need to restrict access, use permissions or set `android:exported="false"`.
 
-**Q20: If you have a standard-mode Activity and you use FLAG_ACTIVITY_CLEAR_TOP, what happens? Why does it matter?**
+#### Q20: If you have a standard-mode Activity and you use FLAG_ACTIVITY_CLEAR_TOP, what happens? Why does it matter?
 
 This is a trap that catches many candidates. With `standard` launch mode and `FLAG_ACTIVITY_CLEAR_TOP`, the system destroys all activities above the target activity in the stack, and then also destroys the target itself and creates a new instance. It does not call `onNewIntent()`.
 
@@ -352,7 +352,7 @@ val intent = Intent(this, HomeActivity::class.java).apply {
 
 This is the kind of edge case that causes real bugs in production — a developer clears the stack expecting to return to an existing Home screen, but instead the Home activity is recreated, losing its state.
 
-### 💡 Common Follow-ups
+### Common Follow-ups
 
 - How would you choose between using a launch mode in the manifest vs using intent flags?
 - What happens if you launch a singleTask activity from a different app? Which task comes to the foreground?
@@ -365,7 +365,7 @@ This is the kind of edge case that causes real bugs in production — a develope
 - What's the lifecycle sequence when an Activity receives `onNewIntent()` while stopped vs while paused?
 - How does `CATEGORY_BROWSABLE` differ from `CATEGORY_DEFAULT` in intent filters?
 
-### ✅ Tips for the Interview
+### Tips for the Interview
 
 1. **Draw the back stack** — When explaining launch modes, sketch the stack state before and after. Interviewers love visual thinkers. Say "stack is A-B-C, intent for B arrives, now it's A-B" while drawing it. It eliminates ambiguity and shows you actually understand what happens.
 
