@@ -9,46 +9,27 @@ tags:
   - Architecture
 ---
 
-For years, `ViewModel` has been the default choice for managing state in Android apps. Google recommends it, every tutorial uses it, and most codebases are built around it. It works. But as apps became more Compose-driven, I started noticing friction points — things that felt unnecessarily complex for what should be straightforward state management.
+In my [previous post](https://mukuljangra.com/2025/10/14/compose-beyond-ui.html), I walked through different ways to write ViewModels — single field states, UI state classes, combine pipelines, and the Compose way with Molecule. That post was about the evolution of state production. This one is about a more fundamental question: does the ViewModel abstraction itself still make sense in a Compose-driven app, or has the Compose runtime made it redundant?
 
-Around the same time, libraries like [Circuit](https://slackhq.github.io/circuit/) from Slack and [Molecule](https://github.com/cashapp/molecule) from Cash App introduced a different approach: Compose-native presenters. The idea is simple — if Compose runtime already has a powerful state management system, why not use it for business logic too?
+I've been working with both approaches — traditional ViewModel with StateFlow and Circuit's Presenter pattern — on different projects. After spending enough time with both, I think the answer is more nuanced than "just use Circuit" or "stick with ViewModel." The right choice depends on what kind of friction you're actually hitting, and to make that judgment, you need to understand what each approach gives you and what it costs.
 
-In my [previous post](https://mukuljangra.com/2025/10/14/compose-beyond-ui.html), I explored different ways to write ViewModels and briefly touched on the Compose way. This post goes deeper into the structural comparison: what ViewModel gives us, where it creates friction with Compose, and how the Presenter pattern offers a different mental model.
+## Where ViewModel Creates Friction With Compose
 
-## What ViewModel Actually Gives You
+ViewModel was designed for the Fragment and Activity world. It predates Compose entirely. When you use it with Compose, a few structural mismatches show up that go beyond just syntax inconvenience.
 
-Before comparing, it's important to understand what ViewModel provides out of the box:
+The first one is scoping. ViewModel is scoped to a `ViewModelStoreOwner` — `ComponentActivity`, `Fragment`, or `NavBackStackEntry`. Composable functions are not `ViewModelStoreOwner` implementations, which means your composable hierarchy and your state hierarchy don't always align. If you have a complex screen with multiple logical sections that each need independent state, you can't scope a ViewModel to a composable subtree. You either hoist everything into one large ViewModel or create workarounds. This is a fundamental architectural mismatch — Compose thinks in terms of composable trees, but ViewModel thinks in terms of platform lifecycle owners.
 
-**Lifecycle scoping** — ViewModel survives configuration changes. When the user rotates the screen, the ViewModel stays in memory. You don't lose your network response or in-flight request.
+The second friction is the conversion overhead between StateFlow and Compose's snapshot state system. ViewModel exposes `StateFlow`, but Compose natively works with snapshot state. Every collection point requires `collectAsStateWithLifecycle()` and the associated lifecycle ceremony. With `SharingStarted.WhileSubscribed(5_000)`, `stateIn`, and `viewModelScope`, you're writing a fair amount of pipeline plumbing just to get state from your ViewModel into your composable. With Compose state directly, the composable just reads the value — no conversion, no lifecycle boilerplate. And there are real consequences beyond just boilerplate: Compose's `TextField` API, for example, works noticeably better with direct `mutableStateOf` than with `StateFlow` because the state synchronization between the ViewModel and UI doesn't have the latency that comes with collecting a flow. Many articles and conference talks have discussed this specific problem, and the practical solution has been to use Compose state for text fields even inside traditional ViewModels.
 
-**viewModelScope** — A coroutine scope tied to the ViewModel's lifecycle. When the ViewModel is cleared, all coroutines are cancelled automatically.
+The third is the `combine` ceiling. When a complex screen has 6-7+ input sources — user inputs, repository observations, network results — the `combine` function has type-safe overloads for only up to 5 flows. Beyond that, you're stuck with the varargs overload where everything becomes `Array<T>` and you lose individual type information, or you nest combines. I've seen production ViewModels where more than half the code is just pipeline plumbing rather than actual business logic. The upstream flow, downstream subscriber, `stateIn` conversion chain gets repetitive and hard to follow as screens grow.
 
-**SavedStateHandle** — Persists data across process death. This is the one that matters for production apps. If the OS kills your process while the user switches apps, SavedStateHandle restores the state when they come back.
+## What Circuit Actually Does Differently
 
-**Scoping to Navigation** — ViewModel can be scoped to a `NavBackStackEntry`, which means shared state between screens in the same nav graph becomes straightforward.
-
-These are real, practical benefits. Any alternative needs to address them.
-
-## The Friction With Compose
-
-Here's the thing. ViewModel was designed for the Fragment/Activity world. It predates Compose. When you use it with Compose, you get a few awkward interactions.
-
-**You can't scope a ViewModel to a composable.** ViewModels are scoped to a `ViewModelStoreOwner`. The framework provides `ComponentActivity`, `Fragment`, and `NavBackStackEntry` as built-in implementations, but any custom `ViewModelStoreOwner` is also a valid scope. Since composables don't implement `ViewModelStoreOwner`, your composable hierarchy and your state hierarchy don't always align cleanly.
-
-**State conversion overhead.** ViewModel exposes `StateFlow`, but Compose works with snapshot state. Every collection point needs `collectAsStateWithLifecycle()`. With compose state directly, the composable just reads the value — no conversion, no lifecycle awareness boilerplate.
-
-**The combine problem.** When a screen has 6-7 input sources, the `combine` function tops out at 5 flows. You end up nesting combines or writing custom combiners. The code becomes hard to follow. I've seen production ViewModels where more than half the code is just pipeline plumbing.
-
-**Init block side effects.** Launching coroutines in `init` is common but risky. With Compose state, this can throw `IllegalStateException` if the object isn't fully initialized. You need to be careful about ordering.
-
-None of these are dealbreakers. But they add up, especially on complex screens.
-
-## The Presenter Pattern
-
-Circuit introduces a different architecture. Instead of ViewModel + StateFlow, you get a `Presenter` that is a `@Composable` function returning state. The Presenter and the UI are two separate composable functions that communicate only through state and events.
+Circuit, built by the Slack engineering team, takes a fundamentally different approach. Instead of ViewModel + StateFlow, you get a `Presenter` whose `present()` function is a `@Composable` that returns state. The key architectural insight is that Compose runtime and Compose UI are separate things — a composable function can either render UI content or return a state value, but it shouldn't do both. Circuit enforces this separation: the Presenter is a composable that only produces state, and the Ui is a composable that only renders. They communicate through a `Screen` object that defines the `State` and `Event` types they share.
 
 ```kotlin
-data class LoginScreen : Screen {
+@Parcelize
+data object LoginScreen : Screen {
     data class State(
         val username: String,
         val isLoading: Boolean,
@@ -62,11 +43,12 @@ data class LoginScreen : Screen {
 }
 ```
 
-The Presenter produces state. It doesn't know about the UI at all.
+The Presenter uses Compose's runtime — `remember`, `rememberSaveable`, `LaunchedEffect`, `produceState` — to produce state. No `MutableStateFlow`, no `combine`, no `stateIn`. The business logic reads like imperative Kotlin because you're using Compose's recomposition system to react to state changes instead of wiring reactive streams together. Circuit enforces this with `@ComposableTarget("presenter")` which prevents Presenter code from accidentally emitting UI, and you can configure build warnings to catch violations at compile time.
 
 ```kotlin
-class LoginPresenter @Inject constructor(
+class LoginPresenter @AssistedInject constructor(
     private val loginRepository: LoginRepository,
+    @Assisted private val navigator: Navigator,
 ) : Presenter<LoginScreen.State> {
 
     @Composable
@@ -94,96 +76,42 @@ class LoginPresenter @Inject constructor(
 }
 ```
 
-And the UI consumes it. It receives state, renders UI, and emits events through the `eventSink`.
+The Ui receives the state and emits events through the `eventSink`. It never references the Presenter directly — it only knows about the Screen and its State. This separation is strict and testable.
 
 ```kotlin
-class LoginUi @Inject constructor() : Ui<LoginScreen.State> {
-
-    @Composable
-    override fun Content(state: LoginScreen.State, modifier: Modifier) {
-        Column(modifier = modifier) {
-            TextField(
-                value = state.username,
-                onValueChange = { state.eventSink(LoginScreen.Event.UsernameChanged(it)) },
-            )
-
-            Button(
-                onClick = { state.eventSink(LoginScreen.Event.SubmitClicked) },
-                enabled = !state.isLoading,
-            ) {
-                Text("Login")
-            }
-        }
-    }
-}
-```
-
-The Presenter and Ui never reference each other directly. They only know about the `Screen` and its `State`.
-
-## Comparing The Two
-
-### State Production
-
-In a traditional ViewModel, state production involves creating `MutableStateFlow`, exposing it as `StateFlow`, using `combine` for multiple sources, and calling `.update { it.copy(...) }` for mutations. It works, but there's boilerplate.
-
-In a Presenter, state production is just Compose code. You use `remember`, `rememberSaveable`, `LaunchedEffect`, `collectAsState()`. The state is returned directly from the composable function. No flow conversion, no combine limits.
-
-```kotlin
-// ViewModel way
-class SearchViewModel(
-    private val repository: SearchRepository,
-) : ViewModel() {
-    private val _query = MutableStateFlow("")
-    private val _results = MutableStateFlow<List<Result>>(emptyList())
-
-    val uiState = combine(_query, _results) { query, results ->
-        SearchUiState(query = query, results = results)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = SearchUiState()
-    )
-
-    fun onQueryChanged(query: String) {
-        _query.value = query
-        viewModelScope.launch {
-            _results.value = repository.search(query)
-        }
-    }
-}
-
-// Presenter way
+@CircuitInject(LoginScreen::class, AppScope::class)
 @Composable
-fun searchPresenter(repository: SearchRepository): SearchState {
-    var query by rememberSaveable { mutableStateOf("") }
-    val results by produceState<List<Result>>(emptyList(), query) {
-        value = repository.search(query)
-    }
-
-    return SearchState(
-        query = query,
-        results = results,
-    ) { event ->
-        when (event) {
-            is SearchEvent.QueryChanged -> query = event.value
-        }
+fun LoginUi(state: LoginScreen.State, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        TextField(
+            value = state.username,
+            onValueChange = { state.eventSink(LoginScreen.Event.UsernameChanged(it)) },
+        )
+        Button(
+            onClick = { state.eventSink(LoginScreen.Event.SubmitClicked) },
+            enabled = !state.isLoading,
+        ) { Text("Login") }
     }
 }
 ```
 
-The Presenter version is more concise. `produceState` handles the coroutine launch and cancellation automatically when `query` changes. No need for manual scope management.
+## The Lifecycle Question
 
-### Lifecycle Handling
+The first thing people ask about Circuit is: how does it handle what ViewModel handles — configuration changes, process death, and coroutine scoping? The answer is a three-tier retention system that Circuit provides through its presenter composition:
 
-ViewModel survives configuration changes because the Android framework retains it. The Presenter pattern handles this differently. In Circuit, the `Navigator` and the framework manage screen retention. `rememberSaveable` handles state persistence across configuration changes, just like it does in regular Compose code.
+| Mechanism | Survives recomposition | Survives back stack | Survives config change | Survives process death |
+|-----------|:---:|:---:|:---:|:---:|
+| `remember` | Yes | No | No | No |
+| `rememberRetained` | Yes | Yes | Yes | No |
+| `rememberSaveable` | Yes | Yes | Yes | Yes |
 
-For process death, ViewModel uses `SavedStateHandle`. Circuit Presenters use `rememberSaveable` which internally uses the same `SavedStateHandle` mechanism. Both end up at the same place, but the API surface is different.
+Here's the thing that surprised me: `rememberRetained` is backed by a hidden `ViewModel` on Android. So when people ask "can I replace ViewModel with Circuit?" — architecturally, yes. But under the hood, Circuit still uses the ViewModel mechanism for retention. You're not escaping ViewModel, you're changing the abstraction level you work at. Instead of writing `class LoginViewModel : ViewModel()` with StateFlow plumbing, you write `remember`/`rememberRetained`/`rememberSaveable` in a Presenter composable, and Circuit handles the ViewModel layer invisibly.
 
-> **Note**: `rememberSaveable` in a Presenter works because Circuit manages the composition lifecycle. The Presenter's composition survives configuration changes the same way a ViewModel would.
+For process death specifically, both approaches end up at the same mechanism — Android's saved instance state. ViewModel uses `SavedStateHandle`. Circuit Presenters use `rememberSaveable`, which internally uses the same saved instance state infrastructure. The API surface is different, but the underlying capability is identical.
 
-### Testability
+## Testing Side by Side
 
-This is where things get interesting. Testing a ViewModel is straightforward — you call methods and assert on StateFlow values.
+This is where the practical difference becomes concrete. Testing a ViewModel is straightforward and familiar — you call methods and assert on StateFlow values using `runTest`:
 
 ```kotlin
 @Test
@@ -199,13 +127,14 @@ fun `search updates results`() = runTest {
 }
 ```
 
-Testing a Circuit Presenter uses the `Presenter.test()` extension from their testing library. It runs the composable in a test composition and lets you emit events and assert on state emissions.
+Circuit provides `Presenter.test()`, an extension that leverages Molecule and Turbine under the hood. It runs the composable in a test composition and gives you a `CircuitReceiveTurbine` that emits distinct state changes. You emit events through the `eventSink` on the state object and assert on the next state emission:
 
 ```kotlin
 @Test
 fun `search updates results`() = runTest {
+    val navigator = FakeNavigator(SearchScreen)
     val repository = FakeSearchRepository()
-    val presenter = SearchPresenter(repository)
+    val presenter = SearchPresenter(navigator, repository)
 
     presenter.test {
         val initial = awaitItem()
@@ -219,30 +148,20 @@ fun `search updates results`() = runTest {
 }
 ```
 
-Both approaches are testable. The ViewModel test feels more familiar. The Presenter test is closer to how the component actually runs — it tests the recomposition cycle, not just method calls. But I would argue, ViewModel testing is simpler if you're already comfortable with coroutines testing using `runTest` and `Turbine`. Presenter testing requires learning Circuit's test utilities.
+Both approaches are testable without mocking frameworks — Circuit explicitly states that its core components are "not mockable nor do they need to be mocked." I would argue that ViewModel testing feels simpler if you're already comfortable with `runTest` and coroutines testing. Presenter testing requires learning Circuit's test utilities and understanding Turbine's `awaitItem()` model. But the Presenter test is closer to how the component actually runs in production — it tests the recomposition cycle and the full state/event loop, not just isolated method calls.
 
-### Navigation and Scoping
+## Navigation Is the Biggest Decision
 
-ViewModel integrates directly with Jetpack Navigation. You scope ViewModels to `NavBackStackEntry`, share them between screens in the same nav graph, and get automatic cleanup when the destination is popped.
+What I think is underrated in the Circuit vs ViewModel discussion is the navigation implication. ViewModel integrates directly with Jetpack Navigation — you scope ViewModels to `NavBackStackEntry`, share state between screens in the same nav graph, and get automatic cleanup when destinations are popped from the back stack.
 
-Circuit has its own navigation system built around `Screen` objects and a `Navigator`. Navigation is type-safe by default — each screen is a data class, and you navigate by pushing screen objects. This is clean, but it means you're using Circuit's navigation instead of Jetpack Navigation. For existing apps, that's a significant migration.
+Circuit has its own navigation built around `Screen` objects, a `Navigator` interface, and a `SaveableBackStack`. Navigation is type-safe by default — each screen is a data class, and you navigate by pushing screen objects with `navigator.goTo(DetailScreen(emailId))`. This is arguably cleaner than Jetpack Navigation's string routes or deep link patterns. But it means you're replacing your entire navigation system, not just your state management layer. For an existing app with dozens of screens on Jetpack Navigation, that's a significant migration. For a new app or a new module, it's a much easier decision.
 
 ## When To Use Which
 
-**Stick with ViewModel when:**
-- Your app already has an established ViewModel architecture
-- You're using Jetpack Navigation and want tight integration
-- Your team is comfortable with StateFlow and coroutines patterns
-- The screens are small to medium complexity
+**Stick with ViewModel** if your app already has an established ViewModel architecture, you're invested in Jetpack Navigation, your team is comfortable with StateFlow patterns, and your screens are small to medium complexity. ViewModel is well-documented, universally understood, and works fine for the majority of Android apps. The combine ceiling and conversion overhead are real annoyances, but they're manageable.
 
-**Consider Presenters when:**
-- You're building a new app or a new module from scratch
-- Complex screens with many state sources are creating combine nightmares
-- You want strict separation between state production and UI rendering
-- You're already investing in Compose as the foundation, not just the UI layer
+**Consider Circuit** if you're building a new app or module from scratch, complex screens are creating combine and pipeline nightmares, you want strict compile-time separation between state production and UI rendering, and your team is comfortable with Compose's runtime concepts beyond just UI. The presenter model is genuinely cleaner for complex state management, and the testing story is solid.
 
-The honest answer is, most apps don't need to migrate to Circuit. ViewModel works fine for the majority of use cases. But if you're starting fresh and your team is comfortable with Compose's runtime concepts, the Presenter pattern offers a cleaner mental model — especially for complex screens where traditional ViewModel code gets tangled in flow plumbing.
-
-To me, the real takeaway isn't about choosing one over the other. It's about understanding that Compose runtime and Compose UI are separate things. Once you internalize that, you can use compose state in ViewModels, write Molecule-powered presenters, or go all-in with Circuit — whatever fits your team and your codebase.
+To me, the real takeaway isn't about picking one library over another. It's about understanding that Compose runtime and Compose UI are fundamentally separate layers — Jake Wharton has written extensively about this in "A Jetpack Compose by any other name." Once you internalize that separation, you can use Compose state in ViewModels, write Molecule-powered presenters, or adopt Circuit's full architecture. The Compose runtime is just a tool for managing reactive state. Whether you put it inside a ViewModel or inside a Presenter, the underlying mechanics are the same. What changes is the abstraction level and the architectural constraints you're opting into.
 
 Thanks for reading!
