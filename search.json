@@ -8,6 +8,14 @@ layout: null
       "url": {{ post.url | jsonify }},
       "date": {{ post.date | date: "%B %d, %Y" | jsonify }},
       "content": {{ post.content | strip_html | jsonify }}
+    }{% unless forloop.last and site.newsletters.size == 0 %},{% endunless %}
+  {% endfor %}
+  {% for newsletter in site.newsletters %}
+    {
+      "title": {{ newsletter.title | jsonify }},
+      "url": {{ newsletter.url | jsonify }},
+      "date": {{ newsletter.date | date: "%B %d, %Y" | jsonify }},
+      "content": {{ newsletter.content | strip_html | jsonify }}
     }{% unless forloop.last %},{% endunless %}
   {% endfor %}
 ] 

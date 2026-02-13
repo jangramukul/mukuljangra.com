@@ -445,14 +445,11 @@
         </div>
 
         {{ content }}
-        
-        {% include post-navigation.html %}
       </div>
     </div>
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        // Set dark theme as default
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
 
@@ -477,12 +474,6 @@
           var c = TAG_COLORS[hashTagName(tag)];
           el.style.backgroundColor = c.bg;
           el.style.color = c.color;
-        });
-        
-        // Handle back button click to preserve scroll position
-        document.getElementById('back-to-home').addEventListener('click', function(e) {
-          // Save current scroll position before navigating
-          localStorage.setItem('scrollPosition', window.scrollY);
         });
       });
     </script>
