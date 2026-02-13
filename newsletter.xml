@@ -4,7 +4,7 @@ layout: null
 <?xml version="1.0" encoding="utf-8"?>
 
 <feed xmlns="http://www.w3.org/2005/Atom">
- <title>{{ site.site_name }} — Weekly Newsletter</title>
+ <title>{{ site.site_name }} - Weekly Newsletter</title>
  <link href="{{ site.url }}/newsletter.xml" rel="self"/>
  <link href="{{ site.url }}/"/>
  <updated>{{ site.time | date_to_xmlschema }}</updated>
@@ -16,7 +16,7 @@ layout: null
  {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
  {% for newsletter in newsletters %}
  <entry>
-   <title>{{ newsletter.title }}</title>
+   <title>{{ newsletter.title | xml_escape }}</title>
    <link href="{{ site.url }}{{ newsletter.url }}"/>
    <updated>{{ newsletter.date | date_to_xmlschema }}</updated>
    <id>{{ site.url }}{{ newsletter.id }}</id>
