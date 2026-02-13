@@ -784,6 +784,7 @@
         <!-- Tabs -->
         <div class="section-tabs">
           <div class="section-tab active" data-tab="articles">Articles</div>
+          <div class="section-tab" data-tab="interviews">Interview Prep</div>
           <div class="section-tab" data-tab="newsletter">Weekly Newsletter</div>
         </div>
 
@@ -833,6 +834,45 @@
           </a>
           {% endfor %}
           </div>
+        </div>
+
+        <!-- Interview Prep tab -->
+        <div class="tab-content" id="tab-interviews">
+          {% assign interviews = site.interviews | sort: 'date' | reverse %}
+          {% if interviews.size > 0 %}
+          <div class="articles-grid">
+          {% for interview in interviews %}
+          <a href="{{ interview.url }}" class="list-post-link" data-tags="{{ interview.tags | join: '|' }}">
+            <article class="list-post">
+              <div class="list-post-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div class="list-post-content">
+                <h2>{{ interview.title }}</h2>
+                {% if interview.tags.size > 0 %}
+                <div class="list-post-tags">
+                  {% for tag in interview.tags %}
+                  <span class="list-post-tag">{{ tag }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                <div class="date">{{ interview.date | date:"%A, %B %d, %Y" }}</div>
+                <p class="list-post-excerpt">{{ interview.excerpt | strip_html | truncatewords: 25 }}</p>
+              </div>
+            </article>
+          </a>
+          {% endfor %}
+          </div>
+          {% else %}
+            <div class="empty-state">
+              <p>No interview prep notes yet.</p>
+              <p class="empty-hint">Stay tuned — notes are coming soon!</p>
+            </div>
+          {% endif %}
         </div>
 
         <!-- Newsletter tab -->
