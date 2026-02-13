@@ -448,6 +448,19 @@
         color: #6b7280;
       }
 
+      /* Interview chips & list */
+      .interview-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .interviews-list {
+        display: flex;
+        flex-direction: column;
+      }
+
       .empty-state p {
         font-size: 1.1em;
         margin-bottom: 8px;
@@ -838,11 +851,20 @@
 
         <!-- Interview Prep tab -->
         <div class="tab-content" id="tab-interviews">
+          <div class="interview-chips">
+            <div class="category-chip interview-chip active" data-itag="all">All</div>
+            <div class="category-chip interview-chip" data-itag="Technical_Round">Technical Round</div>
+            <div class="category-chip interview-chip" data-itag="Behavioural_Round">Behavioural Round</div>
+            <div class="category-chip interview-chip" data-itag="Coding_Test">Coding Test</div>
+            <div class="category-chip interview-chip" data-itag="System_Design">System Design</div>
+            <div class="category-chip interview-chip" data-itag="DSA">DSA</div>
+            <div class="category-chip interview-chip" data-itag="Take_Home">Take-Home Assignment</div>
+          </div>
           {% assign interviews = site.interviews | sort: 'date' | reverse %}
           {% if interviews.size > 0 %}
-          <div class="articles-grid">
+          <div class="interviews-list">
           {% for interview in interviews %}
-          <a href="{{ interview.url }}" class="list-post-link" data-tags="{{ interview.tags | join: '|' }}">
+          <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
               <div class="list-post-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1028,6 +1050,28 @@
         chips.forEach(chip => {
           chip.addEventListener('click', function() {
             selectTag(this.dataset.tag);
+          });
+        });
+
+        // Interview chip filtering
+        const iChips = document.querySelectorAll('.interview-chip');
+        const iPosts = document.querySelectorAll('#tab-interviews .interview-post-link');
+
+        iChips.forEach(chip => {
+          chip.addEventListener('click', function() {
+            const tag = this.dataset.itag;
+            iChips.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+
+            iPosts.forEach(post => {
+              if (tag === 'all') {
+                post.classList.remove('hidden');
+              } else {
+                const postTags = post.dataset.tags.split('|');
+                const normalizedTag = tag.replace(/_/g, ' ');
+                post.classList.toggle('hidden', !postTags.includes(normalizedTag));
+              }
+            });
           });
         });
 
