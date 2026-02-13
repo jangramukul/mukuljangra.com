@@ -156,11 +156,11 @@
       }
 
       .tab-content {
-        display: none;
+        display: none !important;
       }
 
       .tab-content.active {
-        display: block;
+        display: block !important;
       }
 
       /* Blog / newsletter post cards */
@@ -391,10 +391,14 @@
         border-radius: 16px;
         padding: 32px;
         display: none;
+        overflow: visible;
+        max-height: none;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .newsletter-card.active {
-        display: block;
+        display: block !important;
       }
 
       .newsletter-card-header {
