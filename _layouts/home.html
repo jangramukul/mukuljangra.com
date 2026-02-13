@@ -64,24 +64,33 @@
         margin: 0 auto 15px;
       }
 
-      .intro-greeting {
+      .intro-headline {
         font-family: 'Inter', sans-serif;
-        font-size: 2.4em;
-        margin-bottom: 12px;
-        font-weight: 700;
+        font-size: 2.6em;
+        margin-bottom: 14px;
+        font-weight: 800;
         color: #ffffff;
+        line-height: 1.2;
+        letter-spacing: -0.5px;
       }
 
-      .intro-tagline {
-        font-size: 1.1em;
+      .intro-headline .highlight-text {
+        background: linear-gradient(135deg, #3DDC84, #7F52FF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .intro-subtitle {
+        font-size: 1.15em;
         line-height: 1.7;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         color: #d1d5db;
-        max-width: 600px;
+        max-width: 650px;
       }
 
       .contact-links {
-        margin: 0 0 32px 0;
+        margin: 0 0 36px 0;
         padding: 8px 0;
         width: 100%;
         display: flex;
@@ -117,10 +126,32 @@
         padding: 4px 2px;
       }
 
-      /* Feature cards */
+      /* Feature cards section */
+      .feature-section-heading {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 6px;
+      }
+
+      .feature-section-sub {
+        font-size: 0.95em;
+        color: #9ca3af;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+
       .feature-cards {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .feature-cards-row2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 16px;
         margin-bottom: 40px;
       }
@@ -163,13 +194,18 @@
       }
 
       @media (max-width: 768px) {
-        .feature-cards {
+        .feature-cards,
+        .feature-cards-row2 {
           grid-template-columns: 1fr;
           gap: 12px;
         }
 
         .feature-card {
           padding: 20px;
+        }
+
+        .intro-headline {
+          font-size: 1.8em;
         }
       }
 
@@ -410,22 +446,6 @@
         color: #4b5563;
       }
 
-      /* Typing animation */
-      #typed-greeting::after {
-        content: '|';
-        display: inline-block;
-        animation: blink 0.7s infinite;
-      }
-
-      #typed-greeting.typing-complete::after {
-        display: none;
-      }
-
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-      }
-
       /* Newsletter chips & card */
       .newsletter-chips {
         display: flex;
@@ -634,12 +654,8 @@
           max-width: 100%;
         }
 
-        .intro-tagline {
+        .intro-subtitle {
           max-width: 100%;
-        }
-
-        .intro-greeting {
-          font-size: 1.8em;
         }
 
         .intro-section {
@@ -702,29 +718,46 @@
     <div class="right-column">
       <!-- Introduction Section -->
       <div class="intro-section">
-        <div class="intro-greeting" id="typed-greeting"></div>
-        <div class="intro-tagline">{{ site.site_tagline }}</div>
+        <div class="intro-headline">Learn <span class="highlight-text">Android Development</span> the Right Way.</div>
+        <div class="intro-subtitle">Free, open-source resources for Android engineers — no signups, no tracking, no subscriptions. Just high-quality content, forever free.</div>
         <div class="contact-links">
           <a href="{{ site.site_github }}" rel="noopener" class="contact-link" title="Check my work"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:5px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GitHub</a>
           <span class="link-divider">·</span>
           <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link" title="Connect me on Mastodon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:5px;overflow:visible"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 00.023-.043v-1.809a.052.052 0 00-.02-.041.053.053 0 00-.046-.01 20.282 20.282 0 01-4.709.547c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 01-.319-1.433.053.053 0 01.066-.054 19.648 19.648 0 004.581.536h.344c1.587 0 3.176-.088 4.748-.345 1.567-.254 3.052-.819 3.224-2.933.072-.876.069-1.763.069-2.643l.003-.397c0-2.165.642-3.784-.002-5.313zm-3.762 8.83h-2.362v-7.09c0-1.491-.627-2.25-1.882-2.25-1.388 0-2.084.9-2.084 2.676v3.877h-2.35V7.479c0-1.775-.696-2.676-2.084-2.676-1.255 0-1.882.759-1.882 2.25v7.09H4.5V7.312c0-1.491.38-2.676 1.14-3.555.784-.879 1.81-1.33 3.083-1.33 1.473 0 2.59.565 3.34 1.694L12.834 5.3l.77-1.18c.75-1.129 1.867-1.694 3.34-1.694 1.273 0 2.3.451 3.083 1.33.76.879 1.14 2.064 1.14 3.555v6.832z"/></svg>Mastodon</a>
         </div>
-        <!-- Feature Cards -->
+
+        <div class="feature-section-heading">What You'll Find Here</div>
+        <div class="feature-section-sub">Everything you need to grow as an Android developer — all in one place.</div>
+
+        <!-- Feature Cards - Row 1 -->
         <div class="feature-cards">
           <div class="feature-card">
             <span class="feature-card-icon">📱</span>
-            <div class="feature-card-title">Android & Kotlin</div>
-            <p class="feature-card-desc">Deep dives into modern Android development — Kotlin, Jetpack Compose, Coroutines, and architecture patterns.</p>
+            <div class="feature-card-title">Android & Kotlin Deep Dives</div>
+            <p class="feature-card-desc">In-depth articles on Jetpack Compose, Coroutines, architecture patterns, and modern Android development.</p>
           </div>
           <div class="feature-card">
             <span class="feature-card-icon">📬</span>
             <div class="feature-card-title">Weekly Newsletter</div>
-            <p class="feature-card-desc">Curated weekly updates on new releases, trending libraries, community highlights, and what's new in Android.</p>
+            <p class="feature-card-desc">Stay updated with curated new releases, API changes, docs, and what's happening in the Android ecosystem — every week.</p>
           </div>
           <div class="feature-card">
             <span class="feature-card-icon">🎯</span>
             <div class="feature-card-title">Interview Preparation</div>
-            <p class="feature-card-desc">Practice questions, coding challenges, and system design tips to crack your next Android engineering interview.</p>
+            <p class="feature-card-desc">Coding challenges, system design tips, and practice questions to help you ace your next Android engineering interview.</p>
+          </div>
+        </div>
+        <!-- Feature Cards - Row 2 -->
+        <div class="feature-cards-row2">
+          <div class="feature-card">
+            <span class="feature-card-icon">🔓</span>
+            <div class="feature-card-title">100% Free & Open Source</div>
+            <p class="feature-card-desc">No signups, no tracking, no subscriptions, no paywalls. All content is free forever and the source code is fully open.</p>
+          </div>
+          <div class="feature-card">
+            <span class="feature-card-icon">🛡️</span>
+            <div class="feature-card-title">Privacy First</div>
+            <p class="feature-card-desc">Zero analytics, zero cookies, zero data collection. Learn without being watched — your privacy is respected here.</p>
           </div>
         </div>
       </div>
@@ -957,26 +990,6 @@
           localStorage.removeItem('scrollPosition');
         }
 
-        // Typing animation
-        const typedGreeting = document.getElementById('typed-greeting');
-        const greetingText = "Hi, I'm {{ site.site_title }} 🐝";
-
-        function typeText(element, text, speed) {
-          let i = 0;
-          element.textContent = '';
-          function typing() {
-            if (i < text.length) {
-              element.textContent += text.charAt(i);
-              i++;
-              setTimeout(typing, speed);
-            } else {
-              element.classList.add('typing-complete');
-            }
-          }
-          typing();
-        }
-
-        typeText(typedGreeting, greetingText, 70);
       });
     </script>
 
