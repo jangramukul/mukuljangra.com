@@ -461,6 +461,16 @@
         flex-direction: column;
       }
 
+      .interview-number {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 1.1em;
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .empty-state p {
         font-size: 1.1em;
         margin-bottom: 8px;
@@ -866,13 +876,7 @@
           {% for interview in interviews %}
           <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-              </div>
+              <div class="list-post-icon interview-number">{{ forloop.index }}</div>
               <div class="list-post-content">
                 <h2>{{ interview.title }}</h2>
                 {% if interview.tags.size > 0 %}
