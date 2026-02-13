@@ -6,15 +6,15 @@ tags: [Technical Round]
 order: 5
 ---
 
-## Storage & Data Persistence — What Interviewers Really Ask
+## Storage & Data Persistence
 
-Storage questions show up in almost every Android interview because every real app needs to persist data. Interviewers use this topic to gauge whether you understand the right tool for each job and whether you've dealt with the gotchas that come from production experience.
+Every real Android app needs to persist data. This section covers the right tool for each job and the gotchas that come from production experience.
 
 ### Core Questions (Beginner → Intermediate)
 
 #### Q1: What are the main options for persisting data on Android, and when would you use each?
 
-Android gives you several persistence mechanisms, each suited for different data shapes and sizes. SharedPreferences and DataStore handle simple key-value pairs like user settings or feature flags. Room (which sits on top of SQLite) is the right choice for structured, relational data — think user profiles, transaction histories, cached API responses. For large binary blobs like images, audio, or downloaded files, you use the file system directly through internal or external storage. Content Providers exist specifically for sharing structured data between apps, like the system contacts or media store. The mistake candidates make is reaching for SharedPreferences for everything. If your data has relationships or you need to query it, that's a database problem, not a key-value problem.
+Android gives you several persistence mechanisms, each suited for different data shapes and sizes. SharedPreferences and DataStore handle simple key-value pairs like user settings or feature flags. Room (which sits on top of SQLite) is the right choice for structured, relational data — think user profiles, transaction histories, cached API responses. For large binary blobs like images, audio, or downloaded files, you use the file system directly through internal or external storage. Content Providers exist specifically for sharing structured data between apps, like the system contacts or media store. If your data has relationships or you need to query it, that's a database problem, not a key-value problem.
 
 #### Q2: What is SharedPreferences and how does it work internally?
 
@@ -39,7 +39,7 @@ val success: Boolean = prefs.edit()
     .commit()
 ```
 
-The gotcha interviewers look for: calling `commit()` on the main thread blocks the UI. In practice, always use `apply()` unless you absolutely need confirmation that the write succeeded. Also, SharedPreferences loads the entire file into memory — if the file grows large (hundreds of key-value pairs), that initial load can cause a noticeable delay on app startup.
+One important gotcha: calling `commit()` on the main thread blocks the UI. In practice, always use `apply()` unless you absolutely need confirmation that the write succeeded. Also, SharedPreferences loads the entire file into memory — if the file grows large (hundreds of key-value pairs), that initial load can cause a noticeable delay on app startup.
 
 #### Q3: What are the problems with SharedPreferences that led to DataStore?
 
@@ -122,7 +122,7 @@ Internal storage is private to your app. Files saved here are stored in `/data/d
 
 #### Q7: What is scoped storage, and why did Google introduce it?
 
-Before Android 10, any app with the `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE` permissions could read and write any file on shared external storage. This was a massive privacy and security concern — a flashlight app could read your photos, documents, and downloaded files. Scoped storage, introduced in Android 10 and enforced from Android 11, restricts this. Each app gets its own sandboxed directory on external storage that requires no permissions. To access shared media (photos, videos, audio), you use the `MediaStore` API. To let users pick files, you use the Storage Access Framework (SAF) with `Intent.ACTION_OPEN_DOCUMENT`. You can no longer just `File("/sdcard/...")` your way into someone else's files. This is a fundamental security architecture change that interviewers expect you to know, especially if you've worked on apps that handle file management or media.
+Before Android 10, any app with the `READ_EXTERNAL_STORAGE` and `WRITE_EXTERNAL_STORAGE` permissions could read and write any file on shared external storage. This was a massive privacy and security concern — a flashlight app could read your photos, documents, and downloaded files. Scoped storage, introduced in Android 10 and enforced from Android 11, restricts this. Each app gets its own sandboxed directory on external storage that requires no permissions. To access shared media (photos, videos, audio), you use the `MediaStore` API. To let users pick files, you use the Storage Access Framework (SAF) with `Intent.ACTION_OPEN_DOCUMENT`. You can no longer just `File("/sdcard/...")` your way into someone else's files. This is a fundamental security architecture change, especially relevant if you've worked on apps that handle file management or media.
 
 #### Q8: How do you share files securely between apps?
 
@@ -187,7 +187,7 @@ val database = Room.databaseBuilder(context, AppDatabase::class.java, "app_db")
     .build()
 ```
 
-If you forget a migration, Room crashes with an `IllegalStateException` on the first database access. During development, you can use `fallbackToDestructiveMigration()` which drops all tables and recreates them — but never ship this in production because users lose all their data. The common mistake candidates make is thinking that Room handles schema changes automatically. It doesn't. You write the SQL migrations yourself, and Room validates that the resulting schema matches your entity definitions. Another gotcha: SQLite's `ALTER TABLE` is limited — you can add columns, but you can't drop or rename columns (before SQLite 3.35.0 / API 34). For those operations, you have to create a new table, copy data, drop the old table, and rename.
+If you forget a migration, Room crashes with an `IllegalStateException` on the first database access. During development, you can use `fallbackToDestructiveMigration()` which drops all tables and recreates them — but never ship this in production because users lose all their data. Room does not handle schema changes automatically. You write the SQL migrations yourself, and Room validates that the resulting schema matches your entity definitions. Another gotcha: SQLite's `ALTER TABLE` is limited — you can add columns, but you can't drop or rename columns (before SQLite 3.35.0 / API 34). For those operations, you have to create a new table, copy data, drop the old table, and rename.
 
 #### Q11: How do you handle custom types in Room with @TypeConverter?
 
@@ -328,11 +328,11 @@ By default, Room throws an `IllegalStateException` if you run any database opera
 
 #### Q17: How would you choose between SharedPreferences, DataStore, Room, and file storage for a given feature?
 
-This is a design question that tests judgment. User preferences (theme, language, notification settings) — use DataStore (Preferences). It's async, safe, and handles the simple key-value pattern well. If you're on a legacy codebase, SharedPreferences with `apply()` works, but plan to migrate. Structured, queryable data (users, messages, transactions, cached API responses) — use Room. You need relationships, indexes, and query capabilities. Large files (images, PDFs, audio, video) — use file storage. Internal storage for private files, scoped storage APIs for shared media. Sensitive credentials (tokens, API keys) — use EncryptedSharedPreferences or EncryptedFile for small values, Android Keystore for cryptographic keys. Typed configuration objects with schema — Proto DataStore with Protocol Buffers. The common mistake is overcomplicating it. If you're storing three boolean flags, you don't need Room. If you're storing a list of 500 items with relationships, you don't want SharedPreferences.
+User preferences (theme, language, notification settings) — use DataStore (Preferences). It's async, safe, and handles the simple key-value pattern well. If you're on a legacy codebase, SharedPreferences with `apply()` works, but plan to migrate. Structured, queryable data (users, messages, transactions, cached API responses) — use Room. You need relationships, indexes, and query capabilities. Large files (images, PDFs, audio, video) — use file storage. Internal storage for private files, scoped storage APIs for shared media. Sensitive credentials (tokens, API keys) — use EncryptedSharedPreferences or EncryptedFile for small values, Android Keystore for cryptographic keys. Typed configuration objects with schema — Proto DataStore with Protocol Buffers. Don't overcomplicate it. If you're storing three boolean flags, you don't need Room. If you're storing a list of 500 items with relationships, you don't want SharedPreferences.
 
 #### Q18: What happens under the hood when you call SharedPreferences.edit().apply()?
 
-This is where interviewers test depth. When you call `apply()`, Room — sorry, SharedPreferences — first writes the changes to the in-memory HashMap immediately (so any subsequent read in the same process sees the new values right away). Then it schedules an asynchronous disk write by posting a `Runnable` to a single background thread. The writes go to the XML file atomically — it writes to a temporary file first, then renames it to the actual file (an atomic operation on most file systems). Here's the important part that catches people in production: `apply()` adds the pending write to `QueuedWork`. When certain lifecycle methods run (`Activity.onStop()`, `Service.onStartCommand()`, `BroadcastReceiver.onReceive()`), the framework calls `QueuedWork.waitToFinish()`, which blocks the main thread until all pending `apply()` writes complete. If you've called `apply()` many times in quick succession, or if the disk is slow, this blocking wait can cause an ANR. This is one of the primary reasons Google built DataStore.
+When you call `apply()`, SharedPreferences first writes the changes to the in-memory HashMap immediately (so any subsequent read in the same process sees the new values right away). Then it schedules an asynchronous disk write by posting a `Runnable` to a single background thread. The writes go to the XML file atomically — it writes to a temporary file first, then renames it to the actual file (an atomic operation on most file systems). Here's the important part: `apply()` adds the pending write to `QueuedWork`. When certain lifecycle methods run (`Activity.onStop()`, `Service.onStartCommand()`, `BroadcastReceiver.onReceive()`), the framework calls `QueuedWork.waitToFinish()`, which blocks the main thread until all pending `apply()` writes complete. If you've called `apply()` many times in quick succession, or if the disk is slow, this blocking wait can cause an ANR. This is one of the primary reasons Google built DataStore.
 
 #### Q19: Explain the difference between Preferences DataStore and Proto DataStore. When would you choose each?
 
@@ -372,7 +372,7 @@ val documentPickerLauncher = registerForActivityResult(
 }
 ```
 
-The key detail interviewers look for: `takePersistableUriPermission()`. Without it, the URI permission is temporary and expires when the user's task ends. With it, your app can reopen the file later without asking the user to pick it again.
+The key detail is `takePersistableUriPermission()`. Without it, the URI permission is temporary and expires when the user's task ends. With it, your app can reopen the file later without asking the user to pick it again.
 
 #### Q22: How do you handle database testing with Room?
 
@@ -463,14 +463,4 @@ This is one of the main reasons Google created DataStore — it doesn't have thi
 - How do you observe database changes reactively in Room? (Answer: return `Flow<List<T>>` or `LiveData<List<T>>` from your DAO. Room uses InvalidationTracker internally to monitor table changes and re-execute the query.)
 - What is `fallbackToDestructiveMigration()` and why should you never use it in production? (Answer: it drops all tables and recreates the database when a migration is missing. Users lose all local data. It's only acceptable during development.)
 
-### Tips for the Interview
 
-1. **Know when to use what** — Interviewers care more about your decision-making framework than your ability to recite APIs. Be ready to explain why you'd choose DataStore over SharedPreferences, or Room over raw SQLite, for a given scenario.
-
-2. **Always mention the tradeoffs** — Don't just say "DataStore is better than SharedPreferences." Explain that DataStore requires coroutines, has a learning curve, and might be overkill for a simple boolean flag. Showing you understand tradeoffs signals seniority.
-
-3. **Bring up scoped storage proactively** — If the conversation touches file storage, mention the Android 10+ scoped storage changes. It shows you're aware of platform evolution and security implications.
-
-4. **Show production awareness** — Mention the `QueuedWork.waitToFinish()` ANR issue with SharedPreferences `apply()`. Talk about why `fallbackToDestructiveMigration()` is dangerous in production. These details separate candidates who've shipped apps from those who've only read tutorials.
-
-5. **Code your Room examples cleanly** — If asked to whiteboard a Room setup, use suspend functions for writes and Flow for reads. Show `@Transaction` for related queries. These patterns signal that you understand modern Room usage, not the 2017 version with `LiveData` everywhere.

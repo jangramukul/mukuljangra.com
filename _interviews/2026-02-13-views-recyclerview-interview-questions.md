@@ -6,15 +6,15 @@ tags: [Technical Round]
 order: 4
 ---
 
-## Views, RecyclerView & UI Fundamentals — What Interviewers Really Ask
+## Views, RecyclerView & UI Fundamentals
 
-Almost every Android interview has at least one or two questions on how views render, how RecyclerView recycles, or why the UI stutters. This is the bread and butter of Android development — and interviewers use it to gauge whether you actually understand the framework or just copy-paste layouts from StackOverflow.
+Views and RecyclerView are core topics in Android interviews. Understanding how views render and how RecyclerView recycles is essential.
 
 ### Core Questions (Beginner → Intermediate)
 
 #### Q1: What are the three phases of the View rendering pipeline?
 
-Every View in Android goes through three phases: **measure**, **layout**, and **draw**. In the measure phase, the system walks down the view tree and asks each view how big it wants to be — this is `onMeasure()`. In the layout phase, the parent tells each child where it should be positioned — this is `onLayout()`. Finally, in the draw phase, each view renders itself onto a Canvas — this is `onDraw()`. The system traverses the entire view tree for each phase, and this full pass needs to complete within 16ms to maintain 60 FPS. Interviewers ask this to check if you understand why deeply nested layouts are expensive — every extra level multiplies the work in each phase.
+Every View goes through three phases — **measure**, **layout**, and **draw**. In the measure phase (`onMeasure()`), the system asks each view how big it wants to be. In the layout phase (`onLayout()`), the parent tells each child where to position. In the draw phase (`onDraw()`), each view renders itself onto a Canvas. This full pass needs to complete within 16ms to maintain 60 FPS, which is why deeply nested layouts are expensive.
 
 #### Q2: What does `onMeasure()` do, and what are the three MeasureSpec modes?
 
@@ -25,13 +25,11 @@ The three modes are:
 - **AT_MOST** — the view can be as large as it wants, up to the specified limit. This happens with `wrap_content`
 - **UNSPECIFIED** — no constraint at all. The view can be whatever size it wants. This is rare and typically happens inside a ScrollView
 
-You must call `setMeasuredDimension()` at the end of `onMeasure()`. If you forget, the framework throws an `IllegalStateException`. This is a gotcha that catches people off guard when writing custom views.
+You must call `setMeasuredDimension()` at the end of `onMeasure()`. Forgetting this causes an `IllegalStateException`.
 
 #### Q3: What is the difference between `invalidate()` and `requestLayout()`?
 
-This is one of the most frequently asked View questions. `invalidate()` triggers only the draw phase — it calls `onDraw()` again. Use it when the visual appearance changes but the size and position stay the same, like changing a color, updating text content, or toggling visibility of drawn elements. `requestLayout()` triggers the full pipeline — measure, layout, and draw. Use it when the view's size or position needs to change, like when text length changes or you modify padding programmatically.
-
-The common mistake is calling `requestLayout()` for every small visual change. That forces the entire view tree to re-measure and re-layout, which is far more expensive than just redrawing. In a deep view hierarchy, a single unnecessary `requestLayout()` can easily blow past the 16ms frame budget.
+`invalidate()` triggers only the draw phase — it calls `onDraw()` again. Use it when the visual appearance changes but the size and position stay the same, like changing a color or updating text content. `requestLayout()` triggers the full pipeline — measure, layout, and draw. Use it when the view's size or position needs to change, like when text length changes or padding is modified programmatically. Calling `requestLayout()` for every small visual change is wasteful since it forces the entire view tree to re-measure and re-layout.
 
 #### Q4: What is the ViewHolder pattern, and why is it mandatory in RecyclerView?
 
@@ -76,7 +74,7 @@ class ArticleAdapter(
 }
 ```
 
-A common mistake in `onBindViewHolder()` is forgetting to reset state. Since ViewHolders are recycled, if you set an icon to visible for item 3, that same ViewHolder might show up for item 15 with the icon still visible. Always reset every view property in `onBindViewHolder()`.
+Since ViewHolders are recycled, always reset every view property in `onBindViewHolder()`. If you set an icon to visible for item 3 without resetting, that same ViewHolder might show up for item 15 with the icon still visible.
 
 #### Q6: What are the three built-in LayoutManagers, and when would you use each?
 
@@ -84,7 +82,7 @@ A common mistake in `onBindViewHolder()` is forgetting to reset state. Since Vie
 - **GridLayoutManager** — arranges items in a uniform grid with a configurable span count. Use it for photo grids, product catalogs, or emoji pickers. You can also set per-item span sizes using `SpanSizeLookup` for headers that stretch the full width
 - **StaggeredGridLayoutManager** — arranges items in a grid where rows or columns can have different heights. Use it for Pinterest-style layouts where images have varying aspect ratios
 
-The key insight here is that RecyclerView completely delegates item positioning to the LayoutManager. The RecyclerView itself has no concept of "list" or "grid" — all of that logic lives in the LayoutManager. This is the Strategy pattern applied to layout.
+RecyclerView delegates item positioning entirely to the LayoutManager. The RecyclerView itself has no concept of "list" or "grid" — all layout logic lives in the LayoutManager.
 
 #### Q7: What is `DiffUtil` and why should you use it instead of `notifyDataSetChanged()`?
 
@@ -134,7 +132,7 @@ In practice, `ListAdapter` is what you should use in most cases. There's no good
 
 The important distinction: `onDraw()` draws **behind** the items (below in the Z-order), while `onDrawOver()` draws **on top** of them. This matters when you want overlapping decorations like a sticky header that draws over the item below it.
 
-The common mistake is adding spacing by setting margins on item views. That works visually, but it's less flexible and harder to control than `ItemDecoration`. Spacing should always go through `getItemOffsets()`.
+Using margins on item views works visually but is less flexible than `ItemDecoration`. Spacing should go through `getItemOffsets()`.
 
 #### Q10: What is `ViewStub` and when would you use it?
 
@@ -203,7 +201,7 @@ class FeedAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 }
 ```
 
-A common mistake is using the position as the view type. The view type should represent a category of layout, not individual items. If you return unique types per position, RecyclerView can never recycle anything — you've defeated the entire purpose.
+The view type should represent a category of layout, not individual items. If you return unique types per position, RecyclerView can never recycle anything.
 
 #### Q13: What is `RecycledViewPool` and how can you share it between nested RecyclerViews?
 
@@ -239,7 +237,7 @@ Touch events flow top-down through the view tree in a specific order:
 The full chain for a touch starting at `Activity → ViewGroup → ChildView`:
 - `Activity.dispatchTouchEvent()` → `ViewGroup.dispatchTouchEvent()` → `ViewGroup.onInterceptTouchEvent()` (returns false) → `ChildView.dispatchTouchEvent()` → `ChildView.onTouchEvent()`
 
-The critical rule: a view that returns `false` for `ACTION_DOWN` will never receive subsequent events (`ACTION_MOVE`, `ACTION_UP`) for that gesture. The system assumes the view isn't interested. This catches many developers off guard — if your custom view only handles `ACTION_UP` but returns `false` for `ACTION_DOWN`, it will never see the UP event.
+The critical rule: a view that returns `false` for `ACTION_DOWN` will never receive subsequent events (`ACTION_MOVE`, `ACTION_UP`) for that gesture. The system assumes the view isn't interested, so if your custom view only handles `ACTION_UP` but returns `false` for `ACTION_DOWN`, it will never see the UP event.
 
 #### Q15: How do you resolve touch conflicts between a parent ScrollView and a child RecyclerView (or other scrollable view)?
 
@@ -388,7 +386,7 @@ The second optimization is **LruCache** for in-memory caching. Set a cache size 
 
 The third consideration is choosing the right format. Use **VectorDrawable** (SVG) for icons and simple graphics — they scale without quality loss, have a smaller APK footprint, and don't consume bitmap memory. Reserve PNG/WebP for photos and complex images where vectors wouldn't work.
 
-In production, you'd use a library like Coil or Glide that handles all of this — downsampling, caching (memory + disk), lifecycle awareness, and request deduplication. But interviewers want to know you understand the underlying problems these libraries solve.
+In production, you'd use a library like Coil or Glide that handles all of this — downsampling, caching (memory + disk), lifecycle awareness, and request deduplication.
 
 #### Q22: How does `ItemAnimator` work in RecyclerView?
 
@@ -447,7 +445,7 @@ class ArticlePagingSource(
 }
 ```
 
-Two common pagination strategies that interviewers ask about: **offset-based** (page 1, page 2, ...) is simple but has the problem of shifting results when items are inserted or deleted between page fetches. **Cursor-based** (keyset pagination) uses the last item's ID or timestamp as the cursor for the next page — this is more stable and the recommended approach for feeds and timelines.
+Two common pagination strategies: **offset-based** (page 1, page 2, ...) is simple but has the problem of shifting results when items are inserted or deleted between page fetches. **Cursor-based** (keyset pagination) uses the last item's ID or timestamp as the cursor for the next page — this is more stable and the recommended approach for feeds and timelines.
 
 #### Q25: What is `ViewStub` and when would you use it?
 
@@ -484,16 +482,3 @@ The key detail: `ViewStub` can only be inflated once. After inflation, calling `
 - How does `ConstraintLayout` measure children differently from nested `LinearLayout`? (Answer: it uses a constraint solver to calculate all positions in a single pass, while nested layouts require recursive passes through each level)
 - What is the `setRecycledViewPoolSize(viewType, max)` and when would you increase it? (Answer: default is 5 per view type. If you have a view type that's created and recycled rapidly — like items in a fast-scrolling grid — increasing the pool size prevents unnecessary inflation)
 
-### Tips for the Interview
-
-1. **Draw the rendering pipeline on the whiteboard** — Interviewers love when you sketch the measure → layout → draw flow. It shows you understand the system, not just the API. Add the arrow from `invalidate()` to `onDraw()` and from `requestLayout()` back to `onMeasure()`.
-
-2. **Know the RecyclerView caching levels by name** — Scrap, Cache, ViewCacheExtension, RecycledViewPool. Most candidates only know "it recycles views." Naming the actual caching layers demonstrates deep understanding and separates you from the crowd.
-
-3. **Always mention DiffUtil when discussing list updates** — If the interviewer asks about updating a RecyclerView, never say `notifyDataSetChanged()` first. Lead with `ListAdapter` and DiffUtil. Then mention `notifyDataSetChanged()` as the fallback for rare cases where the entire dataset changes.
-
-4. **Connect performance to the 16ms budget** — Don't just say "it's slow." Say "a nested RelativeLayout triggers two measure passes per level, and with 5 levels of nesting that's 32 measure calls, easily blowing past the 16ms frame budget." Quantify the impact.
-
-5. **Know when to use `invalidate()` vs `requestLayout()`** — This is a favorite follow-up when custom views come up. The wrong call wastes either CPU (unnecessary measure/layout) or shows stale visuals (not redrawing when needed). Be ready with concrete examples: "Changing a paint color? `invalidate()`. Changing text that might wrap to a new line? `requestLayout()`."
-
-6. **Mention production experience** — If you've optimized a RecyclerView, debugged overdraw, or fixed a janky scroll, mention the specific metrics. "We reduced frame drops from 15% to under 2% by sharing a RecycledViewPool across 8 carousels" is far more impressive than textbook knowledge.
