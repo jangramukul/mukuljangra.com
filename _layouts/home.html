@@ -553,6 +553,28 @@
         color: #FFD700;
       }
 
+      .rss-chip {
+        padding: 5px 12px;
+        border-radius: 9999px;
+        font-size: 0.85em;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #9ca3af;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .rss-chip:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: #e5e7eb;
+        text-decoration: none;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
       .newsletter-card {
         background-color: rgba(17, 24, 39, 0.6);
         border: 1px solid rgba(255, 215, 0, 0.4);
@@ -959,6 +981,9 @@
               {% for newsletter in newsletters %}
               <div class="newsletter-chip{% if forloop.first %} active{% endif %}" data-newsletter="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
               {% endfor %}
+              <a href="/newsletter.xml" class="rss-chip" target="_blank" rel="noopener" title="Subscribe via RSS">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>RSS
+              </a>
             </div>
             {% for newsletter in newsletters %}
             <div class="newsletter-card{% if forloop.first %} active{% endif %}" id="newsletter-{{ forloop.index0 }}">
