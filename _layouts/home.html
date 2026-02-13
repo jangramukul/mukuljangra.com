@@ -351,6 +351,45 @@
         50% { opacity: 0; }
       }
 
+      /* Toolbar */
+      .toolbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0);
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+        border-bottom: 1px solid transparent;
+        transition: transform 0.3s ease, background-color 0.3s ease, backdrop-filter 0.3s ease, border-color 0.3s ease;
+        transform: translateY(-100%);
+      }
+
+      .toolbar.visible {
+        transform: translateY(0);
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .toolbar-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: #e5e7eb;
+        letter-spacing: -0.01em;
+      }
+
+      .toolbar-title .toolbar-emoji {
+        margin-left: 5px;
+      }
+
       @media (max-width: 768px) {
         .right-column {
           padding: 20px;
@@ -412,6 +451,10 @@
     </style>
   </head>
   <body>
+    <!-- Toolbar -->
+    <div class="toolbar" id="toolbar">
+      <span class="toolbar-title">{{ site.site_name }}<span class="toolbar-emoji">🐝</span></span>
+    </div>
     <div class="gradient-bg"></div>
     <!-- Orbital circle animation -->
     <div class="orbital-container">
@@ -700,6 +743,30 @@
         }
 
         typeText(typedGreeting, greetingText, 70);
+
+        // Toolbar show/hide on scroll
+        const toolbar = document.getElementById('toolbar');
+        let lastScrollY = window.scrollY;
+        let ticking = false;
+        const scrollThreshold = 100;
+
+        function updateToolbar() {
+          const currentScrollY = window.scrollY;
+          if (currentScrollY > scrollThreshold) {
+            toolbar.classList.add('visible');
+          } else {
+            toolbar.classList.remove('visible');
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+        }
+
+        window.addEventListener('scroll', function() {
+          if (!ticking) {
+            window.requestAnimationFrame(updateToolbar);
+            ticking = true;
+          }
+        }, { passive: true });
       });
     </script>
 
