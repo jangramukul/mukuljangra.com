@@ -485,11 +485,15 @@
       .interview-number {
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        font-size: 1.1em;
+        font-size: 0.7em;
         color: #60a5fa;
         display: flex;
         align-items: center;
         justify-content: center;
+        width: auto;
+        min-width: 44px;
+        padding: 0 8px;
+        white-space: nowrap;
       }
 
       /* Interview card theme (matches articles) */
@@ -952,7 +956,7 @@
           {% for interview in interviews %}
           <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon interview-number">{{ interview.order }}</div>
+              <div class="list-post-icon interview-number">Day {{ interview.order }}</div>
               <div class="list-post-content">
                 <h2>{{ interview.title }}</h2>
                 {% if interview.tags.size > 0 %}
