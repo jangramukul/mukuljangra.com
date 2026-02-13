@@ -283,7 +283,3 @@ Every I/O operation in Android — database connections, network sockets, open f
 5. **Connect the dots** — When you explain Binder, mention that Content Providers, bound Services, and even Intents all use Binder underneath. Showing how components connect demonstrates systems-level thinking.
 
 6. **Admit what's deprecated** — Mentioning that `IntentService`, `LocalBroadcastManager`, and sticky broadcasts are deprecated (and knowing what replaced them) shows you keep up with the platform.
-
----
-
-*These components are the building blocks of every Android app. Master them, and every follow-up question becomes easier to answer.*

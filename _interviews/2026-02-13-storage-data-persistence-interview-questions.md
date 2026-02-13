@@ -438,7 +438,3 @@ Notice `allowMainThreadQueries()` is acceptable here because tests don't have a 
 4. **Show production awareness** — Mention the `QueuedWork.waitToFinish()` ANR issue with SharedPreferences `apply()`. Talk about why `fallbackToDestructiveMigration()` is dangerous in production. These details separate candidates who've shipped apps from those who've only read tutorials.
 
 5. **Code your Room examples cleanly** — If asked to whiteboard a Room setup, use suspend functions for writes and Flow for reads. Show `@Transaction` for related queries. These patterns signal that you understand modern Room usage, not the 2017 version with `LiveData` everywhere.
-
----
-
-*Storage is one of those topics where knowing the basics gets you through the door, but understanding the internals and tradeoffs is what gets you the offer. Study the "why" behind each API, not just the "how."*

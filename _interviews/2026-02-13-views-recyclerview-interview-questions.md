@@ -434,7 +434,3 @@ RecyclerView is more complex to set up but infinitely more flexible. There's no 
 5. **Know when to use `invalidate()` vs `requestLayout()`** — This is a favorite follow-up when custom views come up. The wrong call wastes either CPU (unnecessary measure/layout) or shows stale visuals (not redrawing when needed). Be ready with concrete examples: "Changing a paint color? `invalidate()`. Changing text that might wrap to a new line? `requestLayout()`."
 
 6. **Mention production experience** — If you've optimized a RecyclerView, debugged overdraw, or fixed a janky scroll, mention the specific metrics. "We reduced frame drops from 15% to under 2% by sharing a RecycledViewPool across 8 carousels" is far more impressive than textbook knowledge.
-
----
-
-*The View system is one of the oldest parts of Android, but understanding it deeply is still one of the fastest ways to stand out in an interview. Master the fundamentals — they never go out of style.*

@@ -358,7 +358,3 @@ One common source of bugs: using the `<fragment>` XML tag instead of `FragmentCo
 4. **Understand ViewModel internals, not just usage** — Saying "ViewModel survives rotation" is junior-level. Saying "ViewModel is stored in ViewModelStore, which is retained through NonConfigurationInstances during configuration changes" is senior-level.
 
 5. **Test your knowledge by simulating process death** — Before the interview, actually use `adb shell am kill` on your own apps. See what breaks. Candidates who've done this give noticeably better answers about SavedStateHandle and state restoration because they've felt the pain firsthand.
-
----
-
-*Lifecycle is one of those topics where the difference between a good answer and a great answer is understanding the mechanism, not just the callbacks. Know the "why" behind every state transition and you'll stand out.*

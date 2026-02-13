@@ -376,7 +376,3 @@ This is the kind of edge case that causes real bugs in production — a develope
 4. **Explain the security angle** — Most candidates skip security entirely. Mentioning that implicit intents can be intercepted, that intent filters aren't security boundaries, and that mutable PendingIntents are a privilege escalation risk shows you think about Android from a systems perspective, not just a tutorial perspective.
 
 5. **Know the modern alternatives** — If asked about sticky intents, explain what they were and why they're deprecated. If asked about deep links, distinguish between custom schemes and verified App Links. Showing awareness of platform evolution signals a senior mindset.
-
----
-
-*You already know this material better than you think. The interview isn't testing whether you memorized definitions — it's testing whether you've actually built apps that navigate between screens, handle notifications, and deal with back stack bugs at 2 AM. Trust your experience, and explain the "why" behind every answer.*
