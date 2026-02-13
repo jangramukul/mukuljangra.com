@@ -2,7 +2,7 @@
 title: "Android Activity Lifecycle — Top Interview Questions"
 date: 2026-02-13
 layout: interview
-tags: [Technical Round, Android]
+tags: [Technical Round]
 ---
 
 ## Android Activity Lifecycle — What Interviewers Really Ask
