@@ -524,7 +524,7 @@
       }
 
       .interview-number .day-num {
-        font-size: 1em;
+        font-size: 0.8em;
         font-weight: 800;
       }
 
@@ -1000,8 +1000,6 @@
                   {% endfor %}
                 </div>
                 {% endif %}
-                <div class="date">{{ interview.date | date:"%A, %B %d, %Y" }}</div>
-                <p class="list-post-excerpt">{{ interview.excerpt | strip_html | truncatewords: 25 }}</p>
               </div>
             </article>
           </a>
