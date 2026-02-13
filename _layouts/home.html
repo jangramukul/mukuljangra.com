@@ -504,16 +504,28 @@
 
       .interview-number {
         font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        font-size: 0.7em;
         color: #60a5fa;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        width: auto;
         min-width: 44px;
-        padding: 0 8px;
+        padding: 4px 8px;
         white-space: nowrap;
+        line-height: 1;
+        gap: 1px;
+      }
+
+      .interview-number .day-label {
+        font-size: 0.55em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+      }
+
+      .interview-number .day-num {
+        font-size: 1em;
+        font-weight: 800;
       }
 
       /* Interview card theme (matches articles) */
@@ -976,7 +988,10 @@
           {% for interview in interviews %}
           <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon interview-number">Day {{ interview.order }}</div>
+              <div class="list-post-icon interview-number">
+                <span class="day-label">Day</span>
+                <span class="day-num">{% assign o = interview.order | modulo: 100 %}{% assign t = interview.order | modulo: 10 %}{% if o == 11 or o == 12 or o == 13 %}{{ interview.order }}th{% elsif t == 1 %}{{ interview.order }}st{% elsif t == 2 %}{{ interview.order }}nd{% elsif t == 3 %}{{ interview.order }}rd{% else %}{{ interview.order }}th{% endif %}</span>
+              </div>
               <div class="list-post-content">
                 <h2>{{ interview.title }}</h2>
                 {% if interview.tags.size > 0 %}
