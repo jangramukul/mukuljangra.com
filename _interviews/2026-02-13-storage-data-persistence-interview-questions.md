@@ -416,6 +416,42 @@ class ArticleDaoTest {
 
 Notice `allowMainThreadQueries()` is acceptable here because tests don't have a UI thread to block. For migration testing, Room provides `MigrationTestHelper` which lets you create a database at version N, run your migration, and verify the schema at version N+1. This is how you catch migration bugs before they reach users. Android Studio also includes the Database Inspector, which lets you inspect your Room database live on a running device or emulator — query tables, edit rows, and see changes in real time.
 
+#### Q23: How do you encrypt a Room database, and when would you need to?
+
+Room uses SQLite under the hood, and SQLite databases are stored as plain files on disk. Anyone with root access or a device backup can read the contents. For apps handling sensitive data — health records, financial transactions, private messages — you need encryption at the database level. The standard solution is **SQLCipher**, an open-source extension that provides transparent 256-bit AES encryption for SQLite.
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+}
+
+// Create encrypted Room database
+val passphrase = getOrCreatePassphrase() // from Android Keystore
+val factory = SupportOpenHelperFactory(SQLiteDatabase.getBytes(passphrase))
+
+val db = Room.databaseBuilder(
+    context,
+    AppDatabase::class.java,
+    "encrypted_app.db"
+)
+    .openHelperFactory(factory)
+    .build()
+```
+
+The passphrase should come from the Android Keystore — generate an AES key in the Keystore, use it to encrypt a random passphrase, and store the encrypted passphrase in SharedPreferences. When opening the database, decrypt the passphrase using the Keystore key. This way, the actual database passphrase never exists in plaintext outside of the secure hardware.
+
+The tradeoff: SQLCipher adds roughly 5-15% overhead on database operations and increases APK size by about 3-4MB (for the native libraries). For most apps storing only preferences or cached API data, encryption is unnecessary. Reserve it for genuinely sensitive data.
+
+#### Q24: What is the difference between `commit()` and `apply()` in SharedPreferences, and what's the hidden gotcha with `apply()`?
+
+`commit()` writes to disk synchronously on the calling thread and returns a boolean indicating success or failure. `apply()` writes to the in-memory map immediately but schedules the disk write asynchronously on a background thread. `apply()` is faster from the caller's perspective because it returns immediately.
+
+The hidden gotcha that causes real production ANRs: the Android framework calls `QueuedWork.waitToFinish()` in `Activity.onPause()`, `Activity.onStop()`, `BroadcastReceiver.onReceive()`, and `Service.onStartCommand()`. This method blocks the main thread until all pending `apply()` writes complete. If you call `apply()` many times in quick succession (or write large amounts of data), the queued writes pile up. When the Activity pauses, the system blocks the main thread waiting for all those writes to flush to disk. If the disk is slow (which happens more than you'd think on lower-end devices), this causes a 5+ second block and an ANR.
+
+This is one of the main reasons Google created DataStore — it doesn't have this blocking behavior. It's also why you should use `apply()` only for small, infrequent writes. For anything more complex, migrate to DataStore.
+
 ### Common Follow-ups
 
 - What happens if two processes try to access the same SharedPreferences file? (Answer: it's unreliable — MODE_MULTI_PROCESS was deprecated because it doesn't guarantee consistency. Use DataStore or a ContentProvider for multi-process access.)

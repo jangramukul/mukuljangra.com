@@ -315,6 +315,59 @@ A production authentication flow involves several layers. The user enters creden
 
 Security hardening: never store the user's password. Use PKCE (Proof Key for Code Exchange) if using OAuth. Clear tokens when the user logs out. Implement token rotation — when you use a refresh token, invalidate the old one and issue a new pair. Use certificate pinning on your auth endpoints. Consider requiring biometric authentication to unlock the encrypted tokens for sensitive apps (banking, health). Detect rooted devices and warn the user if you handle financial data.
 
+#### Q15: What is the difference between OAuth 2.0, JWT, and session-based authentication?
+
+**Session-based authentication** is the traditional approach — the server creates a session after login and sends a session ID cookie. The client sends this cookie with every request, and the server looks up the session in its store (typically Redis or a database). The downside for mobile: cookies don't work as naturally on Android as they do in browsers, and server-side session storage doesn't scale well.
+
+**OAuth 2.0** is an authorization framework, not an authentication method. It lets a third-party app access a user's resources without knowing their password. The user authenticates with the identity provider (Google, GitHub, etc.), and the app receives an access token with specific scopes. On Android, you'd use libraries like AppAuth (by OpenID Foundation) to handle the OAuth flow. The PKCE (Proof Key for Code Exchange) extension is required for mobile apps because they can't securely store a client secret.
+
+**JWT (JSON Web Token)** is a token format, not a protocol. It's a signed, base64-encoded JSON object with three parts: header, payload, and signature. The server issues a JWT after authentication, and the client includes it in the `Authorization: Bearer <token>` header. The server can verify the token's signature without a database lookup — it's stateless. The payload contains claims like user ID, roles, and expiration time.
+
+In practice, most mobile apps use OAuth 2.0 for third-party login (Sign in with Google) and JWT tokens for their own API authentication. The access token is a short-lived JWT, and the refresh token is an opaque token stored securely on the device.
+
+#### Q16: What are the differences between AES, RSA, and SHA? When do you use each?
+
+These are fundamentally different cryptographic tools for different purposes.
+
+**AES (Advanced Encryption Standard)** is a symmetric encryption algorithm — the same key encrypts and decrypts. It's fast and efficient for encrypting data at rest (files, databases, shared preferences). AES supports key lengths of 128, 192, and 256 bits. AES-256 with GCM mode (which provides both encryption and authentication) is the standard choice on Android. The Android Keystore generates AES keys natively.
+
+**RSA** is an asymmetric algorithm — there's a public key for encryption and a private key for decryption. It's slower than AES but solves the key distribution problem — you can share the public key openly. RSA is used for digital signatures, key exchange, and encrypting small amounts of data (like encrypting an AES key to send it securely). RSA key lengths are typically 2048 or 4096 bits.
+
+**SHA (Secure Hash Algorithm)** is not encryption — it's a one-way hash function. Given input data, it produces a fixed-size hash (256 bits for SHA-256). You can't reverse a hash to get the original data. SHA is used for verifying data integrity (file checksums), password hashing (with salt), and digital signature verification.
+
+The practical pattern: use AES for encrypting local data (EncryptedSharedPreferences uses AES-256). Use RSA for digital signatures and secure key exchange in TLS handshakes. Use SHA-256 for hashing passwords, verifying file integrity, and certificate pinning (pins are SHA-256 hashes of public keys).
+
+#### Q17: What is SafetyNet / Play Integrity API and when would you use it?
+
+SafetyNet Attestation (now deprecated in favor of Play Integrity API) lets your server verify that API requests are coming from a genuine, unmodified Android device running your legitimate app. Play Integrity API is the replacement — it provides three signals: **device integrity** (is this a genuine, unrooted Android device?), **app integrity** (is this the real, unmodified version of your app from the Play Store?), and **account integrity** (is the user signed in with a licensed Google account?).
+
+The flow: your app requests an integrity token from Google Play services, sends it to your backend, and your backend verifies it with Google's servers. If any check fails, your server can reject the request.
+
+Use cases: banking apps that need to verify the device isn't rooted or running a modified OS. Apps with in-app purchases that need to prevent tampered clients from bypassing payment. Anti-cheat systems in games. Apps handling sensitive health or government data. The tradeoff is that it requires Google Play Services (doesn't work on devices without it, like Huawei devices in China), and it adds latency to the verification flow. Don't call it on every API request — use it for sensitive operations like login, payment, or accessing restricted data.
+
+#### Q18: What is the difference between Keychain and Keystore?
+
+This distinction trips up a lot of candidates. **Keychain** (`android.security.KeyChain`) is for system-wide credentials — certificates and private keys that multiple apps might need access to. Think VPN certificates, Wi-Fi enterprise authentication, or corporate email credentials. When an app requests a credential via Keychain, the user sees a system dialog to select and approve which certificate to share. The credential is not app-specific — it's managed at the system level.
+
+**Keystore** (`java.security.KeyStore` with the `"AndroidKeyStore"` provider) is for app-specific cryptographic keys. Keys generated in the Keystore are only accessible to your app. They never leave the secure hardware (TEE or StrongBox). Use Keystore when you need to encrypt data within your app — auth tokens, local database encryption keys, user PII. The key difference: Keystore is private to your app, Keychain is shared across apps with user consent.
+
+#### Q19: How does FCM topic messaging work, and how do you target specific users or groups?
+
+FCM supports three targeting approaches. **Token-based targeting** sends to a specific device using its registration token — this is the standard one-to-one notification. **Topic messaging** lets devices subscribe to named topics (like "sports_news" or "deals"), and you send a message to the topic which FCM fans out to all subscribers. **Device group messaging** targets a group of devices belonging to a single user (like the same user on their phone and tablet).
+
+```kotlin
+// Client subscribes to a topic
+FirebaseMessaging.getInstance()
+    .subscribeToTopic("android_weekly")
+    .addOnSuccessListener { /* subscribed */ }
+
+// Client unsubscribes
+FirebaseMessaging.getInstance()
+    .unsubscribeFromTopic("android_weekly")
+```
+
+Topics are useful for broadcast-style notifications — breaking news, feature announcements, promotional campaigns — where you want to reach all interested users without storing and managing individual tokens on your server. The server sends a single message to the topic, and FCM handles distribution. You can also combine topics with conditions — `"android_weekly" in topics && "premium" in topics` — to target specific audience segments. The limitation: you can't get a list of subscribers for a topic, and delivery to large topics can have slight delays as FCM fans out messages.
+
 ### Common Follow-ups
 
 - What happens when a user revokes a permission that your app previously had?

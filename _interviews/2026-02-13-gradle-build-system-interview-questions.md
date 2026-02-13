@@ -285,6 +285,55 @@ At the dependency level: avoid dynamic versions (`1.+`) — they force Gradle to
 
 At the CI level: use remote build cache. Cache the Gradle wrapper and dependency directories. Use incremental builds instead of clean builds when possible. Run tests in parallel across multiple CI nodes.
 
+#### Q16: What is Multidex and why was it needed?
+
+An Android app's source code compiles into DEX (Dalvik Executable) files. A single DEX file has a hard limit of 65,536 methods (the 64K method limit). This comes from the DEX file format using a 16-bit index for method references. When your app's code plus all its libraries exceed 64K methods, the build fails. Multidex solves this by splitting your app into multiple DEX files — `classes.dex`, `classes2.dex`, `classes3.dex`, etc.
+
+Before Android 5.0 (API 21), you had to explicitly enable multidex and include the `multidex` support library because Dalvik only loaded one DEX file by default. ART (Android 5.0+) natively supports loading multiple DEX files, so apps targeting `minSdk 21+` get multidex automatically. Today, most apps set `minSdk` to 21 or higher, so you rarely need to think about it. But the concept still shows up in interviews because it's tied to understanding the DEX format and the build pipeline.
+
+```kotlin
+android {
+    defaultConfig {
+        // Only needed for minSdk < 21
+        multiDexEnabled = true
+    }
+}
+
+// In Application class (minSdk < 21 only)
+class App : MultiDexApplication() {
+    // MultiDexApplication handles installing secondary DEX files
+}
+```
+
+The practical impact: even though multidex is automatic on modern devices, the 64K limit still affects build time and DEX file structure. R8/ProGuard shrinking reduces your method count by removing unused code, which can keep you under the limit or reduce the number of DEX files, slightly improving cold start time.
+
+#### Q17: What is `buildConfigField` and how does it differ from `resValue`?
+
+`buildConfigField` generates a constant in the auto-generated `BuildConfig` class. It's available at compile time in your Kotlin/Java code. `resValue` generates a resource value (like a string) that's available through the resource system (`R.string`, `R.integer`, etc.).
+
+```kotlin
+android {
+    buildTypes {
+        debug {
+            buildConfigField("String", "API_URL", "\"https://dev.api.example.com\"")
+            buildConfigField("Boolean", "ENABLE_LOGGING", "true")
+            resValue("string", "app_label", "MyApp Debug")
+        }
+        release {
+            buildConfigField("String", "API_URL", "\"https://api.example.com\"")
+            buildConfigField("Boolean", "ENABLE_LOGGING", "false")
+            resValue("string", "app_label", "MyApp")
+        }
+    }
+}
+
+// Access in code
+val baseUrl = BuildConfig.API_URL
+if (BuildConfig.ENABLE_LOGGING) { /* ... */ }
+```
+
+Use `buildConfigField` for values consumed by code — API URLs, feature flags, version-specific constants. Use `resValue` for values consumed by the resource system — app names that differ per build type, dynamic string values. The key difference: `BuildConfig` fields are compile-time constants that R8 can inline and optimize away, while resource values go through the standard resource resolution system.
+
 ### Common Follow-ups
 
 - What is `settings.gradle.kts` and what role does it play in the build?

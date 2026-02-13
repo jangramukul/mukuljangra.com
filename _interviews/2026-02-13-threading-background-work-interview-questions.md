@@ -227,6 +227,77 @@ class FileUploadWorker(
 
 The key detail: WorkManager handles process death and device reboots. If the process is killed mid-upload, WorkManager will restart the worker when conditions allow. You should design your upload to be resumable (using HTTP range requests or chunked uploads) so restarting doesn't mean starting from zero.
 
+#### Q16: What are the exact alarm restrictions introduced in Android 12, and how do you handle them?
+
+Before Android 12, any app could schedule exact alarms using `AlarmManager.setExact()` or `setExactAndAllowWhileIdle()`. Android 12 (API 31) introduced the `SCHEDULE_EXACT_ALARM` permission as a special permission — you declare it in the manifest, and it's auto-granted on install. But Android 13 (API 33) made it revocable — users can go to Settings and turn it off for your app. Android 14 tightened things further: apps targeting API 34 that aren't alarm clocks, calendars, or timers should use `USE_EXACT_ALARM` (auto-granted, not revocable) only if exact timing is a core feature, or switch to `setWindow()` for inexact alarms.
+
+```kotlin
+// Check if your app can schedule exact alarms
+val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+if (alarmManager.canScheduleExactAlarms()) {
+    alarmManager.setExactAndAllowWhileIdle(
+        AlarmManager.RTC_WAKEUP,
+        triggerAtMillis,
+        pendingIntent
+    )
+} else {
+    // Fall back to inexact alarm or guide user to settings
+    alarmManager.setWindow(
+        AlarmManager.RTC_WAKEUP,
+        triggerAtMillis,
+        windowLengthMillis,
+        pendingIntent
+    )
+}
+```
+
+The practical rule: if your app is an alarm clock or calendar, use `USE_EXACT_ALARM`. For everything else — syncing data, periodic checks, background refreshes — use WorkManager with constraints or inexact alarms. The system explicitly wants developers to stop treating every scheduled task as "must happen at exactly this millisecond."
+
+#### Q17: How do you reduce battery usage from background work in an Android app?
+
+This is a holistic question that tests whether you think about the user's device, not just your app. Battery drain from background work comes from five sources: CPU, network, GPS, wake locks, and screen.
+
+**Network** — batch network requests instead of sending them one by one. Use WorkManager with `NetworkType.UNMETERED` for bulk transfers so they happen on Wi-Fi. Use `Cache-Control` headers to avoid redundant server calls. Compress payloads.
+
+**CPU** — limit background work frequency. Don't poll the server every 30 seconds when every 15 minutes would work. Use `WorkManager` with appropriate minimum intervals rather than `AlarmManager` for periodic tasks. Avoid tight loops and intensive computation in background services.
+
+**Location** — use the fused location provider, not raw GPS. Request the coarsest accuracy level your feature can tolerate (`PRIORITY_LOW_POWER` over `PRIORITY_HIGH_ACCURACY`). Remove location updates when the user navigates away from the feature.
+
+**Wake locks** — avoid them entirely if you can. If you must keep the device awake, use the shortest timeout possible and release the lock in a `finally` block. WorkManager manages wake locks automatically for you.
+
+**General** — register and unregister callbacks, listeners, and observers properly. A broadcast receiver that stays registered in the background keeps your app's process alive. Use lifecycle-aware components to automatically handle registration/unregistration.
+
+#### Q18: What is the difference between `Worker`, `CoroutineWorker`, and `ListenableWorker` in WorkManager?
+
+`Worker` is the simplest — it provides a synchronous `doWork()` method that runs on a background thread from `WorkManager`'s internal executor. You return `Result.success()`, `Result.failure()`, or `Result.retry()`. It's straightforward but limits you to synchronous code.
+
+`CoroutineWorker` provides a `suspend fun doWork()` that runs on `Dispatchers.Default` by default. This is the modern choice for Kotlin apps — you can call other suspend functions, use structured concurrency, and switch dispatchers naturally. It's built on top of `ListenableWorker`.
+
+`ListenableWorker` is the base class that gives you full control. It provides `startWork()` which returns a `ListenableFuture<Result>`. You manage your own threading. Use this when integrating with callback-based APIs or Java libraries that don't support coroutines.
+
+```kotlin
+// CoroutineWorker — the standard choice for Kotlin
+class SyncWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        return withContext(Dispatchers.IO) {
+            try {
+                repository.syncData()
+                Result.success()
+            } catch (e: IOException) {
+                if (runAttemptCount < 3) Result.retry()
+                else Result.failure()
+            }
+        }
+    }
+}
+```
+
+In practice, use `CoroutineWorker` for almost everything. Use `Worker` if you're in a pure Java codebase. Reserve `ListenableWorker` for advanced cases where you need full control over the async execution.
+
 ### Common Follow-ups
 
 - What is the difference between `Dispatchers.IO` and `Dispatchers.Default` in coroutines?

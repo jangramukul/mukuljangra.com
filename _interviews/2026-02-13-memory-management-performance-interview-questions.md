@@ -266,6 +266,45 @@ The most common sources: loading full-resolution bitmaps without subsampling, me
 
 Prevention strategies include using image loading libraries that handle bitmap lifecycle and memory pressure, running LeakCanary in debug builds to catch leaks early, using `largeHeap=true` in the manifest only as a last resort (it's a band-aid, not a fix), implementing pagination for large data sets, profiling with the Memory Profiler to understand your app's memory allocation patterns, and handling `onTrimMemory()` callbacks to release caches proactively. In production, catch `OutOfMemoryError` around bitmap operations and fall back gracefully rather than crashing.
 
+#### Q16: Is it possible to force garbage collection in Android?
+
+You can request GC by calling `System.gc()` or `Runtime.getRuntime().gc()`, but you cannot force it. The system treats this as a suggestion, not a command. ART's garbage collector decides when and how to collect based on memory pressure, allocation rates, and its own heuristics. Calling `System.gc()` explicitly is almost always the wrong thing to do in production code — it can trigger a full GC pause that hurts performance more than it helps. The GC is designed to run at optimal times. If you feel the need to call `System.gc()`, it usually means you have a memory management problem (leak, oversized allocation) that you should fix at the source rather than papering over with a manual GC request. The one legitimate use case is in test or benchmarking code where you want to start from a clean memory state.
+
+#### Q17: What is StrictMode and how do you use it to catch performance issues?
+
+`StrictMode` is a developer tool that detects things you might be doing by accident — like disk reads or network calls on the main thread. It has two policies: `ThreadPolicy` (detects disk reads/writes, network operations, and slow calls on the current thread) and `VmPolicy` (detects leaked objects, leaked closable resources, untagged sockets, and other VM-level issues).
+
+```kotlin
+// Enable in Application.onCreate() for debug builds only
+if (BuildConfig.DEBUG) {
+    StrictMode.setThreadPolicy(
+        StrictMode.ThreadPolicy.Builder()
+            .detectDiskReads()
+            .detectDiskWrites()
+            .detectNetwork()
+            .penaltyLog()       // Log to Logcat
+            .penaltyFlashScreen() // Flash the screen red
+            .build()
+    )
+    StrictMode.setVmPolicy(
+        StrictMode.VmPolicy.Builder()
+            .detectLeakedSqlLiteObjects()
+            .detectLeakedClosableObjects()
+            .detectActivityLeaks()
+            .penaltyLog()
+            .build()
+    )
+}
+```
+
+Never enable StrictMode in release builds — the overhead and the crash penalties would hurt users. In development, it's incredibly useful. It catches subtle issues like: `SharedPreferences.commit()` on the main thread (disk write), checking `File.exists()` on the main thread (disk read), or forgetting to close a `Cursor` (leaked closable). Many production ANRs can be prevented by catching these issues early with StrictMode during development.
+
+#### Q18: What is the difference between `Bitmap.Config.ARGB_8888` and `RGB_565`?
+
+`ARGB_8888` uses 4 bytes per pixel (8 bits each for alpha, red, green, blue). It's the highest quality — supports full transparency and 16.7 million colors. A 1000x1000 bitmap at ARGB_8888 uses 4MB of memory. `RGB_565` uses 2 bytes per pixel (5 bits red, 6 bits green, 5 bits blue). It has no alpha channel (no transparency) and reduced color depth (65,536 colors), but uses exactly half the memory — that same 1000x1000 bitmap is only 2MB.
+
+In practice, `ARGB_8888` is the default and the right choice for most images — photos, complex graphics, anything with transparency. `RGB_565` is useful when you're displaying images that don't need transparency and memory is tight, like thumbnails in a long list. Image loading libraries like Glide used to default to `RGB_565` for non-transparent images to save memory, though Coil defaults to `ARGB_8888`. The visual difference is usually imperceptible for photos but can cause visible banding in gradients.
+
 ### Common Follow-ups
 
 - What's the difference between `Bitmap.Config.ARGB_8888` and `RGB_565`?

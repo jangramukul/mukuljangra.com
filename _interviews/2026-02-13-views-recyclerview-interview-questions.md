@@ -411,6 +411,69 @@ This question tests whether you understand why RecyclerView was created. The key
 
 RecyclerView is more complex to set up but infinitely more flexible. There's no practical reason to use ListView in new code.
 
+#### Q24: How does pagination work in RecyclerView, and what does the Paging library provide?
+
+Pagination is essential when you have a large dataset — loading 10,000 items at once wastes memory and network bandwidth, and the user will never scroll through all of them. There are two approaches: manual pagination and the Jetpack Paging library.
+
+**Manual pagination** means detecting when the user nears the end of the list (typically using a `RecyclerView.OnScrollListener` that checks `findLastVisibleItemPosition()`) and triggering a load of the next page. You manage page tokens or offsets, append to your list, and call `notifyItemRangeInserted()`. It works but you have to handle loading states, errors, retries, and cache invalidation yourself.
+
+**Paging 3** (Jetpack) handles all of this. You define a `PagingSource` that knows how to load a page of data given a key, and Paging handles the rest — triggering loads as the user scrolls, caching loaded pages, showing loading/error states, and supporting both network and database-backed sources via `RemoteMediator`.
+
+```kotlin
+class ArticlePagingSource(
+    private val api: ArticleApi
+) : PagingSource<Int, Article>() {
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Article> {
+        val page = params.key ?: 1
+        return try {
+            val response = api.getArticles(page = page, size = params.loadSize)
+            LoadResult.Page(
+                data = response.articles,
+                prevKey = if (page == 1) null else page - 1,
+                nextKey = if (response.articles.isEmpty()) null else page + 1
+            )
+        } catch (e: IOException) {
+            LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, Article>): Int? {
+        return state.anchorPosition?.let { position ->
+            state.closestPageToPosition(position)?.prevKey?.plus(1)
+                ?: state.closestPageToPosition(position)?.nextKey?.minus(1)
+        }
+    }
+}
+```
+
+Two common pagination strategies that interviewers ask about: **offset-based** (page 1, page 2, ...) is simple but has the problem of shifting results when items are inserted or deleted between page fetches. **Cursor-based** (keyset pagination) uses the last item's ID or timestamp as the cursor for the next page — this is more stable and the recommended approach for feeds and timelines.
+
+#### Q25: What is `ViewStub` and when would you use it?
+
+`ViewStub` is a zero-sized, invisible View that lazily inflates a layout resource at runtime. It takes zero space in the view hierarchy until you explicitly inflate it by calling `inflate()` or setting its visibility to `VISIBLE`. Once inflated, the `ViewStub` is replaced by the inflated layout in the parent.
+
+Use it for views that aren't always needed — error states, empty states, onboarding tooltips, or optional sections of a complex layout. Instead of including these views and setting them to `GONE` (which still inflates and measures them during layout), `ViewStub` defers inflation entirely, saving both memory and layout time on the initial render.
+
+```xml
+<!-- In your layout XML -->
+<ViewStub
+    android:id="@+id/error_stub"
+    android:inflatedId="@+id/error_layout"
+    android:layout="@layout/error_state"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+```
+
+```kotlin
+// Inflate only when needed
+val errorView = findViewById<ViewStub>(R.id.error_stub).inflate()
+// After inflation, access by the inflatedId
+val errorLayout = findViewById<View>(R.id.error_layout)
+```
+
+The key detail: `ViewStub` can only be inflated once. After inflation, calling `inflate()` again throws an `IllegalStateException`. If you need to show/hide the inflated view repeatedly, toggle its visibility normally after the first inflation.
+
 ### Common Follow-ups
 
 - What happens if you call `notifyDataSetChanged()` on a RecyclerView with thousands of items? (Answer: all visible items are rebound, animations are skipped, it's expensive — use DiffUtil instead)

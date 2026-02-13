@@ -311,6 +311,81 @@ private val Response.retryCount: Int
 
 This is one of those questions where interviewers are testing whether you've actually implemented this in production. The Mutex preventing concurrent refreshes and the check for stale tokens are the details that separate theoretical knowledge from real experience.
 
+#### Q18: What is the difference between short polling, long polling, and WebSocket? When would you use each?
+
+**Short polling** means the client sends a request to the server at regular intervals (say every 5 seconds) asking "do you have anything new?" The server responds immediately — either with new data or an empty response. It's simple to implement but wasteful: most responses return nothing, and you're burning battery and bandwidth on empty requests. It also has inherent latency — you only discover new data on the next poll interval.
+
+**Long polling** is a smarter variation. The client sends a request, and the server holds the connection open until it has new data (or a timeout expires, typically 30-60 seconds). Once the server responds, the client immediately sends another request. This gives you near-real-time delivery without the wasted requests. The downside is that each response-request cycle has a small gap, and you need to handle connection timeouts and reconnection logic carefully.
+
+**WebSocket** upgrades an HTTP connection to a persistent, full-duplex TCP connection. Both sides can send messages at any time with minimal overhead (just a 2-byte frame header vs full HTTP headers). It's the right choice for truly real-time, bidirectional communication — chat apps, live trading, collaborative editing.
+
+The decision framework: use short polling for low-frequency, non-critical updates where simplicity matters (checking for app updates every hour). Use long polling when you need near-real-time but can't use WebSocket (some corporate proxies block WebSocket upgrades). Use WebSocket for anything that needs real-time bidirectional communication. In practice, most Android chat apps use WebSocket with a long-polling fallback.
+
+#### Q19: What is the difference between JSON and Protocol Buffers? When would you use each?
+
+JSON is a text-based data format that's human-readable — you can open it in a text editor and understand it. Protocol Buffers (protobuf) is Google's binary serialization format that's not human-readable but is significantly more efficient. Protobuf messages are 3-10x smaller than their JSON equivalents because binary encoding eliminates field name repetition, uses variable-length encoding for integers, and has no whitespace. Parsing is also faster — protobuf deserialization is typically 20-100x faster than JSON parsing because the binary format maps directly to memory without string parsing.
+
+```kotlin
+// JSON — human readable, larger, slower parsing
+// {"userId": 42, "name": "Mukul", "isVerified": true}
+
+// Protocol Buffers — schema-defined, binary, faster
+// message User {
+//   int32 user_id = 1;
+//   string name = 2;
+//   bool is_verified = 3;
+// }
+```
+
+The tradeoffs: JSON is universal — every language and tool supports it, debugging is easy because you can read the payload, and you don't need schema files. Protobuf requires `.proto` schema files, code generation, and debugging is harder since you can't read the binary payload. Protobuf also requires both client and server to share the same schema version, which adds coordination overhead.
+
+Use JSON for public APIs, REST endpoints, and when debuggability matters more than performance. Use protobuf for high-throughput internal APIs, gRPC services, when bandwidth or parsing speed is critical (like a chat app sending thousands of messages), and for Jetpack DataStore's Proto DataStore variant.
+
+#### Q20: What is an unmetered network constraint and how does it affect background work?
+
+An unmetered network is a connection type that doesn't count against a user's data plan — typically Wi-Fi. A metered network is one with data limits — cellular connections, mobile hotspots, and some capped Wi-Fi networks. Android's `ConnectivityManager` reports this through `NetworkCapabilities.NET_CAPABILITY_NOT_METERED`.
+
+This matters for WorkManager constraints. When scheduling large transfers — uploading a batch of photos, syncing a large database, downloading offline content — you should constrain to unmetered networks to avoid burning through the user's data plan.
+
+```kotlin
+val bulkSyncRequest = OneTimeWorkRequestBuilder<BulkSyncWorker>()
+    .setConstraints(
+        Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED) // Wi-Fi only
+            .setRequiresBatteryNotLow(true)
+            .build()
+    )
+    .build()
+```
+
+`NetworkType.CONNECTED` accepts any network (metered or unmetered). `NetworkType.UNMETERED` waits specifically for an unmetered connection. `NetworkType.NOT_ROAMING` avoids roaming networks. Choosing the right constraint shows you think about the user's data costs and battery, not just whether the request can technically complete.
+
+#### Q21: What are Retrofit call adapters and when would you use a custom one?
+
+Call adapters control the return type of Retrofit interface methods. By default, Retrofit returns `Call<T>`. When you add `addCallAdapterFactory(RxJava3CallAdapterFactory.create())`, you can return `Observable<T>`, `Single<T>`, or `Flowable<T>`. Kotlin coroutine support is built into Retrofit 2.6+ — any `suspend` function automatically uses the built-in coroutine call adapter without needing a factory.
+
+```kotlin
+val retrofit = Retrofit.Builder()
+    .baseUrl("https://api.example.com/")
+    .addConverterFactory(MoshiConverterFactory.create())
+    // Call adapter for RxJava (if not using coroutines)
+    .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+    .build()
+
+interface UserApi {
+    // Uses built-in coroutine adapter — no factory needed
+    suspend fun getUser(@Path("id") id: String): UserResponse
+
+    // Uses RxJava adapter
+    fun getUserRx(@Path("id") id: String): Single<UserResponse>
+
+    // Raw Call — default, no adapter needed
+    fun getUserCall(@Path("id") id: String): Call<UserResponse>
+}
+```
+
+You'd write a custom call adapter when you need to wrap responses in a custom Result type, add global error handling, or integrate with a proprietary async framework. For example, wrapping every response in a `NetworkResult<T>` sealed class that distinguishes between success, server error, and network failure — so individual call sites don't need try-catch blocks.
+
 ### Common Follow-ups
 
 - How would you unit test a Retrofit service?
