@@ -272,6 +272,26 @@
         border-bottom-color: #FFD700;
       }
 
+      .tab-count {
+        font-size: 11px;
+        font-weight: 600;
+        background-color: rgba(55, 65, 81, 0.5);
+        color: #9ca3af;
+        padding: 1px 7px;
+        border-radius: 9999px;
+        margin-left: 4px;
+      }
+
+      .section-tab.active .tab-count {
+        background-color: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+      }
+
+      .section-tab.active[data-tab="newsletter"] .tab-count {
+        background-color: rgba(255, 215, 0, 0.15);
+        color: #FFD700;
+      }
+
       /* List container */
       .list-container {
         margin: 0 auto;
@@ -886,9 +906,9 @@
       <div class="list-container">
         <!-- Tabs -->
         <div class="section-tabs">
-          <div class="section-tab active" data-tab="articles">Articles</div>
-          <div class="section-tab" data-tab="interviews">Interview Prep</div>
-          <div class="section-tab" data-tab="newsletter">Weekly Newsletter</div>
+          <div class="section-tab active" data-tab="articles">Articles <span class="tab-count">{{ site.posts | size }}</span></div>
+          <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
+          <div class="section-tab" data-tab="newsletter">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
         </div>
 
         <!-- Articles tab -->
