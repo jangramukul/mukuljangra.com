@@ -261,6 +261,17 @@
         font-family: 'Inter', sans-serif;
       }
 
+      .list-post-excerpt {
+        color: #9ca3af;
+        font-size: 0.82em;
+        line-height: 1.5;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
       .list-post.hidden {
         display: none;
       }
@@ -687,6 +698,7 @@
                 </div>
                 {% endif %}
                 <div class="date">{{ post.date | date:"%A, %B %d, %Y" }}</div>
+                <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
               </div>
             </article>
           </a>
