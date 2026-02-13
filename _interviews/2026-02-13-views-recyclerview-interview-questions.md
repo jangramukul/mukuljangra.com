@@ -8,32 +8,34 @@ order: 4
 
 ## Views, RecyclerView & UI Fundamentals
 
-Views and RecyclerView are core topics in Android interviews. Understanding how views render and how RecyclerView recycles is essential.
+Views, RecyclerView and UI rendering are core topics in Android interviews. This post covers the most important questions.
 
 ### Core Questions (Beginner → Intermediate)
 
 #### Q1: What are the three phases of the View rendering pipeline?
 
-Every View goes through three phases — **measure**, **layout**, and **draw**. In the measure phase (`onMeasure()`), the system asks each view how big it wants to be. In the layout phase (`onLayout()`), the parent tells each child where to position. In the draw phase (`onDraw()`), each view renders itself onto a Canvas. This full pass needs to complete within 16ms to maintain 60 FPS, which is why deeply nested layouts are expensive.
+Every View goes through three phases — **measure**, **layout**, and **draw**. In measure phase, system walks down the view tree and asks each view how big it wants to be via `onMeasure()`. In layout phase, parent tells each child where to position via `onLayout()`. In draw phase, each view renders itself onto a Canvas via `onDraw()`. This full pass needs to complete within 16ms to maintain 60 FPS. Deeply nested layouts are expensive because every extra level multiplies the work in each phase.
 
 #### Q2: What does `onMeasure()` do, and what are the three MeasureSpec modes?
 
-`onMeasure()` is where a view calculates how big it wants to be. The parent passes down width and height constraints as `MeasureSpec` values — these are packed integers containing both a mode and a size.
+`onMeasure()` is where a view calculates how big it wants to be. The parent passes down width and height constraints as `MeasureSpec` values containing both a mode and a size.
 
 The three modes are:
-- **EXACTLY** — the parent has decided the exact size. This happens when you set `layout_width="200dp"` or `match_parent`
-- **AT_MOST** — the view can be as large as it wants, up to the specified limit. This happens with `wrap_content`
-- **UNSPECIFIED** — no constraint at all. The view can be whatever size it wants. This is rare and typically happens inside a ScrollView
+- **EXACTLY** — parent has decided the exact size. Happens with `layout_width="200dp"` or `match_parent`
+- **AT_MOST** — view can be as large as it wants, up to the specified limit. Happens with `wrap_content`
+- **UNSPECIFIED** — no constraint at all. Rare, typically happens inside a ScrollView
 
-You must call `setMeasuredDimension()` at the end of `onMeasure()`. Forgetting this causes an `IllegalStateException`.
+You must call `setMeasuredDimension()` at the end of `onMeasure()`. If you forget, the framework throws an `IllegalStateException`.
 
 #### Q3: What is the difference between `invalidate()` and `requestLayout()`?
 
-`invalidate()` triggers only the draw phase — it calls `onDraw()` again. Use it when the visual appearance changes but the size and position stay the same, like changing a color or updating text content. `requestLayout()` triggers the full pipeline — measure, layout, and draw. Use it when the view's size or position needs to change, like when text length changes or padding is modified programmatically. Calling `requestLayout()` for every small visual change is wasteful since it forces the entire view tree to re-measure and re-layout.
+`invalidate()` triggers only the draw phase — it calls `onDraw()` again. Use it when visual appearance changes but size and position stay the same, like changing a color or updating text content. `requestLayout()` triggers the full pipeline — measure, layout, and draw. Use it when the view's size or position needs to change, like when text length changes or you modify padding programmatically.
+
+Calling `requestLayout()` for every small visual change forces the entire view tree to re-measure and re-layout, which is far more expensive than just redrawing.
 
 #### Q4: What is the ViewHolder pattern, and why is it mandatory in RecyclerView?
 
-The ViewHolder pattern caches references to child views inside each list item, so you avoid calling `findViewById()` every time a row needs to bind data. In the old `ListView`, this pattern was optional — you could skip it and call `findViewById()` in `getView()`, which was slow but functional. RecyclerView made ViewHolder mandatory by baking it into the API.
+ViewHolder caches references to child views inside each list item, so you avoid calling `findViewById()` every time a row needs to bind data. In the old `ListView`, this pattern was optional. RecyclerView made it mandatory by baking it into the API.
 
 ```kotlin
 class ArticleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -43,11 +45,11 @@ class ArticleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 }
 ```
 
-The `ViewHolder` is created once in `onCreateViewHolder()` and reused many times through `onBindViewHolder()`. In a list of 1000 items, RecyclerView might create only 10-15 ViewHolders and recycle them as the user scrolls. This is the core performance advantage over creating new views for every item.
+ViewHolder is created once in `onCreateViewHolder()` and reused many times through `onBindViewHolder()`. In a list of 1000 items, RecyclerView might create only 10-15 ViewHolders and recycle them as the user scrolls.
 
 #### Q5: Walk through the three key methods of `RecyclerView.Adapter`.
 
-- **`onCreateViewHolder(parent, viewType)`** — inflates the item layout and wraps it in a ViewHolder. Called only when RecyclerView needs a new ViewHolder (not when it can recycle an existing one)
+- **`onCreateViewHolder(parent, viewType)`** — inflates the item layout and wraps it in a ViewHolder. Called only when RecyclerView needs a new ViewHolder
 - **`onBindViewHolder(holder, position)`** — binds data from your dataset to the ViewHolder's views. Called every time RecyclerView reuses a ViewHolder for a different position
 - **`getItemCount()`** — returns the total number of items in your dataset
 
@@ -74,31 +76,31 @@ class ArticleAdapter(
 }
 ```
 
-Since ViewHolders are recycled, always reset every view property in `onBindViewHolder()`. If you set an icon to visible for item 3 without resetting, that same ViewHolder might show up for item 15 with the icon still visible.
+Since ViewHolders are recycled, always reset every view property in `onBindViewHolder()`. If you set an icon to visible for item 3, that same ViewHolder might show up for item 15 with the icon still visible.
 
 #### Q6: What are the three built-in LayoutManagers, and when would you use each?
 
-- **LinearLayoutManager** — arranges items in a single vertical or horizontal list. This is the default and most common. Use it for chat lists, settings screens, feeds
-- **GridLayoutManager** — arranges items in a uniform grid with a configurable span count. Use it for photo grids, product catalogs, or emoji pickers. You can also set per-item span sizes using `SpanSizeLookup` for headers that stretch the full width
-- **StaggeredGridLayoutManager** — arranges items in a grid where rows or columns can have different heights. Use it for Pinterest-style layouts where images have varying aspect ratios
+- **LinearLayoutManager** — arranges items in a single vertical or horizontal list. Use it for chat lists, settings screens, feeds
+- **GridLayoutManager** — arranges items in a uniform grid with configurable span count. Use it for photo grids, product catalogs. You can set per-item span sizes using `SpanSizeLookup` for headers that stretch full width
+- **StaggeredGridLayoutManager** — arranges items in a grid where rows or columns can have different heights. Use it for Pinterest-style layouts
 
-RecyclerView delegates item positioning entirely to the LayoutManager. The RecyclerView itself has no concept of "list" or "grid" — all layout logic lives in the LayoutManager.
+RecyclerView completely delegates item positioning to the LayoutManager. RecyclerView itself has no concept of "list" or "grid" — all of that logic lives in the LayoutManager.
 
 #### Q7: What is `DiffUtil` and why should you use it instead of `notifyDataSetChanged()`?
 
-`DiffUtil` calculates the minimal set of changes between two lists — which items were added, removed, moved, or changed — and dispatches only those specific update operations to the adapter. `notifyDataSetChanged()`, on the other hand, tells RecyclerView to throw away everything and rebind all visible items from scratch. That kills all animations and is far more expensive.
+`DiffUtil` calculates the minimal set of changes between two lists — which items were added, removed, moved, or changed — and dispatches only those specific update operations to the adapter. `notifyDataSetChanged()` tells RecyclerView to throw away everything and rebind all visible items from scratch, which kills all animations and is far more expensive.
 
-Under the hood, `DiffUtil` uses Eugene Myers' diff algorithm (the same one behind `git diff`). You provide a `DiffUtil.Callback` with four methods: `getOldListSize()`, `getNewListSize()`, `areItemsTheSame()` (checks identity, usually by ID), and `areContentsTheSame()` (checks if the content has changed). The result is a `DiffResult` that you dispatch to the adapter.
+Under the hood, `DiffUtil` uses Eugene Myers' diff algorithm. You provide a `DiffUtil.Callback` with four methods: `getOldListSize()`, `getNewListSize()`, `areItemsTheSame()` (checks identity, usually by ID), and `areContentsTheSame()` (checks if content has changed).
 
-For large lists, you should run `DiffUtil.calculateDiff()` on a background thread because it's O(N) space and can take a few milliseconds for lists with thousands of items.
+For large lists, run `DiffUtil.calculateDiff()` on a background thread because it's O(N) space and can take a few milliseconds for thousands of items.
 
 #### Q8: What is the difference between `DiffUtil`, `AsyncListDiffer`, and `ListAdapter`?
 
 These three are layers of abstraction built on top of each other:
 
 - **DiffUtil** is the core algorithm. You call `calculateDiff()` yourself, manage threading yourself, and dispatch results yourself
-- **AsyncListDiffer** wraps DiffUtil and handles the background thread for you. You call `submitList()` and it does the diff calculation off the main thread automatically
-- **ListAdapter** wraps AsyncListDiffer and builds it directly into the adapter class. You extend `ListAdapter<T, VH>` instead of `RecyclerView.Adapter<VH>`, and just call `submitList()` whenever your data changes
+- **AsyncListDiffer** wraps DiffUtil and handles the background thread for you. You call `submitList()` and it does the diff off the main thread
+- **ListAdapter** wraps AsyncListDiffer and builds it directly into the adapter class. You extend `ListAdapter<T, VH>` instead of `RecyclerView.Adapter<VH>`, and just call `submitList()` whenever data changes
 
 ```kotlin
 class ArticleAdapter : ListAdapter<Article, ArticleViewHolder>(ArticleDiffCallback()) {
@@ -124,21 +126,21 @@ class ArticleDiffCallback : DiffUtil.ItemCallback<Article>() {
 }
 ```
 
-In practice, `ListAdapter` is what you should use in most cases. There's no good reason to manage DiffUtil manually anymore unless you have very specific requirements around how updates are dispatched.
+In practice, `ListAdapter` is what you should use in most cases unless you have very specific requirements around how updates are dispatched.
 
 #### Q9: What is `ItemDecoration` and how does it work?
 
-`ItemDecoration` lets you add visual decorations around or between items — dividers, spacing, badges, section headers drawn directly on the Canvas. You override `getItemOffsets()` to add spacing and `onDraw()` or `onDrawOver()` to draw custom graphics.
+`ItemDecoration` lets you add visual decorations around or between items — dividers, spacing, badges, section headers drawn on the Canvas. You override `getItemOffsets()` to add spacing and `onDraw()` or `onDrawOver()` to draw custom graphics.
 
-The important distinction: `onDraw()` draws **behind** the items (below in the Z-order), while `onDrawOver()` draws **on top** of them. This matters when you want overlapping decorations like a sticky header that draws over the item below it.
+`onDraw()` draws **behind** the items (below in Z-order), while `onDrawOver()` draws **on top** of them. This matters for things like sticky headers that draw over the item below.
 
-Using margins on item views works visually but is less flexible than `ItemDecoration`. Spacing should go through `getItemOffsets()`.
+Spacing should go through `getItemOffsets()` rather than setting margins on item views directly.
 
 #### Q10: What is `ViewStub` and when would you use it?
 
-`ViewStub` is a zero-sized, invisible view that lazily inflates a layout only when you make it visible or call `inflate()`. Until that point, it takes no space and costs almost nothing. Once inflated, the `ViewStub` replaces itself with the actual view in the view hierarchy — it's gone.
+`ViewStub` is a zero-sized, invisible view that lazily inflates a layout only when you make it visible or call `inflate()`. Until then, it takes no space and costs almost nothing. Once inflated, the `ViewStub` replaces itself with the actual view in the hierarchy.
 
-Use it for views that are rarely shown — error states, empty states, onboarding tooltips, or permission rationale layouts. If a view is only needed in 10% of cases, there's no reason to inflate it every time the screen loads.
+Use it for views that are rarely shown — error states, empty states, onboarding tooltips. If a view is only needed in 10% of cases, there's no reason to inflate it every time the screen loads.
 
 ```kotlin
 // In layout XML: <ViewStub android:id="@+id/errorStub" android:layout="@layout/error_view" />
@@ -150,20 +152,20 @@ errorStub.visibility = View.VISIBLE  // inflates the layout
 val inflatedView = errorStub.inflate()  // inflates and returns the view
 ```
 
-One gotcha: you can only inflate a `ViewStub` once. After inflation, it's removed from the hierarchy. If you try to call `inflate()` again, you get an `IllegalStateException`.
+You can only inflate a `ViewStub` once. After inflation, it's removed from the hierarchy. Calling `inflate()` again throws an `IllegalStateException`.
 
 ### Deep Dive Questions (Advanced → Expert)
 
 #### Q11: Explain how RecyclerView's view recycling mechanism works internally.
 
-When a ViewHolder scrolls off-screen, RecyclerView doesn't destroy it. Instead, it goes through a multi-level caching system called the **Recycler**. The caching has four levels:
+When a ViewHolder scrolls off-screen, RecyclerView doesn't destroy it. It goes through a multi-level caching system called the **Recycler** with four levels:
 
-1. **Scrap** — ViewHolders that are still attached to the RecyclerView but marked for removal or reuse during a layout pass. These don't need rebinding
-2. **Cache (mCachedViews)** — recently detached ViewHolders, stored by position. Default capacity is 2. If a user scrolls down then scrolls back up, these ViewHolders are reattached without calling `onBindViewHolder()` — they still hold the correct data
-3. **ViewCacheExtension** — an optional custom cache layer. Almost never used in practice
-4. **RecycledViewPool** — the final level. ViewHolders here are stripped of their data and sorted by `viewType`. When RecyclerView needs a new ViewHolder and the pool has one of the matching type, it pulls from here and calls `onBindViewHolder()` to rebind
+1. **Scrap** — ViewHolders still attached to RecyclerView but marked for removal or reuse during a layout pass. These don't need rebinding
+2. **Cache (mCachedViews)** — recently detached ViewHolders, stored by position. Default capacity is 2. If user scrolls down then back up, these are reattached without calling `onBindViewHolder()`
+3. **ViewCacheExtension** — optional custom cache layer, almost never used in practice
+4. **RecycledViewPool** — the final level. ViewHolders here are stripped of their data and sorted by `viewType`. RecyclerView pulls from here and calls `onBindViewHolder()` to rebind
 
-The key insight is that `onCreateViewHolder()` is the expensive call (layout inflation), and `onBindViewHolder()` is the cheap call (setting text, images). The recycling system minimizes inflation calls. In a well-tuned RecyclerView, you might inflate 12 ViewHolders total and recycle them through a list of 10,000 items.
+`onCreateViewHolder()` is the expensive call (layout inflation), and `onBindViewHolder()` is the cheap call (setting text, images). The recycling system minimizes inflation calls. In a well-tuned RecyclerView, you might inflate 12 ViewHolders total and recycle them through a list of 10,000 items.
 
 #### Q12: How do you handle multiple view types in RecyclerView?
 
@@ -205,11 +207,9 @@ The view type should represent a category of layout, not individual items. If yo
 
 #### Q13: What is `RecycledViewPool` and how can you share it between nested RecyclerViews?
 
-`RecycledViewPool` is the last level of RecyclerView's caching system. It stores detached ViewHolders grouped by view type. By default, each RecyclerView has its own pool with a limit of 5 ViewHolders per view type.
+`RecycledViewPool` is the last level of RecyclerView's caching system. It stores detached ViewHolders grouped by view type. Default limit is 5 ViewHolders per view type.
 
-When you have nested RecyclerViews — like a vertical list of horizontal carousels — each inner RecyclerView creates and maintains its own pool. This means if you have 10 horizontal carousels, each with the same item layout, they'll each inflate their own ViewHolders independently. That's wasteful.
-
-The fix is sharing a single `RecycledViewPool` across all the inner RecyclerViews:
+When you have nested RecyclerViews — like a vertical list of horizontal carousels — each inner RecyclerView creates its own pool. If you have 10 horizontal carousels with the same item layout, they each inflate their own ViewHolders independently. Sharing a single pool across all inner RecyclerViews avoids this:
 
 ```kotlin
 class CarouselAdapter(
@@ -224,61 +224,59 @@ class CarouselAdapter(
 }
 ```
 
-This is a real production optimization. In a feed with many horizontal carousels (like Netflix or Spotify), sharing the pool can reduce total ViewHolder inflation by 60-70% and noticeably improve scroll smoothness.
+In a feed with many horizontal carousels (like Netflix or Spotify), sharing the pool can reduce total ViewHolder inflation by 60-70% and noticeably improve scroll smoothness.
 
 #### Q14: Explain the touch event dispatch mechanism — `dispatchTouchEvent`, `onInterceptTouchEvent`, and `onTouchEvent`.
 
-Touch events flow top-down through the view tree in a specific order:
+Touch events flow top-down through the view tree:
 
-1. **`dispatchTouchEvent()`** is called first on the Activity, then on each ViewGroup down the tree. Its job is to route the event
-2. **`onInterceptTouchEvent()`** is called on ViewGroups only (not plain Views). If it returns `true`, the parent "steals" the event and the child receives `ACTION_CANCEL`. All subsequent events in this gesture go directly to the parent's `onTouchEvent()`
-3. **`onTouchEvent()`** is called on the target view. If it returns `true`, the view consumes the event. If it returns `false`, the event bubbles back up to the parent
+1. **`dispatchTouchEvent()`** — called first on the Activity, then on each ViewGroup down the tree. Its job is to route the event
+2. **`onInterceptTouchEvent()`** — called on ViewGroups only (not plain Views). If it returns `true`, the parent "steals" the event and the child receives `ACTION_CANCEL`. All subsequent events go to the parent's `onTouchEvent()`
+3. **`onTouchEvent()`** — called on the target view. If it returns `true`, the view consumes the event. If `false`, the event bubbles back up to the parent
 
-The full chain for a touch starting at `Activity → ViewGroup → ChildView`:
+The full chain for `Activity → ViewGroup → ChildView`:
 - `Activity.dispatchTouchEvent()` → `ViewGroup.dispatchTouchEvent()` → `ViewGroup.onInterceptTouchEvent()` (returns false) → `ChildView.dispatchTouchEvent()` → `ChildView.onTouchEvent()`
 
-The critical rule: a view that returns `false` for `ACTION_DOWN` will never receive subsequent events (`ACTION_MOVE`, `ACTION_UP`) for that gesture. The system assumes the view isn't interested, so if your custom view only handles `ACTION_UP` but returns `false` for `ACTION_DOWN`, it will never see the UP event.
+A view that returns `false` for `ACTION_DOWN` will never receive subsequent events (`ACTION_MOVE`, `ACTION_UP`) for that gesture. The system assumes the view isn't interested.
 
 #### Q15: How do you resolve touch conflicts between a parent ScrollView and a child RecyclerView (or other scrollable view)?
 
-This is one of the most practical touch-handling questions. When you nest scrollable views, the parent might intercept scroll gestures that were meant for the child.
+When you nest scrollable views, the parent might intercept scroll gestures meant for the child. The child can call `parent.requestDisallowInterceptTouchEvent(true)` to tell the parent to stop intercepting for the current gesture.
 
-The child can call `parent.requestDisallowInterceptTouchEvent(true)` to tell the parent to stop intercepting for the current gesture. The parent's `onInterceptTouchEvent()` won't be called until the next `ACTION_DOWN`.
+For RecyclerView specifically, `NestedScrollingChild` and `NestedScrollingParent` interfaces handle this more elegantly. The child offers its scroll delta to the parent first, the parent consumes what it wants, and the child takes the rest. This is how `CoordinatorLayout` with `AppBarLayout` works — the RecyclerView scrolls, but the toolbar collapses first.
 
-For RecyclerView specifically, `NestedScrollingChild` and `NestedScrollingParent` interfaces (which RecyclerView implements) handle this more elegantly. The child and parent negotiate scrolling — the child offers its scroll delta to the parent first, the parent consumes what it wants, and the child takes the rest. This is how `CoordinatorLayout` with `AppBarLayout` works — the RecyclerView scrolls, but the toolbar collapses first.
-
-The touch slop value from `ViewConfiguration.get(context).scaledTouchSlop` is also important here. This is the minimum distance a finger must move before the system considers it a scroll gesture rather than a tap. It prevents accidental scrolls when the user is trying to tap.
+The touch slop value from `ViewConfiguration.get(context).scaledTouchSlop` is the minimum distance a finger must move before the system considers it a scroll gesture rather than a tap.
 
 #### Q16: What is hardware acceleration and what are its limitations?
 
-Hardware acceleration means rendering is performed by the GPU instead of the CPU. It's been enabled by default since Android 3.0 (API 11). When hardware-accelerated, views are rendered into a GPU-backed Canvas using OpenGL (and later Vulkan on newer devices). This makes most drawing operations significantly faster — especially alpha blending, gradients, and transformations.
+Hardware acceleration means rendering is performed by the GPU instead of the CPU. It's been enabled by default since Android 3.0. Views are rendered into a GPU-backed Canvas using OpenGL (and later Vulkan on newer devices), making most drawing operations significantly faster.
 
-But not all Canvas operations are supported on the hardware-accelerated path. Some that are unsupported or partially supported include `drawBitmapMesh()` with colors, certain `PathEffect` types, and `drawPicture()`. If your custom view uses an unsupported operation, you can disable hardware acceleration at the view level:
+Not all Canvas operations are supported on the hardware-accelerated path. Some unsupported operations include `drawBitmapMesh()` with colors, certain `PathEffect` types, and `drawPicture()`. You can disable hardware acceleration at the view level:
 
 ```kotlin
 myCustomView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
 ```
 
-The tradeoff is that software rendering is slower but supports all Canvas operations. In practice, you almost never need to disable hardware acceleration — the unsupported operations are edge cases. But if your custom view renders incorrectly on certain devices and looks fine on others, hardware acceleration compatibility is the first thing to check.
+Software rendering is slower but supports all Canvas operations. In practice, you almost never need to disable hardware acceleration.
 
 #### Q17: What is overdraw, and how do you detect and reduce it?
 
-Overdraw happens when the GPU draws the same pixel multiple times in a single frame. Drawing a white background, then a card on top, then text on the card — that's 3x overdraw for those pixels. Excessive overdraw wastes GPU cycles and can push you past the 16ms frame budget.
+Overdraw happens when the GPU draws the same pixel multiple times in a single frame. Drawing a white background, then a card on top, then text on the card — that's 3x overdraw for those pixels. Excessive overdraw wastes GPU cycles and can push past the 16ms frame budget.
 
-To detect it, enable "Debug GPU Overdraw" in Developer Options. The screen gets color-coded: blue means 1x overdraw, green is 2x, pink is 3x, and red is 4x+. You want most of your screen to be true color (no overdraw) or blue.
+To detect it, enable "Debug GPU Overdraw" in Developer Options. The screen gets color-coded: blue means 1x overdraw, green is 2x, pink is 3x, and red is 4x+.
 
 To reduce overdraw:
-- Remove unnecessary backgrounds. If your Activity has a window background and your root layout also sets a background, that's already 2x overdraw on every pixel. Call `window.setBackgroundDrawable(null)` or set `android:windowBackground` to `@null` if your content covers the full screen
+- Remove unnecessary backgrounds. If your Activity has a window background and root layout also sets a background, that's already 2x overdraw. Call `window.setBackgroundDrawable(null)` if your content covers the full screen
 - Use `clipRect()` in custom views to tell the Canvas not to draw outside visible areas
 - Flatten your view hierarchy — fewer nested ViewGroups means fewer stacked backgrounds
 
 #### Q18: How do you flatten a view hierarchy and why does it matter?
 
-A deep view hierarchy is expensive because the measure and layout phases walk the tree recursively. If you nest `LinearLayout` inside `RelativeLayout` inside another `LinearLayout`, each level adds another pass. Some layouts like `RelativeLayout` actually measure their children twice, so nesting them doubles the cost exponentially.
+A deep view hierarchy is expensive because measure and layout phases walk the tree recursively. Some layouts like `RelativeLayout` measure their children twice, so nesting them doubles the cost exponentially.
 
-`ConstraintLayout` solves this by expressing complex layouts with a single flat level. A layout that required 4 levels of nesting with `LinearLayout` can often be expressed as a single `ConstraintLayout` with constraints between views. It measures children in a single pass (in most cases) using a constraint solver.
+`ConstraintLayout` solves this by expressing complex layouts with a single flat level. A layout that required 4 levels of nesting with `LinearLayout` can often be a single `ConstraintLayout` with constraints between views. It measures children in a single pass using a constraint solver.
 
-The `<merge>` tag eliminates redundant root ViewGroups when using `<include>`. If your included layout has a `LinearLayout` root, and the parent where you include it is also a `LinearLayout`, the `<merge>` tag lets you skip the inner root. The `<include>` tag itself is just for layout reuse — it doesn't affect hierarchy depth on its own.
+The `<merge>` tag eliminates redundant root ViewGroups when using `<include>`. If your included layout has a `LinearLayout` root and the parent is also a `LinearLayout`, `<merge>` lets you skip the inner root.
 
 ```xml
 <!-- reusable_toolbar.xml -->
@@ -298,9 +296,9 @@ Without `<merge>`, the included layout would add an extra ViewGroup level. With 
 
 #### Q19: When would you create a custom View, and what's the difference between extending `View` vs `ViewGroup`?
 
-You create a custom view when you need specialized drawing (a chart, a gauge, a custom progress indicator), when no existing widget matches your requirements, or when you need a reusable UI component across multiple screens.
+You create a custom view when you need specialized drawing (a chart, a gauge, a custom progress indicator) or a reusable UI component across multiple screens.
 
-Extend **View** when you need to draw something custom on a Canvas — shapes, paths, bitmaps, text with special effects. You'll override `onMeasure()`, `onDraw()`, and possibly `onTouchEvent()`. Extend **ViewGroup** when you need to arrange and manage child views in a custom layout pattern — a circular layout, a flow layout, a custom constraint system. You'll override `onMeasure()` and `onLayout()` to position children.
+Extend **View** when you need to draw something custom on a Canvas — shapes, paths, bitmaps. You'll override `onMeasure()`, `onDraw()`, and possibly `onTouchEvent()`. Extend **ViewGroup** when you need to arrange child views in a custom layout pattern — a circular layout, a flow layout. You'll override `onMeasure()` and `onLayout()` to position children.
 
 For custom attributes, define them in `res/values/attrs.xml`:
 
@@ -333,25 +331,23 @@ class GaugeView @JvmOverloads constructor(
 }
 ```
 
-The `typedArray.recycle()` call is a common gotcha. Forgetting it causes a memory leak because `TypedArray` objects are pooled and reused by the system.
-
 #### Q20: What's the 16ms frame budget, and what happens when you exceed it?
 
-Android's display system targets 60 frames per second, which gives each frame a budget of approximately 16.67ms. Within that window, the system needs to run input handling, animations, measure/layout/draw, and GPU rendering. If any frame takes longer than 16ms, that frame gets dropped — the user sees the same frame twice, which registers as a stutter or "jank."
+Android targets 60 frames per second, giving each frame approximately 16.67ms. Within that window, the system needs to handle input, animations, measure/layout/draw, and GPU rendering. If any frame takes longer than 16ms, it gets dropped — the user sees the same frame twice, which appears as stutter or jank.
 
-The work that must complete within 16ms includes:
+The work that must complete within 16ms:
 - Processing input events (touch, keyboard)
 - Running animations and Choreographer callbacks
 - Traversing the view tree (measure → layout → draw)
 - GPU rendering of the draw commands
 
-Common causes of dropped frames: heavy computation on the main thread (JSON parsing, sorting large lists), complex view hierarchies requiring multiple measure passes, excessive garbage collection causing stop-the-world pauses, and overdraw forcing the GPU to redraw pixels multiple times.
+Common causes of dropped frames: heavy computation on the main thread (JSON parsing, sorting large lists), complex view hierarchies requiring multiple measure passes, excessive GC causing stop-the-world pauses, and overdraw forcing the GPU to redraw pixels multiple times.
 
-You can detect frame drops using the GPU Profiling bar in Developer Options. Each bar represents a frame — green bars are within budget, and bars that exceed the green line indicate jank. For deeper analysis, Systrace and the CPU Profiler in Android Studio show exactly which methods are consuming time in each frame.
+You can detect frame drops using GPU Profiling bar in Developer Options. Each bar represents a frame — bars exceeding the green line indicate jank. For deeper analysis, Systrace and the CPU Profiler in Android Studio show exactly which methods are consuming time.
 
 #### Q21: How do you optimize bitmap loading for a list of images?
 
-Loading full-resolution bitmaps into a RecyclerView is one of the fastest ways to run out of memory. A 4000x3000 photo at ARGB_8888 consumes 48MB of RAM. If you load a few of those simultaneously, you'll hit an `OutOfMemoryError`.
+Loading full-resolution bitmaps into a RecyclerView is one of the fastest ways to run out of memory. A 4000x3000 photo at ARGB_8888 consumes 48MB of RAM.
 
 The first optimization is **downsampling with `inSampleSize`**. Before loading the full bitmap, decode only the dimensions using `BitmapFactory.Options` with `inJustDecodeBounds = true`, then calculate an appropriate `inSampleSize` to load a scaled-down version:
 
@@ -382,40 +378,40 @@ fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeig
 }
 ```
 
-The second optimization is **LruCache** for in-memory caching. Set a cache size (typically 1/8 of available memory) and store decoded bitmaps keyed by a unique identifier. Before loading from disk or network, check the cache first.
+The second optimization is **LruCache** for in-memory caching. Set a cache size (typically 1/8 of available memory) and store decoded bitmaps keyed by a unique identifier. Check the cache before loading from disk or network.
 
-The third consideration is choosing the right format. Use **VectorDrawable** (SVG) for icons and simple graphics — they scale without quality loss, have a smaller APK footprint, and don't consume bitmap memory. Reserve PNG/WebP for photos and complex images where vectors wouldn't work.
+The third is choosing the right format. Use **VectorDrawable** for icons and simple graphics — they scale without quality loss and don't consume bitmap memory. Reserve PNG/WebP for photos and complex images.
 
-In production, you'd use a library like Coil or Glide that handles all of this — downsampling, caching (memory + disk), lifecycle awareness, and request deduplication.
+In production, libraries like Coil or Glide handle all of this — downsampling, caching, lifecycle awareness, and request deduplication.
 
 #### Q22: How does `ItemAnimator` work in RecyclerView?
 
-`ItemAnimator` animates structural changes in the list — when items are added, removed, moved, or their content changes. The default `DefaultItemAnimator` provides fade-in for additions, fade-out for removals, and translate animations for moves.
+`ItemAnimator` animates structural changes in the list — when items are added, removed, moved, or changed. The default `DefaultItemAnimator` provides fade-in for additions, fade-out for removals, and translate animations for moves.
 
-The animations are triggered by the specific notify methods: `notifyItemInserted()`, `notifyItemRemoved()`, `notifyItemMoved()`, and `notifyItemChanged()`. This is exactly why `DiffUtil` is important — it dispatches these granular notifications instead of `notifyDataSetChanged()`, which skips all animations entirely.
+Animations are triggered by specific notify methods: `notifyItemInserted()`, `notifyItemRemoved()`, `notifyItemMoved()`, and `notifyItemChanged()`. This is why `DiffUtil` matters — it dispatches these granular notifications instead of `notifyDataSetChanged()`, which skips all animations.
 
-If you want to disable animations (for performance or UX reasons), set `recyclerView.itemAnimator = null`. If you need custom animations, extend `SimpleItemAnimator` or `DefaultItemAnimator` and override methods like `animateAdd()`, `animateRemove()`, etc.
+To disable animations, set `recyclerView.itemAnimator = null`. For custom animations, extend `SimpleItemAnimator` or `DefaultItemAnimator` and override methods like `animateAdd()`, `animateRemove()`.
 
 #### Q23: What's the difference between RecyclerView and the old ListView?
 
-This question tests whether you understand why RecyclerView was created. The key differences:
+Key differences:
 
-- **ViewHolder** — mandatory in RecyclerView, optional in ListView. This alone made many ListView implementations slow because developers skipped the pattern
+- **ViewHolder** — mandatory in RecyclerView, optional in ListView
 - **LayoutManager** — RecyclerView delegates layout to a pluggable LayoutManager (list, grid, staggered). ListView only supports vertical lists
 - **ItemDecoration** — RecyclerView has a clean API for dividers and spacing. ListView used `divider` and `dividerHeight` XML attributes with limited control
-- **ItemAnimator** — RecyclerView supports item animations out of the box. ListView had no built-in animation support for list changes
+- **ItemAnimator** — RecyclerView supports item animations out of the box. ListView had no built-in animation support
 - **DiffUtil** — RecyclerView integrates with DiffUtil for efficient partial updates. ListView relied on `notifyDataSetChanged()` for everything
-- **Click handling** — ListView had `setOnItemClickListener()`. RecyclerView has no built-in click listener — you set click listeners in the ViewHolder. This is actually more flexible because different parts of an item can have different click behaviors
+- **Click handling** — ListView had `setOnItemClickListener()`. RecyclerView has no built-in click listener — you set click listeners in the ViewHolder, which is more flexible
 
-RecyclerView is more complex to set up but infinitely more flexible. There's no practical reason to use ListView in new code.
+RecyclerView is more complex to set up but far more flexible. There's no reason to use ListView in new code.
 
 #### Q24: How does pagination work in RecyclerView, and what does the Paging library provide?
 
-Pagination is essential when you have a large dataset — loading 10,000 items at once wastes memory and network bandwidth, and the user will never scroll through all of them. There are two approaches: manual pagination and the Jetpack Paging library.
+Loading the entire dataset at once wastes memory and network bandwidth. There are two approaches: manual pagination and the Jetpack Paging library.
 
-**Manual pagination** means detecting when the user nears the end of the list (typically using a `RecyclerView.OnScrollListener` that checks `findLastVisibleItemPosition()`) and triggering a load of the next page. You manage page tokens or offsets, append to your list, and call `notifyItemRangeInserted()`. It works but you have to handle loading states, errors, retries, and cache invalidation yourself.
+**Manual pagination** means detecting when the user nears the end of the list using a `RecyclerView.OnScrollListener` that checks `findLastVisibleItemPosition()`, then triggering a load of the next page. You manage page tokens, append to your list, and call `notifyItemRangeInserted()`. But you have to handle loading states, errors, retries, and cache invalidation yourself.
 
-**Paging 3** (Jetpack) handles all of this. You define a `PagingSource` that knows how to load a page of data given a key, and Paging handles the rest — triggering loads as the user scrolls, caching loaded pages, showing loading/error states, and supporting both network and database-backed sources via `RemoteMediator`.
+**Paging 3** handles all of this. You define a `PagingSource` that knows how to load a page of data given a key, and Paging handles triggering loads as the user scrolls, caching loaded pages, and showing loading/error states via `RemoteMediator`.
 
 ```kotlin
 class ArticlePagingSource(
@@ -445,13 +441,13 @@ class ArticlePagingSource(
 }
 ```
 
-Two common pagination strategies: **offset-based** (page 1, page 2, ...) is simple but has the problem of shifting results when items are inserted or deleted between page fetches. **Cursor-based** (keyset pagination) uses the last item's ID or timestamp as the cursor for the next page — this is more stable and the recommended approach for feeds and timelines.
+Two common pagination strategies: **offset-based** (page 1, page 2, ...) is simple but results can shift when items are inserted or deleted between page fetches. **Cursor-based** uses the last item's ID or timestamp as the cursor — more stable and recommended for feeds and timelines.
 
 #### Q25: What is `ViewStub` and when would you use it?
 
-`ViewStub` is a zero-sized, invisible View that lazily inflates a layout resource at runtime. It takes zero space in the view hierarchy until you explicitly inflate it by calling `inflate()` or setting its visibility to `VISIBLE`. Once inflated, the `ViewStub` is replaced by the inflated layout in the parent.
+`ViewStub` is a zero-sized, invisible View that lazily inflates a layout resource at runtime. It takes zero space in the view hierarchy until you call `inflate()` or set its visibility to `VISIBLE`. Once inflated, the `ViewStub` is replaced by the inflated layout in the parent.
 
-Use it for views that aren't always needed — error states, empty states, onboarding tooltips, or optional sections of a complex layout. Instead of including these views and setting them to `GONE` (which still inflates and measures them during layout), `ViewStub` defers inflation entirely, saving both memory and layout time on the initial render.
+Use it for views that aren't always needed — error states, empty states, optional sections. Instead of including views set to `GONE` (which still inflates and measures them), `ViewStub` defers inflation entirely, saving both memory and layout time.
 
 ```xml
 <!-- In your layout XML -->
@@ -470,7 +466,7 @@ val errorView = findViewById<ViewStub>(R.id.error_stub).inflate()
 val errorLayout = findViewById<View>(R.id.error_layout)
 ```
 
-The key detail: `ViewStub` can only be inflated once. After inflation, calling `inflate()` again throws an `IllegalStateException`. If you need to show/hide the inflated view repeatedly, toggle its visibility normally after the first inflation.
+`ViewStub` can only be inflated once. After inflation, calling `inflate()` again throws an `IllegalStateException`. If you need to show/hide the inflated view repeatedly, toggle its visibility normally after the first inflation.
 
 ### Common Follow-ups
 
@@ -481,4 +477,3 @@ The key detail: `ViewStub` can only be inflated once. After inflation, calling `
 - Why should you avoid creating objects inside `onDraw()`? (Answer: `onDraw()` is called every frame during animations. Creating `Paint` or `Rect` objects there generates garbage, triggering GC pauses that cause jank)
 - How does `ConstraintLayout` measure children differently from nested `LinearLayout`? (Answer: it uses a constraint solver to calculate all positions in a single pass, while nested layouts require recursive passes through each level)
 - What is the `setRecycledViewPoolSize(viewType, max)` and when would you increase it? (Answer: default is 5 per view type. If you have a view type that's created and recycled rapidly — like items in a fast-scrolling grid — increasing the pool size prevents unnecessary inflation)
-
