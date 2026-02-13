@@ -312,13 +312,13 @@
       }
 
       .section-tab.active[data-tab="tools"] {
-        color: #FFD700;
-        border-bottom-color: #FFD700;
+        color: #60a5fa;
+        border-bottom-color: #60a5fa;
       }
 
       .section-tab.active[data-tab="tools"] .tab-count {
-        background-color: rgba(255, 215, 0, 0.15);
-        color: #FFD700;
+        background-color: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
       }
 
       /* Tools grid */
@@ -330,13 +330,15 @@
 
       .tool-card {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 14px;
-        padding: 16px 20px;
+        padding: 20px;
         border-radius: 16px;
         background-color: rgba(17, 24, 39, 0.6);
         border: 1px solid rgba(75, 85, 99, 0.3);
         transition: all 0.2s ease;
+        height: 100%;
+        box-sizing: border-box;
       }
 
       .tool-card:hover {
@@ -349,6 +351,8 @@
         height: 44px;
         min-width: 44px;
         border-radius: 12px;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
+        border: 1px solid rgba(96, 165, 250, 0.15);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -356,17 +360,17 @@
       }
 
       .tool-icon img {
-        width: 36px;
-        height: 36px;
+        width: 28px;
+        height: 28px;
         object-fit: contain;
-        border-radius: 8px;
+        border-radius: 4px;
       }
 
       .tool-name {
         font-family: 'Inter', sans-serif;
         font-size: 0.95em;
         font-weight: 600;
-        color: #ffffff;
+        color: #e5e7eb;
         margin-bottom: 4px;
       }
 
