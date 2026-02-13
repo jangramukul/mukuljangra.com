@@ -326,6 +326,102 @@
         border-bottom-color: #60a5fa;
       }
 
+      .section-tab.active[data-tab="roadmap"] {
+        color: #60a5fa;
+        border-bottom-color: #60a5fa;
+      }
+
+      /* Roadmap */
+      .roadmap-phase {
+        margin-bottom: 28px;
+      }
+
+      .roadmap-phase-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .roadmap-phase-number {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 0.85em;
+        color: #60a5fa;
+      }
+
+      .roadmap-phase-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 1em;
+        font-weight: 700;
+        color: #e5e7eb;
+      }
+
+      .roadmap-phase-level {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72em;
+        font-weight: 500;
+        color: #9ca3af;
+        margin-left: auto;
+        padding: 2px 10px;
+        border-radius: 9999px;
+        background-color: rgba(55, 65, 81, 0.4);
+      }
+
+      .roadmap-topics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding-left: 48px;
+      }
+
+      .roadmap-topic {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        background-color: rgba(17, 24, 39, 0.6);
+        border: 1px solid rgba(75, 85, 99, 0.3);
+        transition: all 0.2s ease;
+      }
+
+      .roadmap-topic:hover {
+        border-color: rgba(96, 165, 250, 0.5);
+        background-color: rgba(17, 24, 39, 0.8);
+      }
+
+      .roadmap-topic-dot {
+        width: 6px;
+        height: 6px;
+        min-width: 6px;
+        border-radius: 50%;
+        background-color: rgba(96, 165, 250, 0.5);
+      }
+
+      .roadmap-topic-name {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.82em;
+        font-weight: 500;
+        color: #d1d5db;
+      }
+
+      @media (max-width: 768px) {
+        .roadmap-topics {
+          grid-template-columns: 1fr;
+          padding-left: 0;
+        }
+      }
+
       /* Resources */
       .resources-nav {
         display: flex;
@@ -1087,6 +1183,7 @@
         <!-- Tabs -->
         <div class="section-tabs">
           <div class="section-tab active" data-tab="articles">Articles <span class="tab-count">{{ site.posts | size }}</span></div>
+          <div class="section-tab" data-tab="roadmap">Roadmap</div>
           <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
           <div class="section-tab" data-tab="newsletter">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
           <div class="section-tab" data-tab="tools">Tools I Use</div>
@@ -1139,6 +1236,11 @@
           </a>
           {% endfor %}
           </div>
+        </div>
+
+        <!-- Roadmap tab -->
+        <div class="tab-content" id="tab-roadmap">
+          {% include roadmap-tab.html %}
         </div>
 
         <!-- Interview Prep tab -->
