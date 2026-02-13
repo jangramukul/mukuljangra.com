@@ -477,8 +477,8 @@
       }
 
       .interviews-list {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
       }
 
@@ -791,7 +791,8 @@
           padding: 16px;
         }
 
-        .articles-grid {
+        .articles-grid,
+        .interviews-list {
           grid-template-columns: 1fr;
         }
 
