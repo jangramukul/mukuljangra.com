@@ -122,6 +122,72 @@ val query = """
 
 **Key takeaway:** String templates replace `String.format()` and concatenation. Raw strings with `trimMargin()` make SQL queries, JSON templates, and regex patterns readable.
 
+### Quiz: Kotlin Fundamentals
+
+#### What is the difference between `val` and `var` in Kotlin?
+
+- ❌ `val` is for primitive types and `var` is for reference types
+- ❌ `val` creates a constant known at compile time, `var` creates a runtime variable
+- ✅ `val` declares a read-only (immutable) reference and `var` declares a mutable reference
+- ❌ `val` is thread-safe and `var` is not
+
+> **Explanation:** `val` (value) creates a read-only reference that cannot be reassigned after initialization. `var` (variable) creates a mutable reference. Note that `val` doesn't make the object itself immutable — only the reference.
+
+#### What does the Elvis operator (`?:`) do?
+
+- ❌ It throws a NullPointerException if the left side is null
+- ❌ It converts a nullable type to a non-null type unconditionally
+- ✅ It returns the left-hand value if it's not null, otherwise returns the right-hand default value
+- ❌ It checks if two nullable values are both null
+
+> **Explanation:** The Elvis operator `?:` provides a fallback value when the left side is null. For example, `name?.length ?: 0` returns the length if `name` is not null, or `0` if it is. It's named after Elvis Presley's hairstyle resemblance.
+
+#### What happens after an `is` check in a `when` expression?
+
+- ❌ You must explicitly cast the variable to use type-specific methods
+- ❌ The variable is copied into a new variable of the checked type
+- ✅ The compiler smart-casts the variable to the checked type automatically
+- ❌ A runtime type check is performed each time you access the variable
+
+> **Explanation:** Kotlin's smart casts automatically cast a variable to the checked type after an `is` check. Inside the `when` branch `is String -> obj.length`, the compiler knows `obj` is a `String` and allows calling `.length` without an explicit cast.
+
+### Coding Challenge: Safe Parser
+
+Write a function `parseInput` that takes a `String?` input and returns a formatted result string. It should:
+
+- Return `"Empty input"` if the input is null or blank
+- Return `"Integer: X (even/odd)"` if the input is a valid integer, indicating whether it's even or odd
+- Return `"Decimal: X"` if the input is a valid decimal number
+- Return `"Text: X (N chars)"` for all other non-blank strings
+- Use null safety operators and `when` expression (no `if-else` chains)
+
+#### Solution
+
+```kotlin
+fun parseInput(input: String?): String {
+    val trimmed = input?.trim()?.takeIf { it.isNotBlank() } ?: return "Empty input"
+
+    return when {
+        trimmed.toIntOrNull() != null -> {
+            val num = trimmed.toInt()
+            "Integer: $num (${if (num % 2 == 0) "even" else "odd"})"
+        }
+        trimmed.toDoubleOrNull() != null -> "Decimal: ${trimmed.toDouble()}"
+        else -> "Text: $trimmed (${trimmed.length} chars)"
+    }
+}
+
+fun main() {
+    println(parseInput(null))        // Empty input
+    println(parseInput("  "))        // Empty input
+    println(parseInput("42"))        // Integer: 42 (even)
+    println(parseInput("3.14"))      // Decimal: 3.14
+    println(parseInput("Kotlin"))    // Text: Kotlin (6 chars)
+}
+```
+
+This solution uses the safe call operator `?.`, the Elvis operator `?: return` for early return, `takeIf` for conditional nulling, string templates, and `when` without an argument for clean branching.
+
 ---
 
 ## Module 2: Functions and Lambdas
@@ -243,6 +309,79 @@ with(binding) {
 
 **Key takeaway:** `let` for null checks, `apply` for configuration, `also` for side effects, `run` for computing a result, `with` for grouping calls. Don't chain more than 2 — readability drops fast.
 
+### Quiz: Functions and Lambdas
+
+#### What is the trailing lambda convention in Kotlin?
+
+- ❌ Lambdas must always be the last parameter in a function declaration
+- ✅ When the last parameter of a function is a lambda, it can be placed outside the parentheses at the call site
+- ❌ Trailing lambdas are always executed after the function returns
+- ❌ Trailing lambdas cannot capture variables from the enclosing scope
+
+> **Explanation:** The trailing lambda convention is syntactic sugar — if a function's last parameter is a function type, the lambda argument can be placed outside the parentheses. This is why `list.filter { it > 0 }` works instead of `list.filter({ it > 0 })`.
+
+#### How do extension functions work under the hood?
+
+- ❌ They modify the original class bytecode at compile time
+- ❌ They use runtime reflection to add methods to the class
+- ✅ They compile to static methods where the receiver object is passed as the first argument
+- ❌ They create a subclass with the new method and cast to it
+
+> **Explanation:** `fun String.isValidEmail()` compiles to a static method like `public static boolean isValidEmail(String $this)`. No class modification occurs — extension functions are just syntactic sugar for static utility functions.
+
+#### Which scope function returns the object itself (not the lambda result) and refers to the object as `it`?
+
+- ❌ `let`
+- ❌ `apply`
+- ✅ `also`
+- ❌ `run`
+
+> **Explanation:** `also` returns the receiver object and refers to it as `it` (not `this`). It's designed for side effects like logging or analytics without interrupting a call chain.
+
+### Coding Challenge: Pipeline Builder
+
+Write a `Pipeline<T>` class using higher-order functions that:
+
+- Stores a chain of transformation functions `(T) -> T`
+- Has an `addStep` method to register a transformation
+- Has an `execute` method that applies all steps in order to an input value
+- Uses extension function syntax for a clean API
+
+#### Solution
+
+```kotlin
+class Pipeline<T> {
+    private val steps = mutableListOf<(T) -> T>()
+
+    fun addStep(transform: (T) -> T): Pipeline<T> {
+        steps.add(transform)
+        return this
+    }
+
+    fun execute(input: T): T {
+        return steps.fold(input) { acc, step -> step(acc) }
+    }
+}
+
+fun <T> buildPipeline(block: Pipeline<T>.() -> Unit): Pipeline<T> {
+    return Pipeline<T>().apply(block)
+}
+
+fun main() {
+    val textPipeline = buildPipeline<String> {
+        addStep { it.trim() }
+        addStep { it.lowercase() }
+        addStep { it.replace("\\s+".toRegex(), "-") }
+        addStep { it.take(50) }
+    }
+
+    val slug = textPipeline.execute("  Hello World  Kotlin Example  ")
+    println(slug) // "hello-world--kotlin-example"
+}
+```
+
+This solution demonstrates higher-order functions (storing lambdas in a list), `fold` for sequential application, receiver lambdas for the builder DSL, and method chaining with `apply`.
+
 ---
 
 ## Module 3: Object-Oriented Kotlin
@@ -339,6 +478,66 @@ class UserPreferences(private val prefs: SharedPreferences) {
 ```
 
 **Key takeaway:** Delegation follows the composition-over-inheritance principle. Instead of extending a class, you wrap it and selectively override methods.
+
+### Quiz: Object-Oriented Kotlin
+
+#### What methods does the compiler auto-generate for a `data class`?
+
+- ❌ Only `toString()` and `equals()`
+- ❌ `toString()`, `equals()`, `hashCode()`, and `clone()`
+- ✅ `toString()`, `equals()`, `hashCode()`, `copy()`, and `componentN()` functions
+- ❌ `toString()`, `equals()`, `hashCode()`, `copy()`, and `serialize()`
+
+> **Explanation:** Data classes automatically generate `equals()` (compares all properties), `hashCode()`, `toString()`, `copy()` (with default parameter values), and `componentN()` functions for destructuring. No `clone()` or `serialize()` — those require explicit implementation.
+
+#### When should you prefer `sealed interface` over `sealed class`?
+
+- ❌ When you need shared constructor parameters across subtypes
+- ✅ When subtypes need to extend other classes, since a class can implement multiple interfaces but extend only one class
+- ❌ When you have more than 5 subtypes
+- ❌ When you need the sealed type to be serializable
+
+> **Explanation:** Since Kotlin 1.5, `sealed interface` is preferred because it allows subtypes to extend other classes while still participating in the sealed hierarchy. `sealed class` is only needed when you want shared state or constructor parameters in the base type.
+
+### Coding Challenge: Sealed Result Handler
+
+Create a sealed interface `NetworkResult<out T>` with three states: `Success`, `Error`, and `Loading`. Then write a function `fetchAndTransform` that:
+
+- Takes a `NetworkResult<String>` (raw JSON)
+- Transforms `Success` data using a provided mapping function
+- Preserves `Error` and `Loading` states unchanged
+- Returns `NetworkResult<User>`
+
+#### Solution
+
+```kotlin
+sealed interface NetworkResult<out T> {
+    data class Success<T>(val data: T) : NetworkResult<T>
+    data class Error(val message: String, val code: Int) : NetworkResult<Nothing>
+    data object Loading : NetworkResult<Nothing>
+}
+
+data class User(val name: String, val email: String)
+
+fun fetchAndTransform(
+    result: NetworkResult<String>,
+    mapper: (String) -> User
+): NetworkResult<User> = when (result) {
+    is NetworkResult.Success -> NetworkResult.Success(mapper(result.data))
+    is NetworkResult.Error -> result   // Nothing is subtype of User, so this works
+    NetworkResult.Loading -> result
+}
+
+fun main() {
+    val raw: NetworkResult<String> = NetworkResult.Success("""{"name":"Mukul","email":"m@x.com"}""")
+    val mapped = fetchAndTransform(raw) { json ->
+        User("Mukul", "mukul@example.com") // simplified parsing
+    }
+    println(mapped) // Success(data=User(name=Mukul, email=mukul@example.com))
+}
+```
+
+The `out` variance on `T` allows `NetworkResult<Nothing>` (used by `Error` and `Loading`) to be a subtype of any `NetworkResult<T>`. The exhaustive `when` ensures all cases are handled at compile time.
 
 ---
 
@@ -450,6 +649,73 @@ val movingAvg = prices.windowed(7) { it.average() } // 7-day moving average
 
 **Key takeaway:** Kotlin's collection API covers almost every data manipulation you'll need. Before writing a `for` loop, check if there's a collection function for it.
 
+### Quiz: Collections and Functional Operations
+
+#### What is the key difference between regular collection operations and Sequence operations?
+
+- ❌ Sequences can only be used with primitive types
+- ❌ Regular operations are lazy while Sequences are eager
+- ✅ Sequences process elements lazily one at a time through the chain, avoiding intermediate collection allocations
+- ❌ Sequences are thread-safe while regular operations are not
+
+> **Explanation:** Regular collection chains (like `list.filter{}.map{}`) create a new intermediate list at each step. Sequences evaluate lazily — each element passes through the entire chain before the next one is processed, creating no intermediate collections.
+
+#### What does `partition` return?
+
+- ❌ A single list with elements reordered by the predicate
+- ❌ A Map grouping elements by the predicate result
+- ✅ A Pair of two Lists — the first containing elements matching the predicate, the second containing those that don't
+- ❌ An iterator that yields matching elements first, then non-matching
+
+> **Explanation:** `partition` splits a collection into two lists based on a predicate and returns them as a `Pair<List<T>, List<T>>`. Destructuring (`val (match, noMatch) = list.partition { ... }`) makes it clean to use.
+
+#### When should you prefer `buildList` over `mutableListOf`?
+
+- ❌ When the list will contain more than 100 elements
+- ❌ When thread safety is required
+- ✅ When you need mutable construction but want the final result to be an immutable List
+- ❌ When the list elements are nullable
+
+> **Explanation:** `buildList` gives you a `MutableList` inside its lambda for construction, but returns a read-only `List`. This is ideal when you need conditional logic during creation but want to expose an immutable collection afterward.
+
+### Coding Challenge: Order Analytics
+
+Given a list of orders, write a function `analyzeOrders` that returns an `OrderReport` containing:
+
+- Total revenue from completed orders
+- Number of unique customers
+- The top 3 customers by total spend (as a list of `CustomerSpend` with `userId` and `total`)
+- Average order value across all completed orders
+
+#### Solution
+
+```kotlin
+data class Order(val userId: Long, val amount: Double, val status: String)
+data class CustomerSpend(val userId: Long, val total: Double)
+data class OrderReport(
+    val totalRevenue: Double,
+    val uniqueCustomers: Int,
+    val topSpenders: List<CustomerSpend>,
+    val averageOrderValue: Double
+)
+
+fun analyzeOrders(orders: List<Order>): OrderReport {
+    val completed = orders.filter { it.status == "completed" }
+    val totalRevenue = completed.sumOf { it.amount }
+    val uniqueCustomers = orders.map { it.userId }.distinct().size
+    val topSpenders = completed
+        .groupBy { it.userId }
+        .map { (userId, userOrders) -> CustomerSpend(userId, userOrders.sumOf { it.amount }) }
+        .sortedByDescending { it.total }
+        .take(3)
+    val averageOrderValue = if (completed.isNotEmpty()) totalRevenue / completed.size else 0.0
+
+    return OrderReport(totalRevenue, uniqueCustomers, topSpenders, averageOrderValue)
+}
+```
+
+This solution chains `filter`, `sumOf`, `groupBy`, `map`, `sortedByDescending`, and `take` — demonstrating practical use of Kotlin's collection API for real-world data analysis without a single `for` loop.
+
 ---
 
 ## Module 5: Generics
@@ -542,6 +808,68 @@ inline fun <reified T> Bundle.getParcelableCompat(key: String): T? {
 
 **Key takeaway:** `reified` eliminates the `Class<T>` parameter pattern. It only works with `inline` functions because the function body is copied to the call site, where the actual type is known.
 
+### Quiz: Generics
+
+#### What does the `out` keyword mean when applied to a generic type parameter?
+
+- ❌ The type parameter can only be used as an input (function parameter)
+- ✅ The type parameter can only be used as an output (return type), making the type covariant
+- ❌ The type parameter is erased at runtime
+- ❌ The type parameter must be a subclass of Any
+
+> **Explanation:** `out` declares a type parameter as covariant — it can only appear in "out" positions (return types). This allows `List<String>` to be treated as `List<Any>` because if a container only produces `String`, it's safe to treat those as `Any`.
+
+#### Why must `reified` type parameters be used with `inline` functions?
+
+- ❌ Because `inline` functions run faster than regular functions
+- ❌ Because only `inline` functions can accept generic parameters
+- ✅ Because `inline` copies the function body to the call site where the actual type is known, preserving type information that would otherwise be erased
+- ❌ Because `reified` types require compile-time constant expressions
+
+> **Explanation:** Generic types are normally erased at runtime (type erasure). Since `inline` functions are copied to the call site during compilation, the compiler can substitute the actual type for the reified parameter, preserving the type information at runtime.
+
+### Coding Challenge: Type-Safe Container
+
+Create a generic `TypedRegistry` that stores and retrieves items by their class type using reified type parameters. It should:
+
+- Store items of any type, keyed by their `KClass`
+- Provide a reified `register` function to store an item
+- Provide a reified `resolve` function that returns the item or null
+- Ensure type safety at compile time
+
+#### Solution
+
+```kotlin
+class TypedRegistry {
+    private val map = mutableMapOf<kotlin.reflect.KClass<*>, Any>()
+
+    inline fun <reified T : Any> register(instance: T) {
+        map[T::class] = instance
+    }
+
+    inline fun <reified T : Any> resolve(): T? {
+        return map[T::class] as? T
+    }
+}
+
+fun main() {
+    val registry = TypedRegistry()
+    registry.register("Hello, Kotlin!")
+    registry.register(42)
+    registry.register(listOf("a", "b", "c"))
+
+    val text: String? = registry.resolve<String>()       // "Hello, Kotlin!"
+    val number: Int? = registry.resolve<Int>()            // 42
+    val missing: Double? = registry.resolve<Double>()     // null
+
+    println(text)    // Hello, Kotlin!
+    println(number)  // 42
+    println(missing) // null
+}
+```
+
+This solution uses `reified` type parameters to avoid passing `Class<T>` explicitly. The `KClass` serves as a type-safe key, and the `as? T` safe cast ensures type safety on retrieval.
+
 ---
 
 ## Module 6: Coroutine-Ready Kotlin Patterns
@@ -618,6 +946,70 @@ fun processName(name: String?) {
 ```
 
 **Key takeaway:** Contracts tell the compiler facts about function behavior that it can't infer on its own. They enable smart casts after custom check functions.
+
+### Quiz: Coroutine-Ready Patterns
+
+#### What is the primary benefit of marking a function as `inline`?
+
+- ❌ It makes the function run in a separate thread
+- ❌ It caches the function's return value for repeated calls
+- ✅ It eliminates lambda allocation overhead by copying the function body and lambda to the call site
+- ❌ It allows the function to be called from Java without a wrapper
+
+> **Explanation:** `inline` copies the function body to every call site at compile time, which eliminates the overhead of creating a Function object for each lambda parameter. This is especially beneficial for small, frequently-called higher-order functions.
+
+#### What does `crossinline` prevent in an inline function's lambda parameter?
+
+- ❌ The lambda from accessing variables outside its scope
+- ❌ The lambda from being called more than once
+- ✅ The lambda from using non-local returns (return from the enclosing function)
+- ❌ The lambda from throwing exceptions
+
+> **Explanation:** `crossinline` marks a lambda that will be invoked in a different execution context (e.g., inside another lambda or object). Non-local returns would be unsafe in such contexts, so `crossinline` prohibits them while still allowing the lambda to be inlined.
+
+### Coding Challenge: Retry with Inline
+
+Write an `inline` higher-order function called `retry` that:
+
+- Takes a `maxAttempts: Int` and a `block: () -> T` lambda
+- Executes the block up to `maxAttempts` times
+- Returns the result on success, or throws the last exception if all attempts fail
+- Logs each retry attempt using a `crossinline onRetry` callback
+
+#### Solution
+
+```kotlin
+inline fun <T> retry(
+    maxAttempts: Int,
+    crossinline onRetry: (attempt: Int, exception: Exception) -> Unit = { _, _ -> },
+    block: () -> T
+): T {
+    require(maxAttempts > 0) { "maxAttempts must be positive" }
+    var lastException: Exception? = null
+    for (attempt in 1..maxAttempts) {
+        try {
+            return block()
+        } catch (e: Exception) {
+            lastException = e
+            if (attempt < maxAttempts) {
+                onRetry(attempt, e)
+            }
+        }
+    }
+    throw lastException!!
+}
+
+// Usage
+fun main() {
+    val result = retry(maxAttempts = 3, onRetry = { attempt, e ->
+        println("Attempt $attempt failed: ${e.message}. Retrying...")
+    }) {
+        fetchDataFromNetwork()
+    }
+}
+```
+
+The `block` parameter is `inline` (default for inline functions) enabling non-local returns, while `onRetry` is `crossinline` since it's called inside a catch block. The function uses `require()` for precondition validation.
 
 ---
 
@@ -705,6 +1097,99 @@ val req = request {
 ```
 
 **Key takeaway:** `@DslMarker` prevents scope leaking — you can't accidentally access `RequestBuilder` methods inside the `headers` block. This is what makes Compose's `Column { Row { } }` safe.
+
+### Quiz: Kotlin DSLs
+
+#### What is the purpose of receiver lambdas (`Type.() -> Unit`) in Kotlin DSLs?
+
+- ❌ They restrict the lambda to only call private methods
+- ✅ They allow calling methods of the receiver type directly inside the lambda without qualification
+- ❌ They make the lambda execute asynchronously
+- ❌ They prevent the lambda from capturing outer variables
+
+> **Explanation:** Receiver lambdas set the receiver object as `this` inside the lambda block, allowing you to call its methods directly. This is what creates the clean, scoped syntax in DSLs like `apply { url = "..." }`.
+
+#### What problem does `@DslMarker` solve?
+
+- ❌ It enables compile-time validation of DSL syntax
+- ❌ It improves runtime performance of DSL builders
+- ✅ It prevents accidental access to outer scope receivers inside nested DSL blocks
+- ❌ It automatically generates builder classes for the DSL
+
+> **Explanation:** Without `@DslMarker`, nested lambdas can accidentally call methods from outer receivers. `@DslMarker` restricts access so that only the nearest scope's receiver methods are available, preventing subtle bugs.
+
+### Coding Challenge: Configuration DSL
+
+Build a type-safe DSL for configuring a `DatabaseConfig`. The DSL should support:
+
+- Setting `host`, `port`, and `database` name as properties
+- A nested `credentials` block for `username` and `password`
+- A `pool` block for `maxConnections` and `timeoutMs`
+
+#### Solution
+
+```kotlin
+@DslMarker
+annotation class ConfigDsl
+
+@ConfigDsl
+class DatabaseConfigBuilder {
+    var host: String = "localhost"
+    var port: Int = 5432
+    var database: String = ""
+    private var credentials: Credentials? = null
+    private var pool: PoolConfig? = null
+
+    fun credentials(block: CredentialsBuilder.() -> Unit) {
+        credentials = CredentialsBuilder().apply(block).build()
+    }
+
+    fun pool(block: PoolConfigBuilder.() -> Unit) {
+        pool = PoolConfigBuilder().apply(block).build()
+    }
+
+    fun build() = DatabaseConfig(host, port, database, credentials, pool)
+}
+
+@ConfigDsl
+class CredentialsBuilder {
+    var username: String = ""
+    var password: String = ""
+    fun build() = Credentials(username, password)
+}
+
+@ConfigDsl
+class PoolConfigBuilder {
+    var maxConnections: Int = 10
+    var timeoutMs: Long = 5000
+    fun build() = PoolConfig(maxConnections, timeoutMs)
+}
+
+data class DatabaseConfig(val host: String, val port: Int, val database: String, val credentials: Credentials?, val pool: PoolConfig?)
+data class Credentials(val username: String, val password: String)
+data class PoolConfig(val maxConnections: Int, val timeoutMs: Long)
+
+fun databaseConfig(block: DatabaseConfigBuilder.() -> Unit): DatabaseConfig {
+    return DatabaseConfigBuilder().apply(block).build()
+}
+
+// Usage
+val config = databaseConfig {
+    host = "db.example.com"
+    port = 5432
+    database = "myapp"
+    credentials {
+        username = "admin"
+        password = "secret"
+    }
+    pool {
+        maxConnections = 20
+        timeoutMs = 10_000
+    }
+}
+```
+
+This DSL uses `@DslMarker` to prevent scope leaking, receiver lambdas for clean nested syntax, and the builder pattern internally to construct immutable data classes.
 
 ---
 
@@ -821,6 +1306,79 @@ val result = buildString {
 ```
 
 **Key takeaway:** Kotlin is designed for readability first, but understand the performance implications. Profile before optimizing — premature optimization is still the root of all evil.
+
+### Quiz: Idiomatic Kotlin
+
+#### What does the `require()` function do in Kotlin?
+
+- ❌ It imports a dependency into the project
+- ❌ It marks a function parameter as mandatory
+- ✅ It throws an `IllegalArgumentException` if the condition is false
+- ❌ It logs a warning message if the condition is false
+
+> **Explanation:** `require()` is used for precondition checks on function arguments. If the condition evaluates to false, it throws an `IllegalArgumentException` with the provided message.
+
+#### Why should data classes use `val` properties instead of `var`?
+
+- ❌ `var` properties are not allowed in data classes
+- ✅ Immutable properties prevent accidental mutation and make `copy()` the explicit way to create modified instances
+- ❌ `var` properties break the auto-generated `equals()` method
+- ❌ The Kotlin compiler optimizes `val` properties for faster access
+
+> **Explanation:** Using `val` ensures immutability, which prevents subtle bugs from shared mutable state. The `copy()` function provides a clear, intentional way to create modified versions of data class instances.
+
+#### Which annotation generates Java-compatible overloads for a Kotlin function with default parameters?
+
+- ❌ `@JvmStatic`
+- ❌ `@JvmField`
+- ✅ `@JvmOverloads`
+- ❌ `@JvmDefault`
+
+> **Explanation:** `@JvmOverloads` tells the Kotlin compiler to generate overloaded methods for each combination of default parameters, making the function callable from Java code that doesn't support default arguments.
+
+### Coding Challenge: Safe User Validator
+
+Write a `UserValidator` class that validates user input using idiomatic Kotlin patterns. It should:
+
+- Use `require()` for argument validation
+- Use a sealed interface for validation results
+- Use expression body functions where appropriate
+- Validate that name is not blank, email contains `@` and `.`, and age is between 13 and 120
+
+#### Solution
+
+```kotlin
+sealed interface ValidationResult {
+    data object Valid : ValidationResult
+    data class Invalid(val reasons: List<String>) : ValidationResult
+}
+
+class UserValidator {
+
+    fun validate(name: String, email: String, age: Int): ValidationResult {
+        val errors = buildList {
+            if (name.isBlank()) add("Name must not be blank")
+            if (!email.isValidEmail()) add("Invalid email format")
+            if (age !in 13..120) add("Age must be between 13 and 120")
+        }
+        return if (errors.isEmpty()) ValidationResult.Valid
+        else ValidationResult.Invalid(errors)
+    }
+
+    private fun String.isValidEmail() = contains("@") && contains(".")
+}
+
+fun main() {
+    val validator = UserValidator()
+    val result = validator.validate("Mukul", "mukul@example.com", 28)
+    when (result) {
+        is ValidationResult.Valid -> println("User is valid")
+        is ValidationResult.Invalid -> println("Errors: ${result.reasons}")
+    }
+}
+```
+
+This solution combines sealed interfaces for type-safe results, extension functions for readability, `buildList` for immutable collection construction, expression body style, and `when` for exhaustive result handling — all idiomatic Kotlin patterns covered in this module.
 
 ---
 
