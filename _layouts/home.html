@@ -808,14 +808,15 @@
       }
 
       .interviews-list {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       #tab-interviews .list-post {
         border-color: rgba(75, 85, 99, 0.3);
-        padding: 20px;
+        padding: 16px 20px;
+        border-radius: 14px;
       }
 
       #tab-interviews .list-post:hover {
@@ -829,16 +830,15 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-width: 44px;
-        width: 44px;
-        height: 44px;
+        min-width: 52px;
+        width: 52px;
+        height: 52px;
         padding: 4px;
         white-space: nowrap;
-        line-height: 1;
+        line-height: 1.15;
         gap: 1px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(167, 139, 250, 0.15));
-        border: 1px solid rgba(96, 165, 250, 0.2);
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(96, 165, 250, 0.1));
       }
 
       .interview-number .day-label {
@@ -850,7 +850,7 @@
       }
 
       .interview-number .day-num {
-        font-size: 0.75em;
+        font-size: 0.95em;
         font-weight: 800;
       }
 
@@ -863,6 +863,26 @@
       #tab-interviews .list-post-content {
         flex: 1;
       }
+
+      #tab-interviews .list-post-content h2 {
+        font-size: 1.05em;
+      }
+
+      /* Interview card colors */
+      #tab-interviews .interview-post-link:nth-child(14n+1) .interview-number { background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(96, 165, 250, 0.1)); color: #60a5fa; }
+      #tab-interviews .interview-post-link:nth-child(14n+2) .interview-number { background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(52, 211, 153, 0.1)); color: #34d399; }
+      #tab-interviews .interview-post-link:nth-child(14n+3) .interview-number { background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.1)); color: #fbbf24; }
+      #tab-interviews .interview-post-link:nth-child(14n+4) .interview-number { background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(167, 139, 250, 0.1)); color: #a78bfa; }
+      #tab-interviews .interview-post-link:nth-child(14n+5) .interview-number { background: linear-gradient(135deg, rgba(244, 114, 182, 0.25), rgba(244, 114, 182, 0.1)); color: #f472b6; }
+      #tab-interviews .interview-post-link:nth-child(14n+6) .interview-number { background: linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(251, 146, 60, 0.1)); color: #fb923c; }
+      #tab-interviews .interview-post-link:nth-child(14n+7) .interview-number { background: linear-gradient(135deg, rgba(45, 212, 191, 0.25), rgba(45, 212, 191, 0.1)); color: #2dd4bf; }
+      #tab-interviews .interview-post-link:nth-child(14n+8) .interview-number { background: linear-gradient(135deg, rgba(248, 113, 113, 0.25), rgba(248, 113, 113, 0.1)); color: #f87171; }
+      #tab-interviews .interview-post-link:nth-child(14n+9) .interview-number { background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(129, 140, 248, 0.1)); color: #818cf8; }
+      #tab-interviews .interview-post-link:nth-child(14n+10) .interview-number { background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(74, 222, 128, 0.1)); color: #4ade80; }
+      #tab-interviews .interview-post-link:nth-child(14n+11) .interview-number { background: linear-gradient(135deg, rgba(232, 121, 249, 0.25), rgba(232, 121, 249, 0.1)); color: #e879f9; }
+      #tab-interviews .interview-post-link:nth-child(14n+12) .interview-number { background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(56, 189, 248, 0.1)); color: #38bdf8; }
+      #tab-interviews .interview-post-link:nth-child(14n+13) .interview-number { background: linear-gradient(135deg, rgba(253, 186, 116, 0.25), rgba(253, 186, 116, 0.1)); color: #fdba74; }
+      #tab-interviews .interview-post-link:nth-child(14n+14) .interview-number { background: linear-gradient(135deg, rgba(110, 231, 183, 0.25), rgba(110, 231, 183, 0.1)); color: #6ee7b7; }
 
       #tab-interviews .list-post-content h2 {
         margin-bottom: 4px;
@@ -1153,8 +1173,7 @@
         }
 
         .articles-grid,
-        .tools-grid,
-        .interviews-list {
+        .tools-grid {
           grid-template-columns: 1fr;
         }
 
