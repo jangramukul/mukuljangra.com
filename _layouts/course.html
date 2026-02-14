@@ -757,44 +757,8 @@
         font-size: 0.92em;
       }
 
-      .module-footer-bar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px 10px 60px;
-        border-top: 1px solid rgba(75, 85, 99, 0.15);
-      }
-
-      .module-footer-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.72em;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .module-footer-badge.quiz-badge {
-        background-color: rgba(251, 191, 36, 0.1);
-        border: 1px solid rgba(251, 191, 36, 0.25);
-        color: #fbbf24;
-      }
-
-      .module-footer-badge.challenge-badge {
-        background-color: rgba(52, 211, 153, 0.1);
-        border: 1px solid rgba(52, 211, 153, 0.25);
-        color: #34d399;
-      }
-
       @media (max-width: 768px) {
         .quiz-item, .challenge-item {
-          padding-left: 20px;
-        }
-        .module-footer-bar {
           padding-left: 20px;
         }
       }
@@ -1240,7 +1204,7 @@
             quizEl.className = 'quiz-item';
 
             var quizTitle = quiz.title.replace(/^Quiz\s*:\s*/i, '').replace(/^Quiz\s*/i, '');
-            if (!quizTitle) quizTitle = 'Module Quiz';
+            quizTitle = quizTitle ? 'Quiz — ' + quizTitle : 'Quiz';
 
             var qHeader = document.createElement('div');
             qHeader.className = 'lesson-header';
@@ -1279,7 +1243,7 @@
             chalEl.className = 'challenge-item';
 
             var chalTitle = challenge.title.replace(/^Coding Challenge\s*:\s*/i, '').replace(/^Coding Challenge\s*/i, '');
-            if (!chalTitle) chalTitle = 'Coding Challenge';
+            chalTitle = chalTitle ? 'Coding Test — ' + chalTitle : 'Coding Test';
 
             var cHeader = document.createElement('div');
             cHeader.className = 'lesson-header';
@@ -1311,19 +1275,6 @@
 
             body.appendChild(chalEl);
           });
-
-          // Module footer badges
-          if (mod.quizzes.length > 0 || mod.challenges.length > 0) {
-            var footer = document.createElement('div');
-            footer.className = 'module-footer-bar';
-            if (mod.quizzes.length > 0) {
-              footer.innerHTML += '<span class="module-footer-badge quiz-badge">❓ ' + mod.quizzes.length + ' Quiz</span>';
-            }
-            if (mod.challenges.length > 0) {
-              footer.innerHTML += '<span class="module-footer-badge challenge-badge">💻 ' + mod.challenges.length + ' Challenge</span>';
-            }
-            body.appendChild(footer);
-          }
 
           wrapper.appendChild(body);
 
