@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 1
-sequence: 23
+sequence: 69
 description: "Most Android interview pipelines include a practical coding test — either a take-home project or a live coding session."
 ---
 

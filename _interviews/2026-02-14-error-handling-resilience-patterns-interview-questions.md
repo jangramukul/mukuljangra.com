@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 7
-sequence: 56
+sequence: 39
 description: "Error handling questions test whether you think beyond the happy path."
 ---
 

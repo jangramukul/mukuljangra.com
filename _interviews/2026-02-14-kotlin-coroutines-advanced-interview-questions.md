@@ -3,8 +3,8 @@ title: "Kotlin Coroutines — Advanced"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 5
-sequence: 30
+order: 13
+sequence: 13
 description: "Advanced coroutine questions test whether you actually understand what happens under the hood — CPS transformation, state machines, cancellation..."
 ---
 

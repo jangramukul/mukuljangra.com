@@ -3,8 +3,8 @@ title: "Views, RecyclerView & UI Fundamentals"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 4
-sequence: 4
+order: 8
+sequence: 8
 description: "Views, RecyclerView and UI rendering are core topics in Android interviews. This post covers the most important questions."
 ---
 

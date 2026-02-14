@@ -3,7 +3,7 @@ title: "Gradle, Build System & CI/CD"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 10
+order: 26
 sequence: 26
 description: "Build system questions cover Gradle internals, dependency management, and CI/CD pipelines for Android projects."
 ---

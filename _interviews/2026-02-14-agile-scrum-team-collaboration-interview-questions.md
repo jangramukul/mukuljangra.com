@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 3
-sequence: 22
+sequence: 79
 description: "Many companies ask about how you work within Agile teams."
 ---
 

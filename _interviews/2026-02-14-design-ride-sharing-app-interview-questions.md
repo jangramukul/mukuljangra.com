@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 7
-sequence: 66
+sequence: 61
 description: "Ride-sharing apps are a favorite in mobile system design interviews because they combine real-time location, maps, background services, and..."
 ---
 

@@ -3,8 +3,8 @@ title: "State Management in Compose"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 2
-sequence: 14
+order: 17
+sequence: 17
 description: "State management is the core of how Compose works. Almost every Compose interview will test whether you understand how state drives recomposition and..."
 ---
 

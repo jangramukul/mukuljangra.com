@@ -3,8 +3,8 @@ title: "Recomposition, Stability & Performance"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 3
-sequence: 34
+order: 18
+sequence: 18
 description: "Recomposition is the core mechanism that makes Compose reactive."
 ---
 

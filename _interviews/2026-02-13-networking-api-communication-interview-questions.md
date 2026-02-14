@@ -3,8 +3,8 @@ title: "Networking & API Communication"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 6
-sequence: 6
+order: 10
+sequence: 10
 description: "Networking questions cover HTTP concepts, OkHttp internals, and caching strategies."
 ---
 

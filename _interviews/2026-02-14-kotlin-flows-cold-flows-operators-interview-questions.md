@@ -3,8 +3,8 @@ title: "Kotlin Flows — Cold Flows & Operators"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 6
-sequence: 31
+order: 14
+sequence: 14
 description: "Flow is one of the most heavily tested topics in Kotlin interviews."
 ---
 

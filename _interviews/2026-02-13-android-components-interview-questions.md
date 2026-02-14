@@ -3,8 +3,8 @@ title: "Android Components"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 2
-sequence: 2
+order: 6
+sequence: 6
 description: "Services, Broadcast Receivers, and Content Providers are three of the four core Android components."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 3
-sequence: 62
+sequence: 57
 description: "Chat applications are a favorite in mobile system design interviews because they combine real-time communication, offline support, local persistence,..."
 ---
 

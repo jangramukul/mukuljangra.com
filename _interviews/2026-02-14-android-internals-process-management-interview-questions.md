@@ -3,8 +3,8 @@ title: "Android Internals & Process Management"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 11
-sequence: 27
+order: 29
+sequence: 29
 description: "Android internals and process management come up frequently in senior-level interviews."
 ---
 

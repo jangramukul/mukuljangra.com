@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 8
-sequence: 67
+sequence: 62
 description: "E-commerce app design comes up frequently because it covers the full spectrum of mobile challenges — catalog browsing with heavy image loading,..."
 ---
 

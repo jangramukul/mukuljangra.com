@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 3
-sequence: 48
+sequence: 71
 description: "The list-detail pattern is a staple coding test assignment."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 1
-sequence: 16
+sequence: 41
 description: "Arrays and strings are the foundation of almost every DSA interview."
 ---
 

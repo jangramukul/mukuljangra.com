@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 5
-sequence: 64
+sequence: 59
 description: "Offline-first is a core mobile system design topic. Users expect apps to work in subways, elevators, and areas with flaky connectivity."
 ---
 

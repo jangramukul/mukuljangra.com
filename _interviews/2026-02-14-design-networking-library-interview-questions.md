@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 11
-sequence: 73
+sequence: 65
 description: "Designing a networking library like Retrofit or OkHttp tests your understanding of HTTP internals, request pipelines, caching, and concurrency."
 ---
 

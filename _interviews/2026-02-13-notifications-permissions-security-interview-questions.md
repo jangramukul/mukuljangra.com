@@ -3,8 +3,8 @@ title: "Notifications, Permissions & Security"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 9
-sequence: 8
+order: 25
+sequence: 25
 description: "Covers the Android permission model, push notification system, and security fundamentals for protecting user data."
 ---
 

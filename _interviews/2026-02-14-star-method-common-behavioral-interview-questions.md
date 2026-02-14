@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 1
-sequence: 21
+sequence: 77
 description: "Every company has a behavioral round. It tests how you communicate, handle conflict, and work with others."
 ---
 

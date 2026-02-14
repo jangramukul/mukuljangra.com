@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 2
-sequence: 46
+sequence: 56
 description: "Designing an image loading library like Coil or Glide is one of the most common mobile system design questions."
 ---
 

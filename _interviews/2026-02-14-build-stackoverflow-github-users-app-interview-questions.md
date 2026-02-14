@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 6
-sequence: 77
+sequence: 74
 description: "The StackOverflow users or GitHub repos app tests API integration, pagination, search, and clean architecture in a realistic coding challenge."
 ---
 

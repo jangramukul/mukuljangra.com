@@ -3,8 +3,8 @@ title: "Animation APIs in Compose"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 7
-sequence: 53
+order: 22
+sequence: 22
 description: "Animation questions come up regularly in Compose interviews because they test whether you understand not just the APIs, but how Compose's declarative..."
 ---
 

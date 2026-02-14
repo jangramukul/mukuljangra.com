@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 2
-sequence: 37
+sequence: 34
 description: "Clean Architecture and SOLID come up in almost every architecture round."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Technical Round]
 order: 1
-sequence: 9
+sequence: 1
 description: "Kotlin basics and type system questions come up in almost every Android interview."
 ---
 

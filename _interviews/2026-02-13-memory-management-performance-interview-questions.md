@@ -3,8 +3,8 @@ title: "Memory Management & Performance"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 8
-sequence: 25
+order: 24
+sequence: 24
 description: "This covers how memory works on Android, why frames drop, and how to find and fix performance problems."
 ---
 

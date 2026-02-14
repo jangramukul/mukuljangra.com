@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 8
-sequence: 20
+sequence: 48
 description: "Sorting and binary search are foundational topics in coding interviews."
 ---
 

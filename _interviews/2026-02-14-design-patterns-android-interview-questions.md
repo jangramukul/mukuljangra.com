@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 5
-sequence: 39
+sequence: 37
 description: "Design pattern questions show up in almost every architecture round."
 ---
 

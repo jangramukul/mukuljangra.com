@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 2
-sequence: 17
+sequence: 42
 description: "Linked list problems are a staple in DSA interviews because they test pointer manipulation, edge case handling, and in-place operations."
 ---
 

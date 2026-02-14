@@ -3,8 +3,8 @@ title: "Layouts, Modifiers & Custom Drawing"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 5
-sequence: 36
+order: 20
+sequence: 20
 description: "Layout and drawing questions test whether you actually understand how Compose renders UI under the hood."
 ---
 

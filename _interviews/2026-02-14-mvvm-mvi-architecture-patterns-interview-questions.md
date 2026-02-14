@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 1
-sequence: 15
+sequence: 33
 description: "Architecture pattern questions come up in every senior Android interview."
 ---
 

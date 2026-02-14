@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 14
-sequence: 76
+sequence: 68
 description: "Designing a music streaming app like Spotify tests your understanding of audio playback, background services, media sessions, offline caching, and playback queue management."
 ---
 

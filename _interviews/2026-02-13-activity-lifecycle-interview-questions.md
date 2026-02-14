@@ -3,8 +3,8 @@ title: "Activity & Fragment Lifecycle"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 1
-sequence: 1
+order: 5
+sequence: 5
 description: "Lifecycle is the most commonly asked topic in Android interviews. Every company will ask at least 2-3 lifecycle questions."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 13
-sequence: 61
+sequence: 53
 description: "These questions bridge the gap between pure DSA and real mobile engineering."
 ---
 

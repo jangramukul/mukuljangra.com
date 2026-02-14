@@ -3,8 +3,8 @@ title: "Navigation, Theming & Architecture Patterns"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 6
-sequence: 52
+order: 21
+sequence: 21
 description: "Navigation and theming questions test whether you understand how to structure a real Compose application."
 ---
 

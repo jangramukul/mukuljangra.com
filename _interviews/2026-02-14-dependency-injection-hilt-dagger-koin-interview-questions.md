@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 3
-sequence: 38
+sequence: 35
 description: "DI questions show up in every Android architecture interview."
 ---
 

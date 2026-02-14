@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 6
-sequence: 65
+sequence: 60
 description: "Video streaming is a common system design question because it touches many mobile-specific concerns — adaptive bitrate, buffering, background..."
 ---
 

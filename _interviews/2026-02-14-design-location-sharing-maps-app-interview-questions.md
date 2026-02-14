@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 13
-sequence: 75
+sequence: 67
 description: "Designing a location sharing or maps app tests your understanding of real-time communication, battery-efficient location strategies, map rendering, and privacy."
 ---
 

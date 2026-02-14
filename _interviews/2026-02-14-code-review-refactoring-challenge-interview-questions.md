@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 5
-sequence: 72
+sequence: 73
 description: "Some companies hand you an existing codebase and ask you to review it, identify problems, and refactor."
 ---
 

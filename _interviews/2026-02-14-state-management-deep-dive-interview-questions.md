@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 8
-sequence: 57
+sequence: 40
 description: "State management is where architecture rounds get hard."
 ---
 

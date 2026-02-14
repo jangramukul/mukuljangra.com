@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 1
-sequence: 45
+sequence: 55
 description: "Mobile system design interviews focus on client-side architecture, not backend scaling."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Technical Round]
 order: 2
-sequence: 10
+sequence: 2
 description: "Functions are a core part of Kotlin interviews. Scope functions, higher-order functions, and inline functions are asked frequently because they show..."
 ---
 

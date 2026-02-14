@@ -3,8 +3,8 @@ title: "Testing & Accessibility in Compose"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 8
-sequence: 54
+order: 23
+sequence: 23
 description: "Testing and accessibility questions appear in senior-level Compose interviews because they reveal whether you've actually shipped production Compose..."
 ---
 

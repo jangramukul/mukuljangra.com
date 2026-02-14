@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 9
-sequence: 68
+sequence: 63
 description: "File sync apps are a staple in system design interviews because they test how you handle background processing, conflict resolution, and large data..."
 ---
 

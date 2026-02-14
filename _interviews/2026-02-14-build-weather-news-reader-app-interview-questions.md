@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 2
-sequence: 24
+sequence: 70
 description: "The weather or news reader app is the most common coding test assignment."
 ---
 

@@ -3,8 +3,8 @@ title: "Side Effects & Lifecycle in Compose"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 4
-sequence: 35
+order: 19
+sequence: 19
 description: "Side effects and lifecycle are fundamental to real-world Compose development."
 ---
 

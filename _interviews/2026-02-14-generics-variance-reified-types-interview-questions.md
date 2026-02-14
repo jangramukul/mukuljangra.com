@@ -3,8 +3,8 @@ title: "Generics, Variance & Reified Types"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 3
-sequence: 29
+order: 4
+sequence: 4
 description: "Generics come up in almost every Kotlin interview round."
 ---
 

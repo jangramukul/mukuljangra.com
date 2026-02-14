@@ -3,8 +3,8 @@ title: "Kotlin Flows — Hot Flows & Lifecycle"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 7
-sequence: 32
+order: 15
+sequence: 15
 description: "Hot flows are one of the most asked topics in Android interviews."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 12
-sequence: 74
+sequence: 66
 description: "Designing a file downloader library tests your understanding of HTTP range requests, background processing, disk I/O, and concurrent task management."
 ---
 

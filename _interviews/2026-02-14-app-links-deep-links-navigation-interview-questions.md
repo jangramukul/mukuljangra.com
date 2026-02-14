@@ -3,8 +3,8 @@ title: "App Links, Deep Links & Navigation"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 13
-sequence: 49
+order: 31
+sequence: 31
 description: "Deep links and App Links are commonly asked in Android interviews because they test your understanding of the intent system, manifest configuration,..."
 ---
 

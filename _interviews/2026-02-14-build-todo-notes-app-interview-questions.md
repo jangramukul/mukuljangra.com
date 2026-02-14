@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 7
-sequence: 78
+sequence: 75
 description: "The to-do or notes app is the purest test of Android fundamentals — Room, state management, clean architecture, and UI polish without relying on any external API."
 ---
 

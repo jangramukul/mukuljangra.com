@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 8
-sequence: 79
+sequence: 76
 description: "The machine coding round is a timed, hands-on coding session where you build or modify a feature live, typically in 1-2 hours."
 ---
 

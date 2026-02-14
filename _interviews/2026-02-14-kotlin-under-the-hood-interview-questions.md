@@ -3,8 +3,8 @@ title: "Kotlin Under the Hood"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 8
-sequence: 33
+order: 27
+sequence: 27
 description: "Understanding how Kotlin compiles to bytecode is a common advanced interview topic."
 ---
 

@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 4
-sequence: 55
+sequence: 36
 description: "Modularization questions are common in senior and lead Android interviews."
 ---
 

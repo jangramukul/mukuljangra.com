@@ -3,8 +3,8 @@ title: "Intents, Intent Filters & Launch Modes"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 3
-sequence: 3
+order: 7
+sequence: 7
 description: "Intents, intent filters, and launch modes are core concepts that define how Android components communicate and how the system manages tasks and back..."
 ---
 

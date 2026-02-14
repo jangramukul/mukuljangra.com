@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 6
-sequence: 40
+sequence: 38
 description: "Testing questions come up in architecture rounds because writing testable code forces good architecture."
 ---
 

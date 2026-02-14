@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 4
-sequence: 63
+sequence: 58
 description: "Feed-based screens are one of the most common system design questions in mobile interviews."
 ---
 

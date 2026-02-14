@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 3
-sequence: 18
+sequence: 43
 description: "Stacks and queues are among the most frequently tested data structures in coding interviews."
 ---
 

@@ -3,8 +3,8 @@ title: "Collections, Sequences & Functional Patterns"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 9
-sequence: 11
+order: 3
+sequence: 3
 description: "Collections and functional operations come up in almost every Kotlin interview."
 ---
 

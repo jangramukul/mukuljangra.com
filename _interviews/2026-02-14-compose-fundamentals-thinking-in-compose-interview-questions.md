@@ -3,8 +3,8 @@ title: "Compose Fundamentals & Thinking in Compose"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 1
-sequence: 13
+order: 16
+sequence: 16
 description: "Compose fundamentals come up in almost every Android interview now."
 ---
 

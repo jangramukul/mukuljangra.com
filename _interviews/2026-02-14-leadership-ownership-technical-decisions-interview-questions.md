@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 2
-sequence: 47
+sequence: 78
 description: "Senior-level interviews dig into how you lead without a title, own outcomes end-to-end, and make sound technical decisions when there's no clear..."
 ---
 

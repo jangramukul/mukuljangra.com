@@ -3,8 +3,8 @@ title: "Sensors, Camera & Hardware APIs"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 14
-sequence: 50
+order: 32
+sequence: 32
 description: "These topics come up in interviews when the role involves features like maps, fitness tracking, camera-based scanning, or Bluetooth connectivity."
 ---
 

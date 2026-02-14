@@ -4,7 +4,7 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 4
-sequence: 71
+sequence: 72
 description: "Some coding tests ask you to build a custom UI component from scratch — a circular progress indicator, a rating bar, a custom chart, or a..."
 ---
 

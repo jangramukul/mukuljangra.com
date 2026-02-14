@@ -3,8 +3,8 @@ title: "Kotlin Contracts, DSLs & Advanced Patterns"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 10
-sequence: 51
+order: 28
+sequence: 28
 description: "These topics separate senior Kotlin developers from intermediate ones."
 ---
 

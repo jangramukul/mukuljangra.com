@@ -3,8 +3,8 @@ title: "Accessibility, Localization & App Quality"
 date: 2026-02-14
 layout: interview
 tags: [Technical Round]
-order: 12
-sequence: 28
+order: 30
+sequence: 30
 description: "These topics come up in interviews when companies want to know if you build apps that work for everyone, not just the default case."
 ---
 

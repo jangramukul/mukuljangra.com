@@ -3,8 +3,8 @@ title: "Storage & Data Persistence"
 date: 2026-02-13
 layout: interview
 tags: [Technical Round]
-order: 5
-sequence: 5
+order: 9
+sequence: 9
 description: "Every real Android app needs to persist data. These questions cover the right tool for each storage need and the common pitfalls."
 ---
 
