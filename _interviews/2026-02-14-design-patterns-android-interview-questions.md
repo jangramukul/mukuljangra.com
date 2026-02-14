@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 5
 sequence: 39
+description: "Design pattern questions show up in almost every architecture round."
 ---
 
 ## Design Patterns in Android

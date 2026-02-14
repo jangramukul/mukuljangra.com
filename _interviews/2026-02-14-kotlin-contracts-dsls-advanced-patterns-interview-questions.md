@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 10
 sequence: 51
+description: "These topics separate senior Kotlin developers from intermediate ones."
 ---
 
 ## Kotlin Contracts, DSLs & Advanced Patterns

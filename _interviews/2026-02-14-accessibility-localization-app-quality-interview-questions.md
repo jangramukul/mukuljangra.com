@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 12
 sequence: 28
+description: "These topics come up in interviews when companies want to know if you build apps that work for everyone, not just the default case."
 ---
 
 ## Accessibility, Localization & App Quality

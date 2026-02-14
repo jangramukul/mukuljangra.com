@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 2
 sequence: 37
+description: "Clean Architecture and SOLID come up in almost every architecture round."
 ---
 
 ## Clean Architecture & SOLID Principles — What Interviewers Really Ask

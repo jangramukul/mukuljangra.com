@@ -5,6 +5,7 @@ layout: interview
 tags: [Behavioral Round]
 order: 4
 sequence: 70
+description: "These questions come up in almost every final round."
 ---
 
 ## Career Growth, Failure & Salary Negotiation

@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 4
 sequence: 4
+description: "Views, RecyclerView and UI rendering are core topics in Android interviews. This post covers the most important questions."
 ---
 
 ## Views, RecyclerView & UI Fundamentals

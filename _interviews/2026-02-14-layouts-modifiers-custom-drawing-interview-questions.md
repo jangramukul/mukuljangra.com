@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 5
 sequence: 36
+description: "Layout and drawing questions test whether you actually understand how Compose renders UI under the hood."
 ---
 
 ## Layouts, Modifiers & Custom Drawing

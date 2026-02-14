@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 8
 sequence: 67
+description: "E-commerce app design comes up frequently because it covers the full spectrum of mobile challenges — catalog browsing with heavy image loading,..."
 ---
 
 ## Design an E-Commerce App (Amazon)

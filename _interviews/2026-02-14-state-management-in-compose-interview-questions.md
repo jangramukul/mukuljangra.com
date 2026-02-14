@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 2
 sequence: 14
+description: "State management is the core of how Compose works. Almost every Compose interview will test whether you understand how state drives recomposition and..."
 ---
 
 ## State Management in Compose

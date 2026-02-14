@@ -5,6 +5,7 @@ layout: interview
 tags: [Coding Test]
 order: 3
 sequence: 48
+description: "The list-detail pattern is a staple coding test assignment."
 ---
 
 ## Build a Movie / Product Listing with Detail Screen

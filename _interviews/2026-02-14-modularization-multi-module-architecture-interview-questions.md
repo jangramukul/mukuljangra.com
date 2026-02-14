@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 4
 sequence: 55
+description: "Modularization questions are common in senior and lead Android interviews."
 ---
 
 ## Modularization & Multi-Module Architecture — What Interviewers Really Ask

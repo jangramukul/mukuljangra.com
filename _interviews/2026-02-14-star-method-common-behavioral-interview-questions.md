@@ -5,6 +5,7 @@ layout: interview
 tags: [Behavioral Round]
 order: 1
 sequence: 21
+description: "Every company has a behavioral round. It tests how you communicate, handle conflict, and work with others."
 ---
 
 ## STAR Method & Common Behavioral Questions

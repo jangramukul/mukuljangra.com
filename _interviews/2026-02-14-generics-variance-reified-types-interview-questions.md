@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 3
 sequence: 29
+description: "Generics come up in almost every Kotlin interview round."
 ---
 
 ## Generics, Variance & Reified Types

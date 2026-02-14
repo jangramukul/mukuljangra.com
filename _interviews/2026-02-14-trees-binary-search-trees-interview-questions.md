@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 4
 sequence: 19
+description: "Trees are one of the most asked topics in coding interviews."
 ---
 
 ## Trees & Binary Search Trees

@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 10
 sequence: 26
+description: "Build system questions cover Gradle internals, dependency management, and CI/CD pipelines for Android projects."
 ---
 
 ## Gradle, Build System & CI/CD

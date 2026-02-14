@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 7
 sequence: 7
+description: "Threading and background work are important topics in Android."
 ---
 
 ## Threading & Background Work

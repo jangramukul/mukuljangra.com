@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 4
 sequence: 12
+description: "Kotlin Coroutines is a simplified version of managing asynchronous tasks or operations in Android."
 ---
 
 ## Kotlin Coroutines — Basics

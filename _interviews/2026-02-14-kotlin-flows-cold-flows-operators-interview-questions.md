@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 6
 sequence: 31
+description: "Flow is one of the most heavily tested topics in Kotlin interviews."
 ---
 
 ## Kotlin Flows — Cold Flows & Operators

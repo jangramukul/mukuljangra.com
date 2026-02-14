@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 9
 sequence: 8
+description: "Covers the Android permission model, push notification system, and security fundamentals for protecting user data."
 ---
 
 ## Notifications, Permissions & Security

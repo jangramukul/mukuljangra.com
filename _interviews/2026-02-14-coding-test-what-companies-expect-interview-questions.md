@@ -5,6 +5,7 @@ layout: interview
 tags: [Coding Test]
 order: 1
 sequence: 23
+description: "Most Android interview pipelines include a practical coding test — either a take-home project or a live coding session."
 ---
 
 ## Coding Test — What Companies Expect

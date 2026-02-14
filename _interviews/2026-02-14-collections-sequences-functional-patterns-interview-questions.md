@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 9
 sequence: 11
+description: "Collections and functional operations come up in almost every Kotlin interview."
 ---
 
 ## Collections, Sequences & Functional Patterns

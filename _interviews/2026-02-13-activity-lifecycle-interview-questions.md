@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 1
 sequence: 1
+description: "Lifecycle is the most commonly asked topic in Android interviews. Every company will ask at least 2-3 lifecycle questions."
 ---
 
 ## Activity & Fragment Lifecycle

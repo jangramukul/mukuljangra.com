@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 8
 sequence: 57
+description: "State management is where architecture rounds get hard."
 ---
 
 ## State Management Deep Dive

@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 12
 sequence: 60
+description: "Bit manipulation shows up in interviews as a way to test your understanding of how numbers work at the binary level."
 ---
 
 ## Bit Manipulation & Math

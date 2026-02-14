@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 7
 sequence: 56
+description: "Error handling questions test whether you think beyond the happy path."
 ---
 
 ## Error Handling & Resilience Patterns

@@ -5,6 +5,7 @@ layout: interview
 tags: [Coding Test]
 order: 2
 sequence: 24
+description: "The weather or news reader app is the most common coding test assignment."
 ---
 
 ## Build a Weather / News Reader App

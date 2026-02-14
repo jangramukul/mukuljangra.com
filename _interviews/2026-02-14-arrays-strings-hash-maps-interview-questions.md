@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 1
 sequence: 16
+description: "Arrays and strings are the foundation of almost every DSA interview."
 ---
 
 ## Arrays, Strings & Hash Maps

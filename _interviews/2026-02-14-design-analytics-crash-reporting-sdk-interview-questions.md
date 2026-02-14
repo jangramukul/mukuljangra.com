@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 10
 sequence: 69
+description: "SDK design questions test a different angle of system design — you are building a library that other developers integrate into their apps, not an..."
 ---
 
 ## Design an Analytics / Crash Reporting SDK

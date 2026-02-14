@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 11
 sequence: 27
+description: "Android internals and process management come up frequently in senior-level interviews."
 ---
 
 ## Android Internals & Process Management

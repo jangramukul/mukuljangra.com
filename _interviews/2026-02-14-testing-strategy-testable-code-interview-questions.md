@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 6
 sequence: 40
+description: "Testing questions come up in architecture rounds because writing testable code forces good architecture."
 ---
 
 ## Testing Strategy & Testable Code

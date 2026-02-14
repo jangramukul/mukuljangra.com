@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 14
 sequence: 50
+description: "These topics come up in interviews when the role involves features like maps, fitness tracking, camera-based scanning, or Bluetooth connectivity."
 ---
 
 ## Sensors, Camera & Hardware APIs

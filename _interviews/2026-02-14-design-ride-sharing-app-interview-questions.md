@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 7
 sequence: 66
+description: "Ride-sharing apps are a favorite in mobile system design interviews because they combine real-time location, maps, background services, and..."
 ---
 
 ## Design a Ride-Sharing App (Uber/Lyft)

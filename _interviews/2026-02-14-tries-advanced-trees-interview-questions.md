@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 5
 sequence: 42
+description: "Tries show up in string-heavy problems like autocomplete, spell check, and word search."
 ---
 
 ## Tries & Advanced Trees — What Interviewers Really Ask

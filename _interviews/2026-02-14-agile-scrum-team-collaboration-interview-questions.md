@@ -5,6 +5,7 @@ layout: interview
 tags: [Behavioral Round]
 order: 3
 sequence: 22
+description: "Many companies ask about how you work within Agile teams."
 ---
 
 ## Agile, Scrum & Team Collaboration

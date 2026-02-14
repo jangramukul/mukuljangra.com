@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 6
 sequence: 65
+description: "Video streaming is a common system design question because it touches many mobile-specific concerns — adaptive bitrate, buffering, background..."
 ---
 
 ## Design a Video Streaming App

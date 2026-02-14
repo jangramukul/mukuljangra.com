@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 13
 sequence: 61
+description: "These questions bridge the gap between pure DSA and real mobile engineering."
 ---
 
 ## System-Oriented DSA (Mobile-Specific)

@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 7
 sequence: 53
+description: "Animation questions come up regularly in Compose interviews because they test whether you understand not just the APIs, but how Compose's declarative..."
 ---
 
 ## Animation APIs in Compose

@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 1
 sequence: 9
+description: "Kotlin basics and type system questions come up in almost every Android interview."
 ---
 
 ## Kotlin Basics & Type System

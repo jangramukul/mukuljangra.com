@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 9
 sequence: 43
+description: "DP is one of the most tested topics in FAANG interviews. If a problem has overlapping subproblems and optimal substructure, it's likely a DP problem."
 ---
 
 ## Dynamic Programming — Fundamentals

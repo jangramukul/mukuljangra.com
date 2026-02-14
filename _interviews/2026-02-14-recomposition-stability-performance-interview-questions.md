@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 3
 sequence: 34
+description: "Recomposition is the core mechanism that makes Compose reactive."
 ---
 
 ## Recomposition, Stability & Performance

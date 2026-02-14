@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 4
 sequence: 35
+description: "Side effects and lifecycle are fundamental to real-world Compose development."
 ---
 
 ## Side Effects & Lifecycle in Compose

@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 9
 sequence: 68
+description: "File sync apps are a staple in system design interviews because they test how you handle background processing, conflict resolution, and large data..."
 ---
 
 ## Design a File Sync App (Google Drive/Dropbox)

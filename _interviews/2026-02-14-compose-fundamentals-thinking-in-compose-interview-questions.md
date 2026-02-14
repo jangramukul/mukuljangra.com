@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 1
 sequence: 13
+description: "Compose fundamentals come up in almost every Android interview now."
 ---
 
 ## Compose Fundamentals & Thinking in Compose

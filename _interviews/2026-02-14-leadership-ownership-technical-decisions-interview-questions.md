@@ -5,6 +5,7 @@ layout: interview
 tags: [Behavioral Round]
 order: 2
 sequence: 47
+description: "Senior-level interviews dig into how you lead without a title, own outcomes end-to-end, and make sound technical decisions when there's no clear..."
 ---
 
 ## Leadership, Ownership & Technical Decision-Making

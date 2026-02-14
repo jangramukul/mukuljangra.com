@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 6
 sequence: 6
+description: "Networking questions cover HTTP concepts, OkHttp internals, and caching strategies."
 ---
 
 ## Networking & API Communication

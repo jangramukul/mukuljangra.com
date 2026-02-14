@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 6
 sequence: 41
+description: "Graph problems are among the most common in coding interviews."
 ---
 
 ## Graphs — BFS, DFS & Traversals — What Interviewers Really Ask

@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 6
 sequence: 52
+description: "Navigation and theming questions test whether you understand how to structure a real Compose application."
 ---
 
 ## Navigation, Theming & Architecture Patterns

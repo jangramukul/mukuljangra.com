@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 1
 sequence: 15
+description: "Architecture pattern questions come up in every senior Android interview."
 ---
 
 ## MVVM, MVI & Architecture Patterns — What Interviewers Really Ask

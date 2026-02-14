@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 1
 sequence: 45
+description: "Mobile system design interviews focus on client-side architecture, not backend scaling."
 ---
 
 ## Mobile System Design Fundamentals

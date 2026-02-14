@@ -5,6 +5,7 @@ layout: interview
 tags: [System Design Round]
 order: 4
 sequence: 63
+description: "Feed-based screens are one of the most common system design questions in mobile interviews."
 ---
 
 ## Design a News Feed / Social Media Feed

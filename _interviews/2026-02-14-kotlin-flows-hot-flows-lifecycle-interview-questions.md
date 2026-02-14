@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 7
 sequence: 32
+description: "Hot flows are one of the most asked topics in Android interviews."
 ---
 
 ## Kotlin Flows — Hot Flows & Lifecycle

@@ -5,6 +5,7 @@ layout: interview
 tags: [Architecture Round]
 order: 3
 sequence: 38
+description: "DI questions show up in every Android architecture interview."
 ---
 
 ## Dependency Injection — Hilt, Dagger & Koin — What Interviewers Really Ask

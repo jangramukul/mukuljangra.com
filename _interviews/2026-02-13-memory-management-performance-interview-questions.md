@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 8
 sequence: 25
+description: "This covers how memory works on Android, why frames drop, and how to find and fix performance problems."
 ---
 
 ## Memory Management & Performance

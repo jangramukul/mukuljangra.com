@@ -5,6 +5,7 @@ layout: interview
 tags: [DSA Round]
 order: 8
 sequence: 20
+description: "Sorting and binary search are foundational topics in coding interviews."
 ---
 
 ## Sorting, Searching & Binary Search

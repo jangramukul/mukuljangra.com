@@ -5,6 +5,7 @@ layout: interview
 tags: [Technical Round]
 order: 8
 sequence: 33
+description: "Understanding how Kotlin compiles to bytecode is a common advanced interview topic."
 ---
 
 ## Kotlin Under the Hood

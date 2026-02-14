@@ -5,6 +5,7 @@ layout: interview
 tags: [Coding Test]
 order: 5
 sequence: 72
+description: "Some companies hand you an existing codebase and ask you to review it, identify problems, and refactor."
 ---
 
 ## Code Review & Refactoring Challenge
