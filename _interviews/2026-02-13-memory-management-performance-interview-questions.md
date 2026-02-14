@@ -12,34 +12,30 @@ description: "This covers how memory works on Android, why frames drop, and how 
 
 This covers how memory works on Android, why frames drop, and how to find and fix performance problems.
 
-### Core Questions (Beginner → Intermediate)
+#### What is a memory leak in Android?
 
-#### Q1: What is a memory leak in Android, and what are the most common causes?
-
-A memory leak happens when an object is no longer needed but something still holds a reference to it, so the garbage collector can't reclaim it. Activities are the most dangerous ones to leak because they hold references to the entire view hierarchy, bitmaps, and resources.
+A memory leak happens when an object is no longer needed but something still holds a reference to it. The garbage collector can't reclaim it because it's still reachable. Activities are the most dangerous to leak because they hold references to the entire view hierarchy, bitmaps, and resources.
 
 Common causes:
-- An inner class (like a `Handler` callback or `Runnable`) holding an implicit reference to the outer Activity
+- An inner class (like a `Handler` or `Runnable`) holding an implicit reference to the Activity
 - A static field referencing an Activity context
-- A listener or callback registered on a singleton that's never unregistered
-- A thread or coroutine that outlives the Activity and captures it in a closure
+- A listener registered on a singleton that's never unregistered
+- A coroutine or thread that outlives the Activity and captures it in a closure
 - A `ViewModel` holding a reference to a View or Activity
 
 ```kotlin
-// Classic leak: anonymous Runnable holds reference to Activity
+// Leak: Runnable holds implicit reference to Activity for 30 seconds
 class LeakyActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val handler = Handler(Looper.getMainLooper())
-        // This Runnable is an anonymous inner class that holds
-        // an implicit reference to LeakyActivity
         handler.postDelayed({
-            updateUI() // 'this' reference to Activity lives for 30 seconds
+            updateUI()
         }, 30_000)
     }
 }
 
-// Fix: use a WeakReference or cancel the callback in onDestroy
+// Fix: cancel the callback in onDestroy
 class FixedActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = Runnable { updateUI() }
@@ -51,44 +47,31 @@ class FixedActivity : AppCompatActivity() {
 }
 ```
 
-#### Q2: How does garbage collection work on Android?
+#### How does garbage collection work on Android?
 
-Android uses ART's garbage collector which is generational, concurrent, and moving. Objects are categorized by age — young objects sit in a nursery, and ones that survive multiple GC cycles get promoted to the old generation. Most objects are short-lived, so collecting the young generation frequently is efficient. The concurrent part means GC runs alongside app threads with pause times typically under 1ms. Moving means the GC can relocate objects to reduce fragmentation.
+Android uses ART's garbage collector. It's generational, concurrent, and moving. Young objects sit in a nursery. Objects that survive multiple GC cycles get promoted to the old generation. Most objects are short-lived, so collecting the young generation frequently is efficient.
 
-GC roots include local variables on the call stack, static fields, active threads, and JNI references. Any object not reachable from a GC root gets collected. This is why a leaked Activity is a problem — if anything reachable holds a reference to it, the GC can't touch it.
+GC runs concurrently alongside app threads with pause times typically under 1ms. It can also relocate objects to reduce fragmentation. GC roots include local variables on the call stack, static fields, active threads, and JNI references. Anything not reachable from a GC root gets collected.
 
-#### Q3: What is LeakCanary and how does it detect memory leaks?
+#### Why does an Android app lag?
 
-LeakCanary is Square's memory leak detection library. When an Activity or Fragment is destroyed, LeakCanary creates a `WeakReference` to it and checks if that reference gets enqueued after a GC cycle. If it's not enqueued, the object wasn't collected — it's leaked. LeakCanary then triggers a heap dump and analyzes the reference chain from the leaked object back to the GC root, showing exactly which reference is keeping it alive.
+Android renders at 60 FPS, so each frame gets a 16ms budget. On 90Hz or 120Hz displays, that drops to 11ms and 8.3ms. When the main thread can't finish its work within that budget, the frame is dropped and the UI stutters.
 
-```kotlin
-// build.gradle.kts — that's literally all you need
-dependencies {
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
-}
-```
+Each frame goes through measure/layout, draw, and GPU compositing. Heavy work on the main thread, excessive GC, or complex view hierarchies push past the frame deadline and cause jank. I use Android Studio's CPU Profiler or Perfetto to see where each frame's time is spent.
 
-It automatically watches Activities, Fragments, Fragment Views, ViewModels, and Services after they're destroyed. You can also watch custom objects by calling `AppWatcher.objectWatcher.expectWeaklyReachable()`.
+#### What are the common causes of `OutOfMemoryError`?
 
-#### Q4: What is the 16ms frame budget and why does it matter?
+- Loading full-resolution bitmaps without subsampling
+- Memory leaks accumulating over time, especially leaking Activities
+- Holding large collections in memory that should be paged
+- Creating too many objects in a tight loop
+- Background services holding references to large data structures
 
-Android updates views every 16ms (60 FPS) to render. When this takes more than 16ms, the frame is dropped and the UI lags. On 90Hz or 120Hz displays, the budget is even tighter — 11ms and 8.3ms respectively.
+Prevention comes down to using image loading libraries, running LeakCanary in debug builds, paginating large data sets, profiling with Memory Profiler, and handling `onTrimMemory()`. I'd use `largeHeap=true` only as a last resort.
 
-Each frame goes through three phases: measure/layout (compute sizes and positions), draw (generate display list commands), and RenderThread compositing on the GPU. If main thread work pushes past the frame deadline, the frame misses VSYNC and gets displayed late. Tools like Android Studio's CPU Profiler and Perfetto help visualize where each frame's time is spent.
+#### How do you handle large bitmaps efficiently?
 
-#### Q5: What is overdraw and how do you detect it?
-
-Overdraw happens when the same pixel is drawn multiple times in a single frame. For example, if you have a background on your Activity, a FrameLayout, and a CardView, that pixel area is drawn three times even though only the top layer is visible. Minor overdraw (2x) is normal, but 4x+ on large areas hurts performance.
-
-Enable "Debug GPU Overdraw" in Developer Options to see it. It color-codes the screen:
-- No color = no overdraw
-- Blue = 1x, Green = 2x, Light red = 3x, Dark red = 4x+
-
-The fix is usually removing unnecessary backgrounds. Remove `android:background` from your Activity theme's window and only set backgrounds where needed. The `<merge>` tag also helps by eliminating wrapper layout layers.
-
-#### Q6: How do you handle large bitmaps efficiently on Android?
-
-Large bitmaps are one of the most common causes of `OutOfMemoryError`. A 12-megapixel photo (4000x3000) at ARGB_8888 takes 48MB of memory. Loading 3-4 of those can crash the app. The solution is subsampling — load the bitmap at a reduced resolution using `BitmapFactory.Options.inSampleSize`.
+A 12-megapixel photo at ARGB_8888 takes 48MB of memory. Loading a few of those crashes the app. The solution is subsampling — load the bitmap at a reduced resolution using `BitmapFactory.Options.inSampleSize`.
 
 ```kotlin
 fun decodeSampledBitmap(
@@ -97,19 +80,15 @@ fun decodeSampledBitmap(
     targetWidth: Int,
     targetHeight: Int
 ): Bitmap {
-    // First, decode bounds only (no memory allocation)
     val options = BitmapFactory.Options().apply {
         inJustDecodeBounds = true
     }
     BitmapFactory.decodeResource(resources, resId, options)
 
-    // Calculate the sample size
     options.inSampleSize = calculateInSampleSize(
         options.outWidth, options.outHeight,
         targetWidth, targetHeight
     )
-
-    // Decode with the sample size
     options.inJustDecodeBounds = false
     return BitmapFactory.decodeResource(resources, resId, options)
 }
@@ -131,97 +110,120 @@ fun calculateInSampleSize(
 }
 ```
 
-In practice, image loading libraries like Coil and Glide handle subsampling, caching (memory + disk), lifecycle awareness, and request cancellation automatically.
+In practice, image loading libraries like Coil and Glide handle subsampling, caching, lifecycle awareness, and request cancellation automatically.
 
-#### Q7: What is LruCache and how does it work?
+#### How would you profile and fix a janky RecyclerView?
 
-LruCache is a fixed-size cache that evicts the least recently accessed entry when it's full. You define a max size, and when a new entry would exceed the limit, the cache auto-clears the oldest entry. It's one of the most easy and optimised solutions for in-memory caching.
+Record a trace with Android Studio Profiler or Perfetto while scrolling. Frames over 16ms show up in red. Click a dropped frame to see what the main thread was doing.
+
+Common causes and fixes:
+- `onBindViewHolder()` doing too much work — load images async, don't create objects in `onBind`
+- Calling `notifyDataSetChanged()` — use `DiffUtil` or `AsyncListDiffer` instead
+- Nested RecyclerViews without a shared `RecycledViewPool`
+- Complex view hierarchies — flatten with `ConstraintLayout` or use Compose
+- Missing `setHasFixedSize(true)` when the RecyclerView size doesn't change
+- `requestLayout()` calls during scroll triggering unnecessary layout passes
+
+#### How do you measure and optimize app startup time?
+
+Android has three startup types:
+- **Cold start** — process doesn't exist. System creates it, initializes Application, creates Activity, inflates layout, draws first frame
+- **Warm start** — process exists but Activity was destroyed, skips process creation
+- **Hot start** — Activity is still in memory, just brought to foreground
+
+I measure cold start by calling `reportFullyDrawn()` when meaningful content is visible. Logcat shows timing in the `Displayed` line.
+
+Common optimizations:
+- Lazy-initialize libraries using App Startup with deferred initialization
+- Move heavy initialization off the main thread
+- Reduce main dex file size for faster class loading
+- Avoid disk I/O in `Application.onCreate()` and `Activity.onCreate()`
+
+#### What is `onTrimMemory()` and how do you respond to it?
+
+The system calls `onTrimMemory()` on your Application, Activity, Service, and ContentProvider when it needs to reclaim memory. The `level` parameter tells you how critical the situation is:
+- `TRIM_MEMORY_RUNNING_LOW` / `TRIM_MEMORY_RUNNING_CRITICAL` — app is in foreground but system is low on memory. Release non-essential caches
+- `TRIM_MEMORY_UI_HIDDEN` — user navigated away. Release UI resources
+- `TRIM_MEMORY_BACKGROUND` / `TRIM_MEMORY_MODERATE` / `TRIM_MEMORY_COMPLETE` — app is in background and increasingly likely to be killed. Release as much as possible
+
+The most actionable level is `TRIM_MEMORY_UI_HIDDEN` — clear image caches, drop preloaded data, release large objects. Image loading libraries handle this automatically. Custom caches should do the same.
+
+#### What is overdraw and how do you reduce it?
+
+Overdraw happens when the same pixel is drawn multiple times in a single frame. If you have a background on your Activity, a FrameLayout, and a CardView stacked, that pixel area gets drawn three times. Minor overdraw (2x) is normal, but 4x+ on large areas hurts performance.
+
+Enable "Debug GPU Overdraw" in Developer Options. It color-codes the screen — blue is 1x, green is 2x, light red is 3x, dark red is 4x+.
+
+The fix is removing unnecessary backgrounds. Remove `android:background` from your window theme and only set backgrounds where needed. The `<merge>` tag also helps by eliminating wrapper layout layers.
+
+#### What is StrictMode?
+
+StrictMode detects things like disk reads or network calls on the main thread. It has two policies:
+- **ThreadPolicy** — detects disk reads/writes, network operations, and slow calls on the current thread
+- **VmPolicy** — detects leaked objects, leaked closable resources, and Activity leaks
+
+```kotlin
+if (BuildConfig.DEBUG) {
+    StrictMode.setThreadPolicy(
+        StrictMode.ThreadPolicy.Builder()
+            .detectDiskReads()
+            .detectDiskWrites()
+            .detectNetwork()
+            .penaltyLog()
+            .build()
+    )
+    StrictMode.setVmPolicy(
+        StrictMode.VmPolicy.Builder()
+            .detectLeakedSqlLiteObjects()
+            .detectLeakedClosableObjects()
+            .detectActivityLeaks()
+            .penaltyLog()
+            .build()
+    )
+}
+```
+
+Never enable it in release builds. In development, it catches things like `SharedPreferences.commit()` on the main thread, checking `File.exists()` on the main thread, or forgetting to close a `Cursor`.
+
+#### Is it possible to force garbage collection in Android?
+
+You can request GC using `System.gc()`, but it can't be forced. The system treats it as a suggestion. ART decides when and how to collect based on memory pressure and allocation rates. Calling `System.gc()` in production is almost always wrong — it can trigger a full GC pause that hurts performance. The only legitimate use is in test or benchmarking code.
+
+#### What is LruCache and how does it work?
+
+LruCache is a fixed-size cache that evicts the least recently accessed entry when full. You define a max size, and when a new entry exceeds the limit, the oldest entry is removed.
 
 ```kotlin
 val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-val cacheSize = maxMemory / 8 // Use 1/8th of available memory
+val cacheSize = maxMemory / 8
 
 val bitmapCache = object : LruCache<String, Bitmap>(cacheSize) {
     override fun sizeOf(key: String, bitmap: Bitmap): Int {
-        // Size in kilobytes
         return bitmap.byteCount / 1024
     }
 }
 
-// Usage
 bitmapCache.put("profile_photo", bitmap)
 val cached: Bitmap? = bitmapCache.get("profile_photo")
 ```
 
-A common two-tier strategy uses `LruCache` for fast in-memory access plus `DiskLruCache` for persistent disk cache. Image loading libraries do exactly this — they check memory cache first (instant), then disk cache (fast), then network (slow).
+A common strategy is two-tier caching — `LruCache` for fast in-memory access plus `DiskLruCache` for persistent disk cache. Image libraries do exactly this. They check memory cache first (instant), then disk cache (fast), then network (slow).
 
-### Deep Dive Questions (Advanced → Expert)
+#### What is the difference between `ARGB_8888` and `RGB_565`?
 
-#### Q8: Explain the difference between ART and Dalvik. What was the motivation for the switch?
+`ARGB_8888` uses 4 bytes per pixel. Full transparency support, 16.7 million colors. A 1000x1000 bitmap takes 4MB. `RGB_565` uses 2 bytes per pixel — no alpha channel, only 65K colors, but half the memory.
 
-Dalvik used JIT (Just-In-Time) compilation — bytecode was interpreted at runtime, and hot methods were compiled to native code on the fly. This meant faster installs but slower app startup. ART, introduced in Android 5.0, switched to AOT (Ahead-Of-Time) compilation — apps were fully compiled to native code during installation. Apps launched faster, but install times and storage usage increased.
+`ARGB_8888` is the default and right for most images. `RGB_565` is useful for images without transparency when memory is tight, like thumbnails in a long list. The visual difference is barely noticeable for photos but can cause banding in gradients.
 
-From Android 7.0, ART uses a hybrid approach called profile-guided compilation. The app initially runs with an interpreter and JIT compiler. ART profiles which methods are "hot" and during idle charging, a background daemon AOT-compiles those methods. Over time the app gets faster as more critical paths are compiled.
+#### What is R8 and how does it affect performance?
 
-#### Q9: What are baseline profiles, and how do they improve performance?
-
-Baseline profiles solve the first-run problem. Even with profile-guided compilation, the first several launches are slower because no profile exists yet. Baseline profiles let you ship a pre-built profile with your APK or AAB that tells ART which methods to AOT-compile during installation. This way the first launch is as fast as the hundredth.
-
-They improve code execution speed by about 30% from first launch. You generate them using the Macrobenchmark library by writing tests that exercise critical user journeys.
-
-```kotlin
-// Baseline profile generator using Macrobenchmark
-@RunWith(AndroidJUnit4::class)
-class BaselineProfileGenerator {
-    @get:Rule
-    val rule = BaselineProfileRule()
-
-    @Test
-    fun generateBaselineProfile() {
-        rule.collect(packageName = "com.example.app") {
-            // Start the app
-            pressHome()
-            startActivityAndWait()
-
-            // Navigate through critical user journeys
-            device.findObject(By.text("Feed")).click()
-            device.waitForIdle()
-
-            device.findObject(By.text("Profile")).click()
-            device.waitForIdle()
-        }
-    }
-}
-```
-
-The generated profile is included in your AAB, and Google Play distributes it with cloud profiles to devices. On devices without Play Store, the profile is bundled in the APK itself.
-
-#### Q10: How do you measure and optimize app startup time?
-
-Android has three startup types:
-- **Cold start** — process doesn't exist, system creates it, initializes Application, creates Activity, inflates layout, draws first frame
-- **Warm start** — process exists but Activity was destroyed, skips process creation
-- **Hot start** — Activity is still in memory, just comes to foreground
-
-To measure cold start, call `reportFullyDrawn()` on your Activity when the first meaningful content is visible. Logcat shows the timing in the `Displayed` log line.
-
-Common optimizations:
-- Lazy-initialize libraries using `App Startup` with deferred initialization
-- Move heavy initialization to background threads
-- Reduce main `dex` file size for faster class loading
-- Avoid disk I/O in `Application.onCreate()` and `Activity.onCreate()`
-- Use a splash screen while data loads
-
-#### Q11: What is ProGuard/R8 and how does it affect performance?
-
-R8 is Google's replacement for ProGuard and the default since Android Gradle Plugin 3.4+. It does four things:
+R8 is Google's replacement for ProGuard. It does four things:
 - **Shrinking** — removes unused classes, methods, and fields
-- **Optimization** — inlines methods, simplifies code, removes dead branches
+- **Optimization** — inlines methods, removes dead branches
 - **Obfuscation** — renames classes and methods to short names
 - **Resource shrinking** — removes unused resources when combined with `shrinkResources`
 
 ```kotlin
-// build.gradle.kts
 android {
     buildTypes {
         release {
@@ -236,23 +238,87 @@ android {
 }
 ```
 
-R8 can't see into reflection, JSON serialization, or certain framework callbacks. You need to write keep rules for classes accessed reflectively. Getting this wrong causes runtime crashes in production that don't appear in debug builds.
+R8 can't see into reflection, JSON serialization, or certain framework callbacks. You need keep rules for classes accessed reflectively. Getting this wrong causes runtime crashes in production that don't show up in debug builds.
 
-#### Q12: What is the Macrobenchmark library and how does it differ from Microbenchmark?
+#### What is the difference between ART and Dalvik?
 
-Macrobenchmark measures real user-facing metrics — startup time, frame timing during scrolling, animation smoothness. It launches your app in a separate process and measures from the outside.
+Dalvik used JIT (Just-In-Time) compilation — bytecode was interpreted at runtime, and hot methods were compiled to native code on the fly. Faster installs, slower app startup. ART, introduced in Android 5.0, switched to AOT (Ahead-Of-Time) compilation — apps were fully compiled to native code during installation.
 
-Microbenchmark measures execution time of individual code blocks — a function call, a serialization operation. It runs in-process with JIT warmup for stable measurements.
+From Android 7.0, ART uses a hybrid approach called profile-guided compilation. The app initially runs with an interpreter and JIT compiler. ART profiles which methods are hot, and during idle charging, a background daemon AOT-compiles those methods. Over time the app gets faster.
+
+#### What are baseline profiles?
+
+Baseline profiles solve the cold start problem. Even with profile-guided compilation, the first several launches are slow because no profile exists yet. Baseline profiles ship a pre-built profile with your APK that tells ART which methods to AOT-compile at install time. First launch becomes as fast as the hundredth.
+
+They improve code execution speed by about 30% from first launch. You generate them using the Macrobenchmark library by writing tests that exercise critical user journeys.
 
 ```kotlin
-// Macrobenchmark: measuring startup time
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
+    @get:Rule
+    val rule = BaselineProfileRule()
+
+    @Test
+    fun generateBaselineProfile() {
+        rule.collect(packageName = "com.example.app") {
+            pressHome()
+            startActivityAndWait()
+
+            device.findObject(By.text("Feed")).click()
+            device.waitForIdle()
+        }
+    }
+}
+```
+
+The generated profile ships in your AAB. Google Play distributes it with cloud profiles. On devices without Play Store, the profile is bundled in the APK itself.
+
+#### What is `inBitmap` and how does bitmap pooling work?
+
+Bitmap pooling reuses memory from discarded bitmaps instead of allocating fresh memory every time. When you're done with a bitmap, you put it in a pool. When you need a new bitmap of equal or smaller size, you pull one from the pool and decode into its existing memory.
+
+```kotlin
+val options = BitmapFactory.Options().apply {
+    inMutable = true
+    inBitmap = reusableBitmap
+}
+val bitmap = BitmapFactory.decodeStream(stream, null, options)
+```
+
+On API 19+, `inBitmap` can reuse any bitmap that's equal or larger than the target. This reduces GC pressure significantly when scrolling through image-heavy lists. Glide and Coil maintain internal bitmap pools automatically.
+
+#### What is the difference between `invalidate()` and `requestLayout()`?
+
+`invalidate()` triggers a redraw of the view. It calls `onDraw()` again but doesn't recalculate sizes or positions. Use it when the visual content changed but the view's bounds are the same — like updating a color or toggling a drawable.
+
+`requestLayout()` triggers the full measure-layout-draw cycle from the parent down. It recalculates sizes and positions. Use it when the view's size or position needs to change — like when text content changes length.
+
+Calling `requestLayout()` is more expensive. Doing it during scroll or animation causes jank because it forces the entire view tree to re-measure.
+
+#### How does LeakCanary detect memory leaks?
+
+When an Activity or Fragment is destroyed, LeakCanary creates a `WeakReference` to it. After a GC cycle, it checks if that reference was enqueued. If it wasn't, the object is still alive — it's leaked. LeakCanary then triggers a heap dump and analyzes the reference chain from the leaked object back to the GC root, showing exactly which reference is keeping it alive.
+
+```kotlin
+dependencies {
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+}
+```
+
+It automatically watches Activities, Fragments, ViewModels, and Services after they're destroyed. You can also watch custom objects with `AppWatcher.objectWatcher.expectWeaklyReachable()`.
+
+#### What is Macrobenchmark and how does it differ from Microbenchmark?
+
+Macrobenchmark measures real user-facing metrics — startup time, frame timing, scroll smoothness. It launches the app in a separate process and measures from the outside. Microbenchmark measures execution time of individual code blocks — a function call, a parsing operation. It runs in-process with JIT warmup.
+
+```kotlin
 @RunWith(AndroidJUnit4::class)
 class StartupBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
 
     @Test
-    fun startupColdCompilation() {
+    fun startupCold() {
         benchmarkRule.measureRepeated(
             packageName = "com.example.app",
             metrics = listOf(StartupTimingMetric()),
@@ -267,109 +333,33 @@ class StartupBenchmark {
 }
 ```
 
-You need both. Macrobenchmark tells you "startup takes 800ms" but not why. Microbenchmark tells you "this JSON parsing takes 50ms" but not whether it matters in the real user journey. Use Macrobenchmark to find slow areas, then Microbenchmark to optimize the specific bottleneck.
+I use both together. Macrobenchmark tells me "startup takes 800ms" but not why. Microbenchmark tells me "this JSON parsing takes 50ms" but not whether it matters in the real user journey.
 
-#### Q13: How does `onTrimMemory()` work and what should you do with each level?
+#### How does hardware acceleration affect rendering?
 
-The system calls `onTrimMemory()` on your Application, Activity, Service, and ContentProvider when it needs to reclaim memory. The `level` parameter tells you how critical the situation is:
-- `TRIM_MEMORY_RUNNING_LOW` / `TRIM_MEMORY_RUNNING_CRITICAL` — app is in foreground but system is low on memory, release non-essential caches
-- `TRIM_MEMORY_UI_HIDDEN` — user navigated away, release UI-related resources
-- `TRIM_MEMORY_BACKGROUND` / `TRIM_MEMORY_MODERATE` / `TRIM_MEMORY_COMPLETE` — app is in background and increasingly likely to be killed, release as much as possible
+Hardware acceleration offloads drawing operations from the CPU to the GPU. It's enabled by default since API 14. Most standard drawing operations are faster with it — the GPU handles Canvas operations, bitmap compositing, and animations more efficiently than the CPU.
 
-The most actionable level is `TRIM_MEMORY_UI_HIDDEN` — clear your image memory cache, drop preloaded data, release large objects. Libraries like Coil and Glide handle this automatically for their caches. Custom caches should do the same.
+But not all Canvas operations are GPU-accelerated. Custom `onDraw()` code using certain paths, clip operations, or `drawBitmapMesh()` may fall back to software rendering. You can check if a Canvas is hardware-accelerated with `canvas.isHardwareAccelerated`. If a specific view needs software rendering, disable it per-view with `setLayerType(View.LAYER_TYPE_SOFTWARE, null)`.
 
-#### Q14: How would you profile and fix a janky RecyclerView scroll?
+#### How would you reduce APK size?
 
-Record a trace with Android Studio Profiler or Perfetto while scrolling. Each frame that takes more than 16ms shows up in red. Click a dropped frame to see what the main thread was doing.
+- Enable R8 shrinking and resource shrinking in release builds
+- Use Android App Bundle (AAB) — Play Store generates optimized APKs per device configuration
+- Use vector drawables instead of multiple PNG resolutions
+- Compress PNG and JPEG assets. Use WebP where possible
+- Remove unused libraries and transitive dependencies
+- Use `resConfigs` to strip unused locale resources
+- Inspect the APK with Android Studio's APK Analyzer to find the biggest contributors
 
-Common causes and fixes:
-- `onBindViewHolder()` doing too much work — use async image loading, avoid creating new objects in `onBind`
-- Calling `notifyDataSetChanged()` — use `DiffUtil` or `AsyncListDiffer` instead
-- Nested RecyclerViews without shared `RecycledViewPool`
-- Complex view hierarchies — flatten with `ConstraintLayout` or migrate to Compose
-- Expensive `onDraw()` methods — cache drawing computations, avoid allocations
-- Missing `setHasFixedSize(true)` when RecyclerView size doesn't change
-- `requestLayout()` calls during scroll triggering unnecessary layout passes
-
-#### Q15: What are the common sources of `OutOfMemoryError` and how do you prevent them?
-
-Common sources:
-- Loading full-resolution bitmaps without subsampling
-- Memory leaks accumulating over time, especially leaking Activities
-- Creating too many objects in rapid succession
-- Holding large collections in memory that should be paged or streamed
-- Background services holding references to large data structures
-
-Prevention:
-- Use image loading libraries that handle bitmap lifecycle and memory pressure
-- Run LeakCanary in debug builds to catch leaks early
-- Implement pagination for large data sets
-- Profile with Memory Profiler to understand allocation patterns
-- Handle `onTrimMemory()` to release caches proactively
-- Use `largeHeap=true` only as a last resort
-
-#### Q16: Is it possible to force garbage collection in Android?
-
-You can request GC using `System.gc()` or `Runtime.getRuntime().gc()`, but it cannot be forced. The system treats it as a suggestion. ART's GC decides when and how to collect based on memory pressure, allocation rates, and its own heuristics. Calling `System.gc()` in production is almost always wrong — it can trigger a full GC pause that hurts performance. The one legitimate use case is in test or benchmarking code where you want a clean memory state.
-
-#### Q17: What is StrictMode and how do you use it to catch performance issues?
-
-StrictMode detects things like disk reads or network calls on the main thread. It has two policies:
-- **ThreadPolicy** — detects disk reads/writes, network operations, and slow calls on the current thread
-- **VmPolicy** — detects leaked objects, leaked closable resources, and activity leaks
-
-```kotlin
-// Enable in Application.onCreate() for debug builds only
-if (BuildConfig.DEBUG) {
-    StrictMode.setThreadPolicy(
-        StrictMode.ThreadPolicy.Builder()
-            .detectDiskReads()
-            .detectDiskWrites()
-            .detectNetwork()
-            .penaltyLog()       // Log to Logcat
-            .penaltyFlashScreen() // Flash the screen red
-            .build()
-    )
-    StrictMode.setVmPolicy(
-        StrictMode.VmPolicy.Builder()
-            .detectLeakedSqlLiteObjects()
-            .detectLeakedClosableObjects()
-            .detectActivityLeaks()
-            .penaltyLog()
-            .build()
-    )
-}
-```
-
-Never enable StrictMode in release builds. In development, it catches things like `SharedPreferences.commit()` on the main thread, checking `File.exists()` on the main thread, or forgetting to close a `Cursor`. Many production ANRs can be prevented by catching these issues early with StrictMode.
-
-#### Q18: What is the difference between `Bitmap.Config.ARGB_8888` and `RGB_565`?
-
-`ARGB_8888` uses 4 bytes per pixel — full transparency support and 16.7 million colors. A 1000x1000 bitmap takes 4MB. `RGB_565` uses 2 bytes per pixel — no alpha channel, only 65,536 colors, but exactly half the memory.
-
-`ARGB_8888` is the default and right for most images — photos, complex graphics, anything with transparency. `RGB_565` is useful for images without transparency when memory is tight, like thumbnails in a long list. The visual difference is usually not noticeable for photos but can cause visible banding in gradients.
-
-#### Q19: What is `inBitmap` and how does bitmap pooling work?
-
-Bitmap pooling reuses memory from discarded bitmaps instead of allocating new memory for every image load. When you're done with a bitmap, instead of letting GC reclaim it, you put it in a pool. When you need a new bitmap of the same (or smaller) size, you pull one from the pool and decode into its existing memory.
-
-```kotlin
-val options = BitmapFactory.Options().apply {
-    inMutable = true
-    inBitmap = reusableBitmap // decode into this existing allocation
-}
-val bitmap = BitmapFactory.decodeStream(stream, null, options)
-```
-
-On API 19+, `inBitmap` can reuse any bitmap that's equal or larger than the target — it doesn't need to be the exact same dimensions. This dramatically reduces GC pressure when scrolling through image-heavy lists. Image libraries like Glide and Coil maintain internal bitmap pools automatically. Glide's `BitmapPool` uses an LRU strategy, keeping recently released bitmaps and evicting the oldest when the pool exceeds its size limit. If you're building a custom image pipeline, implementing a bitmap pool is one of the highest-impact optimizations you can make.
+APK size matters for install conversion rates and also affects runtime performance. Smaller APKs mean faster installs, less disk usage, and smaller dex files to load at startup.
 
 ### Common Follow-ups
 
-- What's the difference between `Bitmap.Config.ARGB_8888` and `RGB_565`?
-- How does hardware acceleration affect rendering performance?
-- What does `StrictMode` detect, and should you use it in production?
-- How would you reduce APK size, and why does it matter for performance?
-- What's the difference between `invalidate()` and `requestLayout()`?
-- How does Compose's lazy column differ from RecyclerView in terms of performance?
+- How does Compose's `LazyColumn` differ from RecyclerView in terms of performance?
 - What are startup profiles and how do they differ from baseline profiles?
-- How do you detect memory leaks in production using Firebase Crashlytics?
+- How do you detect memory leaks in production?
+- What is the difference between `WeakReference` and `SoftReference`?
+- How does View recycling work in RecyclerView?
+- What's the impact of deep view hierarchies on performance?
+- How do you profile native memory usage on Android?
+- What is ANR and how do you debug it?

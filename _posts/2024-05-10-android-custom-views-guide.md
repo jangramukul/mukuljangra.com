@@ -167,6 +167,111 @@ var segmentCount: Int = 4
     }
 ```
 
+## Saving and Restoring State
+
+Custom views need to save and restore their state across configuration changes, just like Activities do. If your circular progress view is at 75% and the user rotates the device, it should still show 75%. The framework handles this through `onSaveInstanceState()` and `onRestoreInstanceState()`.
+
+```kotlin
+class SegmentedProgressView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
+
+    // ... other code
+
+    override fun onSaveInstanceState(): Parcelable {
+        val superState = super.onSaveInstanceState()
+        return bundleOf(
+            "super" to superState,
+            "progress" to progress,
+            "activeSegment" to activeSegment,
+            "segmentCount" to segmentCount
+        )
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        val bundle = state as? Bundle
+        if (bundle != null) {
+            super.onRestoreInstanceState(bundle.getParcelable("super"))
+            progress = bundle.getFloat("progress", 0f)
+            activeSegment = bundle.getInt("activeSegment", 0)
+            segmentCount = bundle.getInt("segmentCount", 4)
+        } else {
+            super.onRestoreInstanceState(state)
+        }
+    }
+}
+```
+
+Important: for `onSaveInstanceState` to be called, the view must have an `android:id` set in XML. Views without IDs are not saved by the framework. This is a common "it works until rotation" bug.
+
+## Accessibility
+
+Making custom views accessible is often skipped, but it's important for users who rely on TalkBack and other accessibility services. At minimum, custom views should provide content descriptions and announce state changes.
+
+```kotlin
+override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+    super.onInitializeAccessibilityNodeInfo(info)
+    info.className = "ProgressBar"
+    info.contentDescription = "Progress: ${(progress * 100).toInt()}%, " +
+        "segment ${activeSegment + 1} of $segmentCount"
+    info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)
+}
+
+// Call when progress changes
+private fun announceProgress() {
+    announceForAccessibility(
+        "Progress updated to ${(progress * 100).toInt()} percent"
+    )
+}
+```
+
+For interactive custom views, implement the accessibility actions that map to your touch interactions. If swiping advances to the next segment, implement `ACTION_SCROLL_FORWARD`. If tapping toggles a state, implement `ACTION_CLICK`. TalkBack users interact through these actions, not through touch gestures.
+
+## Touch Events — Making Views Interactive
+
+For custom views that respond to touch, you override `onTouchEvent()` or use `GestureDetector` for higher-level gesture recognition.
+
+```kotlin
+class SwipeableProgressView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
+
+    private var progress = 0f
+    var onProgressChanged: ((Float) -> Unit)? = null
+
+    private val gestureDetector = GestureDetectorCompat(context,
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                val newProgress = (e2.x / width).coerceIn(0f, 1f)
+                progress = newProgress
+                onProgressChanged?.invoke(newProgress)
+                invalidate()
+                return true
+            }
+        }
+    )
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        return gestureDetector.onTouchEvent(event) || super.onTouchEvent(event)
+    }
+}
+```
+
+`GestureDetector` handles the complexity of distinguishing taps from scrolls from flings. Writing this logic manually with raw `MotionEvent` processing (tracking `ACTION_DOWN`, `ACTION_MOVE`, `ACTION_UP`, computing velocities) is error-prone and verbose. I always reach for `GestureDetector` first and only drop down to raw `onTouchEvent` when I need gesture combinations it doesn't support.
+
+The `MeasureSpec` modes deserve a deeper look for interactive views. When your view is inside a `ScrollView`, the parent passes `MeasureSpec.UNSPECIFIED` — meaning "measure yourself however you want." If your `onMeasure` only handles `EXACTLY` and `AT_MOST`, the view might measure to zero height inside a `ScrollView`. Always handle all three modes.
+
 ## Hardware Acceleration Gotchas
 
 Since Android 3.0, views are hardware-accelerated by default. This means `Canvas` operations are recorded into a display list and rendered by the GPU. Most drawing operations work fine, but a few don't. `Canvas.drawPicture()`, certain `PathEffect` types, and `Paint.setShadowLayer()` (on non-text draws) fall back to software rendering for that specific draw call. If your custom view uses any of these, you'll see either visual glitches or a performance cliff.

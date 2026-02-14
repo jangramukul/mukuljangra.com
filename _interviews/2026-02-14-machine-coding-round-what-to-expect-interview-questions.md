@@ -10,64 +10,32 @@ description: "The machine coding round is a timed, hands-on coding session where
 
 ## Machine Coding Round — What to Expect
 
-The machine coding round is a timed, hands-on coding session. You get a problem statement and 1-2 hours to build a working solution. Some companies watch you live, others record the session, and some just review the final output. It tests how you think, debug, and write code under real time pressure.
+A machine coding round gives you a problem statement and 1-2 hours to build a working solution. Some companies watch you live, others just review the final output.
 
-### Core Questions (Beginner → Intermediate)
+#### What is a machine coding round and how does it differ from a take-home assignment?
 
-#### Q1: What is a machine coding round and how does it differ from a take-home assignment?
+It's a fixed-time coding session where I build a feature or small app from scratch, usually in 1-2 hours. I'm either on a video call with the interviewer watching or being recorded. The key difference from a take-home is the time constraint and observation — they see my process, not just the result. Take-homes give 3-7 days and evaluate polished output. Machine coding rounds evaluate how I approach a problem and whether my coding habits are clean even when I'm rushing.
 
-A machine coding round is a fixed-time coding session, usually 1-2 hours, where you build a feature or small app from scratch. You're either on a video call with the interviewer watching, or you're recorded. The key difference from a take-home is the time constraint and observation — they can see your process, not just the result.
-
-Take-homes give you 3-7 days and evaluate the polished output. Machine coding rounds evaluate how you approach a problem, how you prioritize under pressure, and whether your coding habits are clean even when you're rushing.
-
-#### Q2: What are the common formats of a machine coding round?
+#### What are the common formats?
 
 The main formats are:
 
-- **Build a small feature from scratch** — given an API or mock data, build a list screen, detail screen, or form with specific requirements
-- **Add a feature to an existing codebase** — you're given a partially built app and need to add search, pagination, offline caching, or a new screen
-- **Fix bugs in existing code** — the app has intentional bugs (crashes, wrong behavior, memory leaks) and you need to find and fix them
-- **Refactor and add tests** — given messy working code, clean it up and add unit tests without breaking existing behavior
+- **Build from scratch** — given an API or mock data, build a list screen, detail screen, or form
+- **Add a feature to existing code** — given a partially built app, add search, pagination, or a new screen
+- **Fix bugs** — the app has intentional bugs (crashes, wrong behavior, memory leaks) and I need to find and fix them
+- **Refactor and add tests** — given messy working code, clean it up and add unit tests without breaking behavior
 
 Some companies combine these — fix a bug, add a feature, and write tests, all in 90 minutes.
 
-#### Q3: How should you spend the first 10-15 minutes?
+#### What do evaluators actually watch for?
 
-Read the entire problem statement before writing any code. Most candidates start coding immediately and miss requirements that change their approach. Spend the first 10-15 minutes on:
+Process as much as output. They watch how I read requirements — whether I read everything first or jump in. How I structure code — clear architecture vs a monolith. How I debug — reading error messages and tracing the issue vs randomly changing things. How I handle being stuck — staying calm and simplifying vs panicking. And code quality under pressure — naming, separation of concerns, clean structure even when rushing.
 
-- Read all requirements, including the fine print and edge cases
-- Identify the core deliverable — what's the minimum that needs to work
-- Plan your architecture — data layer, ViewModel, UI, navigation
-- Decide what you'll skip if time runs short (animations, dark mode, edge cases)
+A partially working app with clean, well-structured code is better than a fully working app with messy code.
 
-Write a quick mental outline: "Data class, API interface, repository, ViewModel, one composable. That's my first 40 minutes. Tests in the last 20." Having a plan prevents wandering.
+#### What architecture should I default to?
 
-#### Q4: What do evaluators actually watch for?
-
-Evaluators care about process as much as output. They watch:
-
-- **How you read requirements** — do you read everything first or jump in and discover things later?
-- **How you structure code** — do you start with a clear architecture or build a monolith and refactor later?
-- **How you debug** — when something breaks, do you read the error message, add logs, and trace the issue? Or do you randomly change things?
-- **How you handle being stuck** — do you stay calm, simplify the problem, or panic and rewrite everything?
-- **Code quality under pressure** — naming, separation of concerns, and clean structure even when rushing
-
-A working app with messy code is worse than a partially working app with clean, well-structured code. They want to see how you'd write production code, not hackathon code.
-
-#### Q5: What's a good time management strategy for a 90-minute round?
-
-Break it into three blocks:
-
-- **0-15 minutes** — read requirements, plan architecture, set up the project structure and dependencies
-- **15-60 minutes** — build the core feature (data layer, ViewModel, main UI screen). Get something working end-to-end
-- **60-80 minutes** — add secondary features (search, error handling, loading states, navigation to detail)
-- **80-90 minutes** — add at least one unit test, clean up code, remove TODO comments
-
-The most common mistake is spending 50 minutes on a perfect data layer and running out of time before the UI works. Get something visible on screen early, then iterate.
-
-#### Q6: What architecture should you default to?
-
-MVVM with a repository pattern. It's the standard Android architecture and evaluators expect it. Set up these layers:
+MVVM with a repository pattern. It's the standard Android architecture and evaluators expect it.
 
 - **UI layer** — Composables that render state, no business logic
 - **ViewModel** — Holds `StateFlow` of UI state, calls repository
@@ -75,7 +43,6 @@ MVVM with a repository pattern. It's the standard Android architecture and evalu
 - **Data sources** — Retrofit interface for API, Room DAO for local storage
 
 ```kotlin
-// This is your starting template for any machine coding round
 @HiltViewModel
 class FeatureViewModel @Inject constructor(
     private val repository: FeatureRepository
@@ -92,11 +59,33 @@ class FeatureViewModel @Inject constructor(
 }
 ```
 
-Having this pattern memorized saves 10 minutes of setup time. You shouldn't be thinking about how to wire a ViewModel during the round.
+Having this pattern memorized saves 10 minutes of setup time. I shouldn't be thinking about how to wire a ViewModel during the round.
 
-#### Q7: How do you handle API calls in a timed round?
+#### How should I spend the first 10-15 minutes?
 
-Set up Retrofit quickly with the provided API documentation. Define only the endpoints you need. Don't spend time building interceptors, logging, or retry logic unless specifically asked.
+Read the entire problem statement before writing any code. I spend the first 10-15 minutes on:
+
+- Reading all requirements, including the fine print and edge cases
+- Identifying the core deliverable — what's the minimum that needs to work
+- Planning the architecture — data layer, ViewModel, UI, navigation
+- Deciding what I'll skip if time runs short (animations, dark mode, edge cases)
+
+I write a quick mental outline: "Data class, API interface, repository, ViewModel, one composable. That's my first 40 minutes. Tests in the last 20." Having a plan prevents wandering.
+
+#### What's a good time management strategy for a 90-minute round?
+
+I break it into blocks:
+
+- **0-15 minutes** — read requirements, plan architecture, set up project structure and dependencies
+- **15-60 minutes** — build the core feature (data layer, ViewModel, main UI screen), get something working end-to-end
+- **60-80 minutes** — add secondary features (search, error handling, loading states, navigation to detail)
+- **80-90 minutes** — add at least one unit test, clean up code, remove TODO comments
+
+The most common mistake is spending 50 minutes on a perfect data layer and running out of time before the UI works. I get something visible on screen early, then iterate.
+
+#### How do I handle API calls in a timed round?
+
+I set up Retrofit quickly with the provided API documentation. I define only the endpoints I need. No interceptors, logging, or retry logic unless specifically asked.
 
 ```kotlin
 interface TaskApi {
@@ -107,7 +96,6 @@ interface TaskApi {
     suspend fun createTask(@Body task: CreateTaskRequest): TaskDto
 }
 
-// Quick Retrofit setup — no extras
 val api = Retrofit.Builder()
     .baseUrl(BASE_URL)
     .addConverterFactory(MoshiConverterFactory.create())
@@ -115,11 +103,11 @@ val api = Retrofit.Builder()
     .create(TaskApi::class.java)
 ```
 
-If the API isn't working or the documentation is unclear, use mock data and move on. Don't waste 20 minutes debugging someone else's API.
+If the API isn't working or the documentation is unclear, I use mock data and move on. I don't waste 20 minutes debugging someone else's API.
 
-#### Q8: How do you display a list quickly in Compose?
+#### How do I display a list quickly in Compose?
 
-This is the most common UI requirement. Have the `LazyColumn` pattern ready so you can set it up in under 5 minutes.
+This is the most common UI requirement. I have the `LazyColumn` pattern ready so I can set it up in under 5 minutes.
 
 ```kotlin
 @Composable
@@ -145,26 +133,24 @@ fun TaskListScreen(
 }
 ```
 
-Material 3's `ListItem` composable is fast to use and looks clean. Don't spend time building custom card layouts unless the requirements specifically ask for it.
+Material 3's `ListItem` composable is fast to use and looks clean. I don't spend time building custom card layouts unless the requirements specifically ask for it.
 
-### Deep Dive Questions (Advanced → Expert)
+#### How do I deal with ambiguous requirements?
 
-#### Q9: How do you deal with ambiguous requirements?
-
-Ask questions. In a live round, you can ask the interviewer directly. In a recorded round, document your assumptions. If the requirements say "show a list of users" but don't specify sorting, pagination, or error handling, decide what makes sense and add a comment.
+I ask questions. In a live round, I ask the interviewer directly. In a recorded round, I document my assumptions. If the requirements say "show a list of users" but don't specify sorting or pagination, I decide what makes sense and add a comment.
 
 ```kotlin
-// Assumption: Users are sorted by name alphabetically
-// since the requirement didn't specify a sort order
+// Assumption: Users sorted by name since the requirement
+// didn't specify a sort order
 val users = repository.getUsers()
     .map { it.sortedBy { user -> user.name } }
 ```
 
-Making and documenting reasonable assumptions shows product sense. Spending 10 minutes overthinking an ambiguous requirement wastes time. Pick the simplest reasonable interpretation and move forward.
+I pick the simplest reasonable interpretation and move forward. Spending 10 minutes overthinking an ambiguous requirement wastes time.
 
-#### Q10: What are common patterns you should have memorized?
+#### What patterns should I have memorized?
 
-These patterns come up in almost every machine coding round. Having them ready saves significant time:
+These come up in almost every machine coding round:
 
 - **Sealed interface for UI state** — Loading, Success, Error, Empty
 - **Repository with try-catch returning Resource** — catches exceptions, maps to typed results
@@ -174,28 +160,11 @@ These patterns come up in almost every machine coding round. Having them ready s
 - **Navigation with ID passing** — pass IDs through routes, not objects
 - **Hilt module** — `@Provides` for Retrofit, Room, repository
 
-These are the building blocks. Every machine coding task is a combination of these patterns in some configuration.
+Every machine coding task is a combination of these patterns in some configuration. Having them ready saves significant time.
 
-#### Q11: When should you ask questions vs make assumptions?
+#### How do I add error handling quickly?
 
-Ask questions when the answer significantly changes your implementation. Ask about: which API endpoints to use, whether offline support is expected, whether you should use Compose or XML, and what the minimum deliverable is.
-
-Don't ask about obvious things like "should I handle null?" or "should I use MVVM?" These waste time and signal uncertainty. For anything that's genuinely ambiguous but won't change your architecture, make an assumption, document it, and keep moving.
-
-#### Q12: What should you NOT do in a machine coding round?
-
-Avoid these common mistakes:
-
-- **Don't over-engineer** — don't add use cases, mappers, and six layers of abstraction for a two-screen app. Clean code doesn't mean maximum abstraction
-- **Don't copy-paste from templates blindly** — evaluators can tell when you paste a pre-built module without understanding it. If asked, you need to explain every line
-- **Don't ignore the error path** — an app that crashes on network failure looks worse than one that shows a simple error message
-- **Don't spend time on styling** — Material defaults look fine. Custom colors, fonts, and animations are wasted time unless specifically requested
-- **Don't leave the app in a non-compiling state** — if time's running out, cut features, not stability. A working subset is better than a complete but broken app
-- **Don't forget tests** — even one or two ViewModel tests show testing awareness. Zero tests signals that you don't test in real projects either
-
-#### Q13: How do you add error handling quickly?
-
-Use the `Resource` sealed class pattern and wrap your repository calls. This takes 5 minutes to set up and covers all your error cases.
+I use the `Resource` sealed class pattern and wrap my repository calls. This takes 5 minutes to set up and covers all error cases.
 
 ```kotlin
 sealed interface Resource<out T> {
@@ -216,7 +185,6 @@ suspend fun <T> safeApiCall(call: suspend () -> T): Resource<T> {
     }
 }
 
-// Usage in repository
 class TaskRepository(private val api: TaskApi) {
     suspend fun getTasks(): Resource<List<Task>> = safeApiCall {
         api.getTasks().map { it.toDomain() }
@@ -224,34 +192,20 @@ class TaskRepository(private val api: TaskApi) {
 }
 ```
 
-The `safeApiCall` helper function eliminates duplicate try-catch blocks across every repository method. Set it up once and reuse it.
+The `safeApiCall` helper eliminates duplicate try-catch blocks across every repository method. I set it up once and reuse it.
 
-#### Q14: What do real machine coding rounds look like at different companies?
+#### What should I NOT do in a machine coding round?
 
-Formats vary, but here are common patterns:
+- **Don't over-engineer** — don't add use cases, mappers, and six layers of abstraction for a two-screen app
+- **Don't copy-paste from templates blindly** — if asked, I need to explain every line
+- **Don't ignore the error path** — an app that crashes on network failure looks worse than one that shows a simple error message
+- **Don't spend time on styling** — Material defaults look fine. Custom colors, fonts, and animations are wasted time unless specifically requested
+- **Don't leave the app in a non-compiling state** — if time's running out, I cut features, not stability
+- **Don't forget tests** — even one or two ViewModel tests show testing awareness
 
-- **Startups** — build a small app from scratch in 2 hours. Usually a list + detail + form. They want to see full-stack Android skills.
-- **Mid-size companies** — given an existing project, add a feature (search, pagination, new screen). They want to see how you work with existing code.
-- **Large companies (Google, Meta)** — more structured. Might be a pair-programming session where you build a feature with the interviewer. They give hints and watch how you collaborate.
-- **Some companies** — provide a pre-built project with bugs and ask you to fix them, add tests, and refactor. This tests debugging and code quality skills.
+#### How do I write a quick unit test when time is short?
 
-The time limit is usually 60-120 minutes. Some allow you to use any libraries you want, others restrict you to specific ones. Always check if there are constraints before starting.
-
-#### Q15: How do you handle the last 10 minutes?
-
-The last 10 minutes should be cleanup and polish, not feature building. Stop adding new code and focus on:
-
-- Make sure the app compiles and runs without crashes
-- Remove TODO comments, unused imports, and dead code
-- Add at least one unit test if you haven't already
-- Check that error states are handled (network off, empty data)
-- Write a brief README if the submission format requires it
-
-If the app is partially done, make sure the parts that work are solid. Comment out incomplete features rather than leaving half-written code. A clean, working subset is always better than a complete but buggy mess.
-
-#### Q16: How do you write a quick unit test when time is short?
-
-Test the ViewModel's happy path. If you only have time for one test, test that the ViewModel correctly maps repository data to UI state.
+I test the ViewModel's happy path. If I only have time for one test, I test that the ViewModel correctly maps repository data to UI state.
 
 ```kotlin
 @Test
@@ -276,23 +230,20 @@ class FakeTaskRepository : TaskRepository {
 }
 ```
 
-A single passing test demonstrates that your architecture is testable. It shows the evaluator that your ViewModel doesn't have hardcoded dependencies that prevent testing.
+A single passing test demonstrates that my architecture is testable. It shows the evaluator that my ViewModel doesn't have hardcoded dependencies.
 
-#### Q17: How do you set up a project quickly from scratch?
+#### How do I handle the last 10 minutes?
 
-Have a mental checklist for project setup:
+The last 10 minutes should be cleanup, not feature building. I stop adding new code and focus on:
 
-- Create a new Android project with Compose template
-- Add dependencies: Hilt, Retrofit, Moshi, Room, Navigation Compose, Coil (if images)
-- Create the package structure: `data/`, `domain/`, `ui/`, `di/`
-- Set up the Hilt Application class and annotate `MainActivity` with `@AndroidEntryPoint`
-- Create the data model, API interface, and repository
-- Create the ViewModel with sealed UI state
-- Build the first composable screen
+- Making sure the app compiles and runs without crashes
+- Removing TODO comments, unused imports, and dead code
+- Adding at least one unit test if I haven't already
+- Checking that error states are handled (network off, empty data)
 
-If you've done this a few times, the setup takes 10-15 minutes. Practice it beforehand — fumbling with Gradle dependencies under time pressure is frustrating and wastes valuable minutes. Keep a reference note with the latest dependency versions you use regularly.
+If the app is partially done, I make sure the parts that work are solid. I comment out incomplete features rather than leaving half-written code. A clean, working subset is always better than a complete but buggy mess.
 
-#### Q18: What separates a strong submission from an average one?
+#### What separates a strong submission from an average one?
 
 Average submissions have the feature working but with everything crammed into one ViewModel, no error handling, and no tests. Strong submissions have:
 
@@ -303,7 +254,7 @@ Average submissions have the feature working but with everything crammed into on
 - Consistent naming and code style
 - Small, focused functions instead of 50-line methods
 
-You don't need every feature. You need the features you built to be clean, correct, and well-structured. Evaluators look at five files and form an opinion in under a minute. Make those files count.
+I don't need every feature. I need the features I built to be clean, correct, and well-structured.
 
 ### Common Follow-ups
 

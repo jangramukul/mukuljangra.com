@@ -12,71 +12,90 @@ description: "Kotlin basics and type system questions come up in almost every An
 
 Kotlin basics and type system questions come up in almost every Android interview. Companies use these to quickly check if you actually write Kotlin daily or just know it surface-level.
 
-### Core Questions (Beginner → Intermediate)
-
-#### Q1: What is the difference between val and var?
+#### What is the difference between val and var?
 
 `val` is read-only — once assigned, you cannot reassign it. `var` is mutable and can be reassigned. Note that `val` does not mean immutable — if you have a `val list = mutableListOf<String>()`, the reference can't change but the list contents can. Under the hood, `val` generates only a getter while `var` generates both getter and setter.
 
-#### Q2: How does null safety work in Kotlin? Explain ?. and !! and let.
+#### How does null safety work in Kotlin?
 
-Kotlin's type system distinguishes between nullable (`String?`) and non-nullable (`String`) types at compile time. The safe call operator `?.` calls a method only if the object is not null and returns null otherwise. The `!!` operator asserts that a value is not null and throws a `NullPointerException` if it is — use it only when you are certain the value exists. `let` is a scope function often used with `?.` to execute a block only when the value is non-null:
+Kotlin's type system distinguishes between nullable (`String?`) and non-nullable (`String`) types at compile time. The safe call operator `?.` calls a method only if the object is not null and returns null otherwise. The `!!` operator asserts that a value is not null and throws a `NullPointerException` if it is. `let` is a scope function often used with `?.` to execute a block only when the value is non-null:
 
 ```kotlin
 val userName: String? = getUserName()
 
-// Safe call — returns null if userName is null
 val length = userName?.length
 
-// let — runs the block only if userName is not null
 userName?.let { name ->
     showGreeting(name)
 }
 
-// !! — crashes if userName is null
 val forcedLength = userName!!.length
 ```
 
 Prefer `?.let` over `!!` in almost every case. The `!!` operator is a code smell unless you can guarantee non-nullness through control flow.
 
-#### Q3: What are smart casts in Kotlin?
+#### What is the difference between == and === in Kotlin?
 
-Smart cast means the compiler automatically casts a type after a type check, so you don't need to cast it manually. After an `is` check inside an `if` or `when`, the compiler knows the type and lets you use it directly:
+`==` checks structural equality — it calls `equals()` under the hood. `===` checks referential equality — whether two references point to the exact same object in memory.
+
+For data classes, `==` compares the property values because `equals()` is auto-generated. For regular classes, `==` uses the default `Any.equals()` which is referential equality unless you override it. The JVM caches small `Int` values (-128 to 127), so boxing the same small integer twice may give `===` as true, but larger values will be different objects.
+
+#### What are smart casts in Kotlin?
+
+Smart cast means the compiler automatically casts a type after a type check, so you don't need to cast manually. After an `is` check inside an `if` or `when`, the compiler knows the type and lets you use it directly:
 
 ```kotlin
 fun processInput(input: Any) {
     when (input) {
-        is String -> println(input.length) // smart cast to String
-        is Int -> println(input * 2)       // smart cast to Int
+        is String -> println(input.length)
+        is Int -> println(input * 2)
         is UserProfile -> println(input.displayName)
     }
 }
 ```
 
-Smart casts only work when the compiler can guarantee the variable hasn't changed between the check and the usage. They don't work on `var` properties or open properties because another thread or subclass could change the value. For those cases, use an explicit cast with `as` or a local `val`.
+Smart casts only work when the compiler can guarantee the variable hasn't changed between the check and the usage. They don't work on `var` properties or open properties because another thread or subclass could change the value.
 
-#### Q4: Explain Kotlin's type hierarchy — Any, Unit, and Nothing.
+#### What is the difference between as and as? for casting?
 
-- **Any** — Root of the Kotlin class hierarchy. Every class implicitly inherits from `Any`. It provides `equals()`, `hashCode()`, and `toString()`. Similar to `Object` in Java, but `Any` is non-nullable by default.
-- **Unit** — Equivalent of Java's `void`. A function with no meaningful return value returns `Unit`. Unlike `void`, `Unit` is an actual object with a single instance, which is why you can use it as a generic type parameter.
+`as` is an unsafe cast — it throws a `ClassCastException` if the cast fails. `as?` is a safe cast — it returns `null` if the cast fails instead of throwing.
+
+```kotlin
+val input: Any = "Hello"
+
+val str: String = input as String     // works
+val num: Int = input as Int           // ClassCastException
+
+val safeNum: Int? = input as? Int     // null, no crash
+```
+
+Use `as?` when you're not sure about the type. Use `as` only after an `is` check or when you're certain the type is correct.
+
+#### Explain Kotlin's type hierarchy — Any, Unit, and Nothing.
+
+- **Any** — Root of the class hierarchy. Every class inherits from `Any`. It provides `equals()`, `hashCode()`, and `toString()`. Similar to Java's `Object`, but `Any` is non-nullable by default.
+- **Unit** — Equivalent of Java's `void`. A function with no meaningful return value returns `Unit`. Unlike `void`, `Unit` is an actual object, which is why you can use it as a generic type parameter.
 - **Nothing** — Represents a value that never exists. A function returning `Nothing` never returns normally — it always throws an exception or runs forever. `Nothing` is a subtype of every type, which is why `throw` can be used in any expression.
 
 ```kotlin
-// Unit — returns nothing meaningful
 fun logEvent(event: String): Unit {
     analytics.track(event)
 }
 
-// Nothing — never returns
 fun throwError(message: String): Nothing {
     throw IllegalStateException(message)
 }
 
-// Nothing as a subtype of every type
 val result: String = userInput ?: throwError("Input required")
 ```
 
-#### Q5: What is a data class? What methods does it generate?
+#### What is the difference between Any and Any? in the type hierarchy?
+
+`Any` is the root of the non-nullable type hierarchy. `Any?` is the root of the entire type hierarchy, including nullable types. Every type in Kotlin is a subtype of `Any?`, but only non-nullable types are subtypes of `Any`.
+
+`Nothing` sits at the bottom — it's a subtype of every type. `Nothing?` has exactly one value: `null`. This is why `null` can be assigned to any nullable type. When Kotlin code is compiled to JVM bytecode, `Any` maps to `java.lang.Object`.
+
+#### What is a data class and what methods does it generate?
 
 Data class is a special type of class used to hold data. The compiler automatically generates `equals()`, `hashCode()`, `toString()`, `copy()`, and `componentN()` functions based on the properties declared in the primary constructor. Properties declared in the class body are excluded from these generated methods.
 
@@ -86,30 +105,43 @@ data class PaymentInfo(
     val currency: String,
     val timestamp: Long
 ) {
-    var isProcessed: Boolean = false // not included in equals/hashCode/copy
+    var isProcessed: Boolean = false // not in equals/hashCode/copy
 }
 
 val payment = PaymentInfo(29.99, "USD", System.currentTimeMillis())
 val refund = payment.copy(amount = -29.99)
 
-// Destructuring using componentN functions
 val (amount, currency, _) = payment
 ```
 
-A data class must have at least one primary constructor parameter, cannot be abstract, open, sealed, or inner. The `copy()` function creates a shallow copy — if a property is a mutable list, both the original and copy point to the same list instance.
+A data class must have at least one primary constructor parameter and cannot be abstract, open, sealed, or inner. The `copy()` function creates a shallow copy — if a property is a mutable list, both the original and copy point to the same list instance.
 
-#### Q6: What is the difference between sealed class and enum class?
+#### How do copy() and componentN() work in data classes?
 
-Enum class is used for defining constants where each value is a single instance. Sealed class has the same concept as enum but allows each subclass to hold different data and have multiple instances.
-
-- **Enum** — Each entry is a singleton. All entries share the same structure. You can't have an enum entry with extra properties that others don't have.
-- **Sealed class** — Each subclass can have its own properties, constructors, and multiple instances. Useful for representing states or results with varying data.
+`copy()` creates a new instance with the same property values, letting you override specific ones. It's a shallow copy — reference-type properties still point to the same object. The `componentN()` functions return properties in declaration order and enable destructuring.
 
 ```kotlin
-// Enum — fixed constants, no varying data
+data class UserSession(val userId: String, val roles: MutableList<String>)
+
+val session = UserSession("u1", mutableListOf("admin"))
+val copied = session.copy()
+copied.roles.add("editor")
+
+// session.roles is also ["admin", "editor"] — shallow copy
+```
+
+Only properties in the primary constructor participate in `copy()`, `equals()`, `hashCode()`, and `componentN()`. Properties in the class body are completely ignored by these generated methods.
+
+#### What is the difference between sealed class and enum class?
+
+Enum class is used for defining constants where each value is a single instance. Sealed class has the same concept but allows each subclass to hold different data and have multiple instances.
+
+- **Enum** — Each entry is a singleton. All entries share the same structure.
+- **Sealed class** — Each subclass can have its own properties, constructors, and multiple instances.
+
+```kotlin
 enum class PaymentMethod { CARD, CASH, UPI }
 
-// Sealed class — each subclass has different data
 sealed class PaymentResult {
     data class Success(val transactionId: String) : PaymentResult()
     data class Failure(val error: Throwable, val code: Int) : PaymentResult()
@@ -119,9 +151,25 @@ sealed class PaymentResult {
 
 The compiler knows all subclasses of a sealed class at compile time, so `when` expressions are exhaustive without needing an `else` branch. Sealed interfaces work the same way but allow a class to implement multiple sealed hierarchies.
 
-#### Q7: What is a value class and when would you use it?
+#### What is the difference between sealed class and sealed interface?
 
-Value class is a lightweight wrapper around a single value that avoids runtime object allocation. The compiler inlines the wrapped value wherever possible, so there's no extra heap allocation. Useful when you want type safety without the performance cost of creating wrapper objects.
+Sealed class restricts inheritance to the same package and module, and subclasses must extend the sealed class directly. Since Kotlin only allows single inheritance, a class can only extend one sealed class.
+
+Sealed interface removes the single-inheritance restriction. A class can implement multiple sealed interfaces.
+
+```kotlin
+sealed interface NetworkError
+sealed interface DatabaseError
+
+data class TimeoutError(val duration: Long) : NetworkError, DatabaseError
+data class AuthError(val reason: String) : NetworkError
+```
+
+Use sealed class when you need shared state or behavior through a common constructor. Use sealed interface when you only need the exhaustive `when` check without shared state, or when a subclass needs to belong to multiple sealed hierarchies.
+
+#### What is a value class and when would you use it?
+
+Value class is a lightweight wrapper around a single value that avoids runtime object allocation. The compiler inlines the wrapped value wherever possible, so there's no extra heap allocation.
 
 ```kotlin
 @JvmInline
@@ -135,23 +183,21 @@ fun fetchOrder(userId: UserId, orderId: OrderId) {
 }
 ```
 
-Without value classes, both parameters would just be `String` and you could mix them up. A value class must have exactly one property in the primary constructor and is marked with `@JvmInline`. At runtime, the wrapper is removed and only the underlying value remains — so `UserId("abc")` compiles to just the string `"abc"` in most cases. Boxing happens when the value class is used as a generic type or nullable type.
+A value class must have exactly one property in the primary constructor and is marked with `@JvmInline`. At runtime, the wrapper is removed and only the underlying value remains. Boxing happens when the value class is used as a nullable type, generic type parameter, or through an interface.
 
-#### Q8: Explain the object keyword — singleton, companion object, and anonymous object.
+#### Explain the object keyword — singleton, companion object, and anonymous object.
 
-The `object` keyword has three uses in Kotlin:
+The `object` keyword has three uses:
 
-- **Object declaration (singleton)** — Creates a single instance that is lazily initialized on first access. Thread-safe by default because the JVM guarantees class loading is synchronized.
-- **Companion object** — A singleton tied to a class. Members can be accessed through the class name like static methods in Java, but it's actually an object instance with the ability to implement interfaces.
+- **Object declaration (singleton)** — Creates a single instance, lazily initialized on first access. Thread-safe because the JVM guarantees class loading is synchronized.
+- **Companion object** — A singleton tied to a class. Members can be accessed through the class name like static methods in Java, but it's actually an object instance.
 - **Anonymous object** — Creates an unnamed instance of a class or interface, similar to Java's anonymous inner class.
 
 ```kotlin
-// Singleton
 object NetworkClient {
     fun makeRequest(url: String) { /* ... */ }
 }
 
-// Companion object
 class PaymentProcessor {
     companion object {
         const val MAX_RETRY = 3
@@ -159,29 +205,24 @@ class PaymentProcessor {
     }
 }
 
-// Anonymous object
 val callback = object : View.OnClickListener {
-    override fun onClick(v: View?) {
-        handleClick()
-    }
+    override fun onClick(v: View?) { handleClick() }
 }
 ```
 
-Companion object members look like static access from the call site (`PaymentProcessor.MAX_RETRY`), but in bytecode a companion object is a nested class with an instance. Use `@JvmStatic` to generate actual static methods for Java interop.
+Companion object members look like static access (`PaymentProcessor.MAX_RETRY`), but in bytecode a companion object is a nested class with an instance. Use `@JvmStatic` to generate actual static methods for Java interop.
 
-#### Q9: What is the difference between lateinit and lazy?
+#### What is the difference between lateinit and lazy?
 
 Both delay initialization, but they work differently:
 
-- **lateinit** — Used with `var` properties. Tells the compiler that the property will be initialized before first use. Works only with non-nullable, non-primitive types. If you access it before initialization, you get an `UninitializedPropertyAccessException`. You can check initialization with `::property.isInitialized`.
-- **lazy** — Used with `val` properties. Takes a lambda and initializes the value on first access. Thread-safe by default (`LazyThreadSafetyMode.SYNCHRONIZED`). The value is computed once and cached.
+- **lateinit** — Used with `var` properties. Tells the compiler the property will be initialized before first use. Works only with non-nullable, non-primitive types. Throws `UninitializedPropertyAccessException` if accessed before initialization.
+- **lazy** — Used with `val` properties. Takes a lambda and initializes the value on first access. Thread-safe by default. The value is computed once and cached.
 
 ```kotlin
 class LoginViewModel : ViewModel() {
-    // lateinit — initialized later by DI or setup
     lateinit var authRepository: AuthRepository
 
-    // lazy — computed on first access, cached forever
     val analytics: AnalyticsTracker by lazy {
         AnalyticsTracker.getInstance()
     }
@@ -190,98 +231,39 @@ class LoginViewModel : ViewModel() {
 
 Use `lateinit` when the value will be set from outside (dependency injection, `onCreate`). Use `lazy` when the value can be computed from available state and you want to defer that computation.
 
-#### Q10: What is const val and how is it different from val?
+#### How does lateinit work under the hood?
 
-`const val` is a compile-time constant. The value must be a primitive type or `String` and must be known at compile time. The compiler inlines the value at every usage site, so there's no property access or getter call at runtime.
+`lateinit` removes the null check that the compiler normally adds for non-nullable types. In bytecode, a `lateinit var` is stored as a nullable field initialized to `null`. Every access site has a generated null check — if the field is still `null`, it throws `UninitializedPropertyAccessException`.
 
-`val` is a runtime constant — the value is set when the code executes. It can hold any type and can be computed from function calls or other runtime values.
+It cannot be used with primitive types because primitives can't be `null` on the JVM, so there's no sentinel value to detect uninitialized state. The `::property.isInitialized` check works by inspecting whether the backing field is still `null`.
+
+#### What is const val and how is it different from val?
+
+`const val` is a compile-time constant. The value must be a primitive type or `String` and must be known at compile time. The compiler inlines the value at every usage site.
+
+`val` is a runtime constant — the value is set when the code executes. It can hold any type and can be computed from function calls.
 
 ```kotlin
 companion object {
-    const val MAX_RETRIES = 3           // inlined at compile time
-    val DEFAULT_TIMEOUT = Duration.ofSeconds(30)  // computed at runtime
+    const val MAX_RETRIES = 3
+    val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
 }
 ```
 
-`const val` can only be used at the top level, inside an `object`, or inside a `companion object`. It cannot be used inside a function or with a custom getter.
+`const val` can only be used at the top level, inside an `object`, or inside a `companion object`.
 
-### Deep Dive Questions (Advanced → Expert)
-
-#### Q11: What happens when you use == vs === in Kotlin?
-
-`==` checks structural equality — it calls `equals()` under the hood. `===` checks referential equality — whether two references point to the exact same object in memory.
-
-For data classes, `==` compares the property values because `equals()` is auto-generated. For regular classes, `==` uses the default `Any.equals()` which is referential equality unless you override it. The JVM caches small `Int` values (-128 to 127), so boxing the same small integer twice may give `===` as true, but larger values will be different objects.
-
-#### Q12: How do copy() and componentN() functions actually work in data classes?
-
-`copy()` creates a new instance with the same property values, letting you override specific ones. It's a shallow copy — reference-type properties still point to the same object. The `componentN()` functions (`component1()`, `component2()`, etc.) return properties in declaration order and enable destructuring.
-
-```kotlin
-data class UserSession(val userId: String, val roles: MutableList<String>)
-
-val session = UserSession("u1", mutableListOf("admin"))
-val copied = session.copy()
-copied.roles.add("editor")
-
-// session.roles is also ["admin", "editor"] — shallow copy
-```
-
-Only properties in the primary constructor get generated `componentN()` and are included in `copy()`, `equals()`, and `hashCode()`. Properties declared in the class body are completely ignored by these generated methods, which can cause subtle bugs if you expect them to participate in equality checks.
-
-#### Q13: What is the difference between sealed class and sealed interface? When would you use one over the other?
-
-Sealed class restricts inheritance to the same package and module, and subclasses must extend the sealed class directly. Since Kotlin only allows single inheritance, a class can only extend one sealed class.
-
-Sealed interface removes the single-inheritance restriction. A class can implement multiple sealed interfaces, making it possible to model more complex hierarchies where a type belongs to multiple sealed groups.
-
-```kotlin
-sealed interface NetworkError
-sealed interface DatabaseError
-
-data class TimeoutError(val duration: Long) : NetworkError, DatabaseError
-data class AuthError(val reason: String) : NetworkError
-```
-
-Use sealed class when you need shared state or behavior through a common constructor or properties. Use sealed interface when you only need the exhaustive `when` check without shared state, or when a subclass needs to belong to multiple sealed hierarchies.
-
-#### Q14: How does the object declaration work under the hood? Is it truly thread-safe?
-
-An `object` declaration compiles to a Java class with a private constructor and a static `INSTANCE` field. The instance is created in a static initializer block (`<clinit>`), so the JVM guarantees it's initialized exactly once, even across multiple threads. This is the same mechanism as the Java enum singleton pattern.
-
-The bytecode looks roughly like:
-
-```kotlin
-// Kotlin
-object AppConfig {
-    val apiUrl = "https://api.example.com"
-}
-
-// Equivalent Java bytecode structure
-public final class AppConfig {
-    public static final AppConfig INSTANCE;
-    private final String apiUrl = "https://api.example.com";
-    static { INSTANCE = new AppConfig(); }
-    private AppConfig() {}
-}
-```
-
-The initialization is thread-safe, but the methods and properties on the object are not synchronized. If multiple threads read and write a `var` property on the object, you still need proper synchronization.
-
-#### Q15: Explain the difference between companion object and top-level functions. When should you use each?
+#### What is the difference between companion object and top-level functions?
 
 Top-level functions are true static functions in the bytecode — no enclosing class, no object instance. Companion object members are instance methods on a nested companion class, accessed through a static `Companion` reference (unless you use `@JvmStatic`).
 
-Use top-level functions for utility operations that don't belong to any specific class — extension functions, pure helper functions. Use companion objects when the function is logically tied to the class, like factory methods (`create()`, `fromJson()`), constants specific to that class, or when you need the companion to implement an interface.
+Use top-level functions for utility operations that don't belong to any specific class. Use companion objects when the function is logically tied to the class, like factory methods or class-specific constants.
 
 ```kotlin
-// Top-level — utility, no class context
 fun formatCurrency(amount: Double, code: String): String =
     NumberFormat.getCurrencyInstance().apply {
         currency = Currency.getInstance(code)
     }.format(amount)
 
-// Companion — factory method tied to the class
 class PaymentTransaction private constructor(val id: String) {
     companion object {
         fun create(merchantId: String): PaymentTransaction {
@@ -291,45 +273,24 @@ class PaymentTransaction private constructor(val id: String) {
 }
 ```
 
-#### Q16: How does lateinit work under the hood? What happens when you access it before initialization?
+#### What is a typealias and how is it different from a value class?
 
-`lateinit` removes the null check that the Kotlin compiler normally adds for non-nullable types. In bytecode, a `lateinit var` is stored as a nullable field initialized to `null`. Every access site has a generated null check — if the field is still `null`, it throws `UninitializedPropertyAccessException` with a message naming the property.
-
-This means `lateinit` does have a small runtime cost: a null check on every access. It also cannot be used with primitive types (`Int`, `Boolean`, etc.) because primitives can't be `null` on the JVM, so there's no sentinel value to detect uninitialized state.
-
-The `::property.isInitialized` check works by inspecting whether the backing field is still `null`. It only works from inside the class that owns the property or from an extension within the same file.
-
-#### Q17: When does boxing happen with value classes?
-
-Value classes are inlined as the underlying type in most cases, but boxing (wrapping in the value class object) happens in these situations:
-
-- When used as a nullable type (`UserId?`)
-- When used as a generic type parameter (`List<UserId>`)
-- When used as a type of `Any` or an interface the value class implements
-- When used in equality checks with `===`
+`typealias` creates an alternative name for an existing type. It doesn't create a new type — the compiler treats it as the original type. A value class creates an actual new type at compile time with zero runtime overhead.
 
 ```kotlin
+typealias UserClickHandler = (User) -> Unit
+// UserClickHandler and (User) -> Unit are the same type
+
 @JvmInline
 value class UserId(val id: String)
-
-fun processUser(userId: UserId) { }    // inlined — just a String
-fun processNullable(userId: UserId?) { } // boxed — UserId object
-fun processList(ids: List<UserId>) { }   // boxed — each element
+// UserId and String are different types at compile time
 ```
 
-The whole point of value classes is to get type safety at compile time with minimal runtime cost. But once the compiler can't prove the type at the call site, it has to box. In practice, boxing happens more often than you'd expect, especially in generic code.
+Use `typealias` when you want readability for complex function types or generic types. Use value classes when you need type safety — preventing accidental mixing of values that have the same underlying type.
 
-#### Q18: What's the difference between Any and Any? in the type hierarchy?
+#### What is the String Pool on the JVM and how does it affect Kotlin string comparisons?
 
-`Any` is the root of the non-nullable type hierarchy. `Any?` is the root of the entire type hierarchy, including nullable types. Every type in Kotlin is a subtype of `Any?`, but only non-nullable types are subtypes of `Any`.
-
-`Nothing` sits at the bottom — it's a subtype of every type. `Nothing?` has exactly one value: `null`. This is why `null` can be assigned to any nullable type — its type is `Nothing?`, which is a subtype of every nullable type.
-
-This hierarchy means a function accepting `Any` rejects `null`, while `Any?` accepts everything. When Kotlin code is compiled to JVM bytecode, `Any` maps to `java.lang.Object` since the JVM doesn't have built-in null safety.
-
-#### Q19: What is the String Pool on the JVM and how does it affect Kotlin string comparisons?
-
-The JVM maintains a pool of unique string literals called the String Pool (or intern pool). When you write `val a = "hello"` and `val b = "hello"`, both variables point to the same object in the pool. The JVM automatically interns string literals at compile time.
+The JVM maintains a pool of unique string literals. When you write `val a = "hello"` and `val b = "hello"`, both variables point to the same object in the pool.
 
 ```kotlin
 val a = "hello"
@@ -341,17 +302,15 @@ println(a === c) // false — c is a new object
 println(a == c)  // true — structural equality
 ```
 
-This is why Kotlin's `===` (referential equality) can return `true` for identical string literals — they share the same pooled reference. But strings created at runtime (from `StringBuilder`, network responses, or user input) are not automatically interned. You can manually intern them with `String.intern()`, but this is rarely needed and can cause memory leaks in older JVMs where the pool was stored in PermGen.
-
-In practice, always use `==` for string comparison in Kotlin. The compiler already generates a `null`-safe `equals()` call. The String Pool is a JVM optimization detail — you should know it exists for interview questions about memory and identity, but you should never rely on `===` for string comparison.
+Always use `==` for string comparison in Kotlin. The String Pool is a JVM optimization detail you should know for interview questions about memory and identity, but never rely on `===` for string comparison.
 
 ### Common Follow-ups
 
 - What happens if you override `equals()` in a data class — does it replace the generated one?
 - Can a sealed class have a constructor with parameters?
-- What is the difference between `as` and `as?` for type casting?
 - How do you use `when` with sealed classes and what makes it exhaustive?
 - Can you use `lateinit` with a property that has a custom getter?
-- What is a `typealias` and how is it different from a value class?
-- How does Kotlin's `==` differ from Java's `==` for String comparison?
 - Can a companion object have its own extension functions?
+- When does boxing happen with value classes?
+- How does the object declaration work under the hood — is it truly thread-safe?
+- What is the difference between `is` and `as` for type checking?

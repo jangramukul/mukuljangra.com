@@ -8,18 +8,15 @@ tags:
   - Testing
 ---
 
-The first time I tried testing a `StateFlow` in a ViewModel, I wrote something that looked reasonable — launch a coroutine, collect the flow into a list, assert on the list. The test passed. Then I changed the order of two emissions, and the test still passed. Then I introduced a bug that skipped an intermediate state entirely, and the test still passed. My "test" was collecting the final state after everything settled, completely missing the intermediate emissions that my UI depended on.
+The first time I tried testing a `StateFlow` in a ViewModel, I launched a coroutine, collected emissions into a list, and asserted on the list. The test passed. Then I deliberately introduced a bug — skipping an intermediate `Loading` state — and the test still passed. My collector was grabbing the final state after everything settled, completely blind to the state transitions my UI actually depended on. I had a test that could never fail, which is worse than having no test at all.
 
-This is the fundamental problem with testing Flows without a purpose-built tool. Flows are asynchronous, time-dependent streams. Collecting them in tests requires coroutine management, careful timeout handling, and dealing with race conditions between emission and assertion. You end up writing more test infrastructure than actual test logic. And the test infrastructure you write is almost always subtly broken — it either misses emissions, doesn't fail when it should, or is flaky because of timing.
-
-Cash App's [Turbine](https://github.com/cashapp/turbine) library solves this cleanly. It gives you a DSL that consumes flow emissions one at a time, with built-in timeouts, strict consumption requirements, and clear failure messages. Once I switched to Turbine, my flow tests went from "probably correct" to "definitely correct," and they became significantly more readable in the process.
+This is what happens when you try to test Flows with raw coroutine machinery. You end up managing collection jobs, handling cancellation, wiring timeouts, and fighting race conditions between emissions and assertions. The test infrastructure grows until it dwarfs the actual assertions, and the infrastructure itself is almost always subtly broken. Cash App's [Turbine](https://github.com/cashapp/turbine) library exists specifically to fix this. It gives you a DSL that consumes emissions sequentially, enforces that every event is accounted for, and fails loudly when something unexpected happens. Once I switched to Turbine, my flow tests went from "probably correct" to actually trustworthy.
 
 ## The Problem Without Turbine
 
-To understand why Turbine exists, look at what testing a StateFlow looks like without it. Say you have a `SearchViewModel` that exposes a `StateFlow<SearchUiState>`:
+To appreciate what Turbine does, look at the ceremony required to test a `StateFlow` without it:
 
 ```kotlin
-// Without Turbine — fragile and incomplete
 @Test
 fun `search updates results`() = runTest {
     val viewModel = SearchViewModel(FakeSearchRepository())
@@ -40,11 +37,27 @@ fun `search updates results`() = runTest {
 }
 ```
 
-This works, but there are three problems. First, you're manually managing a collection coroutine and remembering to cancel it. Forget that `job.cancel()` and the test hangs. Second, the index-based assertions are brittle — if `StateFlow` conflates two rapid emissions (which it does by default, because `StateFlow` only keeps the latest value and deduplicates with `equals()`), your indices shift and the test fails for the wrong reason. Third, there's no enforcement that you've consumed all emissions. If the ViewModel emits an unexpected error state after your assertions, the test still passes, silently ignoring a bug.
+Three problems here. First, you're managing a collection coroutine manually and must remember `job.cancel()` — forget it and the test hangs indefinitely. Second, the index-based assertions are brittle. StateFlow conflates rapid emissions (it only keeps the latest value and deduplicates via `equals()`), so if `Loading` gets overwritten before the collector resumes, your indices shift and the test fails for the wrong reason. Third, there's zero enforcement that you've consumed everything. If the ViewModel emits an unexpected error state after your assertions, the test passes silently, hiding a real bug.
 
-## Turbine's Test DSL
+## Turbine's Core API
 
-Turbine replaces all that ceremony with a single `test {}` extension function. Inside the block, you consume emissions one at a time with `awaitItem()`, check for completion with `awaitComplete()`, and handle errors with `awaitError()`. Turbine handles the coroutine management, timeouts, and cleanup automatically.
+Turbine replaces all that ceremony with one extension function: `test {}`. Inside the block, you pull emissions one at a time using a handful of focused methods. Here's the complete API surface you'll actually use:
+
+**`awaitItem()`** suspends until the next emission arrives and returns it. If nothing comes within the timeout (3 seconds by default), Turbine throws with "No value produced in 3s." This is your primary assertion tool — every state you expect, you pull with `awaitItem()`.
+
+**`awaitComplete()`** suspends until the Flow completes normally. Use this for cold flows that have a finite number of emissions. If the flow emits another item instead of completing, Turbine fails with "Expected complete but found Item(...)".
+
+**`awaitError()`** suspends until the Flow terminates with an exception and returns the `Throwable`. This is how you verify that error flows propagate correctly — the exception doesn't crash your test, it becomes an event you assert on.
+
+**`expectNoEvents()`** asserts that no emissions, completions, or errors occurred. This is critical for testing debounce logic or verifying that a flow stays quiet when it should.
+
+**`skipItems(n)`** consumes and discards `n` items. Useful for skipping a known initial state when you only care about what happens after a specific action.
+
+**`expectMostRecentItem()`** skips all pending emissions and returns only the latest one. Handy for scenarios where intermediate states are irrelevant — but use it sparingly, because skipping states means you're not testing the full transition sequence.
+
+**`cancelAndIgnoreRemainingEvents()`** cancels collection and suppresses the "Unconsumed events" error. You need this for hot flows like `StateFlow` that never complete on their own.
+
+Here's what the same search test looks like with Turbine:
 
 ```kotlin
 @Test
@@ -67,24 +80,49 @@ fun `search updates results`() = runTest {
 }
 ```
 
-This is not just shorter — it's semantically different. Each `awaitItem()` call blocks until the next emission arrives (with a configurable timeout, default 3 seconds). If no emission comes, the test fails with a clear message: "No value produced in 3s." If an unexpected emission arrives that you don't consume, Turbine fails the test when the block exits: "Unconsumed events found." This strictness is the whole point. Turbine forces you to account for every emission, which means your test actually verifies the full sequence of state transitions, not just the final state.
+This isn't just shorter — it's semantically different. Each `awaitItem()` suspends until the next emission arrives, so assertions are sequential and deterministic. If an unexpected emission arrives that you don't consume, Turbine fails with "Unconsumed events found" when the block exits. That strictness is the whole point — Turbine forces you to account for every emission, which means your test actually verifies the full state sequence, not just the final snapshot.
 
-## Hot Flows vs Cold Flows
+## Testing Cold Flows
 
-Testing hot flows (`StateFlow`, `SharedFlow`) and cold flows (regular `flow { }` builders) requires different patterns, and getting this wrong is one of the most common Turbine mistakes.
-
-**StateFlow** always has a current value. When you call `.test {}` on a StateFlow, the first `awaitItem()` returns the initial value immediately — before you've done anything. If you forget to consume this initial emission, Turbine will report an unconsumed event and fail your test.
+Cold flows are the simplest to test because they have a defined lifecycle — they start when collected and complete when the producer finishes. The `flow {}` builder and `flowOf()` both create cold flows.
 
 ```kotlin
 @Test
-fun `state flow emits initial value`() = runTest {
+fun `repository returns mapped results`() = runTest {
+    val repository = UserRepository(FakeApiClient())
+
+    repository.getActiveUsers().test {
+        val first = awaitItem()
+        assertEquals("Mukul", first.name)
+        assertTrue(first.isActive)
+
+        val second = awaitItem()
+        assertEquals("Priya", second.name)
+
+        awaitComplete()
+    }
+}
+```
+
+The `awaitComplete()` call is important here. It verifies the flow actually terminated — if the producer accidentally emits extra items or throws an exception instead of completing, the test catches it. For `flowOf()`, completion is guaranteed, but for custom `flow {}` builders where the producer might have conditional logic or loops, verifying completion confirms the producer behaved as expected. You don't need `cancelAndIgnoreRemainingEvents()` for cold flows that complete — Turbine's automatic `ensureAllEventsConsumed()` check handles cleanup.
+
+## Testing StateFlow — Initial Values and Conflation
+
+StateFlow always has a current value. When Turbine calls `collect` on a StateFlow, the first emission is that initial value — delivered immediately, before you've triggered any action. If you forget to consume it, Turbine reports "Unconsumed events" and fails your test. This catches people off guard because the initial value feels like it shouldn't "count," but it does. Every `StateFlow` emission must be consumed or explicitly skipped.
+
+```kotlin
+@Test
+fun `profile loads user data`() = runTest {
     val viewModel = ProfileViewModel(FakeProfileRepository())
 
-    viewModel.state.test {
-        // First awaitItem() is the initial state — don't skip it
+    viewModel.uiState.test {
+        // First awaitItem() is always the initial state
+        assertEquals(ProfileUiState.Idle, awaitItem())
+
+        viewModel.loadProfile("user-42")
+
         assertEquals(ProfileUiState.Loading, awaitItem())
 
-        // Now wait for the actual loaded state
         val loaded = awaitItem()
         assertIs<ProfileUiState.Loaded>(loaded)
         assertEquals("Mukul", loaded.profile.name)
@@ -94,109 +132,88 @@ fun `state flow emits initial value`() = runTest {
 }
 ```
 
-**Cold flows** don't emit until collected, and they complete naturally when the producer finishes. With cold flows, you can assert on `awaitComplete()` to verify the flow finished:
+The other StateFlow gotcha is conflation. I wrote about this in detail in my [conflation post](https://mukuljangra.com/2025/03/27/conflation-testing-stateflows.html), but the short version is: if your ViewModel sets `Loading` and then immediately sets `Success` before the collector resumes, the collector only sees `Success`. The `Loading` state gets overwritten atomically. To observe every transition, you need `UnconfinedTestDispatcher`, which executes coroutines eagerly so the collector runs inline after each `value` assignment.
 
 ```kotlin
 @Test
-fun `cold flow emits and completes`() = runTest {
-    val items = flowOf("alpha", "beta", "gamma")
+fun `all state transitions are observable`() = runTest(UnconfinedTestDispatcher()) {
+    val viewModel = ProfileViewModel(FakeProfileRepository())
 
-    items.test {
-        assertEquals("alpha", awaitItem())
-        assertEquals("beta", awaitItem())
-        assertEquals("gamma", awaitItem())
-        awaitComplete() // Verify the flow actually completed
-    }
-}
-```
+    viewModel.uiState.test {
+        assertEquals(ProfileUiState.Idle, awaitItem())
 
-**SharedFlow** is the trickiest. Unlike StateFlow, a SharedFlow with `replay = 0` has no initial value, so calling `awaitItem()` immediately will block until something is emitted. And because SharedFlow doesn't conflate by default (unlike StateFlow), you'll receive every emission — which can be a lot in a rapid-fire scenario.
+        viewModel.loadProfile("user-42")
 
-## Testing ViewModel State Transitions
-
-The most common Turbine use case is verifying that a ViewModel emits the right sequence of states. Here's a pattern I use for login testing that validates the full loading → success/error flow:
-
-```kotlin
-@Test
-fun `login success flow`() = runTest {
-    val repository = FakeLoginRepository(shouldSucceed = true)
-    val viewModel = LoginViewModel(repository)
-
-    viewModel.state.test {
-        assertEquals(LoginUiState.Idle, awaitItem())
-
-        viewModel.onLoginClicked("user@test.com", "password123")
-
-        assertEquals(LoginUiState.Loading, awaitItem())
-
-        val success = awaitItem()
-        assertIs<LoginUiState.Success>(success)
-        assertEquals("user@test.com", success.session.email)
-
-        cancelAndIgnoreRemainingEvents()
-    }
-}
-
-@Test
-fun `login failure shows error`() = runTest {
-    val repository = FakeLoginRepository(shouldSucceed = false)
-    val viewModel = LoginViewModel(repository)
-
-    viewModel.state.test {
-        assertEquals(LoginUiState.Idle, awaitItem())
-
-        viewModel.onLoginClicked("user@test.com", "wrong")
-
-        assertEquals(LoginUiState.Loading, awaitItem())
-
-        val error = awaitItem()
-        assertIs<LoginUiState.Error>(error)
-        assertTrue(error.message.contains("Invalid credentials"))
-        assertTrue(error.canRetry)
+        // With UnconfinedTestDispatcher, Loading is observed
+        // before the ViewModel has a chance to overwrite it
+        assertEquals(ProfileUiState.Loading, awaitItem())
+        assertIs<ProfileUiState.Loaded>(awaitItem())
 
         cancelAndIgnoreRemainingEvents()
     }
 }
 ```
 
-Notice the pattern: consume the initial state, trigger an action, then consume each subsequent state in order. The test reads like a script of the user interaction, which makes it easy to understand what's being verified. If the ViewModel skips the `Loading` state or emits states in the wrong order, the test fails immediately at the exact point where the sequence diverged.
+## Testing SharedFlow — Every Emission Matters
 
-## The expectMostRecentItem Trap and Fix
-
-StateFlow conflates rapid emissions. If your ViewModel goes from `Loading` to `Success` faster than the test consumes, you might miss the `Loading` state entirely. Turbine provides `expectMostRecentItem()` for this scenario — it skips intermediate emissions and returns the latest one:
+SharedFlow is fundamentally different from StateFlow in two ways that change how you test it. First, a SharedFlow with `replay = 0` has no initial value — calling `awaitItem()` immediately will suspend until something is emitted. There's nothing to skip. Second, SharedFlow doesn't conflate. If you emit A, B, C rapidly, every active collector sees all three. This makes SharedFlow ideal for event streams where dropping emissions would be a bug — navigation events, analytics, toasts.
 
 ```kotlin
 @Test
-fun `quick operation skips to result`() = runTest {
-    val viewModel = SearchViewModel(FastRepository())
+fun `analytics events are all captured`() = runTest {
+    val tracker = AnalyticsTracker()
 
-    viewModel.state.test {
-        skipItems(1) // Skip initial Idle state
+    tracker.events.test {
+        tracker.track(AnalyticsEvent.ScreenView("home"))
+        tracker.track(AnalyticsEvent.ButtonClick("search"))
+        tracker.track(AnalyticsEvent.ScreenView("results"))
 
-        viewModel.onQueryChanged("kotlin")
+        // Every emission arrives — no conflation
+        assertEquals("home", (awaitItem() as AnalyticsEvent.ScreenView).screen)
+        assertEquals("search", (awaitItem() as AnalyticsEvent.ButtonClick).id)
+        assertEquals("results", (awaitItem() as AnalyticsEvent.ScreenView).screen)
 
-        // Don't care about Loading — just want the final state
-        val result = expectMostRecentItem()
-        assertIs<SearchUiState.Results>(result)
+        cancelAndIgnoreRemainingEvents()
     }
 }
 ```
 
-But here's the thing — I'd argue that using `expectMostRecentItem()` in most tests is a code smell. If you're skipping states, you're not testing the full transition sequence. Your UI observes every state change, and if the Loading state matters for showing a spinner, it should be tested. Use `expectMostRecentItem()` only when the intermediate states genuinely don't matter for the behavior you're verifying — like testing the final result of a debounced search, where you only care about the settled state.
+One thing to watch: if your SharedFlow has `replay > 0`, Turbine's `test {}` starts collecting and immediately receives the replayed emissions. This is the same behavior as a new subscriber joining a SharedFlow in production — you get the replay cache upfront. If your test emits values *before* calling `test {}` on a `replay = 0` SharedFlow, those emissions are lost because no collector was active yet. Turbine's `test {}` guarantees collection starts before the lambda body runs, so emit inside the block, not before it.
 
-`skipItems(n)` is the counterpart: it consumes and discards `n` items. Useful for skipping a known initial state when you only care about what happens after a specific action.
+## Timeout Configuration
+
+Turbine's default timeout is 3 seconds of wall clock time — not virtual time. This means `awaitItem()` waits up to 3 real seconds for an emission regardless of what `runTest`'s virtual clock is doing. For most unit tests, 3 seconds is generous. But there are cases where you need to adjust it.
+
+If your test involves real I/O, network calls in integration tests, or platform-specific delays that don't play well with virtual time, you might need a longer timeout. If you're writing fast unit tests and want failures to surface quickly, a shorter timeout tightens the feedback loop. You can set it per `test` call, per `testIn` call, or globally for a block:
+
+```kotlin
+// Per-flow timeout
+viewModel.state.test(timeout = 5.seconds) {
+    // All awaitItem() calls inside use 5s timeout
+}
+
+// Global override for a block
+withTurbineTimeout(500.milliseconds) {
+    fastFlow.test {
+        assertEquals("instant", awaitItem())
+        awaitComplete()
+    }
+}
+```
+
+Here's the reframe on timeouts that changed how I think about them: **a Turbine timeout failure is almost never a timeout problem — it's an emission problem.** When `awaitItem()` throws "No value produced in 3s," the instinct is to bump the timeout. But 99% of the time, the flow genuinely didn't emit. Maybe your ViewModel's coroutine is stuck on `StandardTestDispatcher` and needs an `advanceUntilIdle()` call. Maybe the `Dispatchers.Main` replacement isn't set up. Maybe the fake repository isn't returning data. The timeout is surfacing a real bug — don't silence it by making the timeout longer.
 
 ## Testing Multiple Flows With turbineScope
 
-Sometimes you need to test two flows simultaneously — a state flow and an events flow, or two ViewModels that interact. Turbine's `turbineScope` lets you create multiple test turbines in the same test:
+Real ViewModels often expose more than one flow — a `StateFlow` for UI state and a `SharedFlow` for one-shot events like navigation or error dialogs. You can't nest `test {}` blocks because they're sequential. Turbine's `turbineScope` with `testIn()` solves this by creating independent turbines that collect concurrently:
 
 ```kotlin
 @Test
-fun `navigation event emitted on login success`() = runTest {
+fun `login success triggers navigation`() = runTest {
     val viewModel = LoginViewModel(FakeLoginRepository(shouldSucceed = true))
 
     turbineScope {
-        val states = viewModel.state.testIn(backgroundScope)
+        val states = viewModel.uiState.testIn(backgroundScope)
         val events = viewModel.navigationEvents.testIn(backgroundScope)
 
         assertEquals(LoginUiState.Idle, states.awaitItem())
@@ -204,9 +221,8 @@ fun `navigation event emitted on login success`() = runTest {
         viewModel.onLoginClicked("user@test.com", "password123")
 
         assertEquals(LoginUiState.Loading, states.awaitItem())
-        assertEquals(LoginUiState.Success::class, states.awaitItem()::class)
+        assertIs<LoginUiState.Success>(states.awaitItem())
 
-        // Verify navigation event was emitted
         assertEquals(NavigationEvent.GoToHome, events.awaitItem())
 
         states.cancelAndIgnoreRemainingEvents()
@@ -215,28 +231,15 @@ fun `navigation event emitted on login success`() = runTest {
 }
 ```
 
-`testIn(backgroundScope)` creates a `ReceiveTurbine` that collects in the given scope. This is Turbine's answer to concurrent flow testing — instead of nesting `test {}` blocks (which doesn't work because they're sequential), you create independent turbines that collect in parallel. The `turbineScope` block enforces that all turbines are properly consumed or cancelled before the test exits.
+`testIn(backgroundScope)` creates a `ReceiveTurbine` that collects in the given scope. Using `runTest`'s `backgroundScope` ensures the collection coroutine gets cleaned up automatically when the test ends. The `turbineScope` block enforces that all turbines are properly consumed or cancelled before exit — if you forget to handle one, it fails. You can also name turbines with `testIn(backgroundScope, name = "states")` for clearer error messages when debugging multi-flow tests.
 
-## Common Mistakes That Will Bite You
+## Real-World Patterns
 
-After writing hundreds of Turbine tests, here are the patterns that cause the most debugging pain:
+### MainDispatcherRule
 
-**Not consuming the initial StateFlow emission.** StateFlow always has a value. If you forget the first `awaitItem()`, Turbine reports "Unconsumed events" at the end of the test. This is especially confusing when the initial value is the "empty" or "default" state that you think shouldn't count as an emission. It does. Always consume it or use `skipItems(1)`.
-
-**Forgetting `cancelAndIgnoreRemainingEvents()`.** For hot flows like StateFlow that never complete, your `test {}` block will timeout waiting for completion unless you explicitly cancel. This is one of those things that's obvious once you know it but produces confusing "No value produced in 3s" errors until you do.
-
-**Using `runTest` without `UnconfinedTestDispatcher` for ViewModel tests.** If your ViewModel uses `viewModelScope.launch`, the coroutine is dispatched to `Dispatchers.Main`. In tests, you need to replace `Main` with a test dispatcher. The standard setup is:
+If your ViewModel uses `viewModelScope.launch`, the coroutine dispatches to `Dispatchers.Main`. On the JVM (where your tests run), there's no `Main` dispatcher — the test deadlocks. You need a `TestRule` that swaps `Dispatchers.Main` for a test dispatcher before every test:
 
 ```kotlin
-@OptIn(ExperimentalCoroutinesApi::class)
-class LoginViewModelTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
-
-    // ...
-}
-
 class MainDispatcherRule(
     private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()
 ) : TestWatcher() {
@@ -247,54 +250,88 @@ class MainDispatcherRule(
         Dispatchers.resetMain()
     }
 }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class LoginViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `login emits loading then success`() = runTest {
+        val viewModel = LoginViewModel(FakeLoginRepository(shouldSucceed = true))
+        viewModel.uiState.test {
+            assertEquals(LoginUiState.Idle, awaitItem())
+            viewModel.onLoginClicked("user@test.com", "pass123")
+            assertEquals(LoginUiState.Loading, awaitItem())
+            assertIs<LoginUiState.Success>(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+}
 ```
 
-Without this, `viewModelScope.launch` deadlocks in tests because there's no `Dispatchers.Main` on the JVM. The `UnconfinedTestDispatcher` executes coroutines eagerly (immediately at the call site), while `StandardTestDispatcher` requires explicit `advanceUntilIdle()` calls. For most ViewModel tests, `UnconfinedTestDispatcher` is simpler because emissions happen synchronously.
+I use `UnconfinedTestDispatcher` here because it executes coroutines eagerly — emissions happen synchronously at the call site, so Turbine's collector sees every state transition without conflation. `StandardTestDispatcher` queues coroutines and requires explicit `advanceUntilIdle()` calls, which adds verbosity and opens the door to conflation bugs. For ViewModel tests where you want to verify state sequences, unconfined is almost always the right choice.
 
-**Testing emissions that never arrive.** If you call `awaitItem()` and no emission comes within the timeout (3 seconds by default), Turbine throws. This is correct behavior — it means your code didn't emit when you expected it to. But the timeout can mask issues: if your test is slow because of `StandardTestDispatcher`, you might need `advanceUntilIdle()` before the `awaitItem()` to flush pending coroutines.
+### Testing Debounce Logic
 
-## Integration With kotlinx-coroutines-test
-
-Turbine works seamlessly with `kotlinx-coroutines-test`, but there's one subtle interaction worth knowing. When you use `runTest` (which uses `StandardTestDispatcher` by default), coroutines are not executed eagerly — they're queued and run when you call `advanceUntilIdle()` or `advanceTimeBy()`.
-
-Inside a Turbine `test {}` block, `awaitItem()` automatically advances the test dispatcher's virtual time. So you usually don't need explicit `advanceUntilIdle()` calls. But if your code uses `delay()` — say, a debounce in a search ViewModel — you might need to advance time manually:
+Debounce testing is where `expectNoEvents()` and `advanceTimeBy()` work together. You need to verify that rapid inputs don't trigger multiple operations, and that the debounced action fires after the delay:
 
 ```kotlin
 @Test
-fun `search debounces input`() = runTest {
+fun `search debounces rapid input`() = runTest {
     val viewModel = SearchViewModel(FakeSearchRepository())
 
     viewModel.state.test {
-        skipItems(1) // Skip initial state
+        skipItems(1) // Skip initial Idle
 
         viewModel.onQueryChanged("k")
         viewModel.onQueryChanged("ko")
         viewModel.onQueryChanged("kot")
 
-        // No emission yet — debounce is 300ms
-        expectNoEvents()
+        expectNoEvents() // Nothing yet — debounce is 300ms
 
         advanceTimeBy(300)
 
-        // Now the debounced search fires
         assertEquals(SearchUiState.Loading, awaitItem())
-
         val results = awaitItem()
         assertIs<SearchUiState.Results>(results)
+        // Only "kot" was searched, not "k" or "ko"
+        assertEquals("kot", results.query)
 
         cancelAndIgnoreRemainingEvents()
     }
 }
 ```
 
-`expectNoEvents()` asserts that nothing was emitted within the default timeout window. This is Turbine's way of verifying that your debounce logic actually delays, rather than firing immediately.
+`expectNoEvents()` verifies silence — no items, no completion, no errors. Without it, you'd have no way to assert that the debounce actually delayed the search. This is one of those Turbine methods that seems niche until you need it, and then it's indispensable.
 
-## Why Turbine Became the Standard
+### Error Flow Testing
 
-Turbine has about 3,000 GitHub stars and is used by Google's Now In Android reference app, Square's projects, and most major Android open-source projects that test flows. It's become the de facto standard not because it does something magical, but because it makes the right thing easy and the wrong thing hard.
+Flows that terminate with exceptions need `awaitError()`. The exception doesn't crash your test — Turbine captures it as an event:
 
-Without Turbine, you can test flows — but you'll write fragile tests that don't verify emission ordering, don't catch unconsumed events, and don't timeout properly. Turbine makes all of these default behaviors. The strictness that initially feels annoying — "why is it failing because I didn't consume one event?" — is exactly what prevents the class of bugs where your tests pass but your UI shows the wrong state sequence to the user.
+```kotlin
+@Test
+fun `network failure produces error event`() = runTest {
+    val brokenFlow = flow<String> {
+        emit("connecting")
+        throw IOException("Connection refused")
+    }
 
-The library is small (single dependency, no transitive dependencies beyond `kotlinx-coroutines-test`), stable (it's been production-tested at Cash App since 2020), and its API surface is focused — you really only need `test {}`, `awaitItem()`, `cancelAndIgnoreRemainingEvents()`, and occasionally `turbineScope` with `testIn()`. For any project that uses Kotlin Flows, Turbine isn't optional tooling — it's table stakes for having flow tests you can actually trust.
+    brokenFlow.test {
+        assertEquals("connecting", awaitItem())
+        val error = awaitError()
+        assertIs<IOException>(error)
+        assertEquals("Connection refused", error.message)
+    }
+}
+```
+
+If you don't consume the error with `awaitError()`, Turbine fails with "Unconsumed events found" and attaches the original exception as the cause — so you get the full stack trace in the test output. This is a much better experience than having the exception silently swallowed or thrown in an unrelated coroutine.
+
+## Why Turbine Is Table Stakes
+
+Turbine has around 3,000 GitHub stars, a single dependency (no transitive dependencies beyond `kotlinx-coroutines-test`), and has been production-tested at Cash App since 2020. It's used in Google's Now In Android reference app and most major Android open-source projects that test flows. The library became the standard not because it's clever, but because it makes the right thing easy and the wrong thing hard.
+
+Without Turbine, you can test flows. But you'll write fragile tests that don't verify emission ordering, don't catch unconsumed events, and don't timeout properly. Turbine makes all three of these default behaviors. The strictness that initially feels annoying — "why is it failing because I didn't consume one event?" — is exactly what prevents the class of bugs where your tests pass but your UI shows the wrong state to the user. For any project that uses Kotlin Flows, Turbine isn't optional tooling — it's the baseline for flow tests you can actually trust.
 
 Thanks for reading!

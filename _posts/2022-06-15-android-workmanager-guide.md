@@ -14,7 +14,9 @@ WorkManager was Google's answer to this fragmentation. It's a single API that pi
 
 ## Defining a Worker
 
-A `Worker` is a class that defines what work to do. You override `doWork()`, do your thing, and return a `Result`. The simplest version looks like this:
+The basic `Worker` class has a synchronous `doWork()` that runs on a background thread from WorkManager's `Executor`. `CoroutineWorker` is the modern choice — its `doWork()` is a suspend function, so you can call other suspend functions directly. `RxWorker` provides an RxJava `Single` for teams still on reactive streams. For new code, `CoroutineWorker` is what you want.
+
+Under the hood, `CoroutineWorker` runs `doWork()` on `Dispatchers.Default`, which means it's already off the main thread. If you need a different dispatcher (like `Dispatchers.IO` for network calls), you can switch inside `doWork()` with `withContext`.
 
 ```kotlin
 class OrderSyncWorker(
@@ -224,6 +226,26 @@ class OrderSyncWorkerTest {
 ```
 
 For testing chains, constraints, and scheduling behavior, use `WorkManagerTestInitHelper.initializeTestWorkManager(context)` in your test setup. This gives you a synchronous WorkManager that you can drive with `TestDriver`, executing work immediately and checking statuses without waiting for real constraints to be met.
+
+## Doze Mode and Battery Optimization
+
+Understanding how WorkManager interacts with Doze mode is essential for setting realistic expectations. When the device is idle, unplugged, and stationary, Android enters Doze mode and defers all alarms, network access, and jobs — including WorkManager tasks. The system periodically opens "maintenance windows" where deferred work can execute, but the timing is unpredictable.
+
+This means your periodic sync that's supposed to run every hour might be delayed by several hours when the device is in Doze. On some OEMs (Xiaomi, Huawei, Samsung, Oppo), aggressive battery optimizations go even further — they can kill background work entirely unless the user explicitly exempts your app. This is a real problem with no clean solution. The best you can do is: use expedited work for user-initiated tasks, set realistic expectations for periodic work timing, and guide users through OEM-specific battery settings if your app relies on timely background execution.
+
+WorkManager handles most of this gracefully — it persists work requests in a SQLite database and reschedules them across reboots and Doze cycles. But "guaranteed execution" means "it will eventually run," not "it will run on time." For time-critical work, consider using `AlarmManager` with `setExactAndAllowWhileIdle()` instead, accepting the tradeoff that it requires the `SCHEDULE_EXACT_ALARM` permission on Android 12+.
+
+## Real-World Use Cases
+
+**Data synchronization** — The most common use case. Sync local changes to the server when the device has connectivity. Use `OneTimeWorkRequest` with `NetworkType.CONNECTED` constraint for immediate syncs, and `PeriodicWorkRequest` for background polling. Tag synced items locally so you know what to retry if the sync fails mid-batch.
+
+**Image/file upload** — Upload photos, documents, or attachments that the user selected. Use expedited work for user-initiated uploads (the user expects immediate progress), and regular work for background uploads (batch photo sync). Show a notification for long uploads using `setForeground()` in the worker.
+
+**Cache cleanup** — Schedule periodic cleanup of expired cache files, old database entries, and temporary downloads. A `PeriodicWorkRequest` running daily with `RequiresCharging` constraint is ideal — it runs during overnight charging and keeps the app's storage footprint reasonable.
+
+**Log and analytics upload** — Batch analytics events locally and upload them periodically. Use `PeriodicWorkRequest` with `NetworkType.CONNECTED`. This reduces network calls from one per event to one per batch, which is more battery-efficient and handles offline usage gracefully.
+
+**Database maintenance** — Run `VACUUM` on large SQLite databases, prune old records, or rebuild FTS indexes. Schedule during charging with a periodic worker to avoid impacting the user's active session.
 
 ## The Reframe — WorkManager Is an OS Contract
 

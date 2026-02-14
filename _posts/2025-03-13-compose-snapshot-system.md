@@ -7,117 +7,123 @@ tags:
   - Jetpack Compose
 ---
 
-The first time I really looked at how Compose tracks state changes, I expected to find something like LiveData's observer pattern — register a listener, get notified on changes, update the UI. What I found instead was something far more interesting: a full transactional state system that works more like a database than an observer pattern. Compose doesn't just track "this value changed." It takes snapshots of mutable state, isolates concurrent modifications, detects conflicts, and decides what to recompose. The snapshot system is the foundation that makes everything else in Compose work — recomposition, `derivedStateOf`, `snapshotFlow`, and even the Compose compiler's ability to skip unchanged composables.
+The first time I really looked at how Compose tracks state changes, I expected to find something like LiveData's observer pattern — register a listener, get notified on changes, update the UI. What I found instead was something far more interesting: a full transactional state system built on multiversion concurrency control (MVCC), the same concept that powers database isolation levels. Compose doesn't just track "this value changed." It takes snapshots of mutable state, isolates concurrent modifications, detects conflicts, and decides what to recompose. The snapshot system is the foundation that makes everything else in Compose work — recomposition, `derivedStateOf`, `snapshotFlow`, and even the compiler's ability to skip unchanged composables.
 
-Zack Klipp's deep dives into this system were what finally made it click for me. What follows is my understanding of how the pieces fit together and why it matters for writing efficient Compose code.
+Zack Klipp's deep dives into this system were what finally made it click for me. What follows is my understanding of how the pieces fit together, starting from the `Snapshot` class itself and working up to how the recomposer uses all of it.
 
-## Snapshots Are Database Transactions for State
+## The Snapshot Class
 
-The core mental model is this: **a snapshot is an isolated view of all mutable state at a point in time**, similar to a database transaction's isolation level. When you call `Snapshot.withMutableSnapshot { }`, the runtime creates a copy-on-write view where you can read and modify state objects. Other threads see the old values until you commit. If you commit successfully, your changes become visible globally. If there's a conflict — another snapshot modified the same state — the commit can fail or invoke a merge policy.
+A `Snapshot` is an isolated, read-only view of all snapshot state values at the point it was created. You can think of it like a save point in a video game — it captures the state of every `MutableState`, `SnapshotStateList`, `SnapshotStateMap`, and `derivedStateOf` in your entire program at that moment. You create one with `Snapshot.takeSnapshot()`, and you "restore" it by calling `enter {}` — inside that lambda, every state object returns the value it had when the snapshot was taken, regardless of what changed since.
 
 ```kotlin
-val counter = mutableStateOf(0)
+val userName = mutableStateOf("Spot")
 
-// Thread A
+userName.value = "Spot"
+val snapshot = Snapshot.takeSnapshot()
+userName.value = "Fido"
+
+println(userName.value)              // Fido
+snapshot.enter { println(userName.value) }  // Spot
+println(userName.value)              // Fido
+
+snapshot.dispose()
+```
+
+The current snapshot for any thread is accessible via `Snapshot.current`. All code runs inside some snapshot — even if you never explicitly create one. The reads inside `enter {}` are isolated: no matter how deep the call stack goes, every state access sees the snapshotted value. But this snapshot is read-only. Trying to write to a `MutableState` inside a read-only snapshot's `enter` block throws `IllegalStateException: Cannot modify a state object in a read-only snapshot`. For writes, you need a mutable snapshot.
+
+## MutableSnapshot — Isolation and Commit
+
+`Snapshot.takeMutableSnapshot()` returns a `MutableSnapshot`, which adds write capability and a critical feature: **isolation**. Inside a mutable snapshot's `enter {}` block, you can read and write state freely. Those changes are invisible to all other threads and snapshots until you explicitly call `apply()`. If you never apply, the changes are discarded when you call `dispose()`.
+
+```kotlin
+val balance = mutableStateOf(100)
+
+val snapshot = Snapshot.takeMutableSnapshot()
+snapshot.enter {
+    balance.value = balance.value - 30
+    println(balance.value)  // 70
+}
+println(balance.value)      // 100 — changes not applied yet
+
+snapshot.apply()
+println(balance.value)      // 70 — now visible globally
+snapshot.dispose()
+```
+
+This isolation is what makes Compose thread-safe without `synchronized` blocks. The recomposer runs each composition inside a mutable snapshot. If two compositions run concurrently on different threads, each one sees a consistent view of state. If both modify the same state object, the snapshot system detects the conflict at apply time — `apply()` returns `SnapshotApplyResult.Failure` unless a `SnapshotMutationPolicy` with a custom `merge` function resolves it.
+
+Snapshots also nest. If you call `takeMutableSnapshot()` inside another snapshot's `enter` block, applying the inner snapshot only pushes changes to the outer snapshot, not globally. The outer snapshot must also be applied for changes to become visible at the top level. This nesting is how the Compose runtime layers composition snapshots on top of the global snapshot.
+
+## Snapshot.withMutableSnapshot — The Practical API
+
+The pattern of take-enter-apply-dispose is common enough that there's a helper: `Snapshot.withMutableSnapshot {}`. It takes a mutable snapshot, runs your block inside it, applies on success, and disposes automatically. This is the API you'd actually use in application code.
+
+```kotlin
+val cartTotal = mutableStateOf(0)
+val cartItems = mutableStateListOf<String>()
+
+// Atomic update — both changes apply together or not at all
 Snapshot.withMutableSnapshot {
-    // Inside this block, changes are isolated
-    counter.value = counter.value + 1
-    // Other threads still see counter.value == 0
+    cartItems.add("Keyboard")
+    cartTotal.value = cartItems.size
 }
-// After the block completes (commit), everyone sees counter.value == 1
-
-// Thread B (running concurrently with Thread A's snapshot)
-println(counter.value)  // Might print 0 if Thread A hasn't committed yet
 ```
 
-This isolation is what makes Compose thread-safe without requiring `synchronized` blocks or explicit locking on state objects. The recomposer runs compositions inside snapshots. When a composition reads state, it's reading from its snapshot's view. When a state value changes in the global snapshot, the recomposer knows which compositions read that state and schedules them for recomposition. The key insight is that state reads during composition are tracked, but state reads inside callbacks (onClick, LaunchedEffect) are not — because callbacks execute outside the composition snapshot.
+The main use case is **atomic state updates from background threads**. When a coroutine in `Dispatchers.IO` fetches data and needs to update multiple state objects, wrapping those writes in `withMutableSnapshot` ensures they become visible together. Without it, another thread could read a partially-updated state — say, the new item count but the old total. The snapshot boundary makes the update atomic. It's also thread-safe by design: the snapshot provides isolation, so you don't need mutexes or other locking around state mutations.
 
-## GlobalSnapshot and the Notification Pipeline
+## StateObject and StateRecord — How Reads and Writes Work
 
-In practice, most of your app's state changes happen in the `GlobalSnapshot`. When you write `counter.value = 5` outside of any explicit snapshot, you're writing to the global snapshot. But how does Compose know something changed?
+Every snapshot-aware state object implements the `StateObject` interface. This includes `MutableState`, `SnapshotStateList`, `SnapshotStateMap`, and `DerivedSnapshotState`. The `StateObject` interface is the hook that connects your state to the snapshot machinery.
 
-Every `MutableState` object is a `StateObject` — an interface that hooks into the snapshot system. When you write to a `MutableState`, the snapshot system records the write. The `GlobalSnapshot` is periodically "applied" (committed), which triggers notifications to anyone who registered to observe snapshot changes. The Compose runtime registers a `Snapshot.registerGlobalWriteObserver` callback that captures which state objects were modified. When the global snapshot applies, the runtime checks which compositions read those state objects and marks them as invalid — needing recomposition.
+Internally, each `StateObject` maintains a linked list of `StateRecord` instances. Each record holds a value and the snapshot ID it was written in. When you read a `MutableState`, the snapshot system walks this linked list to find the record that's valid for the current snapshot — the most recent record whose snapshot ID is visible from where you're reading. When you write, a new `StateRecord` is created (or an old one is reused) and linked to the current snapshot's ID. This is the copy-on-write mechanism that makes isolation work without actually copying all state on every snapshot creation.
 
-The notification flow looks like this: you write to a `MutableState` → the snapshot system records the write in the current snapshot → the snapshot is applied → the global write observer fires → the recomposer identifies compositions that read the modified state → those compositions are scheduled for recomposition on the next frame.
+The read and write operations also notify observers. When code inside a snapshot reads a state object, the snapshot's read observer (if one was registered) is called with that `StateObject`. When a write happens, the write observer fires. These observers receive the raw `StateObject` instance — you can track which objects were read or written, but the observer itself doesn't know the values. This is the mechanism that powers both `SnapshotStateObserver` (used by the Compose runtime to track composition dependencies) and `snapshotFlow` (which takes a read-only snapshot, tracks reads, and re-runs the block when those state objects change).
+
+## Snapshot Observers — The Notification System
+
+The snapshot system exposes two global observer registration points that the Compose runtime relies on.
+
+**`Snapshot.registerGlobalWriteObserver`** installs a callback that fires immediately whenever a state object is written to in the global snapshot. The Compose runtime uses this to know that something changed and a recomposition might be needed. The callback receives the `StateObject` that was modified. Importantly, this fires synchronously on the thread that performed the write — it's a signal to schedule work, not to do the recomposition itself.
+
+**`Snapshot.registerApplyObserver`** installs a callback that fires when a snapshot is applied (or when the global snapshot is advanced). It receives the set of all state objects that changed and the snapshot they were applied from. This is how Compose determines *which* composables to invalidate: it cross-references the changed state objects against the set of objects each composition read during its last execution.
 
 ```kotlin
-class CartPresenter {
-    // This MutableState is a StateObject tracked by the snapshot system
-    var itemCount by mutableStateOf(0)
-        private set
-
-    fun addItem() {
-        // This write is recorded in the current (global) snapshot
-        itemCount++
-        // The snapshot system notifies the recomposer
-        // Any composable that read itemCount will be scheduled for recomposition
+// Debugging observer — see which state objects change
+val handle = Snapshot.registerApplyObserver { changedObjects, _ ->
+    changedObjects.forEach { stateObject ->
+        println("State changed: $stateObject")
     }
 }
 
-@Composable
-fun CartBadge(presenter: CartPresenter) {
-    // This read is tracked because it happens during composition
-    val count = presenter.itemCount
-    // The snapshot system records: "this composition reads presenter.itemCount"
-
-    if (count > 0) {
-        Badge { Text("$count") }
-    }
-}
+// Later, when done observing
+handle.dispose()
 ```
 
-This is fundamentally different from LiveData or StateFlow, where you explicitly subscribe to changes. In Compose, reads are tracked implicitly during composition. You never call `observe()` or `collect()`. The snapshot system sees every state read during composition and automatically builds the dependency graph.
+The notification flow in practice: you write to a `MutableState` → the global write observer fires → the Compose runtime schedules a `sendApplyNotifications()` call before the next frame → `sendApplyNotifications()` advances the global snapshot → the apply observer fires with the set of changed objects → the recomposer identifies which restart scopes read those objects → those scopes are scheduled for recomposition.
 
-## derivedStateOf — Smarter Than You Think
+## The Global Snapshot and the Recomposer Loop
 
-Most developers know `derivedStateOf` as "like computed properties" — it derives one state from others. But the internal mechanism is more sophisticated than simple computation. `derivedStateOf` does two things that `remember(key) { compute() }` does not: it **deduplicates invalidations** and it **caches the derived value**.
+All code runs inside a snapshot, even if you never create one explicitly. The root of the snapshot tree is the **global snapshot** — a special mutable snapshot that's always open. When you write `counter.value = 5` in a click handler or a coroutine, that write happens in the global snapshot.
 
-Consider a search filter scenario:
+Unlike regular mutable snapshots, the global snapshot doesn't have an `apply()` method. Instead, it gets **advanced**. Advancing the global snapshot is like atomically committing it and immediately opening a new one. There are three ways it advances: when a mutable snapshot is applied to it, when `Snapshot.sendApplyNotifications()` is called, or when `Snapshot.notifyObjectsInitialized()` is called. The Compose runtime schedules `sendApplyNotifications()` before each frame, ensuring that all state changes since the last frame become visible and trigger the appropriate recompositions.
 
-```kotlin
-@Composable
-fun FilteredProductList(products: List<Product>) {
-    var query by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(Category.ALL) }
+The recomposer's loop works like this: state changes happen in the global snapshot between frames. Before the next frame, `sendApplyNotifications()` advances the global snapshot and fires the apply observer with the changed state objects. The recomposer looks up which compositions read those objects. It takes a mutable snapshot, recomposes the invalidated composables inside that snapshot, and applies the result. That application advances the global snapshot again, making any state changes from recomposition visible to the rest of the app.
 
-    // Without derivedStateOf — recomputes and invalidates on every keystroke
-    val filtered = remember(query, category) {
-        products.filter { it.matchesQuery(query) && it.matchesCategory(category) }
-    }
+## Restartable Functions and Composition Tracking
 
-    // With derivedStateOf — only invalidates when the RESULT changes
-    val filteredDerived by remember {
-        derivedStateOf {
-            products.filter { it.matchesQuery(query) && it.matchesCategory(category) }
-        }
-    }
-}
-```
+When the Compose compiler processes a `@Composable` function, it transforms it into a restartable function — one that can be re-invoked later when its dependencies change, without re-invoking the entire parent tree. The compiler injects code that registers the composable's body with the recomposer as a **restart scope**.
 
-The `remember(query, category)` version recomputes on every change to `query` or `category`, and because it produces a new list instance every time, it triggers recomposition of everything downstream that reads `filtered`. Even if typing "ap" vs "app" produces the same filtered list (because no products match either), the downstream composables are still recomposed because the list reference changed.
-
-`derivedStateOf` tracks the dependencies internally through the snapshot system — it knows it reads `query` and `category` because those reads happen inside the derivation lambda. When either input changes, `derivedStateOf` re-runs the lambda. But here's the key: **it compares the new derived value to the previous one**. If the result is structurally equal to the old value, it does not trigger invalidation. The composables reading `filteredDerived` are not recomposed because, from their perspective, the state didn't change.
-
-This deduplication happens at the snapshot level. The `DerivedSnapshotState` object only reports itself as modified when the computation produces a different result. It's not just an optimization — it's a different invalidation semantic. `remember` with keys invalidates when inputs change. `derivedStateOf` invalidates when the output changes. For expensive computations with many input changes that produce the same output, this distinction eliminates unnecessary recompositions that `remember` cannot.
-
-## Restartable Functions and State Tracking
-
-When the Compose compiler processes a `@Composable` function, it transforms it into a "restartable" function. This means the function can be re-invoked at a later time when its read state changes, without re-invoking the entire parent composition tree. The compiler injects code that registers the composable's body with the recomposer as a restart scope.
-
-During composition, when the composable reads a `MutableState` value, the snapshot system records that read and associates it with the current restart scope. Later, when that state value changes, the recomposer looks up which restart scopes are associated with it and schedules them for re-execution. This is the mechanism behind Compose's "only recompose what changed" behavior.
+During composition, when the composable reads a `MutableState` value, the snapshot system records that read and associates it with the current restart scope. Later, when that state value changes, the recomposer looks up which restart scopes depend on it and schedules them for re-execution.
 
 ```kotlin
 @Composable
 fun OrderSummary(order: Order) {
-    // The compiler makes this entire function a restart scope
-
     // Reading order.itemCount triggers a snapshot read
     Text("Items: ${order.itemCount}")
 
-    // This onClick lambda executes OUTSIDE composition
     Button(onClick = {
-        // State reads here are NOT tracked by the snapshot system
-        // Modifying state here triggers writes, not tracked reads
+        // This executes OUTSIDE composition — reads here
+        // are NOT tracked for recomposition
         order.addItem()
     }) {
         Text("Add Item")
@@ -125,43 +131,24 @@ fun OrderSummary(order: Order) {
 }
 ```
 
-The distinction between reads-during-composition and reads-in-callbacks is critical. During composition, the snapshot system is actively tracking every state read to build the dependency graph. In a callback like `onClick`, `LaunchedEffect`, or `rememberCoroutineScope`, the snapshot system is not tracking reads for recomposition purposes. Writes still trigger notifications (because writes are always tracked), but reads in callbacks don't create recomposition subscriptions.
+The distinction between reads-during-composition and reads-in-callbacks is critical. During composition, the snapshot system actively tracks every state read to build the dependency graph. In a callback like `onClick` or `LaunchedEffect`, reads don't create recomposition subscriptions. Writes still trigger notifications — writes are always tracked — but reads in callbacks are invisible to the recomposer. This is why passing `{ viewModel.scrollOffset }` as a lambda instead of reading it directly in the composable body is an optimization: the read moves from composition phase to layout/draw phase, avoiding recomposition entirely.
 
-This is why moving state reads into lambdas can be an optimization technique. If you pass `{ viewModel.scrollOffset }` as a lambda instead of reading `viewModel.scrollOffset` directly in the composable body, the read happens during the lambda's execution (in the layout or draw phase) rather than during composition. The composable doesn't register a dependency on `scrollOffset`, so changes to it don't trigger recomposition — they trigger a re-layout or re-draw instead, which is cheaper.
+## derivedStateOf — Output-Based Invalidation
 
-## The Slot Table — Where State Lives
+Most developers know `derivedStateOf` as "computed properties for Compose." But the internal mechanism is more sophisticated than simple computation. `derivedStateOf` does two things that `remember(key) { compute() }` does not: it **deduplicates invalidations** and it **caches the derived value** at the snapshot level.
 
-The slot table is Compose's internal data structure for storing the state of a composition. Every `remember` call, every `mutableStateOf`, every composable invocation — they all have entries in the slot table. It's essentially an array-backed tree that maps the composition's logical structure to stored values.
-
-When you call `remember { mutableStateOf(0) }`, two things are stored in the slot table: the `remember` group entry and the `MutableState` object itself. On recomposition, Compose walks the slot table alongside the composable execution. When it encounters the `remember` call again, it looks up the existing slot entry and returns the previously stored `MutableState` instead of creating a new one. This is how state persists across recompositions — it's literally stored in the table and retrieved by position.
-
-The slot table uses a **gap buffer** — the same data structure used in text editors. There's a contiguous array with a "gap" that can be moved to any position for efficient insertions and deletions. When composables are added or removed (e.g., items in a `LazyColumn`), the gap moves to that position, and the insertion or deletion is O(1). This is more efficient than a tree or map structure because compositions are predominantly linear — you walk through the composable tree top to bottom, left to right, and the slot table mirrors that access pattern.
-
-The practical implication is that **the order of composable calls matters**. The slot table identifies entries by position. If you conditionally include composables — `if (condition) Text("A")` followed by `Text("B")` — and the condition changes, Compose needs to handle the shift. With keys (`key(id) { ... }`), you help Compose match slot table entries correctly across recompositions when the order changes. Without keys, Compose may reuse the wrong slot entry for the wrong composable, leading to state mixing bugs in lists.
-
-## When to Use derivedStateOf vs remember with Keys
-
-This is the practical question I get most, and the answer comes directly from understanding the snapshot mechanics.
-
-**Use `remember(key1, key2) { compute() }`** when the computation is cheap and you want to rerun it whenever inputs change. The downstream composables will recompose every time the inputs change, even if the output is the same. For simple transformations like formatting a date, computing a display string, or mapping an enum to a color, this is perfectly fine. The recomposition is cheap and the code is simpler.
-
-**Use `derivedStateOf`** when the computation is expensive OR when the inputs change more frequently than the output. The classic example is a list filter: the search query changes on every keystroke, but the filtered list might stay the same for several keystrokes. `derivedStateOf` prevents those unnecessary downstream recompositions. Another common case is `scrollState.firstVisibleItemIndex > 0` — the scroll offset changes on every frame during scrolling, but the boolean "is scrolled" only changes twice (at the top and away from the top).
+`derivedStateOf` tracks its dependencies through the snapshot system — it knows which state objects the derivation lambda reads because those reads happen inside a tracked context. When any input changes, it re-runs the lambda. But here's the key: **it compares the new result to the previous one**. If they're structurally equal, it does not report itself as modified. Downstream composables are not recomposed because, from their perspective, nothing changed.
 
 ```kotlin
 @Composable
 fun MessageList(messages: List<Message>) {
     val listState = rememberLazyListState()
 
-    // GOOD: derivedStateOf — scrollState changes every frame,
-    // but this boolean only changes at the boundary
+    // scrollState changes every frame, but this boolean
+    // only changes at the boundary
     val showScrollToTop by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 5 }
     }
-
-    // BAD: remember with keys — would recompose on every scroll frame
-    // val showScrollToTop = remember(listState.firstVisibleItemIndex) {
-    //     listState.firstVisibleItemIndex > 5
-    // }
 
     Scaffold(
         floatingActionButton = {
@@ -179,12 +166,30 @@ fun MessageList(messages: List<Message>) {
 }
 ```
 
-The wrong choice here doesn't crash your app — it just causes unnecessary recompositions that waste CPU cycles and can cause jank in scroll-heavy UIs. For most state derivations, `remember` with keys is fine. Reserve `derivedStateOf` for the high-frequency-input, low-frequency-output pattern where the deduplication genuinely matters.
+This is a different invalidation semantic. `remember` with keys invalidates when inputs change. `derivedStateOf` invalidates when the output changes. For high-frequency inputs that produce low-frequency outputs — scroll position to a boolean, keystrokes to a filtered list — this distinction eliminates unnecessary recompositions. For cheap computations where the output changes on every input change, plain `remember` with keys is simpler and perfectly fine.
+
+## The Slot Table — Where State Lives
+
+The slot table is Compose's internal data structure for storing the state of a composition. Every `remember` call, every `mutableStateOf`, every composable invocation has entries in this array-backed tree. When you call `remember { mutableStateOf(0) }`, both the `remember` group entry and the `MutableState` object are stored in the slot table. On recomposition, Compose walks the table alongside the composable execution and returns the previously stored instance instead of creating a new one.
+
+The slot table uses a **gap buffer** — the same data structure used in text editors. A contiguous array with a movable "gap" that allows O(1) insertions and deletions at any position. This fits compositions well because they're predominantly linear: you walk the composable tree top to bottom, left to right, and the slot table mirrors that access pattern.
+
+The practical implication is that **the order of composable calls matters**. The slot table identifies entries by position. If you conditionally include composables and the condition changes, Compose needs to handle the shift. With `key(id) { ... }`, you help Compose match slot table entries correctly across recompositions. Without keys, Compose may reuse the wrong slot entry for the wrong composable, leading to state mixing bugs in dynamic lists.
+
+## Real-World Use Cases
+
+Understanding the snapshot system opens up some practical techniques beyond just writing composables.
+
+**Custom snapshot observers for debugging.** If you're tracking down a state-related bug — say, a composable recomposing more often than expected — you can register a temporary `Snapshot.registerApplyObserver` to log which state objects are changing and when. This is more precise than Layout Inspector's recomposition counts because you see the actual state objects, not just the composable names.
+
+**`withMutableSnapshot` for atomic background updates.** When a repository fetches data on `Dispatchers.IO` and needs to update multiple `MutableState` objects atomically, wrapping the writes in `Snapshot.withMutableSnapshot {}` ensures they become visible as one unit. Without it, the UI could briefly render an inconsistent intermediate state — new items with an old count, for example.
+
+**Understanding why state reads in lambdas don't trigger recomposition.** This is the most common source of confusion I see. When you pass a state read inside a lambda — `Modifier.offset { IntOffset(0, scrollOffset.value) }` — the read happens during layout, not composition. The composition snapshot never records it, so changes to `scrollOffset` trigger re-layout instead of recomposition. Once you understand that the snapshot system only tracks reads for the snapshot that's currently active, this behavior becomes obvious instead of mysterious.
 
 ## The Reframe
 
-The snapshot system is what separates Compose from a traditional reactive UI framework. Most reactive frameworks use an observer pattern: subscribe to a stream, get notified of changes, update the UI. Compose inverted this. Instead of you telling the framework what to watch, the framework watches what you read. The snapshot system turns every state access during composition into an implicit subscription, and every state write into an implicit notification. You never register observers. You never unregister them. You never worry about memory leaks from forgotten subscriptions.
+Here's what changed how I think about Compose entirely: **the snapshot system is not an observer pattern. It's a database.** Most reactive frameworks work by subscribing: you register a listener, get notified of changes, update the UI. Compose inverted this. Instead of you telling the framework what to watch, the framework watches what you read. Every state access during composition becomes an implicit subscription. Every state write becomes an implicit notification. You never register observers. You never unregister them. You never worry about memory leaks from forgotten subscriptions.
 
-This is why Compose code feels imperative even though it's reactive underneath. You write `if (isLoading) LoadingSpinner()` and it just works — `isLoading` is a snapshot-tracked state, the read is recorded, and when it changes, only the composable that reads it is re-executed. The snapshot system is the invisible layer that makes this possible, and understanding it explains most of Compose's otherwise-mysterious behavior — why state reads in lambdas don't trigger recomposition, why `derivedStateOf` is different from `remember`, and why the order of composable calls matters.
+This is why Compose code feels imperative even though it's reactive underneath. You write `if (isLoading) LoadingSpinner()` and it just works — `isLoading` is a snapshot-tracked state, the read is recorded, and when it changes, only the composable that reads it is re-executed. The `Snapshot` class, `StateObject`, `StateRecord`, the global snapshot, the apply observers — they're the invisible infrastructure that makes this possible. And understanding how they connect explains most of Compose's otherwise-mysterious behavior.
 
 Thanks for reading through all of this :), Happy Coding!

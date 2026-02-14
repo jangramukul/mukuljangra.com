@@ -8,39 +8,37 @@ sequence: 36
 description: "Modularization questions are common in senior and lead Android interviews."
 ---
 
-## Modularization & Multi-Module Architecture — What Interviewers Really Ask
+## Modularization & Multi-Module Architecture
 
-Modularization questions are common in senior and lead Android interviews. Interviewers want to know that you've worked with multi-module projects, understand the tradeoffs, and can design a module structure for a real app — not just explain the concept.
+Modularization is one of the most common topics in senior Android interviews. You need to show that you've actually worked with multi-module projects and understand the real tradeoffs.
 
-### Core Questions (Beginner → Intermediate)
+#### What is modularization and why do I modularize?
 
-#### Q1: What is modularization and why do we modularize?
+Modularization means breaking a monolithic codebase into smaller, isolated modules. I modularize to scale the codebase, work with large teams, and reduce build time. In a single-module project, every change triggers a full recompilation. With multiple modules, Gradle only recompiles what changed and its dependents.
 
-Modularization is the process of breaking down a monolithic codebase into smaller, isolated, reusable modules. You modularize to scale the application codebase, work with large teams, and reduce build time. When a project is a single module, every code change triggers a full recompilation. With multiple modules, Gradle only recompiles the modules that changed and their dependents.
+It also enforces isolation. If my chat team works in `:feature:chat` and payments works in `:feature:payments`, they can't accidentally break each other's code. Module boundaries enforce visibility rules at the compiler level.
 
-Beyond build time, modularization enforces code ownership and isolation. If the chat team works in `:feature:chat` and the payments team works in `:feature:payments`, they can't accidentally break each other's code because module boundaries enforce visibility rules.
+#### What are the common types of modules?
 
-#### Q2: What are the common types of modules in an Android project?
+- **app module** — Entry point. Contains the Application class, main activity, navigation graph, and DI setup. Depends on all feature modules.
+- **feature modules** — Independent product features like `:feature:auth`, `:feature:cart`. Each has its own UI, ViewModel, and logic.
+- **core modules** — Shared infrastructure like `:core:network`, `:core:database`, `:core:common`.
+- **data modules** — Repository implementations, API services, data sources. Can be per-feature or shared.
+- **domain modules** — Use cases and repository interfaces. Pure Kotlin, no Android dependencies.
 
-- **app module** — The application entry point. Contains the Application class, main activity, navigation graph, and DI setup. It depends on all feature modules.
-- **feature modules** — Independent product features like `:feature:auth`, `:feature:cart`, `:feature:profile`. Each contains its own UI, ViewModel, and feature-specific logic.
-- **core modules** — Shared infrastructure like `:core:network`, `:core:database`, `:core:common`. Provide utilities that multiple features depend on.
-- **data modules** — Repository implementations, API services, and data sources. Can be per-feature (`:data:auth`) or shared (`:data`).
-- **domain modules** — Use cases and repository interfaces. Pure Kotlin with no Android dependencies.
+The exact split depends on project size and team structure.
 
-The exact split depends on the project size and team structure. A 5-person team doesn't need the same granularity as a 50-person team.
+#### What is the difference between feature-based and layer-based modularization?
 
-#### Q3: What is the difference between feature-based and layer-based modularization?
+Feature-based means each module is a product feature — `:feature:auth`, `:feature:chat`, `:feature:settings`. Each one contains its own presentation, domain, and data layers internally. More isolated, more scalable.
 
-Feature-based means each module is a product feature — `:feature:auth`, `:feature:chat`, `:feature:settings`. Each feature module contains its own presentation, domain, and data layers internally. This is more isolated and more scalable — teams own entire features.
+Layer-based means modules are split by architectural layer — `:presentation`, `:domain`, `:data`. All features share the same layer modules. More flexible, more reusable, but features aren't isolated from each other within a layer.
 
-Layer-based means modules are split by architectural layer — `:presentation`, `:domain`, `:data`. All features share the same layer modules. This is more flexible and more reusable, but features aren't isolated from each other within a layer.
+Most production apps use a hybrid — feature modules for isolation with shared core modules for common infrastructure. Feature-based works better for large teams with clear ownership. Layer-based works for smaller teams where sharing matters more than isolation.
 
-Most production apps use a hybrid approach — feature modules for isolation with shared core/data modules for common infrastructure. The choice depends on product requirements. Feature-based is better for large teams with clear feature ownership. Layer-based works for smaller teams where code sharing is more important than isolation.
+#### What does the dependency graph look like?
 
-#### Q4: What does the dependency graph of a multi-module project look like?
-
-The app module sits at the top and depends on all feature modules. Feature modules depend on core and domain modules but never on each other. Core modules depend on nothing or only on other core modules. Domain modules are pure Kotlin with no external dependencies.
+The app module sits at the top and depends on all feature modules. Feature modules depend on core and domain modules but never on each other. Domain modules are pure Kotlin with no external dependencies.
 
 ```
 :app → :feature:auth, :feature:cart, :feature:profile
@@ -50,67 +48,71 @@ The app module sits at the top and depends on all feature modules. Feature modul
 :domain → (nothing — pure Kotlin)
 ```
 
-The key rule is that dependencies flow downward. Feature modules never depend on each other, and core modules never depend on feature modules. This keeps the graph acyclic and prevents circular dependencies.
+Dependencies flow downward. Feature modules never depend on each other, and core modules never depend on feature modules. This keeps the graph acyclic.
 
-#### Q5: What is the difference between api and implementation in Gradle dependencies?
+#### What is the difference between api and implementation in Gradle?
 
-`implementation` means the dependency is internal to the module — other modules that depend on this one can't see it. `api` means the dependency is exposed — other modules can see and use it transitively.
+`implementation` means the dependency is internal — other modules that depend on this one can't see it. `api` means the dependency is exposed transitively.
 
 ```kotlin
 // In :core:network module
 dependencies {
     implementation(libs.okhttp)        // Only :core:network sees OkHttp
-    api(libs.retrofit)                 // Modules depending on :core:network can also see Retrofit
+    api(libs.retrofit)                 // Dependents can also see Retrofit
 }
 ```
 
-Use `implementation` by default. It limits what gets exposed and improves build times because a change in an `implementation` dependency only recompiles the current module. Use `api` only when the dependency is part of your module's public API — like when a method in your public interface returns a Retrofit type.
+I use `implementation` by default. It limits what gets exposed and improves build times because a change in an `implementation` dependency only recompiles the current module. I use `api` only when the dependency is part of my module's public API — like when a public method returns a Retrofit type.
 
-Using `api` everywhere defeats the purpose of modularization because changes ripple through the entire graph. A large project with mostly `api` dependencies builds almost as slowly as a single module.
+Using `api` everywhere defeats the purpose. Changes ripple through the entire graph and build times get close to a single-module project.
 
-#### Q6: How do you avoid circular dependencies?
+#### How do I handle navigation between feature modules?
 
-Circular dependencies happen when module A depends on module B and module B depends on module A. Gradle doesn't allow this — the build fails. The solution is to extract the shared code into a third module that both depend on.
+Feature modules can't depend on each other, so one feature can't directly reference another feature's Activity or Composable. I need a separate navigation module in the core layer.
 
-For example, if `:feature:auth` needs to navigate to `:feature:profile` and `:feature:profile` needs to check auth status, don't make them depend on each other. Instead, create `:core:navigation` that defines navigation routes both features use, and `:domain` that defines an `AuthRepository` interface both can access.
-
-The general pattern is: if two modules need each other's code, the shared part should move to a lower-level module that both depend on.
-
-#### Q7: How do you handle navigation between feature modules?
-
-Feature modules can't depend on each other, so one feature can't directly reference another feature's Activity or Composable. The common solutions are:
-
-**Navigation routes in a shared module** — Define route constants or sealed classes in a `:core:navigation` module. Each feature module registers its routes, and the app module assembles the navigation graph.
+**Shared route definitions** — I define route constants in a `:core:navigation` module. Each feature registers its routes. The app module assembles the full navigation graph.
 
 ```kotlin
-// :core:navigation — shared routes
+// :core:navigation
 object Routes {
     const val AUTH = "auth"
     const val PROFILE = "profile/{userId}"
     fun profile(userId: String) = "profile/$userId"
 }
 
-// :feature:auth — navigates to profile without knowing about :feature:profile
+// :feature:auth — navigates without knowing about :feature:profile
 fun onLoginSuccess(userId: String) {
     navController.navigate(Routes.profile(userId))
 }
 ```
 
-**Interface-based navigation** — Define a `Navigator` interface in a core module, implement it in the app module. Feature modules depend on the interface and call methods like `navigator.goToProfile(userId)` without knowing the implementation.
+**Interface-based navigation** — I define a `Navigator` interface in a core module and implement it in the app module. Feature modules call `navigator.goToProfile(userId)` without knowing the implementation.
 
-#### Q8: What are the build time benefits of modularization?
+#### How do I avoid circular dependencies?
 
-Gradle compiles modules in parallel and uses incremental compilation. When you change code in `:feature:auth`, only that module and modules that depend on it are recompiled. Modules that don't depend on `:feature:auth` use their cached outputs.
+Circular dependencies happen when module A depends on B and B depends on A. Gradle fails the build. The fix is to extract the shared code into a third module that both depend on.
 
-The real gains come from how `implementation` dependencies limit recompilation scope. If `:feature:auth` changes an internal class, only `:feature:auth` recompiles. If it changes a public API, its dependents recompile too. The more modules you have with `implementation` dependencies, the smaller the recompilation scope.
+If `:feature:auth` needs to navigate to `:feature:profile` and `:feature:profile` needs to check auth status, I don't make them depend on each other. I put navigation routes in `:core:navigation` and the `AuthRepository` interface in `:domain`. Both features depend on those lower-level modules instead.
 
-In practice, a well-modularized project with 30+ modules can see build times drop from 3-4 minutes to under 1 minute for incremental builds. Full clean builds might actually be slower because of the overhead of configuring many Gradle modules, but incremental builds — which developers do hundreds of times a day — get significantly faster.
+The general pattern: if two modules need each other's code, the shared part moves to a module that sits below both.
 
-### Deep Dive Questions (Advanced → Expert)
+#### What are the build time benefits?
 
-#### Q9: What are Gradle convention plugins and why do multi-module projects need them?
+Gradle compiles modules in parallel and uses incremental compilation. When I change code in `:feature:auth`, only that module and its dependents recompile. Everything else uses cached outputs.
 
-Convention plugins are custom Gradle plugins that define shared build configuration. In a multi-module project, every module needs similar setup — Kotlin version, compile SDK, min SDK, common dependencies, test configurations. Without convention plugins, you copy-paste this configuration into every `build.gradle.kts`.
+The real gains come from `implementation` dependencies. If I change an internal class in `:feature:auth`, only that module recompiles. If I change a public API, its dependents recompile too. More modules with `implementation` dependencies means a smaller recompilation scope.
+
+In practice, a well-modularized project with 30+ modules can see incremental builds drop from 3-4 minutes to under 1 minute. Clean builds might be slightly slower because of Gradle configuration overhead, but incremental builds — which I do hundreds of times a day — get much faster.
+
+#### How does Hilt work across modules?
+
+Each module defines its own `@Module` classes with `@InstallIn`, and Hilt aggregates them at the app level during compilation. Feature modules use `@HiltViewModel` and `@InstallIn(ViewModelComponent::class)`. Core modules provide shared dependencies with `@InstallIn(SingletonComponent::class)`. The app module has `@HiltAndroidApp` on the Application class, which triggers the final aggregation.
+
+The important detail is that `@InstallIn` determines the component scope, not the Gradle module. A `@Module` in `:feature:auth` installed in `SingletonComponent` provides an app-wide singleton, which is probably not what I want. I match Hilt scope to the feature's lifecycle — feature-specific dependencies should be `ViewModelScoped`, not `Singleton`.
+
+#### What are Gradle convention plugins?
+
+Convention plugins are custom Gradle plugins that define shared build configuration. Every module needs similar setup — Kotlin version, compile SDK, min SDK, common dependencies. Without convention plugins, I copy-paste this into every `build.gradle.kts`.
 
 ```kotlin
 // build-logic/convention/src/main/kotlin/AndroidFeaturePlugin.kt
@@ -136,92 +138,63 @@ class AndroidFeaturePlugin : Plugin<Project> {
 }
 ```
 
-Then each feature module's `build.gradle.kts` becomes a single line: `plugins { id("app.android.feature") }`. This eliminates duplication, reduces errors, and makes it easy to update configuration across all modules at once. Google's Now In Android project uses this pattern extensively.
+Then each feature module's build file becomes one line: `plugins { id("app.android.feature") }`. This eliminates duplication and makes it easy to update configuration across all modules at once.
 
-#### Q10: How does Hilt work in a multi-module project?
+#### How do I enforce module boundaries?
 
-Hilt's annotation processing works across Gradle modules automatically. Each module defines its own `@Module` classes with `@InstallIn`, and Hilt aggregates them at the app level during compilation.
+Kotlin's `internal` visibility modifier limits access to the same module. Anything marked `internal` in `:feature:auth` is invisible to `:feature:cart`. This is the primary enforcement tool.
 
-Feature modules define their ViewModels with `@HiltViewModel` and their modules with `@InstallIn(ViewModelComponent::class)`. Core modules provide shared dependencies with `@InstallIn(SingletonComponent::class)`. The app module applies the `dagger.hilt.android.plugin` and has `@HiltAndroidApp` on the Application class — this triggers the final aggregation.
+I also use Gradle's `api` vs `implementation` to limit transitive dependencies. Tools like `dependency-analysis-plugin` detect unused dependencies and `api` dependencies that should be `implementation`.
 
-The important detail is that Hilt uses `@InstallIn` to determine which component a module belongs to, not which Gradle module it's in. A `@Module` in `:feature:auth` installed in `SingletonComponent` provides an app-wide singleton, which might not be what you want. Match the Hilt scope to the feature's lifecycle — feature-specific dependencies should be `ViewModelScoped` or `ActivityScoped`, not `Singleton`.
+The strongest enforcement is the dependency graph itself. If `:feature:auth` doesn't depend on `:feature:cart`, the compiler prevents any access. No runtime check needed.
 
-#### Q11: How do you structure shared resources across modules?
+#### How do I share data across feature modules?
 
-Common resources like colors, typography, shared strings, and base themes go in a `:core:ui` or `:core:design` module. Feature modules depend on it and use its resources. Feature-specific resources (strings, drawables) stay in the feature module.
+Feature modules can't depend on each other, so I can't share data directly. The common approaches:
 
-The key rule is that `:core:ui` should only contain resources that are genuinely shared across 3+ features. If a color is only used in two features, it doesn't belong in the shared module — put it in each feature module. Over-sharing in core modules leads to a bloated module that everything depends on, which defeats the purpose of modularization because changes to `:core:ui` trigger recompilation of every feature.
+**Shared repository** — Both features depend on `:core:data` which provides a `UserRepository`. When `:feature:auth` updates the user, `:feature:profile` observes changes through the same repository's Flow.
 
-#### Q12: What are dynamic feature modules?
+**Shared state holder** — A `SessionManager` in a core module holds global state like auth tokens or user preferences. Feature modules inject it and observe changes.
 
-Dynamic feature modules are modules that can be downloaded on demand instead of being included in the initial app download. They use the Play Feature Delivery API. The initial APK is smaller, and features like a camera editor, AR viewer, or admin dashboard are downloaded only when the user needs them.
+**Navigation arguments** — For one-time data passing, I send data through navigation arguments. The source feature puts data in the route, the destination reads it from `SavedStateHandle`.
 
-Dynamic features have an inverted dependency — the dynamic feature module depends on the app module (not the other way around). This is because the app must be installable without the dynamic feature. Communication between the app and dynamic features uses reflection or the `SplitInstallManager` API to check if a feature is installed before navigating to it.
+#### How do I decide the right granularity?
 
-In practice, dynamic feature modules add complexity — testing is harder, dependency injection requires workarounds, and the Play Store delivery can be unreliable. Most teams only use them for genuinely large optional features where the APK size saving justifies the effort.
+Too few modules means I miss out on build time and isolation benefits. Too many means excessive boilerplate and slow Gradle configuration.
 
-#### Q13: How do you decide the right granularity for modules?
+I start coarse-grained and split when there's a real reason — the module is too large for one team, build times are slow because changes trigger too much recompilation, or I need to enforce that certain code can't access certain APIs.
 
-Too few modules means you don't get the build time and isolation benefits. Too many modules means excessive boilerplate, complex dependency graphs, and slow Gradle configuration phase.
+As a rough guide: 5-10 developers can work with 10-20 modules. 50+ developers might need 50-100+ modules. Google's apps have hundreds, but they also have hundreds of engineers and custom build infrastructure.
 
-Start coarse-grained and split when you have a reason. Good reasons to split a module: the module is too large for one team to own, build times are slow because changes in the module trigger too much recompilation, or you want to enforce that a specific part of the code doesn't access certain APIs.
+#### What are dynamic feature modules?
 
-A practical rule: if your project has 5-10 developers, 10-20 modules is reasonable. If you have 50+ developers, 50-100+ modules makes sense. Google's apps have hundreds of modules, but they also have hundreds of engineers and custom build infrastructure.
+Dynamic feature modules are downloaded on demand instead of being included in the initial APK. They use the Play Feature Delivery API. Features like a camera editor or admin dashboard get downloaded only when the user needs them.
 
-#### Q14: How do you enforce module boundaries and prevent leaking internal APIs?
+The dependency is inverted — the dynamic feature depends on the app module, not the other way around. The app must be installable without the dynamic feature. Communication uses `SplitInstallManager` to check if a feature is installed before navigating to it.
 
-Kotlin's `internal` visibility modifier limits access to the same module. Any class, function, or property marked `internal` in `:feature:auth` is invisible to `:feature:cart`. This is the primary tool for enforcing boundaries.
+In practice, dynamic features add a lot of complexity. Testing is harder, DI requires workarounds, and Play Store delivery can be unreliable. I only use them for genuinely large optional features where the APK size saving justifies the effort.
 
-For more control, you can use Gradle's `api` vs `implementation` to limit transitive dependencies. Linting tools like `dependency-analysis-plugin` detect unused dependencies and `api` dependencies that should be `implementation`. Some teams also use architecture tests (ArchUnit for JVM) to verify that modules don't access packages they shouldn't.
+#### How do I structure shared resources?
 
-The strongest enforcement is the dependency graph itself. If `:feature:auth` doesn't depend on `:feature:cart`, there's no way for auth code to reference cart code — the compiler prevents it.
+Shared resources like colors, typography, and base themes go in a `:core:ui` or `:core:design` module. Feature-specific resources stay in the feature module.
 
-#### Q15: How do you handle shared data across feature modules?
+I only put resources in `:core:ui` if they're genuinely used across 3+ features. Over-sharing creates a bloated module that everything depends on. Any change to `:core:ui` triggers recompilation of every feature, which defeats the purpose of modularization.
 
-Feature modules can't depend on each other, so sharing data directly isn't possible. The common approaches are:
+#### What is the impact on testing?
 
-**Shared repository in a core module** — Both features depend on `:core:data` which provides a `UserRepository`. When `:feature:auth` updates the user, `:feature:profile` observes the change through the same repository's Flow.
+Each module can be tested independently. A feature module's tests only set up dependencies for that feature, not the entire app. Tests are faster and more focused.
 
-**Event bus or shared state holder** — A `SessionManager` in a core module holds the current user session. Feature modules inject it and observe changes. This works for global state like auth tokens, user preferences, or feature flags.
+Module boundaries also force better testability. When `:feature:auth` depends on a `UserRepository` interface from `:domain`, I naturally use a fake in tests without needing a mocking library. The architecture that modularization enforces — depending on abstractions — is the same architecture that makes code testable.
 
-**Navigation arguments** — For one-time data passing between features, send data through navigation arguments. The source feature puts data in the route, and the destination feature reads it from `SavedStateHandle`.
+Integration tests become more intentional too. I test specific module combinations instead of the whole app. A test for `:feature:cart` with `:core:network` and `:core:database` verifies the cart feature end-to-end without involving auth or profile.
 
-#### Q16: What is the impact of modularization on testing?
+#### How do I migrate a monolithic app to multi-module?
 
-Each module can be tested independently with its own test suite. A feature module's unit tests only need to set up dependencies for that feature, not the entire app. This makes tests faster and more focused.
+I start from the bottom. Extract `:core:network` and `:core:database` first — they have the fewest dependencies on app code. Then extract `:domain` with repository interfaces and use cases. Finally, extract feature modules one at a time, starting with the most isolated feature.
 
-Module boundaries also force better testability. When `:feature:auth` depends on a `UserRepository` interface from `:domain`, the tests naturally use a fake implementation without needing a mocking library. The architecture enforced by modularization (depending on abstractions) is the same architecture that makes code testable.
+For each extraction: identify all classes belonging to the feature, move them to a new module, make what other modules need `public`, make everything else `internal`, add the dependency in the app module's `build.gradle.kts`, and fix compilation errors. Those errors tell me exactly where the boundary isn't clean — those spots need an interface or a shared module.
 
-Integration tests become more intentional. Instead of testing the entire app, you test specific module combinations. A test for `:feature:cart` with `:core:network` and `:core:database` verifies the cart feature works end-to-end without involving auth, profile, or other features.
-
-#### Q17: What is the recommended module structure for a medium-to-large Android app?
-
-A practical structure for a team of 10-20 developers working on an app with 5-8 major features:
-
-```
-:app                          // Entry point, navigation, DI root
-:core:common                  // Extensions, utils, base classes
-:core:network                 // Retrofit setup, interceptors, API config
-:core:database                // Room setup, base DAOs, migrations
-:core:ui                      // Shared Compose components, theme, design tokens
-:core:navigation              // Route definitions, Navigator interface
-:domain                       // Use cases, repository interfaces, domain models
-:feature:auth                 // Login, signup, password reset
-:feature:home                 // Home screen, dashboard
-:feature:profile              // User profile, settings
-:feature:chat                 // Messaging feature
-:feature:notifications        // Notification center
-```
-
-Each feature module contains its own data layer (API service, mappers) and presentation layer (ViewModel, Composables). The domain module holds shared business logic. Core modules provide infrastructure. The app module wires everything together.
-
-#### Q18: How do you migrate a monolithic app to a multi-module architecture?
-
-Start from the bottom. Extract `:core:network` and `:core:database` first — these have the fewest dependencies on app code. Then extract `:domain` with repository interfaces and use cases. Finally, extract feature modules one at a time, starting with the most isolated feature.
-
-The practical steps for extracting a feature module: identify all classes belonging to the feature, move them to a new module, make everything that other modules need `public`, make everything else `internal`, add the dependency in the app module's `build.gradle.kts`, and fix compilation errors. The compilation errors tell you exactly where the module boundary isn't clean — those are the spots that need an interface or a shared module.
-
-Don't try to modularize everything at once. Extract one module, stabilize, then extract the next. A full migration for a large app can take months of incremental work alongside regular feature development.
+I don't try to modularize everything at once. Extract one module, stabilize, then extract the next. A full migration for a large app takes months of incremental work alongside regular feature development.
 
 ### Common Follow-ups
 

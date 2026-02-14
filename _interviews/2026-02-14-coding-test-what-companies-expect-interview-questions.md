@@ -10,31 +10,41 @@ description: "Most Android interview pipelines include a practical coding test �
 
 ## Coding Test — What Companies Expect
 
-Most Android interview pipelines include a practical coding test — either a take-home project or a live coding session. Knowing what evaluators actually look for is just as important as knowing how to code.
+Most Android interview pipelines include a coding test — either a take-home project or a live coding session. Knowing what evaluators look for matters as much as knowing how to code.
 
-### Core Questions (Beginner → Intermediate)
+#### What are the common coding test formats?
 
-#### Q1: What are the common coding test formats companies use?
+There are three main formats. Timed take-home is the most common — I get a problem statement and 3-6 hours to build a solution. Untimed take-home gives a few days with no strict time limit, but evaluators still gauge effort by scope. Live coding puts me on a shared screen with an interviewer — I build or modify something in real time while explaining my thought process.
 
-There are three main formats. Timed take-home is the most common — you get a problem statement and 3-6 hours (sometimes 24-48 hours with a time cap) to build a solution. Untimed take-home gives you a few days with no strict time limit, but evaluators still gauge effort by scope. Live coding puts you on a shared screen with an interviewer — you build or modify something in real time while explaining your thought process.
+Some companies also do "fix and extend" — they hand me an existing codebase with bugs or missing features, and I need to fix issues, add a feature, and improve code quality.
 
-Some companies also do "fix and extend" — they hand you an existing codebase with bugs or missing features, and you need to fix issues, add a feature, and improve code quality.
+#### What do evaluators look for in a submission?
 
-#### Q2: What do evaluators actually look for in a coding test submission?
+Five things, roughly in this priority:
 
-Evaluators check five things in roughly this priority:
-
-- **Code quality** — clean naming, short functions, no dead code, no commented-out blocks
+- **Code quality** — clean naming, short functions, no dead code
 - **Architecture** — separation of concerns, proper layering (UI, domain, data), dependency direction
 - **Error handling** — network failures, empty states, edge cases handled gracefully
-- **Testing** — at least unit tests for the core logic (repository, ViewModel, use cases)
+- **Testing** — at least unit tests for repository and ViewModel
 - **Documentation** — a clear README explaining how to build, run, and navigate the project
 
-A working app with poor architecture scores lower than a well-architected app that's missing a minor feature. Evaluators care about how you think, not just that it works.
+A working app with poor architecture scores lower than a well-architected app missing a minor feature.
 
-#### Q3: How should you structure a coding test project?
+#### What should a good README contain?
 
-Use a standard Android project structure with clear package separation. At minimum, separate your code into `data`, `domain`, and `ui` (or `presentation`) packages. Inside each, group by feature when the project has more than one screen.
+A good README covers four things: how to build and run (including any API key setup), architecture decisions and why I made them, what I would improve with more time, and any assumptions I made about ambiguous requirements.
+
+I keep it to 200-400 words. Evaluators read dozens of submissions, so a concise README that highlights my thinking beats a long one that restates the obvious.
+
+#### How important is Git history?
+
+More important than most candidates realize. Evaluators check commit history to understand how I work. A single "initial commit" with everything tells them nothing. Small, logical commits like "set up project structure", "add Retrofit API client", "implement weather repository with caching", "add unit tests for repository" show incremental, organized thinking.
+
+I don't rewrite history to look perfect — that feels dishonest. But I commit at natural breakpoints instead of dumping everything at the end.
+
+#### How should I structure a coding test project?
+
+I use a standard Android project structure with clear package separation. At minimum, I separate code into `data`, `domain`, and `ui` packages. Inside each, I group by feature when the project has more than one screen.
 
 ```
 com.example.weatherapp/
@@ -51,53 +61,39 @@ com.example.weatherapp/
 └── di/                // Hilt modules
 ```
 
-This structure tells the evaluator you understand layered architecture without overcomplicating a small project. Don't create empty layers or packages just for show — if the project is simple enough that use cases add nothing, skip the domain layer and go straight from ViewModel to repository.
+If the project is simple enough that use cases add nothing, I skip the domain layer and go straight from ViewModel to repository. Don't create empty layers just for show.
 
-#### Q4: What should a good README contain for a coding test?
+#### Should I use Jetpack Compose or XML Views?
 
-A good README covers four things: how to build and run (including any API key setup), architecture decisions and why you made them, what you would improve with more time, and any assumptions you made about ambiguous requirements.
+I use whatever I'm stronger in, unless the job description specifically mentions one. If the company uses Compose, I go with Compose — it signals that I'm current. If I'm comfortable with both, Compose is generally the better choice because it's less boilerplate.
 
-Keep it short — 200-400 words is enough. Evaluators read dozens of submissions, so a concise README that highlights your thinking is better than a long one that restates the obvious.
+I don't mix both in the same project. That looks scattered, not versatile.
 
-#### Q5: How important is Git history in a coding test?
-
-More important than most candidates realize. Evaluators often check your commit history to understand how you work. A single "initial commit" with everything tells them nothing. Small, logical commits like "set up project structure", "add Retrofit API client", "implement weather repository with caching", "add unit tests for repository" show that you work incrementally and think in organized steps.
-
-Don't rewrite history to look perfect — that feels dishonest. But do commit at natural breakpoints instead of dumping everything at the end.
-
-#### Q6: How should you handle time management in a timed take-home test?
-
-Split your time roughly into thirds: first third for setup, architecture, and API integration — get data flowing end to end. Second third for UI, error handling, and edge cases. Final third for testing, cleanup, and README.
-
-The biggest mistake is spending too long on UI polish or animations. A clean, functional app with proper architecture and tests scores better than a pixel-perfect app with no error handling. If you're running out of time, skip nice-to-have features and focus on making what you have solid.
-
-#### Q7: What are the most common mistakes candidates make in coding tests?
+#### What are the most common mistakes in coding tests?
 
 - No error handling — the app crashes on network failure or shows a blank screen
 - No tests — not even a single unit test for the repository or ViewModel
-- Over-engineering — creating abstractions for things that don't need them in a small project
-- No README — evaluators shouldn't have to read your code to understand the project
-- Hardcoded API keys in source — use `local.properties` or `BuildConfig`
+- Over-engineering — creating abstractions that don't add value in a small project
+- No README — evaluators shouldn't have to read my code to understand the project
+- Hardcoded API keys — I use `local.properties` or `BuildConfig` instead
 - Ignoring edge cases — empty lists, no network, invalid input
-- Submitting code that doesn't compile — always do a clean build from a fresh checkout before submitting
+- Code that doesn't compile — I always do a clean build from a fresh checkout before submitting
 
-#### Q8: How should you handle ambiguous requirements in a coding test?
+#### How should I handle ambiguous requirements?
 
-Document your assumptions and move on. If the requirements say "build a weather app" but don't specify whether to show a 5-day forecast or just current weather, pick one, build it well, and note your assumption in the README. Evaluators want to see how you handle ambiguity, not that you built exactly what they imagined.
+I document my assumptions and move on. If the requirements say "build a weather app" but don't specify whether to show a 5-day forecast or just current weather, I pick one, build it well, and note my assumption in the README.
 
-If the company allows questions, ask two or three clarifying questions before you start — like what API to use, whether offline support is expected, and whether Compose or XML is preferred. This shows you think before coding.
+If the company allows questions, I ask two or three clarifying questions before starting — like what API to use, whether offline support is expected, and whether Compose or XML is preferred.
 
-#### Q9: Should you use Jetpack Compose or XML Views for a coding test?
+#### How should I manage time in a timed take-home test?
 
-Use whatever you're stronger in, unless the job description specifically mentions one. If the company's tech stack uses Compose, go with Compose — it signals that you're current. If you're comfortable with both, Compose is generally the better choice for new projects because it's less boilerplate and evaluators see it as a positive signal.
+I split my time roughly into thirds. First third for setup, architecture, and API integration — get data flowing end to end. Second third for UI, error handling, and edge cases. Final third for testing, cleanup, and README.
 
-Don't mix both in the same project. That looks scattered, not versatile.
+The biggest mistake is spending too long on UI polish or animations. A clean, functional app with proper architecture and tests scores better than a pixel-perfect app with no error handling.
 
-### Deep Dive Questions (Advanced → Expert)
+#### What does good architecture look like for a small coding test app?
 
-#### Q10: What does a good project architecture look like for a small coding test app?
-
-A clean single-module MVVM setup with repository pattern is the sweet spot. You don't need Clean Architecture with use cases for a 2-3 screen app. The key is clear dependency direction — ViewModel depends on Repository, Repository depends on API service and DAO, but nothing depends on the ViewModel.
+A clean single-module MVVM setup with repository pattern. I don't need Clean Architecture with use cases for a 2-3 screen app. The key is clear dependency direction — ViewModel depends on Repository, Repository depends on API service and DAO, but nothing depends on the ViewModel.
 
 ```kotlin
 class WeatherRepository(
@@ -120,11 +116,11 @@ class WeatherRepository(
 }
 ```
 
-Use Hilt for DI — it takes 10 minutes to set up and shows you understand dependency management. Manual DI is fine too, but Hilt is expected at most companies.
+I use Hilt for DI — it takes 10 minutes to set up and shows I understand dependency management. Manual DI is fine too, but Hilt is expected at most companies.
 
-#### Q11: How should you implement error handling in a coding test app?
+#### How should I implement error handling?
 
-Use a sealed class for UI state that covers loading, success, and error. The ViewModel exposes this state and the UI renders accordingly. This is the pattern evaluators expect.
+I use a sealed interface for UI state that covers loading, success, and error. The ViewModel exposes this state and the UI renders accordingly.
 
 ```kotlin
 sealed interface WeatherUiState {
@@ -153,11 +149,11 @@ class WeatherViewModel(
 }
 ```
 
-Show all three states in the UI — a loading indicator, the actual content, and an error screen with a retry button. Missing any of these tells the evaluator you don't think about real-world scenarios.
+I show all three states in the UI — a loading indicator, the actual content, and an error screen with a retry button. Missing any of these shows I haven't thought about real-world scenarios.
 
-#### Q12: What level of testing is expected in a coding test?
+#### What level of testing is expected?
 
-At minimum, write unit tests for the repository and ViewModel. These are the layers with actual logic. Mock the API service and DAO, and verify the repository emits the correct states for success, error, and cache scenarios.
+At minimum, I write unit tests for the repository and ViewModel. These are the layers with actual logic. I mock the API service and DAO, and verify the repository emits the correct states for success, error, and cache scenarios.
 
 ```kotlin
 class WeatherRepositoryTest {
@@ -189,11 +185,11 @@ class WeatherRepositoryTest {
 }
 ```
 
-If you have time, add a ViewModel test and one UI test. But two solid repository tests beat five superficial tests that don't actually verify meaningful behavior.
+Two solid repository tests beat five superficial tests that don't verify meaningful behavior. If I have time, I add a ViewModel test and one UI test.
 
-#### Q13: How do you handle API keys securely in a coding test project?
+#### How do I handle API keys securely?
 
-Never commit API keys to the repository. Store them in `local.properties` (which is gitignored by default) and expose them through `BuildConfig`.
+I never commit API keys to the repository. I store them in `local.properties` (which is gitignored by default) and expose them through `BuildConfig`.
 
 ```kotlin
 // build.gradle.kts
@@ -205,9 +201,32 @@ android {
 }
 ```
 
-Add a note in the README: "Add `WEATHER_API_KEY=your_key` to `local.properties`". This shows awareness of security basics. Some candidates skip this and hardcode keys directly in the Retrofit base URL — that's a red flag for evaluators.
+I add a note in the README: "Add `WEATHER_API_KEY=your_key` to `local.properties`". Hardcoding keys directly in the Retrofit base URL is a red flag.
 
-#### Q14: What differentiates a good submission from a great submission?
+#### How should I approach a live coding interview vs a take-home test?
+
+Live coding is about communication as much as coding. I think out loud — explain what I'm about to do before I do it. I start by restating the problem and asking clarifying questions. Then I sketch a high-level plan before writing code.
+
+For live coding, I prioritize getting something working end to end quickly, then iterate. I don't spend 20 minutes setting up perfect architecture — the interviewer wants to see me ship working code and improve it. If I get stuck, I say so and explain my debugging thought process.
+
+For take-home tests, the opposite is true — architecture and quality matter more than speed. I take the time to structure things properly, write tests, and clean up before submitting.
+
+#### What should I do if I can't finish the coding test in time?
+
+I submit what I have and document what's missing. I add a section in the README called "What I Would Add With More Time" and list the features or improvements with enough detail that the evaluator can see I knew what was needed.
+
+```markdown
+## What I Would Add With More Time
+- Pagination for the weather forecast list using Paging 3
+- UI tests with ComposeTestRule for the search flow
+- Offline-first sync using WorkManager for background refresh
+- Better error messages with specific handling for 429 (rate limit)
+  and 503 (service unavailable) responses
+```
+
+A well-structured incomplete submission with clear documentation beats a rushed, messy complete one.
+
+#### What differentiates a good submission from a great one?
 
 A good submission has clean code, proper architecture, error handling, and tests. A great submission adds things that show senior-level thinking:
 
@@ -215,39 +234,16 @@ A good submission has clean code, proper architecture, error handling, and tests
 - Proper loading, error, and empty states — not just "it works when the API is up"
 - Meaningful Git history that tells a story of how the app was built
 - A README that explains trade-offs — "I chose Moshi over kotlinx.serialization because..."
-- Edge case handling — what happens with no network, empty search results, or a slow API response
+- Edge case handling — no network, empty search results, slow API response
 - Configuration change survival — state isn't lost on rotation
 
 None of these are hard to implement, but most candidates skip them because they focus on features instead of quality.
 
-#### Q15: How should you approach a live coding interview vs a take-home test?
+#### How do I decide what to include and what to skip when time is limited?
 
-Live coding is about communication as much as coding. Think out loud — explain what you're about to do before you do it. Start by restating the problem and asking clarifying questions. Sketch a high-level plan (even verbally) before writing code.
+I prioritize in this order: working core feature, proper architecture, error handling, at least one meaningful test, README. Everything else is bonus.
 
-For live coding, prioritize getting something working end to end quickly, then iterate. Don't spend 20 minutes setting up perfect architecture — the interviewer wants to see you ship working code and then improve it. If you get stuck, say so and explain your thought process for debugging.
-
-For take-home tests, the opposite is true — architecture and quality matter more than speed. Take the time to structure things properly, write tests, and clean up before submitting.
-
-#### Q16: What should you do if you can't finish the coding test in time?
-
-Submit what you have and document what's missing. Add a section in the README called "What I Would Add With More Time" and list the features or improvements you would have added — with enough detail that the evaluator can see you knew what was needed.
-
-```markdown
-## What I Would Add With More Time
-- Pagination for the weather forecast list using Paging 3
-- UI tests with ComposeTestRule for the search flow
-- Offline-first sync using WorkManager for background refresh
-- Better error messages with specific handling for 429 (rate limit) 
-  and 503 (service unavailable) responses
-```
-
-A well-structured incomplete submission with clear documentation beats a rushed, messy complete submission. Evaluators understand time constraints — they care about your judgment and prioritization.
-
-#### Q17: How do you decide what to include and what to skip when time is limited?
-
-Prioritize in this order: working core feature, proper architecture, error handling, at least one meaningful test, README. Everything else is bonus.
-
-Skip animations, custom theming, advanced UI polish, and nice-to-have features like pull-to-refresh or dark mode. These don't affect the architecture score, which is what evaluators weight most heavily. If you have time left after the essentials, add one bonus feature that demonstrates depth — like offline caching or pagination — rather than three superficial extras.
+I skip animations, custom theming, advanced UI polish, and nice-to-have features like pull-to-refresh or dark mode. These don't affect the architecture score. If I have time left after the essentials, I add one bonus feature that demonstrates depth — like offline caching or pagination — rather than three superficial extras.
 
 ### Common Follow-ups
 

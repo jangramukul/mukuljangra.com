@@ -12,29 +12,25 @@ description: "Designing a networking library like Retrofit or OkHttp tests your 
 
 Networking library design comes up often in system design rounds because it touches HTTP internals, request pipelines, caching, concurrency, and extensibility. The goal is to walk through how you would build something like Retrofit or OkHttp from scratch.
 
-### Requirements & Scope
-
-#### Q1: What are the core functional requirements?
+#### What are the core functional requirements?
 
 The library needs to support all standard HTTP methods (GET, POST, PUT, DELETE, PATCH), serialize request bodies and deserialize response bodies, support interceptors for cross-cutting concerns like logging and auth, and provide HTTP caching. It should handle multipart uploads, streaming responses, and configurable timeouts.
 
 The basic pipeline is: **Build Request -> Interceptor Chain -> Connection Pool -> Socket I/O -> Response Parsing -> Callback/Return**.
 
-#### Q2: What are the non-functional requirements?
+#### What are the non-functional requirements?
 
 Thread safety is critical — multiple threads will make requests concurrently, so connection pools, caches, and dispatchers all need to be safe for concurrent access. Requests must support cancellation so the caller can abort in-flight work when a screen is destroyed. The library should be extensible — new serializers, interceptors, and call adapters should plug in without modifying core code.
 
 Performance matters too. Connection reuse, response caching, and efficient thread pooling directly affect app responsiveness and battery usage on mobile.
 
-#### Q3: What is in scope and what is out of scope?
+#### What is in scope and what is out of scope?
 
 In scope: HTTP/1.1 and HTTP/2 request execution, request/response interceptors, pluggable serialization, connection pooling, disk-based HTTP caching, request cancellation and timeouts, retry logic, TLS support, and multipart uploads.
 
 Out of scope for an initial design: WebSocket support, HTTP/3 (QUIC), custom DNS resolution, proxy authentication, and cookie management. These can be added later through interceptors or extensions.
 
-### High-Level Design
-
-#### Q4: What does the high-level architecture look like?
+#### What does the high-level architecture look like?
 
 The architecture follows a pipeline model. A request enters the system, passes through a chain of interceptors, reaches the transport layer which manages connections, and a response flows back through the same chain in reverse.
 
@@ -42,7 +38,7 @@ The key components are: a public API layer (builder/DSL for creating requests), 
 
 Each component is independent and replaceable. The interceptor chain is the backbone — even internal concerns like caching and connection management are implemented as interceptors in OkHttp.
 
-#### Q5: How would you design the public API?
+#### How would you design the public API?
 
 Use a builder pattern for the client and an annotated interface for endpoint definitions. Retrofit's approach works well — define a Kotlin interface with annotations, and the library generates the implementation at runtime using reflection or code generation.
 
@@ -70,7 +66,7 @@ val api = NetworkClient.Builder()
 
 The interface separates the "what" (endpoint definition) from the "how" (HTTP execution). It makes the API self-documenting and testable — you can create a fake implementation for tests without touching the network.
 
-#### Q6: How does the interceptor chain pattern work?
+#### How does the interceptor chain pattern work?
 
 The interceptor chain is an ordered list of processors. Each interceptor receives the request, can modify it, call `chain.proceed()` to pass it to the next interceptor, and then modify the response on the way back. Any interceptor can short-circuit the chain by returning a response directly — this is how caching works.
 
@@ -98,7 +94,7 @@ class AuthInterceptor(
 
 OkHttp has two interceptor levels. Application interceptors run once per logical request — they see the original request and final response. Network interceptors run for every physical request, including redirects and retries. Logging interceptors are usually added as network interceptors because you want to log what actually goes over the wire.
 
-#### Q7: How does the serialization layer work?
+#### How does the serialization layer work?
 
 A converter factory transforms between Kotlin objects and HTTP bodies. When sending a POST, the converter serializes the object to JSON (or Protobuf, XML). When receiving a response, it deserializes the body into the target type.
 
@@ -115,7 +111,7 @@ interface Converter<F, T> {
 
 Retrofit supports multiple converter factories tried in registration order. This decouples networking from serialization completely — you can swap Gson for Moshi without changing any API definitions. For Kotlin projects, Moshi and kotlinx.serialization are preferred over Gson because they handle null safety and default parameters correctly.
 
-#### Q8: How does connection pooling work at a high level?
+#### How does connection pooling work at a high level?
 
 Opening a new TCP connection for every request is expensive — DNS resolution, TCP handshake, and TLS handshake can take 100-300ms combined. Connection pooling keeps idle connections alive and reuses them for subsequent requests to the same host.
 
@@ -123,7 +119,7 @@ OkHttp's pool keeps up to 5 idle connections per address with a 5-minute keep-al
 
 HTTP/2 makes pooling even more effective because it multiplexes multiple requests over a single connection. You only need one connection per host, and all requests share it without head-of-line blocking at the application layer.
 
-#### Q9: How does HTTP caching work?
+#### How does HTTP caching work?
 
 HTTP caching uses response headers to decide if a stored response is still valid. The key headers are `Cache-Control: max-age=3600` (response is fresh for 3600 seconds), `ETag` (a content hash for conditional requests), and `Last-Modified` (a timestamp for conditional checks).
 
@@ -131,9 +127,7 @@ When a cached response expires, the library sends a conditional request with `If
 
 OkHttp has a built-in `Cache` class that handles all of this. You provide a directory and max size, and it respects `Cache-Control`, `ETag`, and `Last-Modified` automatically.
 
-### Low-Level Design & Deep Dives
-
-#### Q10: How would you implement the interceptor chain internally?
+#### How would you implement the interceptor chain internally?
 
 The chain is a recursive structure. Each `Chain` object holds the full list of interceptors and a current index. When an interceptor calls `proceed()`, it creates a new `Chain` with the index incremented by one and calls the next interceptor's `intercept()` method.
 
@@ -154,7 +148,7 @@ class RealInterceptorChain(
 
 The last interceptor in the chain is always the one that does actual network I/O — the `CallServerInterceptor`. Everything before it is processing. OkHttp's internal chain order is: RetryAndFollowUpInterceptor, BridgeInterceptor, CacheInterceptor, ConnectInterceptor, CallServerInterceptor. Application interceptors are prepended, network interceptors are inserted between ConnectInterceptor and CallServerInterceptor.
 
-#### Q11: How do connection pooling and keep-alive work internally?
+#### How do connection pooling and keep-alive work internally?
 
 The pool stores connections in a list, keyed by route. When a new request comes in, the pool searches for an idle connection matching the target route. If found, it returns that connection. If not, it creates a new one.
 
@@ -162,7 +156,7 @@ Keep-alive is negotiated via the `Connection: keep-alive` header (default in HTT
 
 The tricky part is knowing when a connection is truly idle. The library must fully consume or close the response body before releasing the connection back to the pool. If the caller doesn't read the body, the connection is stuck — OkHttp handles this by tracking response body consumption and closing leaked connections.
 
-#### Q12: How does TLS and certificate pinning work?
+#### How does TLS and certificate pinning work?
 
 TLS secures the connection by encrypting traffic between client and server. During the handshake, the server presents a certificate chain, and the client verifies it against the device's trust store. Certificate pinning goes further — it restricts which certificates or public keys the app accepts.
 
@@ -182,7 +176,7 @@ val client = OkHttpClient.Builder()
 
 Pin against the public key hash (SPKI), not the full certificate. Certificates rotate frequently, but the public key often stays the same. Always include a backup pin. The risk with pinning is that if the server rotates keys unexpectedly, your app can't make network calls until you ship an update. On Android, Network Security Config is often a safer alternative because it can be changed without a code release.
 
-#### Q13: How do you implement request cancellation and timeouts?
+#### How do you implement request cancellation and timeouts?
 
 Cancellation ties each network call to a `Call` object or a coroutine `Job`. When cancelled, the library closes the underlying socket, releases the connection back to the pool, and stops reading the response body.
 
@@ -206,7 +200,7 @@ class NetworkCall<T>(
 
 For timeouts, define three separate values: connect timeout (TCP handshake), read timeout (waiting for response data), and write timeout (sending request body). OkHttp defaults all three to 10 seconds. There's also a `callTimeout` that covers the entire request lifecycle including redirects and retries. Each timeout throws a specific exception so the caller can handle them differently.
 
-#### Q14: How does retry with exponential backoff work?
+#### How does retry with exponential backoff work?
 
 Only retry transient failures — network timeouts, 503 (Service Unavailable), 429 (Too Many Requests). Never retry 4xx client errors (except 429) or non-idempotent requests without an idempotency key, because that could create duplicate data.
 
@@ -237,7 +231,7 @@ class RetryInterceptor(
 
 The delay doubles each attempt (1s, 2s, 4s) with random jitter added. Jitter prevents the thundering herd problem — without it, all clients retry at the exact same time after a server recovery. For 429 responses, respect the `Retry-After` header instead of using your own backoff.
 
-#### Q15: How do multipart uploads work?
+#### How do multipart uploads work?
 
 Multipart uploads send a file as part of a multi-section request body. Each section has its own content type and boundary delimiter. The body is streamed — never loaded fully into memory.
 
@@ -259,7 +253,7 @@ api.uploadFile(part, "Profile photo".toRequestBody())
 
 OkHttp's `RequestBody` has a `writeTo(sink: BufferedSink)` method that writes chunks to the socket. For upload progress tracking, wrap the `RequestBody` and count bytes as they pass through the sink. This works for any size file because the data streams from disk to the network without buffering the entire file in memory.
 
-#### Q16: How do you handle response streaming for large files?
+#### How do you handle response streaming for large files?
 
 For large responses like file downloads, never buffer the entire body in memory. Read the response as a stream and write to disk in fixed-size chunks.
 
@@ -286,7 +280,7 @@ suspend fun downloadFile(url: String, destination: File) {
 
 The 8 KB buffer size is a good default — large enough to reduce system call overhead, small enough to avoid memory pressure. The response body must be closed after reading, or the underlying connection will leak and never return to the pool.
 
-#### Q17: How do thread safety and the dispatcher work?
+#### How do thread safety and the dispatcher work?
 
 OkHttp has its own `Dispatcher` that manages a thread pool for async requests. It defaults to 64 max concurrent requests total and 5 per host. When you call `enqueue()`, the dispatcher checks these limits. If under the cap, it runs the request immediately. If at the cap, it queues the request until a slot opens.
 
@@ -304,7 +298,7 @@ With Retrofit's coroutine support, suspend functions use `suspendCancellableCoro
 
 The connection pool, cache, and dispatcher all use internal synchronization. The connection pool uses a lock to protect the connection list. The cache uses file-level locking for disk access.
 
-#### Q18: How would you test a networking library?
+#### How would you test a networking library?
 
 Use OkHttp's `MockWebServer` — it runs a real HTTP server on localhost. You enqueue responses, make real HTTP requests against it, and then verify the requests your code sent.
 

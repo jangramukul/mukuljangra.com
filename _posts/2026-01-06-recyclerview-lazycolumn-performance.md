@@ -16,15 +16,9 @@ Lists are the most common source of scroll jank in Android apps because they com
 
 RecyclerView's core insight is that off-screen views can be reused for new items instead of being inflated from scratch. But the recycling mechanism is more nuanced than "old view goes out, new view comes in." There are multiple caches, and understanding which cache your view comes from explains why some scroll operations are smooth and others aren't.
 
-**The attached scrap list** holds ViewHolders that are still on screen but being repositioned — like during a layout pass triggered by `notifyItemMoved`. Views in the scrap are reused without rebinding because their data hasn't changed. This is the cheapest "recycle."
+**The attached scrap list** holds ViewHolders that are still on screen but being repositioned — like during a layout pass triggered by `notifyItemMoved`. Views in the scrap are reused without rebinding because their data hasn't changed. **The cached views list** (default size: 2) holds recently detached ViewHolders by position. When a view scrolls off and a new position near the top is needed, RecyclerView checks if the cached view was for that exact position. If it matches, the view is reattached without calling `onBindViewHolder` — this is why scrolling back to a recently-viewed position feels faster.
 
-**The cached views list** (default size: 2) holds recently detached ViewHolders by position. When a view scrolls off the top and a new position near the top is needed, RecyclerView checks if the cached view was for that exact position. If it matches, the view is reattached without calling `onBindViewHolder`. This is why scrolling back to a recently-viewed position is faster than scrolling to a new one — the ViewHolder might still be in the cache with its data intact.
-
-**The RecycledViewPool** holds ViewHolders organized by view type. When a view scrolls off-screen and the cache is full, the ViewHolder goes to the pool. When a new view is needed and the cache doesn't have a match, the pool provides a ViewHolder of the correct type. But this ViewHolder needs rebinding — `onBindViewHolder` will be called. The pool's default size is 5 per view type.
-
-**The ViewCacheExtension** is a hook for custom caching — most apps don't use it.
-
-The performance implications are clear. **Inflation is the most expensive operation** — creating a new ViewHolder from XML costs 1-5ms depending on layout complexity. Pool recycling is cheaper because the view already exists but still requires binding (0.5-2ms). Cache hits are almost free because neither inflation nor binding is needed. The goal is to maximize cache hits and pool recycling while minimizing inflation.
+**The RecycledViewPool** holds ViewHolders organized by view type. When a view scrolls off-screen and the cache is full, the ViewHolder goes to the pool. Retrieving from the pool requires rebinding via `onBindViewHolder`, but it's still cheaper than inflation. The pool's default size is 5 per view type. The performance implications are clear: **inflation is the most expensive operation** (1-5ms depending on layout complexity), pool recycling is moderate (0.5-2ms for binding), and cache hits are almost free because neither inflation nor binding is needed.
 
 ```kotlin
 class ProductAdapter : ListAdapter<Product, ProductViewHolder>(ProductDiffCallback()) {
@@ -39,74 +33,75 @@ class ProductAdapter : ListAdapter<Product, ProductViewHolder>(ProductDiffCallba
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         // This should be fast — just data binding, no layout inflation
-        // Avoid heavy computation, image decoding, or IO here
         val product = getItem(position)
         holder.binding.productName.text = product.name
         holder.binding.productPrice.text = product.formattedPrice
-        // Let image loading library handle async loading
         imageLoader.load(product.imageUrl).into(holder.binding.productImage)
     }
 }
 ```
 
-## DiffUtil Deep Dive
+## DiffUtil and AsyncListDiffer
 
-DiffUtil is what makes RecyclerView updates efficient — instead of calling `notifyDataSetChanged()` (which throws away all ViewHolders and recreates everything), DiffUtil calculates the minimum set of insertions, removals, and moves needed to transform the old list into the new list. It uses Eugene Myers' difference algorithm, which runs in O(N + D²) time where N is the total number of items and D is the number of differences.
-
-The critical part is implementing `DiffUtil.ItemCallback` correctly. There are two methods and they serve different purposes:
+DiffUtil calculates the minimum set of insertions, removals, and moves needed to transform one list into another, using Eugene Myers' difference algorithm at O(N + D²) time. The critical part is implementing `DiffUtil.ItemCallback` correctly — `areItemsTheSame` compares stable IDs (not `hashCode()`, not `===`), and `areContentsTheSame` checks whether visible content changed. Only when `areItemsTheSame` returns true does the algorithm call `areContentsTheSame`.
 
 ```kotlin
 class ProductDiffCallback : DiffUtil.ItemCallback<Product>() {
     override fun areItemsTheSame(oldItem: Product, newItem: Product): Boolean {
-        // Identity check: is this the same logical item?
-        // MUST use a stable identifier, NOT object equality
+        // Identity check — MUST use a stable identifier
         return oldItem.id == newItem.id
     }
 
     override fun areContentsTheSame(oldItem: Product, newItem: Product): Boolean {
-        // Content check: has anything visible changed?
-        // Only called if areItemsTheSame returns true
+        // Content check — only called if areItemsTheSame returns true
         return oldItem == newItem
     }
+
+    override fun getChangePayload(oldItem: Product, newItem: Product): Any? {
+        return buildList {
+            if (oldItem.price != newItem.price) add("price")
+            if (oldItem.inStock != newItem.inStock) add("stock")
+        }.ifEmpty { null }
+    }
 }
 ```
 
-`areItemsTheSame` determines whether two items represent the same entity — it should compare a stable, unique ID. `areContentsTheSame` determines whether the item's visible content has changed — it typically uses `equals()` on the full data class. The algorithm calls `areItemsTheSame` first, and only if it returns true, calls `areContentsTheSame`. If content is the same, the ViewHolder is moved without rebinding. If content changed, `onBindViewHolder` is called with the change payload.
+The mistake I see constantly: using `hashCode()` for `areItemsTheSame`. Hash codes collide between different items, causing DiffUtil to think two items are the same — which produces bizarre visual glitches. Object reference equality (`===`) almost always returns false because your repository creates new instances, so DiffUtil treats every item as new and you lose all animation and recycling benefits.
 
-Here's the mistake I see constantly: using `hashCode()` or object reference equality for `areItemsTheSame`. Both are wrong. `hashCode()` can collide between different items, causing DiffUtil to think two different items are the same — which produces bizarre visual glitches. Object reference equality (`===`) almost always returns false because your repository is creating new instances, which means DiffUtil treats every item as new and you lose all the animation and recycling benefits.
+**Payloads** are the optimization most teams skip. When `areContentsTheSame` returns false, `getChangePayload` tells DiffUtil exactly what changed. Then in `onBindViewHolder`, you only update those fields instead of rebinding the entire ViewHolder. In our product list, implementing payloads for price updates during flash sales reduced the average bind time from 1.8ms to 0.3ms because we avoided rebinding the image and other expensive views.
 
-**Payloads** are the optimization most teams skip. When `areContentsTheSame` returns false, you can implement `getChangePayload` to tell DiffUtil exactly what changed. Then in `onBindViewHolder`, you only update the changed fields instead of rebinding the entire ViewHolder.
+Here's the thing most developers miss about DiffUtil: it runs on the **main thread** by default when you call `DiffUtil.calculateDiff()` manually. For a list of 1000 items, that diff calculation can take 10-20ms and drop frames. This is exactly why `ListAdapter` exists — it wraps `AsyncListDiffer` internally, which moves the diff calculation to a background thread. When you call `submitList()`, the diff is computed off the main thread, and only the resulting update operations (insert, remove, move) are dispatched back on the main thread. For most apps, `ListAdapter` is the right choice. You get background diffing for free, you get `getItem()` and `getItemCount()` handled automatically, and your adapter code stays minimal.
+
+The one gotcha with `submitList()`: if you submit the same list instance with modified contents, nothing happens. `AsyncListDiffer` does a reference equality check first — if the new list `===` the old list, it short-circuits and skips diffing entirely. This is a common source of "my list won't update" bugs. Always submit a new list instance, which is natural if you're using immutable data classes and `copy()`.
+
+## Sharing RecycledViewPools
+
+For feeds with nested horizontal RecyclerViews — think app stores, media apps, or social feeds with carousels — every nested RecyclerView creates its own pool by default. If you have 10 horizontal lists on screen, each showing product cards, that's 10 separate pools. When the user scrolls vertically and a new horizontal list appears, its pool is empty, so every single item gets inflated from scratch. On a mid-range device, inflating 5-6 product cards at once easily blows your frame budget.
+
+The fix is `setRecycledViewPool()`. You create a single shared pool and assign it to every nested RecyclerView that uses the same view types. Now when a horizontal list scrolls off-screen, its ViewHolders go into the shared pool. When a new horizontal list appears below, it pulls already-inflated ViewHolders from that same pool instead of inflating new ones.
 
 ```kotlin
-override fun getChangePayload(oldItem: Product, newItem: Product): Any? {
-    return buildList {
-        if (oldItem.price != newItem.price) add("price")
-        if (oldItem.inStock != newItem.inStock) add("stock")
-    }.ifEmpty { null }
-}
-
-// In adapter
-override fun onBindViewHolder(holder: ProductViewHolder, position: Int, payloads: List<Any>) {
-    if (payloads.isEmpty()) {
-        onBindViewHolder(holder, position) // Full bind
-        return
+class FeedAdapter : ListAdapter<FeedSection, FeedViewHolder>(FeedDiffCallback()) {
+    // One shared pool for all nested horizontal RecyclerViews
+    private val sharedProductPool = RecyclerView.RecycledViewPool().apply {
+        setMaxRecycledViews(VIEW_TYPE_PRODUCT, 15)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    val changes = payloads.flatMap { it as List<String> }.toSet()
-    val product = getItem(position)
-    if ("price" in changes) holder.binding.productPrice.text = product.formattedPrice
-    if ("stock" in changes) holder.binding.stockBadge.isVisible = product.inStock
+    override fun onBindViewHolder(holder: FeedViewHolder, position: Int) {
+        val section = getItem(position)
+        holder.horizontalRecyclerView.apply {
+            setRecycledViewPool(sharedProductPool)
+            adapter = ProductRowAdapter().also { it.submitList(section.products) }
+        }
+    }
 }
 ```
 
-In our product list, implementing payloads for price updates (which change frequently during flash sales) reduced the average bind time from 1.8ms to 0.3ms for those updates because we avoided rebinding the image and other expensive views.
+In a feed with 8 horizontal carousels, sharing the pool cut the total number of inflations from around 60 to 15 during the first full scroll — the rest were pool hits that only needed rebinding. On a Samsung A13, that dropped the P95 frame time from 35ms to 18ms. The key detail: call `setMaxRecycledViews()` to increase the pool size beyond the default 5, because with multiple nested lists competing for the same pool, 5 ViewHolders drains instantly.
 
-## LazyColumn Stable Keys
+## LazyColumn Stable Keys and Content Types
 
-LazyColumn is Compose's answer to RecyclerView, and it has a fundamentally different architecture. Instead of recycling View objects, LazyColumn manages composition state — it composes items as they become visible and disposes of them as they scroll off. The "recycling" equivalent is that disposed items' compositions can be partially reused if the same content type appears later.
-
-The most important performance lever in LazyColumn is the `key` parameter. Without stable keys, LazyColumn identifies items by their index position. When you insert an item at position 0, every other item shifts down by one index. From LazyColumn's perspective, every single item changed because every index now maps to a different item. This means every visible item gets recomposed — the equivalent of `notifyDataSetChanged`.
+LazyColumn manages composition state instead of recycling View objects — it composes items as they become visible and disposes of them as they scroll off. The most important performance lever is the `key` parameter. Without stable keys, LazyColumn identifies items by index position. Insert an item at position 0 and every other item shifts — from LazyColumn's perspective, every visible item changed and needs recomposition. That's the equivalent of `notifyDataSetChanged`.
 
 ```kotlin
 // BAD: no keys — insertion at index 0 recomposes everything
@@ -116,75 +111,62 @@ LazyColumn {
     }
 }
 
-// GOOD: stable keys — insertion at index 0 only composes the new item
+// GOOD: stable keys — only the new item composes
 LazyColumn {
     items(
         items = products,
         key = { product -> product.id },
+        contentType = { "product" },
     ) { product ->
         ProductCard(product)
     }
 }
 ```
 
-With stable keys, LazyColumn tracks each item by its key. When the list changes, it knows which items are new, which moved, and which are unchanged — similar to what DiffUtil does for RecyclerView. The recomposition scope is limited to items that actually changed. In a list with 50 items where you add one new item at the top, the difference is between recomposing 1 item (with keys) versus recomposing all visible items (without keys). That's easily the difference between a 4ms frame and a 30ms frame.
+With stable keys, LazyColumn tracks each item by its key and limits recomposition to items that actually changed. In a list with 50 items where you add one at the top, the difference is between recomposing 1 item versus all visible items — easily the difference between a 4ms frame and a 30ms frame.
 
-## Content Types in LazyColumn
+`contentType` maps directly to RecyclerView's view types. When you specify content types, LazyColumn can reuse compositions more efficiently — a disposed product card's composition slot table can be reused when another product card appears, which is significantly faster than composing from scratch. Without it, LazyColumn tries to reuse a product card composition for a banner ad, wasting time diffing incompatible composable trees. I measured this on a feed with 4 content types: adding `contentType` dropped P95 frame times from 22ms to 14ms — a 36% improvement entirely from better composition reuse.
 
-LazyColumn has a feature that maps directly to RecyclerView's view types: `contentType`. When you specify content types, LazyColumn can reuse compositions more efficiently across items of the same type.
+## LazyColumn Item Animations
+
+RecyclerView has `ItemAnimator` for animating insertions, removals, and moves — and customizing it has always been painful. You either use `DefaultItemAnimator` or spend a day subclassing it. Compose 1.7 introduced `animateItem()`, which makes list animations trivially simple and covers all three animation types (fade in, fade out, placement) with a single modifier.
 
 ```kotlin
 LazyColumn {
     items(
-        items = feedItems,
+        items = products,
         key = { it.id },
-        contentType = { item ->
-            when (item) {
-                is FeedItem.ProductCard -> "product"
-                is FeedItem.BannerAd -> "banner"
-                is FeedItem.CategoryHeader -> "header"
-                is FeedItem.ReviewSection -> "review"
-            }
-        },
-    ) { item ->
-        when (item) {
-            is FeedItem.ProductCard -> ProductCard(item)
-            is FeedItem.BannerAd -> BannerAdCard(item)
-            is FeedItem.CategoryHeader -> CategoryHeader(item)
-            is FeedItem.ReviewSection -> ReviewSection(item)
-        }
+        contentType = { "product" },
+    ) { product ->
+        ProductCard(
+            product = product,
+            modifier = Modifier.animateItem(
+                fadeInSpec = tween(durationMillis = 250),
+                fadeOutSpec = tween(durationMillis = 100),
+                placementSpec = spring(
+                    stiffness = Spring.StiffnessLow,
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                ),
+            ),
+        )
     }
 }
 ```
 
-Without `contentType`, LazyColumn treats all items as the same type. When a product card scrolls off and a banner ad needs to appear, the composition from the product card is disposed and a completely new composition starts for the banner ad. With `contentType`, LazyColumn knows these are different types and won't try to reuse a product composition for a banner, avoiding the overhead of diffing incompatible composable trees. More importantly, when another product card appears, it can reuse the disposed product composition's slot table, which is significantly faster than composing from scratch.
+The important detail: `animateItem()` requires stable keys to work. Without keys, Compose can't track which item moved where, so the animations either don't trigger or look wrong. This is another reason why keys aren't optional — they're the foundation that both diffing and animations depend on. Performance-wise, `animateItem()` is lightweight because it operates on already-composed content. It's not recomposing anything; it's animating the placement and alpha of existing layout nodes. I haven't seen it add more than 1-2ms to frame times even with 10+ items animating simultaneously, which is a significant improvement over `ItemAnimator` implementations that often trigger extra layout passes.
 
-I measured this on a feed with 4 content types. Without `contentType`, scrolling through a mixed feed showed P95 frame times of 22ms. With `contentType` specified, P95 dropped to 14ms — a 36% reduction. The improvement comes entirely from better composition reuse.
+## Prefetch and Nested Scrolling
 
-## Prefetch Strategies
+Both RecyclerView and LazyColumn prefetch items ahead of the scroll direction. RecyclerView's `GapWorker` uses idle time between frames to inflate and bind the next items. LazyColumn's `LazyListPrefetchStrategy` prefetches based on scroll velocity, and starting with Compose 1.7, the system is configurable for complex scrolling patterns. But here's the trap: **prefetch only helps if the creation work completes within idle time.** If your item takes 8ms to create and your frames are already at 12-14ms, there's no idle time left. Prefetch is a scheduling optimization, not a performance optimization.
 
-Both RecyclerView and LazyColumn prefetch items ahead of the scroll direction to avoid creating views/compositions during the frame when they become visible. The mechanics are different, but the goal is the same: do the expensive work before the user scrolls far enough to see the empty space.
-
-RecyclerView's `GapWorker` prefetches during idle time between frames. When the system finishes a frame early (in less than 16ms), the GapWorker uses the remaining time to inflate and bind the next items. You can control this through `LayoutManager.setItemPrefetchEnabled()` and by overriding `collectAdjacentPrefetchPositions()`. For most apps, the default prefetching works well.
-
-LazyColumn's prefetch is built into `LazyListPrefetchStrategy`. The default strategy prefetches items that are about to become visible based on scroll velocity. Starting with Compose 1.7, the prefetch system was rearchitected to be more configurable — you can now create custom strategies for complex scrolling patterns.
-
-But here's the trap with both systems: **prefetch only helps if the creation/binding work is fast enough to complete in the idle time between frames.** If your item takes 8ms to create, the prefetch needs at least one full idle frame to complete. If your frames are already tight (12-14ms), there isn't enough idle time, and the prefetch either doesn't complete or competes with the next frame's rendering work. This is why optimizing individual item performance is still critical even with prefetching — prefetch is a scheduling optimization, not a performance optimization.
-
-## The Nested Scrolling Trap
-
-The single most common performance mistake I see in list-heavy apps is nested scrolling containers — a LazyColumn inside a scrollable Column, or a horizontal RecyclerView inside a vertical RecyclerView. These seem convenient but create severe performance problems.
-
-When you put a LazyColumn inside a vertically scrollable container (like a `Column` with `verticalScroll`), the outer container needs to know the LazyColumn's total height to calculate its own scroll bounds. This forces the LazyColumn to measure **all** its items at once, completely defeating lazy composition. Instead of composing only visible items, every single item gets composed and measured in one frame. For a list of 500 items, this can take hundreds of milliseconds and cause visible freezing.
+The single most common performance mistake in list-heavy apps is nested scrolling containers. A LazyColumn inside a scrollable `Column` forces the LazyColumn to measure **all** items at once to report its total height, completely defeating lazy composition. For a list of 500 items, that means hundreds of milliseconds in a single frame.
 
 ```kotlin
 // BAD: LazyColumn inside scrollable Column — all items composed at once
 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
     Text("Header")
     LazyColumn(modifier = Modifier.height(400.dp)) {
-        items(500) { index ->
-            ListItem(index) // All 500 composed immediately
-        }
+        items(500) { index -> ListItem(index) }
     }
     Text("Footer")
 }
@@ -192,45 +174,16 @@ Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
 // GOOD: single LazyColumn with different item types
 LazyColumn {
     item { Text("Header") }
-    items(500) { index ->
-        ListItem(index) // Only visible items composed
-    }
+    items(500) { index -> ListItem(index) }
     item { Text("Footer") }
 }
 ```
 
-For nested horizontal lists inside a vertical list (a common pattern for app stores or media apps), each horizontal list should have its own state that survives scrolling. In RecyclerView, this means saving and restoring the horizontal scroll position in the ViewHolder. In LazyColumn, use `rememberSaveable` with the item's key to preserve the horizontal scroll state.
+For nested horizontal lists inside a vertical list, each LazyRow maintains its own composition state. The tradeoff is memory — in a vertical list with 20 horizontal lists of 30 items each, that's potentially 600 items tracked. If you're seeing memory pressure, consider limiting items per horizontal list or flattening to a `LazyVerticalGrid`.
 
-```kotlin
-LazyColumn {
-    items(
-        items = categories,
-        key = { it.id },
-    ) { category ->
-        Text(
-            text = category.name,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp),
-        )
+## Measuring What Matters
 
-        val listState = rememberLazyListState()
-        LazyRow(state = listState) {
-            items(
-                items = category.products,
-                key = { it.id },
-            ) { product ->
-                ProductThumbnail(product)
-            }
-        }
-    }
-}
-```
-
-The tradeoff with nested lazy lists is memory — each horizontal LazyRow maintains its own composition state. In a vertical list with 20 horizontal lists of 30 items each, that's potentially 600 items being tracked. This is usually fine because only visible items are composed, but the metadata overhead adds up. If you're seeing memory pressure, consider limiting the maximum items in each horizontal list or using a single flat grid with `LazyVerticalGrid` if the UI allows it.
-
-## Measuring Frame Timing for Lists
-
-The definitive way to measure list performance is `FrameTimingMetric` from the Macrobenchmark library. I run this test for every list-heavy screen before release:
+The definitive way to measure list performance is `FrameTimingMetric` from the Macrobenchmark library. I test both scroll directions because scrolling back up exercises different code paths — cache hits in RecyclerView, composition reuse in LazyColumn.
 
 ```kotlin
 @Test
@@ -244,26 +197,15 @@ fun scrollFeedPerformance() {
         ),
     ) {
         startActivityAndWait()
-
         val feed = device.findObject(By.res("main_feed"))
         feed.setGestureMargin(device.displayWidth / 5)
-
-        repeat(3) {
-            feed.fling(Direction.DOWN)
-            device.waitForIdle()
-        }
-
-        repeat(3) {
-            feed.fling(Direction.UP)
-            device.waitForIdle()
-        }
+        repeat(3) { feed.fling(Direction.DOWN); device.waitForIdle() }
+        repeat(3) { feed.fling(Direction.UP); device.waitForIdle() }
     }
 }
 ```
 
-I test both directions because scrolling back up exercises different code paths — cache hits in RecyclerView, composition reuse in LazyColumn. The P95 metric is what I care about. P50 is almost always fine; the jank happens in the tail. My targets are P50 under 8ms and P95 under 16ms. If P95 exceeds 16ms, I trace with Perfetto to identify which phase (composition, layout, or draw in Compose; inflate, bind, or layout in RecyclerView) is consuming the frame budget.
-
-The mistake I made early on was measuring only on fast devices. Our Pixel 7 showed P95 of 9ms. The Samsung A13 showed P95 of 28ms for the same list. The mid-range device exposed the problem; the flagship hid it. Always benchmark on the device tier your P50 user actually owns, not the device in your pocket.
+My targets are P50 under 8ms and P95 under 16ms. If P95 exceeds 16ms, I trace with Perfetto to identify which phase — composition, layout, or draw in Compose; inflate, bind, or layout in RecyclerView — is consuming the frame budget. The mistake I made early on was measuring only on fast devices. Our Pixel 7 showed P95 of 9ms. The Samsung A13 showed P95 of 28ms for the same list. Always benchmark on the device tier your P50 user actually owns, not the device in your pocket.
 
 And here we are done!
 Thanks for reading!

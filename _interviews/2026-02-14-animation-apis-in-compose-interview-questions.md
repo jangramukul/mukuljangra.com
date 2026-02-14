@@ -10,11 +10,9 @@ description: "Animation questions come up regularly in Compose interviews becaus
 
 ## Animation APIs in Compose
 
-Animation questions come up regularly in Compose interviews because they test whether you understand not just the APIs, but how Compose's declarative model drives motion through state changes rather than imperative commands.
+Animation questions come up regularly in Compose interviews because they test whether you understand the APIs and how Compose's declarative model drives motion through state changes rather than imperative commands.
 
-### Core Questions
-
-#### Q1: What is animate*AsState and when do you use it?
+#### What is animate*AsState and when do you use it?
 
 `animate*AsState` is the simplest animation API in Compose. You give it a target value and it animates from the current value to the target whenever the target changes. It returns a `State<T>` that recomposes the composable with each animation frame.
 
@@ -37,7 +35,7 @@ fun ExpandableCard(isExpanded: Boolean) {
 
 There are variants for common types — `animateDpAsState`, `animateFloatAsState`, `animateColorAsState`, `animateIntOffsetAsState`, and others. If your type isn't covered, you can use `animateValueAsState` with a custom `TwoWayConverter`.
 
-#### Q2: How does AnimatedVisibility work?
+#### How does AnimatedVisibility work?
 
 `AnimatedVisibility` wraps a composable and animates its appearance and disappearance. When `visible` changes from false to true, it runs the `enter` transition. When it goes back to false, it runs the `exit` transition, then removes the content from the composition entirely.
 
@@ -60,9 +58,9 @@ fun NotificationBanner(showBanner: Boolean) {
 }
 ```
 
-This is different from just animating alpha. Animating alpha keeps the composable in the composition and it still takes up space and remains visible to accessibility services. `AnimatedVisibility` actually removes the content from the tree after the exit animation finishes.
+This is different from just animating alpha. Animating alpha keeps the composable in the composition — it still takes up space and remains visible to accessibility services. `AnimatedVisibility` actually removes the content from the tree after the exit animation finishes.
 
-#### Q3: What is the difference between AnimatedContent and Crossfade?
+#### What is the difference between AnimatedContent and Crossfade?
 
 Both animate between different composables, but they work differently. `Crossfade` only does a simple fade — it fades out the old content and fades in the new content. `AnimatedContent` is more flexible. It supports custom `ContentTransform` with enter/exit transitions, and it can animate size changes through `SizeTransform`.
 
@@ -88,7 +86,7 @@ fun ScreenSwitcher(state: UiState) {
 
 Use `Crossfade` when a simple fade is enough. Use `AnimatedContent` when you need slides, size transforms, or different enter/exit animations based on direction.
 
-#### Q4: What does animateContentSize do?
+#### What does animateContentSize do?
 
 `Modifier.animateContentSize()` automatically animates any change in a composable's size. Instead of snapping to a new size, it smoothly transitions. It only affects the size, not the content inside.
 
@@ -109,40 +107,9 @@ fun ExpandableDescription(text: String) {
 }
 ```
 
-One thing to watch: `animateContentSize` should come before any size modifiers like `height()` or `width()` in the modifier chain. If you put a fixed size modifier before it, the size is already fixed and there's nothing to animate.
+One thing to watch — `animateContentSize` should come before any size modifiers like `height()` or `width()` in the modifier chain. If you put a fixed size modifier before it, the size is already fixed and there's nothing to animate.
 
-#### Q5: What is rememberInfiniteTransition and when do you use it?
-
-`rememberInfiniteTransition` creates an animation that runs indefinitely without stopping. It's for continuous animations like pulsing indicators, shimmer effects, or rotating loaders. The animation survives recomposition because the transition is remembered.
-
-```kotlin
-@Composable
-fun PulsingDot() {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-    Box(
-        modifier = Modifier
-            .size(20.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .background(Color.Red, CircleShape)
-    )
-}
-```
-
-Use `rememberInfiniteTransition` when the animation has no end condition. For animations that should run a fixed number of times, use `Animatable` with `repeatable` instead of `infiniteRepeatable`.
-
-#### Q6: Explain the difference between spring, tween, and keyframes animation specs.
+#### What is the difference between spring, tween, and keyframes animation specs?
 
 These are the three main `AnimationSpec` types that control how values interpolate over time.
 
@@ -174,7 +141,38 @@ animationSpec = keyframes {
 
 Spring is the default for a reason — it handles interrupted animations gracefully. If the target changes mid-animation, a spring adjusts naturally. A tween would restart from scratch, which looks janky.
 
-#### Q7: How do you use updateTransition for coordinated animations?
+#### What is rememberInfiniteTransition and when do you use it?
+
+`rememberInfiniteTransition` creates an animation that runs indefinitely without stopping. It's for continuous animations like pulsing indicators, shimmer effects, or rotating loaders. The animation survives recomposition because the transition is remembered.
+
+```kotlin
+@Composable
+fun PulsingDot() {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .background(Color.Red, CircleShape)
+    )
+}
+```
+
+Use `rememberInfiniteTransition` when the animation has no end condition. For animations that should run a fixed number of times, use `Animatable` with `repeatable` instead of `infiniteRepeatable`.
+
+#### How do you use updateTransition for coordinated animations?
 
 `updateTransition` manages multiple animations that share the same state. When the state changes, all child animations defined through `animate*` extension functions transition together in a coordinated way.
 
@@ -205,13 +203,11 @@ fun SelectableChip(selected: Boolean) {
 }
 ```
 
-The advantage over using multiple `animate*AsState` calls is that all animations are tied to the same transition and can have their timing coordinated. You can also use `transitionSpec` on each animation to customize the spec based on which state you're going to and from.
+The advantage over using multiple `animate*AsState` calls is that all animations are tied to the same transition and can have their timing coordinated. You can also use `transitionSpec` on each animation to customize the spec based on which state you're transitioning to and from.
 
-### Deep Dive Questions
+#### What is Animatable and how is it different from animate*AsState?
 
-#### Q8: What is Animatable and how is it different from animate*AsState?
-
-`Animatable` is the low-level coroutine-based animation API. Unlike `animate*AsState`, which is declarative and driven by state changes, `Animatable` is imperative — you call `animateTo()` or `snapTo()` inside a coroutine. This gives you full control over sequencing, chaining, and handling animation lifecycle.
+`Animatable` is the low-level coroutine-based animation API. Unlike `animate*AsState`, which is declarative and driven by state changes, `Animatable` is imperative — you call `animateTo()` or `snapTo()` inside a coroutine. This gives you full control over sequencing, chaining, and animation lifecycle.
 
 ```kotlin
 @Composable
@@ -235,7 +231,7 @@ fun FadeInCard() {
 
 `Animatable` also has bounds checking via `updateBounds()` and respects velocity continuity when interrupted. If you call `animateTo()` while an animation is running, it cancels the previous one but preserves the current velocity so the motion stays smooth. Use `animate*AsState` for simple target-driven animations and `Animatable` when you need sequential animations, fling-based motion, or programmatic control.
 
-#### Q9: How do you create sequential and concurrent animations?
+#### How do you create sequential and concurrent animations?
 
 With `Animatable`, sequential animations are just suspend calls in order. Each `animateTo()` suspends until it completes, so the next one starts after the previous finishes. For concurrent animations, use multiple `launch` blocks inside `LaunchedEffect`.
 
@@ -251,7 +247,7 @@ fun StaggeredEntry() {
         launch { alpha.animateTo(1f, tween(400)) }
         launch { offsetY.animateTo(0f, tween(400)) }
         // Sequential: scale starts after both finish
-        alpha.animateTo(1f) // waits if still running
+        alpha.animateTo(1f)
         scale.animateTo(1f, spring(dampingRatio = 0.4f))
     }
 
@@ -268,17 +264,72 @@ fun StaggeredEntry() {
 }
 ```
 
-The coroutine model is what makes this natural. You don't need a special API for sequencing or coordination — Kotlin's structured concurrency handles it. This is one of the biggest design wins of Compose's animation system over the old View-based `AnimatorSet` approach.
+You don't need a special API for sequencing or coordination — Kotlin's structured concurrency handles it. This is one of the biggest design wins of Compose's animation system over the old View-based `AnimatorSet` approach.
 
-#### Q10: How does Compose handle interrupted animations?
+#### How does Compose handle interrupted animations?
 
-This is where Compose's animation system really shines compared to the View system. When you change the target value while an animation is in progress, Compose doesn't restart from scratch. It picks up from the current value and velocity and animates toward the new target.
+When you change the target value while an animation is in progress, Compose doesn't restart from scratch. It picks up from the current value and velocity and animates toward the new target.
 
-For `spring` animations, this is seamless — the physics model adjusts naturally. For `tween`, the animation restarts with the current value as the new start point, but the velocity isn't preserved. That's why spring is the default: it handles interruptions without jarring jumps.
+For `spring` animations, this is seamless — the physics model adjusts naturally. For `tween`, the animation restarts with the current value as the new start point, but the velocity isn't preserved. That's why spring is the default — it handles interruptions without jarring jumps.
 
 `Animatable` enforces mutual exclusion at the API level. If `animateTo()` is called while another animation is running, it cancels the previous coroutine and starts the new animation from the current value with the current velocity. This is handled automatically — you don't need to manage cancellation yourself.
 
-#### Q11: What are shared element transitions in Compose and how do they work?
+#### What happens to animations during recomposition? How do you prevent resets?
+
+Animations backed by `remember` survive recomposition — this includes `Animatable`, `rememberInfiniteTransition`, and `animate*AsState`. The animation state is stored in the composition, so as long as the composable stays in the tree, the animation continues.
+
+The common mistake is creating animation state without `remember`. If you write `val anim = Animatable(0f)` without wrapping it in `remember`, every recomposition creates a fresh `Animatable` starting from 0, and the animation resets. Same with `LaunchedEffect` — if the key changes on every recomposition, the effect restarts and your animation loops from the beginning.
+
+For `animate*AsState`, the animation is automatically remembered and only re-targets when the target value changes. But for `LaunchedEffect`-driven animations, be careful with keys. Use `Unit` as the key if you want it to run once, or a stable identifier if it should restart when specific data changes.
+
+#### When should you use graphicsLayer for animations instead of regular modifiers?
+
+`Modifier.graphicsLayer` applies transformations (alpha, scale, rotation, translation) at the draw phase only, skipping the layout and composition phases. Regular modifiers like `offset()`, `size()`, or `alpha()` trigger layout recalculation.
+
+For animations that run every frame, this difference matters. An `offset` modifier triggers a layout pass per frame. A `graphicsLayer { translationX = value }` only redraws, which is significantly cheaper. If you're animating visual properties continuously, use `graphicsLayer`. If you need the layout system to respond (like other composables moving out of the way), use layout-aware modifiers.
+
+```kotlin
+// Performant — draw phase only
+Modifier.graphicsLayer {
+    alpha = alphaValue
+    scaleX = scaleValue
+    rotationZ = rotationValue
+    translationY = offsetValue
+}
+
+// Triggers layout — use only when layout must respond
+Modifier
+    .alpha(alphaValue)
+    .offset(y = offsetDp)
+```
+
+This maps directly to Compose's three phases — Composition, Layout, Drawing. If your animation only needs to affect the Drawing phase, `graphicsLayer` is the right tool.
+
+#### How do you animate items in a LazyColumn?
+
+Compose provides `Modifier.animateItem()` for animating item placement, appearance, and disappearance in lazy lists.
+
+```kotlin
+@Composable
+fun AnimatedTaskList(tasks: List<Task>) {
+    LazyColumn {
+        items(tasks, key = { it.id }) { task ->
+            TaskRow(
+                task = task,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = tween(300),
+                    placementSpec = spring(),
+                    fadeOutSpec = tween(300)
+                )
+            )
+        }
+    }
+}
+```
+
+The `key` parameter on `items` is critical. Without stable keys, Compose can't track which item moved where, so the animations won't work correctly. Each item needs a unique, stable identifier. The `animateItem` modifier handles fade-in for new items, fade-out for removed items, and placement animation when items reorder.
+
+#### What are shared element transitions in Compose?
 
 Shared element transitions animate a composable from one screen to another, making it look like the same element is moving between destinations. Compose introduced `SharedTransitionLayout` and the `sharedElement` / `sharedBounds` modifiers for this.
 
@@ -304,11 +355,9 @@ SharedTransitionLayout {
 }
 ```
 
-`sharedElement` animates size and position of the exact same content between two layouts. `sharedBounds` is for when the content differs between the two states but should share the same animated bounds — like a card expanding into a full-screen detail view where the layout changes but the container animates smoothly.
+`sharedElement` animates size and position of the exact same content between two layouts. `sharedBounds` is for when the content differs between the two states but should share the same animated bounds — like a card expanding into a full-screen detail view where the layout changes but the container animates smoothly. Both require a `SharedTransitionLayout` as a common ancestor and work with `AnimatedVisibility` or `AnimatedContent` to know which elements are entering and exiting.
 
-Both require a `SharedTransitionLayout` as a common ancestor and work with `AnimatedVisibility` or `AnimatedContent` to know which elements are entering and exiting.
-
-#### Q12: How do you build gesture-driven animations?
+#### How do you build gesture-driven animations?
 
 Gesture-driven animations connect user input directly to animation values. You typically use `Animatable` with `pointerInput` or drag modifiers, snapping to a velocity-based fling when the gesture ends.
 
@@ -351,76 +400,95 @@ fun SwipeToDismiss(onDismiss: () -> Unit) {
 
 The key pattern is using `snapTo()` during the drag (instant, no animation) and `animateTo()` on drag end (animated settlement). `Animatable` preserves velocity across this transition, so if you use `animateDecay` instead of `animateTo`, the element continues with the fling velocity and decelerates naturally.
 
-#### Q13: What happens to animations during recomposition? How do you prevent animation resets?
+#### What is the difference between animateDecay and animateTo?
 
-Animations backed by `remember` survive recomposition — this includes `Animatable`, `rememberInfiniteTransition`, and `animate*AsState`. The animation state is stored in the composition, so as long as the composable stays in the tree, the animation continues.
+`animateTo` animates toward a specific target value. `animateDecay` has no target — it takes an initial velocity and decelerates to zero using a decay animation spec. Think of it like flicking a ball versus pushing it to a specific position.
 
-The common mistake is creating animation state without `remember`. If you write `val anim = Animatable(0f)` without wrapping it in `remember`, every recomposition creates a fresh `Animatable` starting from 0, and the animation resets. Same with `LaunchedEffect` — if the key changes on every recomposition, the effect restarts and your animation loops from the beginning.
+```kotlin
+// animateTo — moves to a fixed target
+offsetX.animateTo(targetValue = 0f, animationSpec = spring())
 
-For `animate*AsState`, the animation is automatically remembered and only re-targets when the target value changes. But for `LaunchedEffect`-driven animations, be careful with keys. Use `Unit` as the key if you want it to run once, or a stable identifier if it should restart when specific data changes.
+// animateDecay — continues from current velocity and slows down
+offsetX.animateDecay(
+    initialVelocity = velocity,
+    animationSpec = exponentialDecay()
+)
+```
 
-#### Q14: How do you animate items in a LazyColumn?
+`animateDecay` is common in fling gestures. When the user lifts their finger, you pass the fling velocity to `animateDecay` and the element coasts to a natural stop. You can also use `splineBasedDecay` which matches the Android platform's fling behavior in scrollable containers.
 
-Compose provides `Modifier.animateItem()` on `LazyListScope` for animating item placement, appearance, and disappearance in lazy lists.
+#### How would you implement a shimmer loading effect?
+
+A shimmer effect uses `rememberInfiniteTransition` to animate a gradient offset across a composable. The gradient moves horizontally in a loop, creating the loading shimmer you see in placeholder UIs.
 
 ```kotlin
 @Composable
-fun AnimatedTaskList(tasks: List<Task>) {
-    LazyColumn {
-        items(tasks, key = { it.id }) { task ->
-            TaskRow(
-                task = task,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = tween(300),
-                    placementSpec = spring(),
-                    fadeOutSpec = tween(300)
+fun ShimmerBox(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateX by transition.animateFloat(
+        initialValue = -300f,
+        targetValue = 300f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerOffset"
+    )
+
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.LightGray,
+                        Color.White,
+                        Color.LightGray
+                    ),
+                    start = Offset(translateX, 0f),
+                    end = Offset(translateX + 200f, 0f)
                 )
             )
-        }
-    }
+    )
 }
 ```
 
-The `key` parameter on `items` is critical. Without stable keys, Compose can't track which item moved where, so the animations won't work correctly. Each item needs a unique, stable identifier. The `animateItem` modifier handles fade-in for new items, fade-out for removed items, and placement animation when items reorder.
+The gradient has three stops — gray, white, gray — and the offset shifts continuously. Using `graphicsLayer` or `drawBehind` for the gradient drawing can improve performance since it skips the layout phase.
 
-#### Q15: When should you use graphicsLayer for animations instead of regular modifiers?
+#### How do you animate navigation transitions in Compose?
 
-`Modifier.graphicsLayer` applies transformations (alpha, scale, rotation, translation) at the draw phase only, skipping the layout and composition phases. Regular modifiers like `offset()`, `size()`, or `alpha()` trigger layout recalculation.
-
-For animations that run every frame, this difference matters. An `offset` modifier triggers a layout pass per frame. A `graphicsLayer { translationX = value }` only redraws, which is significantly cheaper. The rule is: if you're animating visual properties continuously, use `graphicsLayer`. If you need the layout system to respond (like other composables moving out of the way), use layout-aware modifiers.
+With Navigation Compose, you use `AnimatedNavHost` (or the `enterTransition`/`exitTransition` parameters on `composable()` destinations inside `NavHost`). Each destination can define its own enter and exit animations.
 
 ```kotlin
-// Performant — draw phase only
-Modifier.graphicsLayer {
-    alpha = alphaValue
-    scaleX = scaleValue
-    rotationZ = rotationValue
-    translationY = offsetValue
+NavHost(
+    navController = navController,
+    startDestination = "home",
+    enterTransition = { fadeIn(tween(300)) + slideInHorizontally { it } },
+    exitTransition = { fadeOut(tween(300)) + slideOutHorizontally { -it } },
+    popEnterTransition = { fadeIn(tween(300)) + slideInHorizontally { -it } },
+    popExitTransition = { fadeOut(tween(300)) + slideOutHorizontally { it } }
+) {
+    composable("home") { HomeScreen() }
+    composable("detail") { DetailScreen() }
 }
-
-// Triggers layout — use only when layout must respond
-Modifier
-    .alpha(alphaValue)
-    .offset(y = offsetDp)
 ```
 
-This maps directly to how Compose's three phases work — Composition, Layout, Drawing. If your animation only needs to affect the Drawing phase, `graphicsLayer` is the right tool.
+There are four transition parameters — `enterTransition` and `exitTransition` for forward navigation, and `popEnterTransition` and `popExitTransition` for back navigation. You can override them per-destination if a specific screen needs a different animation. For shared element transitions across navigation, wrap the `NavHost` in a `SharedTransitionLayout`.
 
-#### Q16: How does Compose's animation system compare to the View system's animation framework?
+#### How does Compose's animation system compare to the View system?
 
-The View system has three generations of animation APIs — the old `Animation` class (XML-based), `ObjectAnimator`/`AnimatorSet` (property animation), and `Transition` framework. Each generation improved on the previous but they're all imperative — you create an animator, set properties, and call `start()`.
+The View system has three generations of animation APIs — the old `Animation` class (XML-based), `ObjectAnimator`/`AnimatorSet` (property animation), and `Transition` framework. They're all imperative — you create an animator, set properties, and call `start()`.
 
-Compose's animation system is declarative and state-driven. You describe the target state and Compose figures out the animation. This has practical advantages: interrupted animations preserve velocity automatically, coordinating multiple animations doesn't require an `AnimatorSet`, and the animation lifecycle is tied to the composition tree so there are no leaked animators.
+Compose's animation system is declarative and state-driven. You describe the target state and Compose figures out the animation. Interrupted animations preserve velocity automatically, coordinating multiple animations doesn't require an `AnimatorSet`, and the animation lifecycle is tied to the composition tree so there are no leaked animators.
 
 The biggest conceptual difference is that View animations mutate properties on existing objects, while Compose animations produce new state values that drive recomposition. There's no `view.animate().alpha(0f)` equivalent — instead you change a state variable and let `animate*AsState` handle the interpolation. This makes animations composable (you can combine them), predictable (same state always produces same output), and testable (you can advance the clock programmatically).
 
 ### Common Follow-ups
 
-- How would you implement a shimmer loading effect in Compose?
 - What's the difference between `sharedElement` and `sharedBounds` modifiers?
 - How do you test animations in Compose? Can you control the animation clock?
-- How would you animate navigation transitions with Navigation Compose?
 - What happens to an infinite transition when the composable leaves the composition?
-- How do you profile animation performance and detect dropped frames in Compose?
-- When would you use `animateDecay` vs `animateTo`?
+- How do you profile animation performance and detect dropped frames?
 - How do you animate between different content in a LazyColumn item (like expanding a card)?
+- What is `splineBasedDecay` and when would you use it over `exponentialDecay`?
+- How do you animate layout changes when switching between different composables in the same slot?
+- Can you combine multiple `AnimationSpec` types in a single transition?

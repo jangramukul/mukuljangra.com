@@ -163,6 +163,111 @@ NavHost(navController = navController, startDestination = "main") {
 
 Nested graphs are scoped — they have their own start destination and can be navigated to as a unit. This is also how you scope ViewModels to a navigation graph. A ViewModel scoped to the `"account"` graph is shared across all destinations in that graph and cleared when the user navigates away from it.
 
+## Conditional Navigation — Auth Flows and Onboarding
+
+A common real-world pattern is navigation that depends on app state — showing a login screen before the main app, or an onboarding flow on first launch. The Navigation component handles this by letting you set the start destination dynamically or navigate conditionally.
+
+```kotlin
+@Composable
+fun AppNavGraph(
+    isLoggedIn: Boolean,
+    hasCompletedOnboarding: Boolean,
+    navController: NavHostController = rememberNavController()
+) {
+    val startDestination = when {
+        !hasCompletedOnboarding -> "onboarding"
+        !isLoggedIn -> "auth"
+        else -> "main"
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
+        navigation(startDestination = "login", route = "auth") {
+            composable("login") {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate("main") {
+                            popUpTo("auth") { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable("register") { RegisterScreen(navController) }
+        }
+
+        navigation(startDestination = "welcome", route = "onboarding") {
+            composable("welcome") { WelcomeScreen(navController) }
+            composable("setup_profile") {
+                SetupProfileScreen(
+                    onComplete = {
+                        navController.navigate("main") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+
+        navigation(startDestination = "orders", route = "main") {
+            composable("orders") { OrderListScreen(navController) }
+            composable("order_detail/{orderId}") { /* ... */ }
+        }
+    }
+}
+```
+
+The `popUpTo` with `inclusive = true` is critical here. After login succeeds, you don't want the user to press back and return to the login screen. `popUpTo("auth") { inclusive = true }` clears the entire auth graph from the back stack, so pressing back from the main screen exits the app.
+
+## Navigation Testing
+
+Testing navigation is something most teams skip, but it catches a category of bugs that unit tests and UI tests miss — incorrect back stack behavior, missing argument handling, and broken deep links.
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class NavigationTest {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    private lateinit var navController: TestNavHostController
+
+    @Before
+    fun setup() {
+        composeTestRule.setContent {
+            navController = TestNavHostController(LocalContext.current).apply {
+                navigatorProvider.addNavigator(ComposeNavigator())
+            }
+            AppNavGraph(navController = navController)
+        }
+    }
+
+    @Test
+    fun clickingOrder_navigatesToDetail() {
+        composeTestRule.onNodeWithText("Order #123").performClick()
+
+        val currentRoute = navController.currentBackStackEntry?.destination?.route
+        assertEquals("order_detail/{orderId}", currentRoute)
+
+        val orderId = navController.currentBackStackEntry
+            ?.arguments?.getString("orderId")
+        assertEquals("123", orderId)
+    }
+
+    @Test
+    fun pressBack_fromDetail_returnsToList() {
+        navController.navigate("order_detail/123")
+        navController.popBackStack()
+
+        assertEquals("orders", navController.currentDestination?.route)
+    }
+}
+```
+
+`TestNavHostController` gives you access to the navigation state without needing to drive the UI. You can verify the current destination, check arguments, and test back stack behavior programmatically. For deep link testing, you can simulate a deep link Intent and verify that the NavController resolved it to the correct destination.
+
+## Multi-Module Navigation
+
+In a multi-module project, you can't define all your routes in one place because feature modules shouldn't know about each other. The pattern I use is defining navigation extension functions in each feature module that register their destinations, and having the app module call all of them when building the NavHost. Each feature module exposes a `fun NavGraphBuilder.featureGraph(navController: NavController)` extension, and the app module composes them together. This keeps feature modules independent while letting the app module own the overall navigation structure.
+
 ## Common Navigation Pitfalls
 
 **Navigating from Composable callbacks without checking lifecycle state.** If a user double-taps a list item, both clicks might trigger `navigate()`. The second call tries to navigate from a destination that's no longer current, and you get a crash. The fix is simple — check `currentDestination` before navigating, or use the `launchSingleTop` flag:

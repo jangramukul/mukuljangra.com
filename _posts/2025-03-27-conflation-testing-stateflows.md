@@ -10,15 +10,21 @@ tags:
 
 A few months ago, I was writing a test for a ViewModel that managed a loading screen. The logic was simple — set loading to true, fetch data, set loading to false, update the list. Three state changes. My test collected the StateFlow and asserted the sequence: loading, loaded with data, done. It failed. Not sometimes — consistently. The test only ever saw the final state.
 
-I spent a good hour debugging before I realized the problem wasn't my test, my ViewModel, or my coroutine setup. The problem was StateFlow itself. StateFlow conflates values by design. If you emit three values before a collector resumes, it only sees the last one. And that behavior, which is totally correct for UI rendering, completely breaks a certain style of testing. ZSMB wrote about this specific problem and it resonated with me because I had hit the exact same wall. Once I understood what conflation actually means at the implementation level, it changed how I think about StateFlow, SharedFlow, and which one to reach for.
+I spent a good hour debugging before I realized the problem wasn't my test, my ViewModel, or my coroutine setup. The problem was StateFlow itself. StateFlow conflates values by design. If you emit three values before a collector resumes, it only sees the last one. That behavior is totally correct for UI rendering, but it completely breaks a certain style of testing. [ZSMB wrote about this specific problem](https://zsmb.co/conflating-stateflows/) and it resonated with me because I had hit the exact same wall. Once I understood what conflation actually means at the implementation level, it changed how I think about testing state transitions.
 
 ## What Conflation Actually Means
 
 Conflation is a fancy word for "dropping intermediate values." When you set `StateFlow.value` three times in rapid succession, the internal implementation doesn't queue those values. It overwrites. StateFlow has a single backing field — `_state` — and every `.value =` assignment is an atomic write to that field. There's no buffer, no queue, no history. Just the latest value.
 
-Here's the thing — this is intentional. StateFlow is modeled as a **state holder**, not an event stream. The Kotlin documentation is explicit about this: "StateFlow is a state-holder observable flow that emits the current and new state updates to its collectors." The keyword is "current." It represents what the state **is right now**, not the history of what it was. For UI rendering, this is exactly right. Your screen doesn't need to render every intermediate loading state — it just needs the latest one. If the state went from `Loading` to `Success` in 2 milliseconds, the user never saw loading anyway.
+Here's the thing — this is intentional. StateFlow is modeled as a **state holder**, not an event stream. The [Kotlin documentation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/) is explicit: "Updates to the value are always conflated. So a slow collector skips fast updates, but always collects the most recently emitted value." It represents what the state **is right now**, not the history of what it was. For UI rendering, this is exactly right. Your screen doesn't need to render every intermediate loading state — it just needs the latest one. If the state went from `Loading` to `Success` in 2 milliseconds, the user never saw loading anyway.
 
-But tests are different. Tests often want to verify the **sequence** of state transitions, not just the final state. And that's where the conflict appears.
+### How Equality-Based Conflation Works
+
+StateFlow uses **strong equality-based conflation**. When you assign a new value, it compares the incoming value with the current one using `Any.equals()`. If they're equal, the assignment is effectively a no-op — no collector gets notified, nothing happens. This is the same behavior as the `distinctUntilChanged` operator, but baked into StateFlow at the implementation level. The official docs even describe StateFlow as equivalent to a `MutableSharedFlow` with `replay = 1`, `onBufferOverflow = DROP_OLDEST`, and `distinctUntilChanged` applied on top.
+
+This has practical consequences. If your state is a data class and you emit two instances with identical fields, the second emission is silently dropped. If your `equals()` implementation is broken — say it always returns true — your StateFlow will never notify collectors of any change. The Kotlin docs explicitly state that "State flow behavior with classes that violate the contract for `Any.equals` is unspecified."
+
+But there's a subtler point that matters for testing. Because there's only a single backing field with no buffer, setting the value three times in a tight loop means each write overwrites the previous one atomically. Even if the values are all different, a collector that isn't fast enough to run between those writes will only see the last one. The intermediate values existed for a moment, then disappeared.
 
 ## The Test That Always Fails
 
@@ -67,21 +73,83 @@ fun `loading profile shows loading then loaded`() = runTest {
 }
 ```
 
-This test fails because `states` only contains `[Idle, Loaded(user)]`. The `Loading` state was set and then immediately overwritten by `Loaded` before the collector's coroutine got a chance to resume and process it. The collector was suspended at `collect`, and by the time `advanceUntilIdle()` dispatches everything, the StateFlow's value has already moved past Loading.
+This test fails because `states` only contains `[Idle, Loaded(user)]`. The `Loading` state was set and then immediately overwritten before the collector ever ran. The collector was suspended at `collect`, and by the time `advanceUntilIdle()` dispatches everything, the StateFlow's value has already moved past Loading.
 
-## Why This Happens Under the Hood
+### Why This Happens Under the Hood
 
-To understand why, you need to know how StateFlow's emission and collection work internally. When you set `StateFlow.value`, it atomically updates the backing field and then tries to resume any suspended collectors. But "tries to resume" doesn't mean "immediately runs the collector's code." In a coroutine test with `StandardTestDispatcher` (the default for `runTest`), dispatching is controlled — coroutines don't run until you call `advanceUntilIdle()` or `advanceTimeBy()`.
+The reason comes down to how `StandardTestDispatcher` works — and it's the default dispatcher for `runTest`. When you set `StateFlow.value`, it atomically updates the backing field and then tries to resume any suspended collectors. But "tries to resume" doesn't mean "immediately runs the collector's code." `StandardTestDispatcher` queues all tasks on the test scheduler and only executes them when you explicitly call `advanceUntilIdle()`, `runCurrent()`, or `advanceTimeBy()`. It never runs anything on its own.
 
-So the sequence is: `_uiState.value = Loading` writes the value and schedules the collector to resume. But before the test dispatcher processes that resumption, the next line executes — `userRepository.getUser()` returns (because your fake is synchronous), and `_uiState.value = Loaded(user)` overwrites Loading with Loaded. Now when the collector finally resumes, it reads the current value, which is already Loaded. Loading was set and overwritten within a single dispatch frame. The collector never saw it.
+So the sequence plays out like this: `_uiState.value = Loading` writes the value and schedules the collector to resume. But before the test scheduler processes that resumption, the next line of the ViewModel executes — `userRepository.getUser()` returns synchronously (because your fake is in-memory), and `_uiState.value = Loaded(user)` overwrites Loading with Loaded. Now when the collector finally gets its turn, it reads the current value, which is already Loaded. Loading was set and overwritten within a single dispatch frame. The collector never saw it.
 
 This is the same reason your UI works fine — Compose reads `StateFlow.value` on each recomposition, so it always sees the latest state. But a `collect` call that expects to observe every intermediate emission gets burned by conflation.
 
-## The Turbine Solution
+## `UnconfinedTestDispatcher` vs `StandardTestDispatcher`
 
-Turbine, built by Cash App, is the standard library for testing Flows in Kotlin. Its `test {}` DSL gives you fine-grained control over emissions with `awaitItem()`, `awaitError()`, and `expectNoEvents()`. But even Turbine can't magically observe values that StateFlow conflated away — because they were never emitted to any collector. What Turbine does is make the timing explicit so you can structure your test correctly.
+Understanding these two dispatchers is the key to controlling conflation in tests. They're both `TestDispatcher` implementations that skip delays, but they have fundamentally different scheduling behavior.
 
-Here's the same test with Turbine:
+**`StandardTestDispatcher`** is lazy. When a coroutine is launched on it, the coroutine body doesn't execute immediately. Instead, it's queued on the test scheduler and only runs when you explicitly call `advanceUntilIdle()` or `runCurrent()`. This gives you precise control over execution order, but it means rapidly emitted StateFlow values can pile up and conflate before any collector runs.
+
+**`UnconfinedTestDispatcher`** is eager. Coroutines launched on it enter their body immediately — the `launch` call doesn't return until the coroutine hits its first suspension point. This is similar to `Dispatchers.Unconfined` in production code. When StateFlow resumes a collector on `UnconfinedTestDispatcher`, the collector processes the value inline, right there, before the next line of the producing code executes.
+
+The practical difference is this: with `StandardTestDispatcher`, the producing and collecting coroutines take turns at the scheduler's discretion. With `UnconfinedTestDispatcher` on the collector, the collector runs **immediately** when a new value is set — no scheduling delay, no window for conflation.
+
+But here's the critical nuance that ZSMB highlighted and I think is worth repeating: **the collector must be on `UnconfinedTestDispatcher` while the producer stays on `StandardTestDispatcher`.** If both are unconfined, the producer's value assignments happen without yielding, and you're back to conflation. The collector can only be "faster" than the producer if there's a dispatch boundary in the producer's execution path. `StandardTestDispatcher` provides that boundary — each value write schedules a resumption, giving the unconfined collector a chance to intercept.
+
+```kotlin
+@Test
+fun conflationReturnsWhenBothUnconfined() = runTest {
+    val stateFlow = MutableStateFlow(0)
+
+    launch(UnconfinedTestDispatcher(testScheduler)) {
+        val values = stateFlow.take(2).toList()
+        assertEquals(listOf(0, 3), values) // conflation happened
+    }
+
+    launch(UnconfinedTestDispatcher(testScheduler)) {
+        stateFlow.value = 1
+        stateFlow.value = 2
+        stateFlow.value = 3
+    }
+}
+```
+
+When I first learned this, I assumed "just use `UnconfinedTestDispatcher` everywhere" was the answer. It's not. You need the asymmetry — an eager collector watching a lazy producer — to observe every intermediate state.
+
+## The `MainDispatcherRule` Setup
+
+In real Android code, ViewModels use `viewModelScope`, which dispatches on `Dispatchers.Main`. Since there's no Android main looper in unit tests, you need to replace `Dispatchers.Main` with a test dispatcher. The standard approach is a JUnit `TestWatcher` rule:
+
+```kotlin
+class MainDispatcherRule(
+    private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher(),
+) : TestWatcher() {
+
+    override fun starting(description: Description) {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    override fun finished(description: Description) {
+        Dispatchers.resetMain()
+    }
+}
+```
+
+By defaulting to `UnconfinedTestDispatcher`, this rule ensures that coroutines launched on `Dispatchers.Main` — including everything inside `viewModelScope` — execute eagerly. But here's where it gets interesting for conflation. If you use `UnconfinedTestDispatcher` as your Main dispatcher, the ViewModel's `viewModelScope.launch` block runs its body immediately and inline. The value writes happen without dispatch boundaries, meaning `Loading` and `Loaded` are set back-to-back without any chance for a collector to intercept.
+
+IMO, the better pattern for testing state transitions is to use `StandardTestDispatcher` in the rule instead, which makes the ViewModel's coroutines lazy and creates the dispatch boundaries you need:
+
+```kotlin
+@get:Rule
+val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+```
+
+With this setup, the ViewModel's `viewModelScope.launch` block is queued rather than executed immediately. Combined with Turbine (which collects on `UnconfinedTestDispatcher` internally), you get the asymmetry needed to observe every intermediate state.
+
+## Testing With Turbine
+
+Turbine, built by the Cash App team, is the standard library for testing Flows in Kotlin. Its `test {}` DSL gives you `awaitItem()`, `awaitError()`, and `expectNoEvents()` for fine-grained control over emissions. The important implementation detail is that **Turbine's `test` function uses `UnconfinedTestDispatcher` under the hood** when running inside `runTest`. This means Turbine's collector is already "fast" — it processes emissions eagerly without needing an explicit dispatch.
+
+With `awaitItem()`, the first call on a StateFlow always returns the **initial value**. This catches people off guard — you need to consume that initial emission before you trigger any action, or your assertion order will be off.
 
 ```kotlin
 @Test
@@ -89,7 +157,7 @@ fun `loading profile shows loading then loaded`() = runTest {
     val viewModel = ProfileViewModel(FakeUserRepository())
 
     viewModel.uiState.test {
-        assertEquals(ProfileState.Idle, awaitItem())
+        assertEquals(ProfileState.Idle, awaitItem()) // initial value
 
         viewModel.loadProfile("user-123")
 
@@ -101,18 +169,62 @@ fun `loading profile shows loading then loaded`() = runTest {
 }
 ```
 
-The critical difference is that Turbine's `test {}` starts collecting **before** the action, and `awaitItem()` suspends until the next emission arrives. But this alone doesn't fix the conflation issue — you still need the collector to actually be dispatched between the Loading and Loaded emissions.
+`cancelAndIgnoreRemainingEvents()` is necessary because StateFlow never completes — without it, the test would hang waiting for more emissions or Turbine would fail complaining about unconsumed events.
 
-The real fix is using `UnconfinedTestDispatcher` for the ViewModel's scope. With `UnconfinedTestDispatcher`, coroutines execute eagerly — so when `_uiState.value = Loading` is set, the collector runs immediately (before the next line of the ViewModel executes). This means the collector sees Loading before the ViewModel has a chance to overwrite it with Loaded.
+This test works when the ViewModel's `viewModelScope` uses `StandardTestDispatcher` (the lazy one). Turbine's internal `UnconfinedTestDispatcher` collects eagerly, so each `.value =` assignment in the ViewModel immediately delivers the value to Turbine before the next line of ViewModel code executes. That's the asymmetry at work.
+
+## Real-World Testing Patterns
+
+### Testing Loading → Success
+
+The loading-to-success flow is the most common case where conflation bites you. The pattern is straightforward once you have the right dispatcher setup:
+
+```kotlin
+@get:Rule
+val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+
+@Test
+fun `search returns results after loading`() = runTest {
+    val repository = FakeSearchRepository(
+        results = listOf(SearchResult("Kotlin Coroutines"))
+    )
+    val viewModel = SearchViewModel(repository)
+
+    viewModel.uiState.test {
+        assertEquals(SearchState.Idle, awaitItem())
+
+        viewModel.search("coroutines")
+
+        assertEquals(SearchState.Loading, awaitItem())
+        assertEquals(
+            SearchState.Results(listOf(SearchResult("Kotlin Coroutines"))),
+            awaitItem()
+        )
+        cancelAndIgnoreRemainingEvents()
+    }
+}
+```
+
+### Testing Error Recovery
+
+Error recovery tests verify that the state transitions correctly from error back to success. The key insight is that you might trigger `loadProfile` twice — once to fail, once to succeed — and you need to assert the full sequence across both attempts:
 
 ```kotlin
 @Test
-fun `loading profile shows loading then loaded`() = runTest(UnconfinedTestDispatcher()) {
-    val viewModel = ProfileViewModel(FakeUserRepository())
+fun `retry after error shows loading then success`() = runTest {
+    val repository = FakeUserRepository()
+    val viewModel = ProfileViewModel(repository)
 
     viewModel.uiState.test {
         assertEquals(ProfileState.Idle, awaitItem())
 
+        repository.shouldFail = true
+        viewModel.loadProfile("user-123")
+
+        assertEquals(ProfileState.Loading, awaitItem())
+        assertEquals(ProfileState.Error("Failed to load profile"), awaitItem())
+
+        repository.shouldFail = false
         viewModel.loadProfile("user-123")
 
         assertEquals(ProfileState.Loading, awaitItem())
@@ -123,32 +235,46 @@ fun `loading profile shows loading then loaded`() = runTest(UnconfinedTestDispat
 }
 ```
 
-With `UnconfinedTestDispatcher`, each `StateFlow.value` assignment triggers the collector inline — no scheduling delay, no conflation window. The collector processes Loading before Loaded is ever set.
+### Testing Debounced Search
 
-## The Deeper Insight — StateFlow Is Not an Event Stream
+Debounced search is trickier because it involves `delay()`. Since `TestDispatcher` skips delays, you use `advanceTimeBy()` to simulate the debounce window. Here the `StandardTestDispatcher` Main rule actually works in your favor — you can advance virtual time precisely:
 
-Here's the reframe that changed how I approach this: **StateFlow was never designed to deliver every value.** It's a state holder. If you need every emission to be observed, you're using the wrong tool. This isn't a bug — it's a design decision that reflects a real distinction between state and events.
+```kotlin
+@Test
+fun `debounced search waits before executing`() = runTest {
+    val viewModel = SearchViewModel(FakeSearchRepository())
 
-Think about it this way. Your screen has a state — it's either loading, showing data, or showing an error. At any given moment, there's exactly one correct state. You don't need the history of states — you need the current one. That's StateFlow. But a "show toast" command, a navigation event, or a snackbar trigger is different. If you fire two toast events in quick succession, the user expects to see both. Conflating those away would be a bug.
+    viewModel.uiState.test {
+        assertEquals(SearchState.Idle, awaitItem())
 
-This distinction maps directly to the three Kotlin primitives. **StateFlow** is for state — latest value matters, conflation is correct. The `value` property gives you the current state synchronously, and new collectors immediately get the current value. **SharedFlow** is for events where every emission matters — it has a configurable buffer and replay cache, and it doesn't conflate. If you emit A, B, C to a SharedFlow, every active collector sees all three. **Channel** is for one-time events where exactly one consumer should process each event — like navigation commands or one-shot error dialogs.
+        viewModel.onQueryChanged("kot")
+        viewModel.onQueryChanged("kotl")
+        viewModel.onQueryChanged("kotlin")
 
-I've seen codebases that use StateFlow for everything — state, events, navigation commands. It works until it doesn't. The tests start flaking because events get conflated. Users report missing toast messages. Navigation sometimes doesn't trigger. The root cause is always the same: treating a state holder as an event stream.
+        advanceTimeBy(300) // debounce window
+        runCurrent()
 
-## When to Use Which
+        // only the final query triggers a search
+        assertEquals(SearchState.Loading, awaitItem())
+        assertEquals(
+            SearchState.Results(listOf(SearchResult("Kotlin"))),
+            awaitItem()
+        )
+        cancelAndIgnoreRemainingEvents()
+    }
+}
+```
 
-**Use StateFlow when** the consumer only cares about the latest value. UI state is the obvious case — loading indicators, form data, list contents. If the state changes from A to B to C while the UI is in the background, it should only render C when it comes back. StateFlow handles this naturally with `collectAsStateWithLifecycle()`.
+The intermediate queries ("kot", "kotl") never trigger a search because each new keystroke resets the debounce timer. Only "kotlin" survives the 300ms window.
 
-**Use SharedFlow when** every emission carries meaning and dropping one would be a bug. Analytics events, log streams, or any case where you're modeling a sequence of occurrences rather than a current state. Configure `replay` and `extraBufferCapacity` based on how many emissions you can afford to buffer before a slow collector catches up.
+## The Reframe — StateFlow Is a Reactive Variable, Not a Stream
 
-**Use Channel when** you need single-delivery semantics — one consumer processes each event exactly once. Navigation commands, one-shot error dialogs, or any "fire and forget" side effect where multiple consumers would cause duplicate behavior. Channels with `Channel.BUFFERED` or `Channel.UNLIMITED` prevent lost events when the consumer is briefly suspended.
+Here's the insight that changed how I approach all of this: **StateFlow was never designed to deliver every value.** The word "Flow" in the name makes people think of it as a stream. It's not. It's a reactive variable that happens to implement the `Flow` interface. The official docs even describe it as equivalent to a `SharedFlow` with `replay = 1` and `DROP_OLDEST` overflow — which is just a fancy way of saying "always holds exactly one value, the latest one."
 
-## Testing Strategy Going Forward
+Once I internalized this, the testing strategy became obvious. If I need to verify state transitions, I set up the right dispatcher asymmetry and use Turbine. If I just need to check the final state after an action, I read `StateFlow.value` directly — no collection, no conflation concern, no dispatcher tricks needed. And if I need every emission guaranteed, I reach for `SharedFlow` instead of fighting StateFlow's design.
 
-After hitting the conflation wall enough times, I settled on a testing approach that avoids the problem entirely. For ViewModel state tests, I use `UnconfinedTestDispatcher` plus Turbine. This ensures the collector runs eagerly and sees every state transition. For event-style emissions, I use SharedFlow or Channel in the ViewModel and test them with Turbine's `awaitItem()` without needing the unconfined dispatcher trick — because SharedFlow doesn't conflate.
+I've seen codebases that use StateFlow for everything — state, events, navigation commands. It works until it doesn't. The tests start flaking because events get conflated. Users report missing toast messages. The root cause is always the same: treating a state holder as an event stream.
 
-The broader lesson is that your test infrastructure should match your data flow semantics. If you're testing state, test the latest value and maybe one or two transitions. If you're testing events, test every emission. Don't fight StateFlow's conflation — understand it, and pick the right tool for the right job.
-
-IMO, the Kotlin coroutines team made the right call with conflation. A state holder should represent current state, not maintain a changelog. The confusion only arises because the word "Flow" in StateFlow makes people think of it as a stream. It's not. It's a reactive variable that happens to support collection.
+IMO, the Kotlin coroutines team made the right call with conflation. A state holder should represent current state, not maintain a changelog. The test tooling — Turbine, `UnconfinedTestDispatcher`, the dispatcher rule pattern — exists specifically because the team recognized that testing state transitions requires seeing intermediate values that production code doesn't need. The trick isn't fighting conflation. It's understanding when it matters and setting up your test infrastructure accordingly.
 
 Thank You!

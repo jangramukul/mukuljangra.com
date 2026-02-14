@@ -36,11 +36,25 @@ This is why blocking the main thread causes jank. If your `onClick` listener tak
 
 ## The Trio — Looper, MessageQueue, Handler
 
-**Looper** is the infinite loop. Each thread can have at most one Looper, and the main thread always has one. When you call `Looper.loop()`, it blocks the current thread and starts processing messages from its MessageQueue. It will keep running until `quit()` is called.
+**Looper** is the infinite loop. Each thread can have at most one Looper, and the main thread always has one. When you call `Looper.loop()`, it blocks the current thread and starts processing messages from its MessageQueue. It will keep running until `quit()` is called. The reason the main thread uses a Looper is fundamental — Android is an event-driven system. Touch events, lifecycle callbacks, `View.invalidate()` calls, and inter-process communication all arrive as messages. Without a Looper processing them sequentially, the framework would need a completely different threading model for UI updates.
 
-**MessageQueue** is the queue that holds `Message` objects. Messages are ordered by their `when` timestamp — which is why `Handler.postDelayed()` works. The message is enqueued with a future timestamp, and the Looper won't process it until that time arrives. The MessageQueue also handles synchronization barriers for async messages, which is how Android prioritizes UI rendering messages over regular messages.
+**MessageQueue** is the queue that holds `Message` objects. Messages are ordered by their `when` timestamp — which is why `Handler.postDelayed()` works. The message is enqueued with a future timestamp, and the Looper won't process it until that time arrives. The MessageQueue also handles synchronization barriers for async messages, which is how Android prioritizes UI rendering messages over regular messages. Under the hood, `MessageQueue` uses a native layer (`nativePollOnce`) that blocks the thread when the queue is empty, so an idle Looper doesn't spin-wait and waste CPU.
+
+One hidden feature of `MessageQueue` is `IdleHandler`. You can register a callback that runs when the queue has no pending messages — when the Looper is idle. This is useful for deferring non-critical work until after the UI is fully rendered. For example, if you want to pre-warm a cache or initialize an analytics SDK without affecting launch time, `IdleHandler` lets you wait until the main thread has nothing else to do.
+
+```kotlin
+Looper.myQueue().addIdleHandler {
+    // Runs when the message queue is empty (UI is idle)
+    AnalyticsEngine.warmUp()
+    false // return false to remove this handler after first call
+}
+```
+
+The Jetpack `App Startup` library uses this pattern internally to defer initialization until the main thread is idle. It's a clean way to run setup work without blocking initial frame rendering.
 
 **Handler** is your interface for putting messages into a specific thread's queue and defining how they're processed. When you create a Handler, you attach it to a Looper. When you call `handler.sendMessage()` or `handler.post()`, the message goes into that Looper's MessageQueue. When the Looper processes it, it calls `handler.handleMessage()` or runs the posted Runnable.
+
+The difference between `post()` and `sendMessage()` is worth understanding. `post(Runnable)` wraps the Runnable in a `Message` internally — it's a convenience method. `sendMessage(Message)` gives you more control: you can set `what`, `arg1`, `arg2`, and `obj` fields on the Message, and you can use `Message.obtain()` from the message pool to avoid allocation. In performance-critical code where you're sending thousands of messages per second (like a custom rendering loop), `sendMessage` with pooled messages avoids GC pressure that `post(Runnable)` creates from the lambda allocations.
 
 ```kotlin
 class LocationTracker(
@@ -90,7 +104,15 @@ The pattern of `removeMessages()` in cleanup is critical and often forgotten. If
 
 By default, a new `Thread` has no Looper. If you want a background thread that can receive and process messages sequentially, you need to set up a Looper on that thread. `HandlerThread` does exactly this — it's a thread that creates a Looper in its `run()` method and blocks on `Looper.loop()`.
 
-This is useful when you have work that needs to happen off the main thread but in a sequential, ordered fashion. Database writes, file operations, analytics event batching — these are cases where you want a single background thread processing tasks in order, not a thread pool firing things concurrently.
+This is useful when you have work that needs to happen off the main thread but in a sequential, ordered fashion. Database writes, file operations, analytics event batching — these are cases where you want a single background thread processing tasks in order, not a thread pool firing things concurrently. Before coroutines became standard, `HandlerThread` was the go-to pattern for serial background execution in many production apps.
+
+Real-world use cases where `HandlerThread` shines:
+
+**Camera operations** — Camera1 API required a dedicated thread for callbacks. You'd create a `HandlerThread`, pass its handler to the camera, and all preview callbacks would arrive sequentially on that thread. Camera2 and CameraX still support handler-based dispatching for apps that need deterministic callback ordering.
+
+**Serial database writes** — If you need writes to happen in strict order but off the main thread, a `HandlerThread` guarantees FIFO execution without the complexity of a synchronized queue or coroutine channel.
+
+**Sensor data processing** — `SensorManager.registerListener()` accepts a `Handler`. Passing a `HandlerThread`'s handler processes sensor events on a background thread, preventing main thread jank from high-frequency sensors like the accelerometer.
 
 ```kotlin
 class AnalyticsDispatcher {

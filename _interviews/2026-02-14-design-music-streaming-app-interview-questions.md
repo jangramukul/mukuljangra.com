@@ -10,15 +10,13 @@ description: "Designing a music streaming app like Spotify tests your understand
 
 ## Design a Music Streaming App (Spotify)
 
-Music streaming combines audio playback, background services, media session integration, offline support, and queue management. This is a step-by-step walkthrough of how you'd design a Spotify-like app on Android.
+Music streaming combines audio playback, background services, media session integration, offline support, and queue management.
 
-### Requirements & Scope
-
-#### Q1: What are the core features of a music streaming app?
+#### What are the core features of a music streaming app?
 
 The essential features are browse and search (discover music by artist, album, genre, or keyword), audio playback (stream tracks with play/pause/seek/skip), playlists (create, edit, reorder, share), and offline mode (download tracks for playback without network). Beyond that, the app needs background playback so music continues when the user leaves the app, a playback queue with shuffle and repeat, and media controls on the lock screen, notification, and Bluetooth devices.
 
-#### Q2: What are the key non-functional requirements?
+#### What are the key non-functional requirements?
 
 Three things matter most for a music streaming app:
 
@@ -28,13 +26,11 @@ Three things matter most for a music streaming app:
 
 Latency matters less than in video — users tolerate 2-3 seconds of initial buffering when they tap a song.
 
-#### Q3: How would you scope this for a 45-minute interview?
+#### How would you scope this for a 45-minute interview?
 
 Focus on the playback path end-to-end: user taps a song, the app builds a queue, starts a foreground service, streams audio through ExoPlayer, shows controls in the notification and lock screen, and handles interruptions like phone calls. Then go deep on one or two areas — offline downloads, gapless playback, or queue management. Skip social features, lyrics, and recommendation algorithms unless the interviewer asks.
 
-### High-Level Design
-
-#### Q4: How would you structure the client architecture?
+#### How would you structure the client architecture?
 
 The architecture has three layers:
 
@@ -44,7 +40,7 @@ The architecture has three layers:
 
 The playback engine runs in a `MediaSessionService`, separate from the UI lifecycle. The UI connects to it through a `MediaController`. This separation means playback survives activity destruction, configuration changes, and even the app being removed from recents.
 
-#### Q5: Why use Media3/ExoPlayer for audio playback?
+#### Why use Media3/ExoPlayer for audio playback?
 
 `MediaPlayer` is the old framework API — limited format support, poor error handling, no adaptive streaming. ExoPlayer (now part of AndroidX Media3) supports DASH, HLS, and progressive streams, handles DRM, supports gapless playback natively, and is actively maintained by Google.
 
@@ -67,7 +63,7 @@ class AudioPlayer(context: Context) {
 
 ExoPlayer handles buffering, format detection, and codec selection internally. It also supports playlists natively — set multiple `MediaItem`s and it handles transitions between tracks. Media3 wraps ExoPlayer with better API design and Jetpack integration.
 
-#### Q6: What APIs does the app need from the backend?
+#### What APIs does the app need from the backend?
 
 Three main API groups:
 
@@ -77,7 +73,7 @@ Three main API groups:
 
 The catalog and playlist APIs use standard REST. The stream API returns a URL that ExoPlayer fetches directly — the app never downloads the audio bytes through its own networking layer.
 
-#### Q7: What are the core data models?
+#### What are the core data models?
 
 The key entities are Track, Playlist, and PlaybackQueue.
 
@@ -111,7 +107,7 @@ data class PlaybackQueue(
 
 Track metadata is cached in Room for offline access and fast loading. The `streamUrl` is short-lived — the app fetches a fresh URL from the stream API when the user actually plays the track. Playlists are stored locally and synced with the server.
 
-#### Q8: How do you keep music playing in the background?
+#### How do you keep music playing in the background?
 
 Use a foreground service with a persistent notification. Without a service, Android kills the process shortly after the user leaves, and playback stops. Media3's `MediaSessionService` handles the foreground service lifecycle automatically — it starts as foreground when playback begins and stops when playback ends.
 
@@ -140,7 +136,7 @@ class PlaybackService : MediaSessionService() {
 
 On Android 14+, declare `android:foregroundServiceType="mediaPlayback"` in the manifest. The `MediaSessionService` also creates the notification with playback controls automatically. The UI binds to this service through a `MediaController` and disconnects freely without affecting playback.
 
-#### Q9: How does audio focus work in a music app?
+#### How does audio focus work in a music app?
 
 Audio focus is how Android coordinates audio between apps. When your app starts playing, it requests focus. If another app (navigation, phone call) needs audio, your app must respond — pause for a phone call, lower volume for a navigation prompt.
 
@@ -174,9 +170,7 @@ class AudioFocusHandler(context: Context) {
 
 `AUDIOFOCUS_LOSS` means another app took focus permanently — pause. `AUDIOFOCUS_LOSS_TRANSIENT` means temporary loss like a phone call — pause and resume when focus returns. `AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK` means lower volume instead of pausing, useful for navigation prompts over music. ExoPlayer handles this automatically if you call `setHandleAudioFocus(true)` on the player.
 
-### Low-Level Design & Deep Dives
-
-#### Q10: How would you implement gapless and crossfade playback?
+#### How would you implement gapless and crossfade playback?
 
 Gapless playback means no silence gap between consecutive tracks. This matters for live albums, classical music, and DJ mixes where tracks flow into each other. ExoPlayer supports it natively when you use a playlist of `MediaItem`s — it pre-buffers the next track and trims encoder delay/padding using the LAME header in MP3 files.
 
@@ -190,7 +184,7 @@ player.play()
 
 Crossfade is different — the current track fades out while the next fades in, overlapping by a configurable duration (Spotify offers 1-12 seconds). This requires more work because ExoPlayer doesn't support crossfade out of the box. One approach is to use two player instances — one fading out, one fading in — and mix their output. You'd start the second player N seconds before the current track ends, ramp down the first player's volume while ramping up the second, then release the first player when the fade completes. True gapless is simpler and is what ExoPlayer does by default.
 
-#### Q11: How would you handle offline downloads?
+#### How would you handle offline downloads?
 
 Offline downloads let users save tracks for playback without network. Use WorkManager to schedule downloads — it handles network constraints, retry logic, and survives app restarts. Store downloaded audio in the app's internal storage or encrypted external storage.
 
@@ -225,7 +219,7 @@ fun downloadPlaylist(playlist: Playlist) {
 
 When playing a track, check if it's downloaded first. If yes, play from local storage. If not and there's no network, skip to the next downloaded track. For DRM content, the downloaded files should be encrypted — only the app can decrypt and play them. Track download state in Room so the UI can show progress and filter for offline-available content.
 
-#### Q12: How would you design the playback queue?
+#### How would you design the playback queue?
 
 The queue holds the list of tracks to play. It needs to support shuffle, repeat, add-next, add-to-end, remove, and reorder. The key challenge is shuffle — when the user enables it, the current track stays playing and the rest get shuffled. When they disable it, the queue returns to the original order at the current track's position.
 
@@ -267,7 +261,7 @@ class PlaybackQueue {
 
 "Play next" inserts a track right after `currentIndex`. "Add to queue" appends to the end. Both operations need to update `shuffledOrder` and `originalOrder` consistently. Persist the queue to SharedPreferences or Room so it survives process death — save the track IDs, current index, shuffle state, and repeat mode.
 
-#### Q13: How do MediaSession and media controls work together?
+#### How do MediaSession and media controls work together?
 
 `MediaSession` is the bridge between your player and the Android system. It publishes what's playing (title, artist, album art, duration) and the playback state (playing, paused, position). The system uses this to show controls on the lock screen, notification, Bluetooth devices, Wear OS, Android Auto, and Google Assistant.
 
@@ -288,7 +282,7 @@ val mediaSession = MediaSession.Builder(context, player)
 
 Media3's `MediaSession` syncs with ExoPlayer state automatically — you don't manually update the session on every play/pause/skip. The `MediaSessionService` creates the notification from the session. Any client can connect through a `MediaController`: the notification, lock screen, a car display via Bluetooth AVRCP, or Google Assistant. The `onAddMediaItems` callback is where you resolve a search query or media ID into a playable stream URL.
 
-#### Q14: How would you handle audio streaming and buffering?
+#### How would you handle audio streaming and buffering?
 
 ExoPlayer manages buffering through its `LoadControl`. It downloads audio data ahead of the playback position and keeps a configurable amount in memory. The four key parameters are: minimum buffer before playback starts, maximum buffer to hold, buffer needed to resume after a rebuffer, and buffer for seek operations.
 
@@ -309,7 +303,7 @@ val player = ExoPlayer.Builder(context)
 
 A 50-second max buffer is reasonable for music — audio files are small compared to video, so this uses minimal memory. ExoPlayer also pre-buffers the next track in a playlist ("next-window loading") when the current buffer is full enough, which is how gapless transitions work. For adaptive bitrate, the server provides the track at multiple quality levels (96, 160, 320 kbps) via HLS or DASH. ExoPlayer's `AdaptiveTrackSelection` picks the best quality the network can sustain. In practice, most music apps let the user choose a quality setting and request that bitrate directly.
 
-#### Q15: How would you design the caching strategy?
+#### How would you design the caching strategy?
 
 Cache recently streamed audio to avoid re-downloading when the user replays a track. ExoPlayer's `CacheDataSource` wraps the network source with a disk cache.
 
@@ -338,7 +332,7 @@ val player = ExoPlayer.Builder(context)
 
 The `LeastRecentlyUsedCacheEvictor` evicts the oldest cached tracks when the cache exceeds 500 MB. This is separate from explicit downloads — cached tracks get evicted when space is needed, downloaded tracks stay until the user removes them. 500 MB stores roughly 100-150 songs at 320 kbps. For predictive prefetch, you could cache the first 30 seconds of the next few tracks in the queue so playback starts instantly even before ExoPlayer's built-in pre-buffering kicks in.
 
-#### Q16: How would you implement an equalizer and audio effects?
+#### How would you implement an equalizer and audio effects?
 
 Android provides `Equalizer`, `BassBoost`, `Virtualizer`, and `LoudnessEnhancer` through the `android.media.audiofx` package. These attach to an audio session ID, which ExoPlayer exposes.
 
@@ -366,7 +360,7 @@ class AudioEffectsManager(player: ExoPlayer) {
 
 The `Equalizer` has a fixed number of bands (typically 5), each with a frequency center and a gain range. You can use built-in presets (Rock, Pop, Jazz) or let the user adjust bands manually. Save the user's EQ settings per profile in SharedPreferences and reapply them when the player is created. The audio effects only work when the player has an active audio session — create them after `player.prepare()` and release them when the player is released.
 
-#### Q17: How would you handle Bluetooth, Cast, and car integration?
+#### How would you handle Bluetooth, Cast, and car integration?
 
 When the user connects Bluetooth headphones, unplugs wired headphones, or connects to a car, the app must respond correctly. Android sends `ACTION_AUDIO_BECOMING_NOISY` when headphones disconnect — you must pause playback to avoid blasting through the speaker.
 
@@ -382,7 +376,7 @@ class NoisyReceiver(private val player: ExoPlayer) : BroadcastReceiver() {
 
 For Bluetooth headset buttons (play/pause, skip), `MediaSession` handles it automatically — the system routes media button events to the active session. For Bluetooth car displays, the `MediaSession` publishes track metadata through AVRCP automatically. For Android Auto, `MediaSessionService` already provides the integration — Auto connects as a `MediaController` and displays the queue and controls. For Cast (Chromecast), you'd add `CastPlayer` from the Cast SDK — it implements the same `Player` interface as ExoPlayer, so you can swap the active player and the rest of the app (session, notification, UI) works unchanged.
 
-#### Q18: How would you handle search and recommendation on the client?
+#### How would you handle search and recommendation on the client?
 
 Search needs to be fast and handle partial input. Show local results instantly from cached metadata while the network request is in flight. Debounce the search input by 300ms to avoid flooding the API with keystrokes.
 

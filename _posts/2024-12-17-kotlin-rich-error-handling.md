@@ -48,26 +48,172 @@ The reframe here is subtle but important: **errors aren't things that interrupt 
 
 I prefer sealed interfaces over sealed classes for error hierarchies for one practical reason — a class can implement multiple sealed interfaces but can only extend one sealed class. If you have an error type that belongs to two different hierarchies (say, both a `NetworkError` and a `RetryableError`), sealed interfaces let you express that relationship.
 
-## Kotlin's Built-in Result vs Custom Types
+## kotlin.Result — Strengths, Limitations, and the runCatching Trap
 
-Kotlin ships with `kotlin.Result<T>`, and it's tempting to reach for it everywhere. But it has a significant limitation: it wraps a value or a `Throwable`. Not a domain error type — a `Throwable`. So you're back to the same problem: the error type is opaque, the caller has to cast or check instance types, and the compiler can't enforce exhaustive handling.
+Kotlin ships with `kotlin.Result<T>`, and it's tempting to reach for it everywhere. But to really use it well, you need to understand what it's actually designed for and where it breaks down. `Result` wraps either a success value of type `T` or a `Throwable` — not a typed domain error, just a raw `Throwable`. That means the compiler can't enforce exhaustive handling of specific failure modes. The caller is back to `instanceof` checks and guessing.
+
+Where `Result` genuinely shines is at **API boundaries** — places where you're converting between the throwing world and the value world. Standard library functions like `runCatching` produce `Result` values, and the extension functions on `Result` give you a complete toolkit for transforming them. `getOrElse` provides a fallback value when the result is a failure, `getOrDefault` does the same but without access to the exception, `getOrThrow` unwraps the success or rethrows the exception, and `fold` lets you handle both cases in a single expression.
 
 ```kotlin
-// Built-in Result — you lose error type information
-suspend fun fetchUser(id: String): Result<User> {
-    return runCatching { api.getUser(id) }
+suspend fun loadUserProfile(userId: String): UserProfile {
+    val cachedResult = runCatching { cache.getProfile(userId) }
+
+    // fold: handle both success and failure in one expression
+    return cachedResult.fold(
+        onSuccess = { profile -> profile },
+        onFailure = { error ->
+            logger.warn("Cache miss for $userId: ${error.message}")
+            api.fetchProfile(userId)
+        }
+    )
 }
 
-// Caller has no idea what errors to expect
-fetchUser("123").onFailure { throwable ->
-    // Is this IOException? HttpException? Something else?
-    // You're guessing again.
+// getOrElse: provide a computed fallback
+val displayName = runCatching { parseDisplayName(rawInput) }
+    .getOrElse { error -> "Unknown User" }
+
+// getOrDefault: simpler fallback without access to the error
+val retryCount = runCatching { config.getInt("max_retries") }
+    .getOrDefault(3)
+
+// getOrThrow: unwrap or rethrow (useful at top-level boundaries)
+val session = loginResult.getOrThrow()
+```
+
+There are also **`recover`** and **`recoverCatching`** — two extension functions that let you attempt recovery from a failure. `recover` transforms a failed `Result` into a successful one by providing an alternative value. `recoverCatching` does the same but wraps the recovery logic in its own try-catch, so if your recovery also fails, you get a new failed `Result` instead of a crash. I use `recoverCatching` a lot in caching layers — try the network, and if that fails, try the local cache, and if *that* fails, propagate the final error.
+
+```kotlin
+suspend fun fetchArticle(articleId: String): Result<Article> {
+    return runCatching { api.getArticle(articleId) }
+        .recoverCatching { networkError ->
+            // Network failed, try local cache as recovery
+            localDb.getArticle(articleId)
+                ?: throw ArticleNotFoundException(articleId)
+        }
+        .recover { finalError ->
+            // Both network and cache failed, return a placeholder
+            Article.placeholder(articleId)
+        }
 }
 ```
 
-Kotlin's `Result` is fine for cases where you genuinely don't care about the error type — fire-and-forget operations, logging wrappers, or interop boundaries where you just need to know "did it work?" For anything where the caller needs to make decisions based on the error, a custom sealed type is better because it carries domain-specific information that `Throwable` doesn't.
+### The runCatching and CancellationException Gotcha
 
-There's also a historical quirk: Kotlin originally restricted using `Result` as a direct return type due to concerns about boxing and ABI compatibility. That restriction was lifted in Kotlin 1.5, but the design philosophy remains — `Result` is a general-purpose wrapper, not a domain modeling tool.
+Here's the thing that bites almost everyone: **`runCatching` catches everything, including `CancellationException`.** This is a serious problem in coroutine code. When a coroutine is cancelled — say, the user navigated away and the `viewModelScope` was cleared — the coroutines machinery throws `CancellationException` to unwind the call stack. If `runCatching` swallows that exception, the coroutine doesn't actually cancel. It keeps running, doing work that nobody wants anymore.
+
+```kotlin
+// DANGEROUS: swallows CancellationException
+suspend fun fetchUser(id: String): Result<User> {
+    return runCatching { api.getUser(id) } // Coroutine cancellation is silently eaten
+}
+
+// SAFE: rethrow CancellationException manually
+suspend fun fetchUser(id: String): Result<User> {
+    return try {
+        Result.success(api.getUser(id))
+    } catch (e: CancellationException) {
+        throw e // Never swallow cancellation
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+```
+
+IMO, this is the single biggest footgun in Kotlin's standard library for coroutine-heavy codebases. The safe alternative is to either write the explicit try-catch pattern above, use a helper extension like `suspendRunCatching` that rethrows `CancellationException`, or avoid `runCatching` in suspend functions entirely and use sealed types instead. Some teams I've worked with have a lint rule that flags `runCatching` inside suspend functions — it's that common of a mistake.
+
+## Error Propagation Across Layers
+
+In a real Android app, errors don't just get handled in one place. They flow through layers — from the data layer where they originate, through the domain layer where business rules apply, up to the presentation layer where the user sees something. Each layer has its own language for what "went wrong," and translating between those languages is one of the most underrated parts of error handling architecture.
+
+The data layer speaks in technical errors: `IOException`, `HttpException`, `SQLiteConstraintException`. The domain layer speaks in business errors: "user not found," "insufficient balance," "subscription expired." The presentation layer speaks in user-facing messages: "Check your internet connection," "You don't have enough credits." Passing a raw `IOException` from your Retrofit call all the way up to a Toast message is like passing a SQL query result directly to a TextView — technically it works, but it couples everything together and makes the code impossible to reason about.
+
+Here's the pattern I use. Define separate sealed hierarchies for each layer, and map between them at the boundaries.
+
+```kotlin
+// Data layer errors — technical, close to the framework
+sealed interface DataError {
+    data class Network(val cause: IOException) : DataError
+    data class Http(val code: Int, val body: String?) : DataError
+    data class Database(val cause: Exception) : DataError
+}
+
+// Domain layer errors — business-meaningful
+sealed interface TransferError {
+    data object InsufficientBalance : TransferError
+    data object RecipientNotFound : TransferError
+    data object DailyLimitExceeded : TransferError
+    data class Unavailable(val retryAfterMs: Long?) : TransferError
+}
+
+// Presentation layer — what the user sees
+sealed interface TransferUiError {
+    data class Message(val text: String, val canRetry: Boolean) : TransferUiError
+}
+```
+
+### Mapping Errors Between Layers
+
+The mapping happens at each boundary. The repository maps `DataError` into `TransferError`, and the ViewModel maps `TransferError` into `TransferUiError`. Each translation adds context and strips away implementation details that the next layer shouldn't know about.
+
+```kotlin
+class TransferRepository(private val api: PaymentApi) {
+
+    suspend fun transfer(
+        from: AccountId,
+        to: AccountId,
+        amount: Money
+    ): Either<TransferError, TransferConfirmation> {
+        return when (val result = api.executeTransfer(from, to, amount)) {
+            is DataResult.Success -> Either.Right(result.data)
+            is DataResult.Failure -> Either.Left(result.error.toDomainError())
+        }
+    }
+
+    private fun DataError.toDomainError(): TransferError = when (this) {
+        is DataError.Network -> TransferError.Unavailable(retryAfterMs = null)
+        is DataError.Http -> when (code) {
+            402 -> TransferError.InsufficientBalance
+            404 -> TransferError.RecipientNotFound
+            429 -> TransferError.DailyLimitExceeded
+            else -> TransferError.Unavailable(retryAfterMs = 5000L)
+        }
+        is DataError.Database -> TransferError.Unavailable(retryAfterMs = null)
+    }
+}
+```
+
+This translation pattern is where sealed types really pay off. The `when` expression is exhaustive at every boundary — if you add a new `DataError` variant, the compiler forces you to decide what `TransferError` it maps to. If you add a new `TransferError` variant, the ViewModel's `when` expression breaks until you handle it. The error contract is enforced all the way up the stack, not just at one level.
+
+## Building a Custom Result Type
+
+At some point, `kotlin.Result` feels too loose and Arrow's `Either` feels too heavy. That's when I build a custom `Result<T, E>` that sits right in the middle. The idea is simple: a sealed class parameterized on both the success type and the error type, so the compiler knows exactly what kind of error each function can produce.
+
+```kotlin
+sealed class AppResult<out T, out E> {
+    data class Success<T>(val value: T) : AppResult<T, Nothing>()
+    data class Failure<E>(val error: E) : AppResult<Nothing, E>()
+
+    fun <R> map(transform: (T) -> R): AppResult<R, E> = when (this) {
+        is Success -> Success(transform(value))
+        is Failure -> Failure(error)
+    }
+
+    fun <R> mapError(transform: (E) -> R): AppResult<T, R> = when (this) {
+        is Success -> Success(value)
+        is Failure -> Failure(transform(error))
+    }
+
+    fun <R> flatMap(transform: (T) -> AppResult<R, E>): AppResult<R, E> =
+        when (this) {
+            is Success -> transform(value)
+            is Failure -> Failure(error)
+        }
+}
+```
+
+The `Nothing` type as a bound is the key trick here — `Success<T>` extends `AppResult<T, Nothing>`, meaning a success value is compatible with any error type. This makes the type inference work smoothly when you chain operations. `map` transforms the success value, `mapError` transforms the error (perfect for layer translations), and `flatMap` lets you chain operations that each return their own `AppResult`.
+
+When should you build this vs just use sealed interfaces? I reach for a custom `Result<T, E>` when I have many different functions that all follow the same success-or-typed-error pattern but with different error types. The generic gives you reusable `map`/`flatMap`/`mapError` operations instead of writing boilerplate `when` blocks everywhere. But if you only have 2-3 functions with unique error hierarchies, a plain sealed interface per use case is simpler and more readable.
 
 ## Arrow's Either and the Railway Pattern
 
@@ -97,7 +243,7 @@ The `either { }` block with `.bind()` calls is what's called the **railway-orien
 
 This eliminates the nested `when` expressions you'd write with manual sealed class handling. Without this pattern, `processOrder` would be a pyramid of `when` checks — validate, then if success check inventory, then if success charge payment. With `either` + `bind`, it reads like straight-line imperative code, and any failure at any step produces the final result directly.
 
-The honest tradeoff: Arrow is a substantial dependency. It brings functional programming concepts — `Raise`, `Effect`, `NonEmptyList`, monadic comprehensions — that your team needs to learn. For a small team or a codebase where most developers aren't familiar with FP, the learning curve might outweigh the ergonomic benefits. I'd recommend starting with a simple custom `Result<T, E>` sealed class and only reaching for Arrow when your error handling chains get complex enough to justify it.
+The honest tradeoff: Arrow is a substantial dependency. It brings functional programming concepts — `Raise`, `Effect`, `NonEmptyList`, monadic comprehensions — that your team needs to learn. For a small team or a codebase where most developers aren't familiar with FP, the learning curve might outweigh the ergonomic benefits. I'd recommend starting with the custom `AppResult<T, E>` approach above and only reaching for Arrow when your error handling chains get complex enough to justify it.
 
 ## Error Handling in Coroutines
 
@@ -174,7 +320,7 @@ Notice the `else -> throw e` for unexpected HTTP codes. This is intentional. A 5
 
 ## A Real ViewModel With Proper Error Handling
 
-Putting it all together, here's what a production ViewModel looks like when you combine sealed error types with coroutine error handling properly:
+Putting it all together, here's what a production ViewModel looks like when you combine sealed error types with coroutine error handling and layered error mapping:
 
 ```kotlin
 class LoginViewModel(
@@ -219,17 +365,6 @@ class LoginViewModel(
 ```
 
 There's no try-catch in the ViewModel. The repository already translated framework exceptions into domain results. The ViewModel just maps results to UI state — a clean, linear transformation with no exception handling ceremony. Every error variant produces a specific, actionable message. The `canRetry` flag tells the UI whether to show a retry button. And because `AuthResult` is a sealed interface, adding a new error variant (say, `AuthResult.TwoFactorRequired`) produces a compiler warning in every `when` expression that doesn't handle it.
-
-## Looking Ahead: Kotlin Union Types
-
-One more thing worth watching: Kotlin 2.x has been exploring union types as a language feature. If they ship, a function could declare its return type as `User | NotFound | Unauthorized` directly in the signature — no wrapper sealed class needed. This would make error-as-types even more natural:
-
-```kotlin
-// Hypothetical future Kotlin syntax
-fun findUser(id: String): User | NotFound | Unauthorized
-```
-
-This would eliminate the boilerplate of defining sealed class hierarchies for simple two-or-three-variant results. But union types also introduce complexity around exhaustive checking, type inference, and interop with Java. Whether they land, and in what form, is still an open question. For now, sealed classes and sealed interfaces are the right tool. They're stable, well-understood, and give you everything you need for production-grade error handling.
 
 The fundamental shift is treating errors as data, not as interruptions. When your function signature tells the caller exactly what can go wrong, when the compiler enforces that every error is handled, and when exceptions are reserved for genuinely exceptional circumstances — your code becomes more honest about the world it operates in. Mobile apps run on unreliable networks, with users who type unexpected inputs, against servers that occasionally fail. Your error handling should reflect that reality, not pretend it doesn't exist.
 

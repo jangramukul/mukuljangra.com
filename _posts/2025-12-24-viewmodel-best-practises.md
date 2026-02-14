@@ -10,9 +10,7 @@ tags:
 
 Over the past few years, I've worked on several Android codebases — some greenfield, some legacy migrations, some scaling from a handful of screens to hundreds. The one class I always end up refactoring first is the ViewModel. It's the place where architecture decisions compound, where shortcuts taken early become expensive later, and where the gap between "works on my machine" and "works in production" is widest. I've seen ViewModels that are 800-line god classes doing network calls, validation, formatting, and navigation all at once, and I've seen ViewModels so thin they just proxy the repository with zero value added.
 
-The thing is, Google's official guidance gives you the basics — use `viewModelScope`, expose `StateFlow`, survive configuration changes. But it doesn't tell you how these patterns interact in a real production app with process death, complex state, and a team of engineers who each have their own habits. What I'm sharing here is the set of practices I've settled on after years of building, breaking, and fixing ViewModels in production. These aren't theoretical — every single one comes from a real problem I hit or a pattern I saw fail at scale.
-
-I think the core principle is simple: a ViewModel should be a pure Kotlin class that coordinates between UI and data, nothing more. The moment it starts reaching into Android framework classes, hardcoding threading decisions, or accumulating business rules, things start breaking — in tests first, then in production.
+Google's official guidance gives you the basics — use `viewModelScope`, expose `StateFlow`, survive configuration changes. But it doesn't tell you how these patterns interact in a real production app with process death, complex state, and a team of engineers who each have their own habits. What I'm sharing here is what I've settled on after years of building, breaking, and fixing ViewModels in production. Every single one comes from a real problem I hit or a pattern I saw fail at scale. The core principle is simple: a ViewModel should be a pure Kotlin class that coordinates between UI and data, nothing more.
 
 ## Constructor Injection and Dependency Management
 
@@ -37,26 +35,7 @@ class LoginViewModel @Inject constructor(
 
 When you test this, you pass fakes or mocks directly. No reflection hacks, no initializer blocks reaching into service locators. The constructor tells you exactly what this ViewModel depends on, which also serves as a design pressure — if the constructor grows beyond 5-6 parameters, the ViewModel is doing too much.
 
-This same principle extends to dispatchers, which is something a lot of people overlook. Hardcoding `Dispatchers.IO` or `Dispatchers.Main` inside a ViewModel makes your tests flaky or forces you into `Dispatchers.setMain()` workarounds. The real fix is treating dispatchers as dependencies. Inject them through the constructor, and in tests, pass `StandardTestDispatcher` or `UnconfinedTestDispatcher` to get deterministic, fast-executing coroutines.
-
-```kotlin
-class PaymentViewModel(
-    private val paymentRepository: PaymentRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ViewModel() {
-
-    fun processPayment(amount: Double) {
-        viewModelScope.launch {
-            val receipt = withContext(ioDispatcher) {
-                paymentRepository.charge(amount)
-            }
-            _uiState.update { it.copy(receipt = receipt) }
-        }
-    }
-}
-```
-
-The injected `ioDispatcher` is where most people trip up — they hardcode `Dispatchers.IO` in `withContext` calls scattered across the ViewModel, and then wonder why their tests are timing out or running on real IO threads. A single constructor parameter eliminates the entire class of problems.
+This same principle extends to dispatchers. Hardcoding `Dispatchers.IO` inside a ViewModel makes your tests flaky or forces you into `Dispatchers.setMain()` workarounds. Inject them through the constructor, and in tests, pass `StandardTestDispatcher` to get deterministic coroutines. A single constructor parameter eliminates the entire class of threading problems.
 
 ## Managing State With StateFlow
 
@@ -95,39 +74,84 @@ Why 5 seconds and not immediately? Because configuration changes like screen rot
 
 The tradeoff is real though. If your upstream is a one-shot network call that you converted to a flow, `WhileSubscribed` will re-trigger that call every time the user leaves and returns to the screen after 5 seconds. For expensive one-shot operations, `Lazily` might be the better choice. The rule I follow: use `WhileSubscribed(5000)` for continuous data streams (database observers, real-time updates), and `Lazily` for data that's fetched once and doesn't change.
 
-Once you've settled on StateFlow, the next question is how to structure it. There are two schools of thought on ViewModel state. The single-state approach wraps everything in one data class and exposes one `StateFlow<ScreenUiState>`. The multiple-state approach uses separate `StateFlow` fields for independent pieces of state. Both are valid, and I've used both in production. The deciding factor is whether your state fields are independent or interconnected.
+### Single vs Multiple State
+
+There are two schools of thought on ViewModel state. The single-state approach wraps everything in one data class and exposes one `StateFlow<ScreenUiState>`. The multiple-state approach uses separate `StateFlow` fields for independent pieces of state. Both are valid, and I've used both in production. The deciding factor is whether your state fields are independent or interconnected.
+
+With a single state object, every update causes recomposition of every Composable that collects the state. With multiple StateFlows, each Composable subscribes only to what it needs. On a complex dashboard, multiple StateFlows can reduce unnecessary recompositions from ~20 per update cycle to ~4. The single-state approach shines on focused screens like checkout where every field affects the others.
+
+## One-Time Events: Channel vs SharedFlow
+
+Here's a problem that trips up almost every team at some point. You have a ViewModel that needs to tell the UI to show a snackbar, navigate to another screen, or display a toast. Your first instinct is to put it in the `StateFlow` — maybe an `error: String?` field in your UI state. But `StateFlow` is designed for state, not events. It replays the latest value to new collectors, so if the user rotates the screen, that snackbar shows up again. You can work around it with "consumed" flags, but now you've got boilerplate for every single event and a race condition if the UI reads the flag before resetting it.
+
+The real question is `Channel` vs `SharedFlow`. A `Channel` with `Channel.BUFFERED` gives you fire-and-forget semantics — each event is delivered exactly once to one collector. A `SharedFlow` with `replay = 0` also doesn't replay, but if there's no collector at the moment of emission, the event is lost. In practice, I reach for `Channel` when I need guaranteed delivery of one-time events because it buffers events even when the UI is temporarily detached during configuration changes.
 
 ```kotlin
-// Single state — good when fields are interconnected
-data class CheckoutUiState(
-    val items: List<CartItem> = emptyList(),
-    val total: Double = 0.0,
-    val isLoading: Boolean = false,
-    val error: UiMessage? = null
-)
-
-// Multiple states — good when fields are independent
-class DashboardViewModel(
-    notificationRepo: NotificationRepository,
-    feedRepo: FeedRepository,
-    profileRepo: ProfileRepository
+@HiltViewModel
+class CheckoutViewModel @Inject constructor(
+    private val orderRepository: OrderRepository
 ) : ViewModel() {
 
-    val notifications: StateFlow<List<Notification>> =
-        notificationRepo.observe()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _uiState = MutableStateFlow(CheckoutUiState())
+    val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
 
-    val feed: StateFlow<List<FeedItem>> =
-        feedRepo.observeFeed()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _events = Channel<CheckoutEvent>(Channel.BUFFERED)
+    val events: Flow<CheckoutEvent> = _events.receiveAsFlow()
 
-    val profile: StateFlow<UserProfile> =
-        profileRepo.observeProfile()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserProfile.Empty)
+    fun placeOrder(order: Order) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            orderRepository.place(order)
+                .onSuccess { receipt ->
+                    _events.send(CheckoutEvent.NavigateToConfirmation(receipt.id))
+                }
+                .onFailure {
+                    _events.send(CheckoutEvent.ShowSnackbar("Order failed"))
+                }
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+}
+
+sealed interface CheckoutEvent {
+    data class NavigateToConfirmation(val orderId: String) : CheckoutEvent
+    data class ShowSnackbar(val message: String) : CheckoutEvent
 }
 ```
 
-With a single state object, every update causes recomposition of every Composable that collects the state. With multiple StateFlows, each Composable subscribes only to what it needs. On a complex dashboard, multiple StateFlows can reduce unnecessary recompositions from ~20 per update cycle to ~4. The single-state approach shines on focused screens like checkout where every field affects the others.
+The UI collects `events` inside a `LaunchedEffect` and handles each one without worrying about replay. The key thing to understand is that `receiveAsFlow()` creates a flow that consumes from the channel — once an event is received, it's gone. This is exactly what you want for navigation, snackbars, and toasts. Keep `StateFlow` for screen state, keep `Channel` for one-shot side effects.
+
+## ViewModel Scoping Beyond Activity
+
+By default, a ViewModel is scoped to the Activity or Fragment that created it. But in a multi-screen app with shared state, that's often not what you want. The Navigation component lets you scope a ViewModel to a `NavBackStackEntry`, which means the ViewModel lives as long as that destination is on the back stack. This is how you share state between screens without leaking it to the entire Activity lifecycle.
+
+In Compose with Hilt, `hiltViewModel()` scopes the ViewModel to the current `NavBackStackEntry` by default. But the real power comes from scoping to a navigation graph. Say you have a checkout flow — cart, shipping, payment, confirmation — and all four screens need access to the same cart state. Instead of passing data between screens or scoping to the Activity, you scope one ViewModel to the nested navigation graph that wraps the entire checkout flow.
+
+```kotlin
+// In your NavHost setup
+NavHost(navController, startDestination = "home") {
+    navigation(startDestination = "cart", route = "checkout_graph") {
+        composable("cart") { backStackEntry ->
+            val checkoutEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("checkout_graph")
+            }
+            val sharedViewModel: SharedCheckoutViewModel =
+                hiltViewModel(checkoutEntry)
+            CartScreen(sharedViewModel)
+        }
+        composable("shipping") { backStackEntry ->
+            val checkoutEntry = remember(backStackEntry) {
+                navController.getBackStackEntry("checkout_graph")
+            }
+            val sharedViewModel: SharedCheckoutViewModel =
+                hiltViewModel(checkoutEntry)
+            ShippingScreen(sharedViewModel)
+        }
+    }
+}
+```
+
+The `SharedCheckoutViewModel` is created when the user enters the checkout graph and destroyed when they leave it. Every screen inside the graph gets the same instance. This is fundamentally different from Activity-scoped ViewModels — the lifecycle is tied to the navigation flow, not the Activity. I've seen teams scope shared ViewModels to the Activity and wonder why their cart state survives even after the user completes checkout. Graph-scoped ViewModels solve this cleanly because the ViewModel dies when the user pops back out of the graph.
 
 ## Process Death and SavedStateHandle
 
@@ -157,135 +181,17 @@ class SearchViewModel(
 
 The key insight here is that `SavedStateHandle.getStateFlow()` gives you a `StateFlow` that automatically persists to and restores from the saved state bundle. You don't need a separate `MutableStateFlow` plus manual save/restore logic. One API handles both reactive state and process death survival. The tradeoff is that `SavedStateHandle` only supports types that can go into a `Bundle` — primitives, strings, parcelables. Complex objects need serialization or should be re-fetched from the data layer.
 
-Testing process death is something most teams skip, and it shows. The standard way to test it is through the "Don't keep activities" developer option, but even that doesn't fully simulate what happens when the OS kills your process after 30 minutes in the background. The key things that survive process death are: the Activity's `savedInstanceState` bundle, `SavedStateHandle` in ViewModels, and your persistent storage (Room, DataStore, files). Everything else — in-memory caches, singleton state, static variables, running coroutines — is gone.
-
-Here's the mental model I use: after process death, your app is a fresh process with a partially restored Activity stack. The navigation back stack is restored, but every ViewModel is reconstructed. Transient state like half-filled forms, unsaved drafts, or multi-step wizard progress is lost unless you persisted it via `SavedStateHandle`, Room, or DataStore.
-
-```kotlin
-class WizardViewModel(
-    private val savedStateHandle: SavedStateHandle
-) : ViewModel() {
-
-    // Survives process death
-    var currentStep: Int
-        get() = savedStateHandle["step"] ?: 0
-        set(value) { savedStateHandle["step"] = value }
-
-    // Survives process death
-    var formData: WizardFormData
-        get() = savedStateHandle["formData"] ?: WizardFormData()
-        set(value) { savedStateHandle["formData"] = value }
-
-    fun nextStep() {
-        currentStep = currentStep + 1
-    }
-}
-
-@Parcelize
-data class WizardFormData(
-    val name: String = "",
-    val email: String = "",
-    val plan: String = ""
-) : Parcelable
-```
-
-The `@Parcelize` annotation lets you store complex data classes in `SavedStateHandle`. The tradeoff is the `Parcelable` requirement — if your data class contains non-parcelable types, you'll need to convert them. For large objects, consider persisting to Room or DataStore instead and only storing the identifier in `SavedStateHandle`.
+Here's the mental model I use: after process death, your app is a fresh process with a partially restored Activity stack. The navigation back stack is restored, but every ViewModel is reconstructed. Transient state like half-filled forms or multi-step wizard progress is lost unless you persisted it via `SavedStateHandle`, Room, or DataStore.
 
 ## Keeping ViewModels Pure
 
 One thing I feel strongly about is that a ViewModel should be a pure Kotlin class — no Android framework imports, no business logic, no eager initialization. The moment you import `android.content.Context`, `R.string`, or any Android framework class into your ViewModel, you've created a hard dependency on the Android runtime. This means your ViewModel can't run in a plain JVM unit test — you'll need Robolectric or instrumented tests, which are 10-50x slower. The solution is to push resource resolution to the UI layer. Represent errors as domain types and let the Composable or Fragment decide how to display them.
 
-```kotlin
-// Instead of this
-class BadViewModel(private val context: Context) : ViewModel() {
-    fun getError(): String = context.getString(R.string.network_error)
-}
+Another pattern I've seen cause real problems is putting business logic in the `init` block. I've seen ViewModels where `init` triggers network calls, starts database observers, and performs validation — all before the UI has even subscribed to the state. The problem is that `init` runs during ViewModel construction. If the init block launches a coroutine that updates state before the UI starts collecting, intermediate states are lost. For `StateFlow`, the init pattern mostly works because it replays the latest value, but the loading-to-success transition happens before the UI subscribes, so the UI never shows the loading state. Prefer lazy initialization with `stateIn` — the upstream only starts when the first collector appears.
 
-// Do this
-sealed interface UiMessage {
-    data class NetworkError(val retryable: Boolean) : UiMessage
-    data class ValidationError(val field: String) : UiMessage
-}
-
-class OrderViewModel(
-    private val orderRepository: OrderRepository
-) : ViewModel() {
-
-    private val _messages = MutableSharedFlow<UiMessage>()
-    val messages = _messages.asSharedFlow()
-
-    fun placeOrder(order: Order) {
-        viewModelScope.launch {
-            orderRepository.place(order).onFailure {
-                _messages.emit(UiMessage.NetworkError(retryable = true))
-            }
-        }
-    }
-}
-```
-
-This keeps the ViewModel as a pure Kotlin class. Every test runs on the JVM in milliseconds. If you absolutely need `Application` context (for non-UI things like file paths), use `AndroidViewModel` — but treat it as a last resort, not a default choice.
-
-Another pattern I've seen cause real problems is putting business logic in the `init` block. I've seen ViewModels where `init` triggers network calls, starts database observers, and performs validation — all before the UI has even subscribed to the state. The problem is that `init` runs during ViewModel construction. If the init block launches a coroutine that updates state before the UI starts collecting, intermediate states are lost.
+A ViewModel should coordinate between the UI and the data layer, not contain business logic itself. When a ViewModel reaches 500+ lines with validation, data transformation, and business rules mixed together, those responsibilities belong in use cases or domain layer classes. Use cases are independently testable — you can verify `ValidatePasswordUseCase` with 15 unit tests covering edge cases, without ever instantiating a ViewModel.
 
 ```kotlin
-// Problematic — init fires before UI collects
-class ArticleViewModel(
-    private val articleRepository: ArticleRepository,
-    savedStateHandle: SavedStateHandle
-) : ViewModel() {
-
-    private val articleId: String = checkNotNull(savedStateHandle["articleId"])
-    private val _uiState = MutableStateFlow<ArticleUiState>(ArticleUiState.Loading)
-    val uiState: StateFlow<ArticleUiState> = _uiState.asStateFlow()
-
-    init {
-        // This launches immediately during construction
-        viewModelScope.launch {
-            val article = articleRepository.getArticle(articleId)
-            _uiState.value = ArticleUiState.Success(article)
-        }
-    }
-}
-```
-
-For `StateFlow`, the init pattern mostly works because it replays the latest value. But the loading-to-success transition happens before the UI subscribes, so the UI never shows the loading state. Prefer lazy initialization with `stateIn` — the upstream only starts when the first collector appears.
-
-```kotlin
-// Better — upstream starts when UI subscribes
-class ArticleViewModel(
-    articleRepository: ArticleRepository,
-    savedStateHandle: SavedStateHandle
-) : ViewModel() {
-
-    private val articleId: String = checkNotNull(savedStateHandle["articleId"])
-
-    val uiState: StateFlow<ArticleUiState> = flow {
-        emit(ArticleUiState.Loading)
-        val article = articleRepository.getArticle(articleId)
-        emit(ArticleUiState.Success(article))
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ArticleUiState.Loading
-    )
-}
-```
-
-Finally, a ViewModel should coordinate between the UI and the data layer, not contain business logic itself. When a ViewModel reaches 500+ lines with validation, data transformation, and business rules mixed together, those responsibilities belong in use cases or domain layer classes.
-
-```kotlin
-// Too much logic in ViewModel
-class RegistrationViewModel(...) : ViewModel() {
-    fun register(email: String, password: String) {
-        if (!email.contains("@")) { /* ... */ }
-        if (password.length < 8) { /* ... */ }
-        if (!password.any { it.isUpperCase() }) { /* ... */ }
-        // 50 more lines of validation and business rules
-    }
-}
-
-// Better — delegate to use cases
 class RegistrationViewModel(
     private val validateEmail: ValidateEmailUseCase,
     private val validatePassword: ValidatePasswordUseCase,
@@ -312,6 +218,63 @@ class RegistrationViewModel(
 }
 ```
 
-Use cases are also independently testable. You can verify `ValidatePasswordUseCase` with 15 unit tests covering edge cases, without ever instantiating a ViewModel. In a codebase I worked on, extracting business logic from ViewModels into use cases reduced the average ViewModel from ~400 lines to ~120 lines and increased test coverage from 45% to 82% because the isolated use cases were trivial to test.
+In a codebase I worked on, extracting business logic from ViewModels into use cases reduced the average ViewModel from ~400 lines to ~120 lines and increased test coverage from 45% to 82% because the isolated use cases were trivial to test.
+
+## Testing ViewModels
+
+This is where all the previous practices pay off. If your ViewModel uses constructor injection, injects dispatchers, and exposes `StateFlow` — testing it is straightforward. The setup is minimal: `runTest` gives you a coroutine scope with virtual time, `StandardTestDispatcher` makes coroutine execution deterministic, and Turbine makes asserting on `StateFlow` emissions clean and readable.
+
+The key thing `runTest` does is replace the real coroutine dispatcher with a test dispatcher that doesn't actually wait. A `delay(5000)` in your ViewModel completes instantly. And `StandardTestDispatcher` queues coroutines instead of running them eagerly, so you control exactly when work happens — critical for testing loading states, because without it, the coroutine completes before you can assert on the intermediate state.
+
+```kotlin
+class SearchViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val fakeRepository = FakeSearchRepository()
+
+    @Test
+    fun `search query emits loading then results`() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = SearchViewModel(
+            searchRepository = fakeRepository,
+            savedStateHandle = savedStateHandle
+        )
+
+        viewModel.searchResults.test {
+            // Initial empty state
+            assertEquals(emptyList<SearchResult>(), awaitItem())
+
+            // Trigger search
+            viewModel.updateQuery("kotlin")
+            // Advance past debounce
+            advanceTimeBy(301)
+            runCurrent()
+
+            val results = awaitItem()
+            assertEquals(3, results.size)
+            assertEquals("kotlin", results.first().query)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `search with empty query returns empty list`() = runTest(testDispatcher) {
+        val viewModel = SearchViewModel(
+            searchRepository = fakeRepository,
+            savedStateHandle = SavedStateHandle()
+        )
+
+        viewModel.searchResults.test {
+            assertEquals(emptyList<SearchResult>(), awaitItem())
+            viewModel.updateQuery("")
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+}
+```
+
+Turbine's `.test {}` extension on `Flow` is what makes this ergonomic. `awaitItem()` suspends until the next emission arrives, and `expectNoEvents()` asserts that nothing was emitted — exactly what you want for empty query scenarios. The pattern I follow is: assert initial state, trigger the action, advance time if needed, assert the result. Every ViewModel test I write follows this shape.
 
 Thanks for reading!

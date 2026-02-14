@@ -117,6 +117,83 @@ After a few years of working with extensions, I've developed some guidelines for
 
 **Bad candidates for extensions:** Business logic that depends on multiple external services, complex multi-step operations that should be in a proper class, and anything that needs mocking in tests. If your extension function takes three parameters in addition to the receiver, it's probably just a regular function wearing an extension costume.
 
+### Extension Properties
+
+Extension functions get all the attention, but extension properties are equally useful. They can't store state (there's no backing field), so they're limited to computed values, but for common derivations they read beautifully.
+
+```kotlin
+val View.isVisible: Boolean
+    get() = visibility == View.VISIBLE
+
+var View.isGone: Boolean
+    get() = visibility == View.GONE
+    set(value) { visibility = if (value) View.GONE else View.VISIBLE }
+
+val Context.screenWidthDp: Int
+    get() = resources.configuration.screenWidthDp
+
+val Fragment.viewLifecycleScope: LifecycleCoroutineScope
+    get() = viewLifecycleOwner.lifecycleScope
+```
+
+AndroidX actually ships a lot of these — `View.isVisible`, `View.isGone`, and `View.isInvisible` are all in the `core-ktx` library. Before writing an extension, check if `core-ktx`, `fragment-ktx`, or `lifecycle-ktx` already provide it. Duplicating a standard extension confuses the team when both show up in autocomplete.
+
+### Companion Object Extensions
+
+You can extend companion objects, which is useful for adding factory methods to classes you don't own.
+
+```kotlin
+fun Color.Companion.fromHex(hex: String): Color {
+    val colorInt = android.graphics.Color.parseColor(hex)
+    return Color(colorInt)
+}
+
+// Usage
+val brandColor = Color.fromHex("#1976D2")
+```
+
+This only works if the class has a companion object defined. Most Kotlin standard library classes do, but many Java classes don't — which means you can't add companion extensions to `String`, `Int`, or other Java types.
+
+### Real-World Android Extensions
+
+Here are extensions I've used across multiple production projects. They solve common Android patterns.
+
+```kotlin
+// Context extensions
+fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, message, duration).show()
+}
+
+inline fun <reified T : Activity> Context.startActivity(
+    configIntent: Intent.() -> Unit = {}
+) {
+    startActivity(Intent(this, T::class.java).apply(configIntent))
+}
+
+// Fragment extensions — safe argument access
+fun Fragment.requireStringArg(key: String): String {
+    return requireArguments().getString(key)
+        ?: throw IllegalStateException("Missing required argument: $key")
+}
+
+// View extensions
+fun View.setOnDebouncedClickListener(
+    debounceMs: Long = 500L,
+    action: (View) -> Unit
+) {
+    var lastClickTime = 0L
+    setOnClickListener { view ->
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastClickTime >= debounceMs) {
+            lastClickTime = now
+            action(view)
+        }
+    }
+}
+```
+
+The debounced click listener is one I've used in every project. Without it, users who double-tap buttons trigger duplicate network requests, navigate twice, or open multiple dialogs. The extension encapsulates the timing logic so every call site stays clean.
+
 ```kotlin
 // Good — simple, focused, reads naturally
 fun LocalDateTime.toRelativeTimeString(): String {

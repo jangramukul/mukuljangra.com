@@ -16,7 +16,7 @@ That incident changed how I think about logging and observability. It's not abou
 
 ## Why Timber Over android.util.Log
 
-The raw `android.util.Log` API ships with your production APK and has no built-in way to disable logging in release builds. Every `Log.d()` call you leave in the codebase will print to logcat in production — which is both a performance concern (string concatenation happens even when the log is never read) and a security concern (anything logged is visible to anyone with USB debugging access). Timber solves this by letting you plant different logging trees for debug and release builds.
+The raw `android.util.Log` API ships with your production APK and has no built-in way to disable logging in release builds. Every `Log.d()` call you leave in the codebase prints to logcat in production — a performance concern (string concatenation happens even when the log is never read) and a security concern (anything logged is visible to anyone with USB debugging access). Timber solves this by letting you plant different logging trees for debug and release builds. The real power is that you can plant multiple trees simultaneously — a debug tree for logcat, a crash reporting tree for Crashlytics, and an analytics tree for your event pipeline, all receiving the same `Timber.d()` call.
 
 ```kotlin
 class MyApplication : Application() {
@@ -26,6 +26,7 @@ class MyApplication : Application() {
             Timber.plant(Timber.DebugTree())
         } else {
             Timber.plant(CrashReportingTree())
+            Timber.plant(AnalyticsTree())
         }
     }
 }
@@ -33,14 +34,13 @@ class MyApplication : Application() {
 class CrashReportingTree : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         if (priority < Log.WARN) return
-        // Only warnings and errors reach crash reporting in production
-        CrashReporter.log(priority, tag, message)
-        t?.let { CrashReporter.recordException(it) }
+        FirebaseCrashlytics.getInstance().log("[$tag] $message")
+        t?.let { FirebaseCrashlytics.getInstance().recordException(it) }
     }
 }
 ```
 
-The `DebugTree` automatically generates the tag from the calling class name. In production, the `CrashReportingTree` filters out debug and info logs entirely, forwarding only warnings and errors to your crash reporting service. Switching from raw `Log` calls to Timber typically reduces logcat noise by 80% and eliminates security audit findings around logged data.
+The `DebugTree` automatically generates the tag from the calling class name. In production, the `CrashReportingTree` filters out debug and info logs entirely, forwarding only warnings and errors to Crashlytics. Switching from raw `Log` calls to Timber typically reduces logcat noise by 80% and eliminates security audit findings around logged data.
 
 ## The PII Rule Is Non-Negotiable
 
@@ -99,20 +99,29 @@ StructuredLogger.event(
 )
 ```
 
-The key insight here is that structured logs serve two audiences. During development, they help you understand what happened. In production, they let your observability platform (Datadog, New Relic, Firebase) index and query logs at scale. If your production logs are just freeform strings, finding the root cause of an issue means grepping through millions of lines. With structured key-value pairs, you query: "show me all checkout_started events where item_count > 50 and payment_method = 'credit_card'" and get your answer in seconds.
+The key insight is that structured logs serve two audiences. During development, they help you understand what happened. In production, they let your observability platform (Datadog, New Relic, Firebase) index and query logs at scale. With structured key-value pairs, you query: "show me all checkout_started events where item_count > 50 and payment_method = 'credit_card'" and get your answer in seconds instead of grepping through millions of freeform strings.
 
-## Crash Reporting Needs Breadcrumbs
+## Firebase Crashlytics — Beyond Basic Setup
 
-Default crash reporting gives you a stack trace and maybe a device model. That's often not enough to understand why a crash happened. I can't count the number of times I've stared at a `NullPointerException at PaymentValidator.kt:42` with zero context about how the user got there. The difference between a useful crash report and a useless one is the breadcrumbs — the sequence of events that led to the crash.
+Default crash reporting gives you a stack trace and maybe a device model. That's often not enough to understand why a crash happened. I can't count the number of times I've stared at a `NullPointerException at PaymentValidator.kt:42` with zero context about how the user got there. The difference between a useful crash report and a useless one comes down to custom keys that describe device/session state and breadcrumbs that record the sequence of events leading up to it.
+
+The `FirebaseCrashlytics.getInstance()` API lets you attach custom keys that persist across the session and show up in every crash report. I set these as early as possible — right after login and at every significant state change. The `setCustomKey()` calls are cheap (they write to a local buffer that gets uploaded with the crash), so there's no reason to be stingy with them. The `log()` method adds breadcrumb strings that Crashlytics stores in a rolling buffer of the most recent 64KB.
 
 ```kotlin
 class AppCrashReporter(
     private val crashlytics: FirebaseCrashlytics
 ) {
-    fun setUserContext(userId: String, tier: String) {
+    fun initialize(userId: String, tier: String) {
         crashlytics.setUserId(userId.sha256())
         crashlytics.setCustomKey("user_tier", tier)
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+        crashlytics.setCustomKey("device_ram_mb", getDeviceRamMb())
+        crashlytics.setCustomKey("device_storage_free_mb", getFreeStorageMb())
+    }
+
+    fun updateSessionContext(screen: String, networkState: String) {
+        crashlytics.setCustomKey("current_screen", screen)
+        crashlytics.setCustomKey("network_state", networkState)
     }
 
     fun addBreadcrumb(event: String, data: Map<String, String> = emptyMap()) {
@@ -133,74 +142,41 @@ class AppCrashReporter(
 }
 ```
 
-In production, I add breadcrumbs at screen transitions, network calls, and critical user interactions. When a crash report comes in, I can see: "user opened cart → added item → started checkout → crash in payment validation." Without breadcrumbs, I'd just see the stack trace with no context. This approach turned that checkout debugging scenario from a multi-hour investigation into something you can diagnose in minutes.
+In production, I add breadcrumbs at screen transitions, network calls, and critical user interactions. When a crash report comes in, I can see: "user opened cart → added item → started checkout → crash in payment validation" alongside custom keys showing they were on WiFi with 200MB free storage. The custom keys for device RAM and free storage are particularly useful — a surprising number of crashes correlate with low-memory devices, and without that key you'd never notice the pattern.
 
-## Custom Performance Traces
+## Custom Timber Trees for Analytics
 
-Firebase Performance Monitoring gives you automatic HTTP request timing, but automatic traces miss app-specific operations. How long does search take end-to-end? What about the time between the user tapping "checkout" and seeing the confirmation? These are the metrics that actually matter to your users, and they require custom traces.
+One of Timber's underrated features is that you can plant multiple trees and each one independently decides what to do with every log call. I use this to build an analytics-routing tree that intercepts specific tagged log calls and forwards them to the analytics pipeline. The developer just writes `Timber.tag("ANALYTICS").i(...)` and the tree handles the routing — no analytics SDK dependency needed in feature modules.
 
 ```kotlin
-class PerformanceTracer {
-    fun <T> trace(name: String, block: () -> T): T {
-        val trace = Firebase.performance.newTrace(name)
-        trace.start()
-        return try {
-            val result = block()
-            trace.putAttribute("status", "success")
-            result
-        } catch (e: Exception) {
-            trace.putAttribute("status", "error")
-            trace.putAttribute("error_type", e.javaClass.simpleName)
-            throw e
-        } finally {
-            trace.stop()
-        }
+class AnalyticsTree(
+    private val analyticsClient: AnalyticsClient
+) : Timber.Tree() {
+    override fun isLoggable(tag: String?, priority: Int): Boolean {
+        return tag == "ANALYTICS" && priority >= Log.INFO
     }
 
-    suspend fun <T> suspendTrace(name: String, block: suspend () -> T): T {
-        val trace = Firebase.performance.newTrace(name)
-        trace.start()
-        return try {
-            val result = block()
-            trace.putAttribute("status", "success")
-            result
-        } catch (e: Exception) {
-            trace.putAttribute("status", "error")
-            throw e
-        } finally {
-            trace.stop()
+    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        val parts = message.split("|", limit = 2)
+        val eventName = parts[0].trim()
+        val properties = if (parts.size > 1) {
+            parts[1].trim().split(",").associate { param ->
+                val (key, value) = param.trim().split("=", limit = 2)
+                key.trim() to value.trim()
+            }
+        } else {
+            emptyMap()
         }
+        analyticsClient.track(eventName, properties)
     }
 }
 
-// Usage
-val results = performanceTracer.suspendTrace("search_execution") {
-    searchRepository.search(query)
-}
+// Usage in feature code
+Timber.tag("ANALYTICS").i("search_performed | query_length=${query.length}, result_count=$resultCount")
+Timber.tag("ANALYTICS").i("filter_applied | filter_type=price, range=$selectedRange")
 ```
 
-I add custom traces for user-facing operations that take more than 100ms. The traces give me percentile distributions across real devices — not just average latency, but p95 and p99, which is where the real performance problems hide. The tradeoff is that excessive tracing adds overhead — keep traces to meaningful operations (10-20 per user session).
-
-## Keeping Analytics and Logging Separate
-
-This is a distinction that trips up a lot of teams, and I've seen it cause real problems. Analytics and logging serve fundamentally different purposes. Logging is for engineers debugging issues — "what happened and why?" Analytics is for product decisions — "what are users doing and how often?" They have different audiences, different retention periods, different privacy requirements, and should be implemented as separate systems.
-
-```kotlin
-// Logging — for engineering debugging
-Timber.d("Payment failed: gateway_timeout, retrying in 3s")
-
-// Analytics — for product understanding
-analyticsTracker.track(
-    event = "payment_attempt",
-    properties = mapOf(
-        "method" to "credit_card",
-        "amount_bucket" to amountToBucket(amount),
-        "attempt_number" to retryCount
-    )
-)
-```
-
-Notice the differences. The log contains technical details (gateway timeout, retry delay) that help engineers debug. The analytics event contains business dimensions (payment method, amount bucket) that help product managers understand behavior. Keep them separate from the start — I've worked on codebases where mixing them led to analytics dashboards full of debug noise and missing product data when debug logs were stripped for release.
+The tradeoff here is readability — the pipe-delimited format is a convention your team needs to agree on. But the alternative (injecting an analytics dependency into every feature module) creates coupling that makes modularization painful. The tree approach means feature modules only depend on Timber, and analytics routing is a single app-level configuration.
 
 ## Getting Log Levels Right
 
@@ -225,67 +201,50 @@ Timber.w("Network timeout, falling back to cached data")
 Timber.e(exception, "Payment processing failed for orderId=$orderId")
 ```
 
-In my production `CrashReportingTree`, WARN goes to the observability dashboard as a breadcrumb, and ERROR goes to crash reporting as a non-fatal event. This means I can track warning trends over time (are network timeouts increasing?) without noise from debug logs. The discipline of choosing the right level forces you to think about the severity of what you're logging, which itself improves code quality.
+In my production `CrashReportingTree`, WARN goes to Crashlytics as a breadcrumb via `crashlytics.log()`, and ERROR goes as a non-fatal via `recordException()`. This means I can track warning trends (are network timeouts increasing?) without noise from debug logs. The discipline of choosing the right level forces you to think about severity, which itself improves code quality.
 
-## Architecting for Production vs Debug
+## Real-World Logging Patterns
 
-Beyond just enabling or disabling logs, production and debug environments need fundamentally different logging strategies. In debug builds, you want verbose, immediate, local logs for rapid development. In production, you want minimal, asynchronous, remote logs for monitoring and debugging user-reported issues. The way I handle this is through an abstraction layer that enforces the split at the architecture level.
+Beyond the general architecture, there are a few specific patterns I've found invaluable in production apps. The first is an OkHttp logging interceptor that captures request and response details for debugging network issues without leaking sensitive headers or bodies in release builds.
 
 ```kotlin
-interface AppLogger {
-    fun debug(message: String, vararg args: Any)
-    fun info(message: String, vararg args: Any)
-    fun warn(message: String, throwable: Throwable? = null)
-    fun error(message: String, throwable: Throwable? = null)
-}
+class NetworkLoggingInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val startMs = System.currentTimeMillis()
+        Timber.d("→ ${request.method} ${request.url.encodedPath}")
 
-class DebugAppLogger : AppLogger {
-    override fun debug(message: String, vararg args: Any) {
-        Timber.d(message, *args)
-    }
-    override fun info(message: String, vararg args: Any) {
-        Timber.i(message, *args)
-    }
-    override fun warn(message: String, throwable: Throwable?) {
-        Timber.w(throwable, message)
-    }
-    override fun error(message: String, throwable: Throwable?) {
-        Timber.e(throwable, message)
-    }
-}
+        return try {
+            val response = chain.proceed(request)
+            val durationMs = System.currentTimeMillis() - startMs
+            Timber.d("← ${response.code} ${request.url.encodedPath} (${durationMs}ms)")
 
-class ProductionAppLogger(
-    private val crashReporter: CrashReporter,
-    private val remoteLogger: RemoteLogger
-) : AppLogger {
-    override fun debug(message: String, vararg args: Any) { /* no-op */ }
-    override fun info(message: String, vararg args: Any) {
-        remoteLogger.log(Level.INFO, message.format(*args))
-    }
-    override fun warn(message: String, throwable: Throwable?) {
-        remoteLogger.log(Level.WARN, message)
-        crashReporter.addBreadcrumb(message)
-    }
-    override fun error(message: String, throwable: Throwable?) {
-        remoteLogger.log(Level.ERROR, message)
-        throwable?.let { crashReporter.recordException(it) }
+            if (response.code >= 400) {
+                Timber.w("HTTP ${response.code} for ${request.url.encodedPath}, duration=${durationMs}ms")
+            }
+            response
+        } catch (e: IOException) {
+            val durationMs = System.currentTimeMillis() - startMs
+            Timber.e(e, "✕ FAILED ${request.url.encodedPath} (${durationMs}ms)")
+            throw e
+        }
     }
 }
 ```
 
-This abstraction makes logging testable too — inject a `FakeAppLogger` that captures log calls, and assert that your error handling logs the right things at the right levels. It's one of those patterns that feels like over-engineering when you set it up, but pays for itself the first time you need to verify that a critical error path actually reports to Crashlytics.
+The second pattern is lifecycle event logging. When debugging UI issues — fragments not appearing, screens showing stale data, ViewModels surviving when they shouldn't — having a log trail of lifecycle transitions saves enormous time. I add a single `ActivityLifecycleCallbacks` registration in `Application.onCreate()` that logs every activity transition. When you're debugging a "the screen goes blank after rotation" report, seeing `onDestroy → onCreate → onStart` with timestamps tells you immediately whether the activity is being recreated properly. In debug builds, I also register `FragmentLifecycleCallbacks` on every activity's `FragmentManager`. The overhead is negligible, and the debugging value when something goes wrong with navigation is enormous.
 
 ## Coroutine Context in Logs
 
-Debugging coroutine-based code is harder than thread-based code because a single operation can hop between threads. I've spent hours tracing a bug where two coroutines were modifying the same state and causing intermittent data corruption. The logs showed operations happening on different threads, but I couldn't tell which coroutine was responsible for each log line. Adding coroutine context to your logs solves this entirely.
+Debugging coroutine-based code is harder than thread-based code because a single operation can hop between threads. I've spent hours tracing a bug where two coroutines were modifying the same state — the logs showed operations on different threads, but I couldn't tell which coroutine was responsible for each log line. Adding coroutine context to your logs solves this entirely.
 
 ```kotlin
-class CoroutineLoggingInterceptor : Timber.Tree() {
+class CoroutineLoggingTree : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val coroutineName = kotlin.coroutines.coroutineContext[CoroutineName]?.name
         val threadName = Thread.currentThread().name
         val enrichedMessage = buildString {
-            append("[${threadName}]")
+            append("[$threadName]")
             coroutineName?.let { append("[$it]") }
             append(" $message")
         }
@@ -297,14 +256,45 @@ class CoroutineLoggingInterceptor : Timber.Tree() {
 viewModelScope.launch(CoroutineName("loadUserProfile")) {
     Timber.d("Starting profile load")  // [Main][loadUserProfile] Starting profile load
     val profile = withContext(Dispatchers.IO) {
-        Timber.d("Fetching from network")  // [IO-worker-2][loadUserProfile] Fetching from network
+        Timber.d("Fetching from network")  // [IO-worker-2][loadUserProfile] Fetching
         userRepository.getProfile()
     }
-    Timber.d("Profile loaded: ${profile.id}")  // [Main][loadUserProfile] Profile loaded: usr_123
+    Timber.d("Profile loaded: ${profile.id}")  // [Main][loadUserProfile] Profile loaded
 }
 ```
 
 The `CoroutineName` element follows the coroutine across dispatcher switches, so you can trace a single operation from start to finish even when it runs on different threads. I name every coroutine that performs a significant operation — it costs nothing and saves hours in debugging.
+
+## Custom Performance Traces
+
+Firebase Performance Monitoring gives you automatic HTTP request timing, but automatic traces miss app-specific operations. How long does search take end-to-end? What about the time between the user tapping "checkout" and seeing the confirmation? These are the metrics that actually matter to your users, and they require custom traces.
+
+```kotlin
+class PerformanceTracer {
+    fun <T> trace(name: String, block: () -> T): T {
+        val trace = Firebase.performance.newTrace(name)
+        trace.start()
+        return try {
+            val result = block()
+            trace.putAttribute("status", "success")
+            result
+        } catch (e: Exception) {
+            trace.putAttribute("status", "error")
+            trace.putAttribute("error_type", e.javaClass.simpleName)
+            throw e
+        } finally {
+            trace.stop()
+        }
+    }
+}
+
+// Usage — wrap any user-facing operation
+val results = performanceTracer.trace("search_execution") {
+    searchRepository.search(query)
+}
+```
+
+I add custom traces for user-facing operations that take more than 100ms. The traces give me percentile distributions across real devices — not just average latency, but p95 and p99, which is where real performance problems hide. For coroutine-based operations, you can write a `suspend` variant using the same pattern. The tradeoff is that excessive tracing adds overhead — keep traces to meaningful operations (10-20 per user session).
 
 ## Log Rotation and Retention
 
@@ -335,10 +325,7 @@ class FileLogger(
         val logs = logDir.listFiles { f -> f.name.startsWith("app_log_") }
             ?.sortedByDescending { it.lastModified() }
             ?: return
-
-        // Delete oldest files beyond retention limit
         logs.drop(maxFiles - 1).forEach { it.delete() }
-
         currentFile = createLogFile()
     }
 
@@ -354,6 +341,6 @@ class FileLogger(
 }
 ```
 
-Three files at 5MB each means a maximum of 15MB of log storage — reasonable for most apps. The `getLogFiles()` function lets users attach logs to bug reports, which is far more useful than asking them to describe what happened. The tradeoff is IO performance — writing to disk on every log call can slow things down if you're logging heavily. For high-frequency scenarios, buffer log entries in memory and flush to disk periodically or on a background thread using a `Channel`.
+Three files at 5MB each means a maximum of 15MB of log storage — reasonable for most apps. The `getLogFiles()` function lets users attach logs to bug reports, which is far more useful than asking them to describe what happened. The tradeoff is IO performance — writing to disk on every log call can slow things down, so for high-frequency scenarios, buffer entries in memory and flush to disk periodically using a `Channel`.
 
 Thanks for reading through all of this :), Happy Coding!

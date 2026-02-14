@@ -10,17 +10,15 @@ description: "The list-detail pattern is a staple coding test assignment."
 
 ## Build a Movie / Product Listing with Detail Screen
 
-The list-detail pattern is a staple coding test assignment. It tests navigation, data loading, image handling, pagination, and how cleanly you separate concerns between screens.
+The list-detail pattern is the most common coding test assignment. It covers navigation, data loading, image handling, pagination, and separation of concerns in a small scope.
 
-### Core Questions (Beginner → Intermediate)
+#### What is the master-detail pattern and why is it common in coding tests?
 
-#### Q1: What is the master-detail pattern and why is it common in coding tests?
+It's a two-screen pattern. The first screen shows a list of items (movies, products, articles) and tapping an item opens a detail screen with full information. It's popular because it touches core Android concepts — list rendering, navigation, network calls, image loading, and state management — all in one small project.
 
-Master-detail is a two-screen pattern where the first screen shows a list of items (movies, products, articles) and tapping an item opens a detail screen with full information. It's common because it covers core Android concepts — list rendering, navigation with data passing, network calls, image loading, and state management — all in a small, evaluable scope.
+#### How do you build a scrollable list using LazyColumn in Compose?
 
-#### Q2: How do you build a scrollable list using LazyColumn in Compose?
-
-`LazyColumn` only composes items that are currently visible on screen, which makes it efficient for long lists. Each item gets composed when it scrolls into view and disposed when it scrolls out.
+`LazyColumn` only composes items visible on screen. Items get composed when they scroll into view and disposed when they scroll out.
 
 ```kotlin
 @Composable
@@ -45,11 +43,11 @@ fun MovieListScreen(
 }
 ```
 
-Always provide a `key` for each item. Without keys, Compose tracks items by position, so any reordering destroys and recreates item state. With keys, Compose can track items across position changes and preserve their state.
+Always provide a `key`. Without keys, Compose tracks items by position — any reordering destroys and recreates item state. With keys, Compose tracks items across position changes and preserves state.
 
-#### Q3: How do you build the same list using RecyclerView in XML?
+#### How do you build the same list using RecyclerView?
 
-Create a `RecyclerView.Adapter` with a `ViewHolder`. Use `ListAdapter` with `DiffUtil` for efficient updates — it calculates the difference between old and new lists and only updates changed items.
+I use `ListAdapter` with `DiffUtil`. `ListAdapter` extends `RecyclerView.Adapter` and calculates the difference between old and new lists automatically, so only changed items get updated.
 
 ```kotlin
 class MovieAdapter(
@@ -83,11 +81,11 @@ class MovieDiffCallback : DiffUtil.ItemCallback<Movie>() {
 }
 ```
 
-`DiffUtil` is important — submitting a new list recalculates only the diff, so RecyclerView animates additions, removals, and moves automatically instead of refreshing the entire list.
+`DiffUtil` recalculates only the diff, so RecyclerView animates additions, removals, and moves instead of refreshing everything.
 
-#### Q4: How do you handle navigation from the list screen to the detail screen?
+#### How do you handle navigation from the list screen to the detail screen?
 
-Use Jetpack Navigation with a single-activity architecture. Pass the item ID to the detail screen, not the entire object — the detail screen loads its own data from the repository.
+I use Jetpack Navigation with a single-activity setup. I pass just the item ID to the detail screen — the detail screen fetches its own data from the repository.
 
 ```kotlin
 @Composable
@@ -113,11 +111,11 @@ fun AppNavigation() {
 }
 ```
 
-Passing the ID instead of the full object avoids serialization issues and ensures the detail screen always has fresh data. The detail ViewModel fetches the movie by ID from the same repository.
+Passing the ID instead of the full object avoids serialization issues and ensures the detail screen always shows fresh data.
 
-#### Q5: How do you load images with Coil in a list?
+#### How do you load images with Coil in a list?
 
-Add the Coil Compose dependency and use `AsyncImage`. Coil handles memory caching, disk caching, request deduplication, and lifecycle-aware loading automatically.
+I use `AsyncImage` from the Coil Compose library. Coil handles memory caching, disk caching, request deduplication, and lifecycle-aware loading out of the box.
 
 ```kotlin
 @Composable
@@ -148,11 +146,11 @@ fun MovieCard(movie: Movie, onClick: () -> Unit) {
 }
 ```
 
-Use `crossfade(true)` for a smooth transition from placeholder to loaded image. Set `contentScale = ContentScale.Crop` for consistent image sizing in list items.
+`crossfade(true)` gives a smooth transition from placeholder to loaded image. `ContentScale.Crop` keeps image sizing consistent across list items.
 
-#### Q6: How do you handle the data layer architecture for a list-detail feature?
+#### How do you structure the data layer for a list-detail feature?
 
-The repository provides a single point of access for movie data. It decides whether to fetch from network or return cached data. Both the list and detail screens use the same repository.
+I use a repository that acts as a single source of truth for both screens. It decides whether to fetch from network or return cached data.
 
 ```kotlin
 class MovieRepository(
@@ -186,13 +184,36 @@ class MovieRepository(
 }
 ```
 
-The list endpoint uses cache-then-network — show cached data immediately while fetching fresh data in the background. The detail endpoint can be network-only if the full detail data isn't cached.
+The list uses cache-then-network — show cached data immediately, fetch fresh data in the background. The detail endpoint can be network-only if I don't cache full detail data locally.
 
-### Deep Dive Questions (Advanced → Expert)
+#### How should the detail screen load its data?
 
-#### Q7: How do you implement infinite scroll with Paging 3?
+The detail ViewModel reads the item ID from `SavedStateHandle` and fetches the full detail from the repository.
 
-Paging 3 handles pagination automatically — it loads the next page when the user scrolls near the end of the list. You define a `PagingSource` that knows how to load each page, and the library handles everything else.
+```kotlin
+@HiltViewModel
+class MovieDetailViewModel @Inject constructor(
+    private val repository: MovieRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+    private val movieId: Int = checkNotNull(savedStateHandle["movieId"])
+
+    val uiState: StateFlow<MovieDetailUiState> = flow {
+        emit(MovieDetailUiState.Loading)
+        when (val result = repository.getMovieById(movieId)) {
+            is Resource.Success -> emit(MovieDetailUiState.Success(result.data))
+            is Resource.Error -> emit(MovieDetailUiState.Error(result.message))
+            else -> {}
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MovieDetailUiState.Loading)
+}
+```
+
+If the detail data is expensive to fetch, I can show the list-level summary immediately while loading the full detail. I pass essential fields (title, poster URL) as navigation arguments for an instant preview.
+
+#### How do you implement infinite scroll with Paging 3?
+
+I define a `PagingSource` that knows how to load each page. Paging 3 handles the rest — it loads the next page automatically when the user scrolls near the end.
 
 ```kotlin
 class MoviePagingSource(
@@ -222,7 +243,7 @@ class MoviePagingSource(
 }
 ```
 
-In the ViewModel, create a `Pager` and expose the result as a `Flow<PagingData<Movie>>`. In Compose, use `collectAsLazyPagingItems()` to render the paged list.
+In the ViewModel, I create a `Pager` and expose the result as `Flow<PagingData<Movie>>`. In Compose, I collect it with `collectAsLazyPagingItems()`.
 
 ```kotlin
 // ViewModel
@@ -244,11 +265,11 @@ fun MovieListScreen(viewModel: MovieViewModel = hiltViewModel()) {
 }
 ```
 
-`cachedIn(viewModelScope)` is critical — without it, the paging data restarts from page 1 on configuration changes. With it, loaded pages survive rotation.
+`cachedIn(viewModelScope)` is critical. Without it, paging data restarts from page 1 on configuration changes. With it, loaded pages survive rotation.
 
-#### Q8: How do you implement search and filter in a list screen?
+#### How do you implement search and filter in a list screen?
 
-Combine the search query with the data source. For client-side filtering (when you have all data loaded), filter the list in the ViewModel. For server-side search, pass the query to the API.
+I combine the search query and filter selection with the data source using `combine`. When any input changes, the filter re-runs automatically.
 
 ```kotlin
 class MovieViewModel(private val repository: MovieRepository) : ViewModel() {
@@ -279,11 +300,11 @@ class MovieViewModel(private val repository: MovieRepository) : ViewModel() {
 }
 ```
 
-`combine` merges all three sources reactively — when any of them changes, the filter re-runs. This is cleaner than manually triggering refiltering on each input change.
+This is for client-side filtering when all data is already loaded. For server-side search, I'd pass the query to the API instead and let the backend handle it.
 
-#### Q9: How do you handle state preservation on configuration changes?
+#### How do you handle state preservation on configuration changes?
 
-ViewModel survives configuration changes, so anything stored in `StateFlow` or `MutableState` inside the ViewModel persists across rotation. For data that needs to survive process death, use `SavedStateHandle`.
+ViewModel survives configuration changes, so `StateFlow` values persist across rotation. For data that also needs to survive process death, I use `SavedStateHandle`.
 
 ```kotlin
 class MovieViewModel(
@@ -303,39 +324,11 @@ class MovieViewModel(
 }
 ```
 
-`SavedStateHandle.getStateFlow()` gives you a `StateFlow` that automatically persists to the saved state bundle. The user's search query and filter selection survive both rotation and process death without any extra work.
+`SavedStateHandle.getStateFlow()` returns a `StateFlow` that automatically persists to the saved state bundle. The search query and filter survive both rotation and process death.
 
-#### Q10: How do you implement shared element transitions between list and detail in Compose?
+#### How do you design a clean navigation setup for a single-activity app?
 
-Compose supports shared element transitions through the `SharedTransitionLayout` and `AnimatedContent` APIs. You wrap your navigation with `SharedTransitionLayout` and mark elements that should animate between screens.
-
-```kotlin
-SharedTransitionLayout {
-    AnimatedContent(targetState = selectedMovie) { movie ->
-        if (movie == null) {
-            MovieList(
-                movies = movies,
-                onMovieClick = { selectedMovie = it },
-                animatedVisibilityScope = this@AnimatedContent,
-                sharedTransitionScope = this@SharedTransitionLayout
-            )
-        } else {
-            MovieDetail(
-                movie = movie,
-                onBack = { selectedMovie = null },
-                animatedVisibilityScope = this@AnimatedContent,
-                sharedTransitionScope = this@SharedTransitionLayout
-            )
-        }
-    }
-}
-```
-
-Shared element transitions are a bonus feature for coding tests — they demonstrate knowledge of newer Compose APIs. But don't add them at the cost of more important things like error handling and testing.
-
-#### Q11: How do you design a clean navigation setup for a single-activity app?
-
-Single-activity with Jetpack Navigation is the standard. Define all routes in one place and use sealed classes or objects for type-safe navigation.
+I define all routes in one place using sealed classes for type safety. This avoids hardcoded route strings scattered across the codebase.
 
 ```kotlin
 sealed class Screen(val route: String) {
@@ -372,44 +365,17 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
 }
 ```
 
-This structure keeps all navigation in one file, makes routes easy to find, and prevents hardcoded route strings scattered across the codebase. The ViewModel reads `movieId` from `SavedStateHandle` — Hilt injects it automatically from the navigation arguments.
+The ViewModel reads `movieId` from `SavedStateHandle` — Hilt injects it automatically from the navigation arguments.
 
-#### Q12: How should the detail screen load its data?
+#### What is the difference between client-side and server-side pagination?
 
-The detail ViewModel takes the item ID from `SavedStateHandle` and fetches the full detail from the repository. Don't pass the entire object through navigation — pass only the ID.
+Client-side pagination loads all data at once and pages through it locally. This works for small datasets but wastes memory and bandwidth for large ones.
 
-```kotlin
-@HiltViewModel
-class MovieDetailViewModel @Inject constructor(
-    private val repository: MovieRepository,
-    savedStateHandle: SavedStateHandle
-) : ViewModel() {
-    private val movieId: Int = checkNotNull(savedStateHandle["movieId"])
+Server-side pagination loads one page at a time. The API returns a subset of results plus info about the next page (page number, cursor, or offset). Paging 3 handles this through `PagingSource` — I tell it how to load a page and it manages prefetching, caching, and retry. For coding tests, server-side pagination with Paging 3 is the expected approach unless the dataset is small enough to load in one request.
 
-    val uiState: StateFlow<MovieDetailUiState> = flow {
-        emit(MovieDetailUiState.Loading)
-        when (val result = repository.getMovieById(movieId)) {
-            is Resource.Success -> emit(MovieDetailUiState.Success(result.data))
-            is Resource.Error -> emit(MovieDetailUiState.Error(result.message))
-            else -> {}
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MovieDetailUiState.Loading)
-}
-```
+#### How do you handle error states in a paged list?
 
-If the detail data is expensive to fetch, you can show the summary from the list while loading the full detail. Cache the summary in the repository or pass essential fields (title, poster URL) as navigation arguments for an instant preview.
-
-#### Q13: What is the difference between client-side and server-side pagination?
-
-Client-side pagination loads all data at once and pages through it locally. This works for small datasets (under a few hundred items) but wastes memory and bandwidth for large ones.
-
-Server-side pagination loads one page at a time. The API returns a subset of results plus information about the next page (page number, cursor, or offset). Paging 3 handles server-side pagination through `PagingSource` — you tell it how to load a page and it manages prefetching, caching, and retry automatically.
-
-For coding tests, server-side pagination with Paging 3 is the expected approach unless the dataset is small enough that you can load everything in one request.
-
-#### Q14: How do you handle error states in a paged list?
-
-Paging 3 exposes `LoadState` for each loading phase — refresh (initial load), prepend (loading previous pages), and append (loading next page). Handle each state in the UI.
+Paging 3 exposes `LoadState` for each phase — refresh (initial load), prepend, and append (next page). I handle each one in the UI.
 
 ```kotlin
 @Composable
@@ -422,12 +388,10 @@ fun MovieListScreen(viewModel: MovieViewModel = hiltViewModel()) {
             MovieCard(movie = movie)
         }
 
-        // Append loading indicator
         if (movies.loadState.append is LoadState.Loading) {
             item { CircularProgressIndicator(modifier = Modifier.padding(16.dp)) }
         }
 
-        // Append error with retry
         if (movies.loadState.append is LoadState.Error) {
             item {
                 RetryButton(
@@ -438,7 +402,6 @@ fun MovieListScreen(viewModel: MovieViewModel = hiltViewModel()) {
         }
     }
 
-    // Full screen error for refresh failure
     if (movies.loadState.refresh is LoadState.Error && movies.itemCount == 0) {
         ErrorScreen(
             message = "Failed to load movies",
@@ -448,19 +411,17 @@ fun MovieListScreen(viewModel: MovieViewModel = hiltViewModel()) {
 }
 ```
 
-Showing a loading indicator at the bottom of the list while the next page loads and a retry button if it fails is expected behavior. Most candidates handle the initial load state but forget about append errors.
+I show a loading indicator at the bottom while the next page loads and a retry button if it fails. For a full refresh failure with no cached data, I show a full-screen error with retry.
 
-#### Q15: How do you optimize image loading in a large list?
+#### How do you optimize image loading in a large list?
 
-Use Coil's built-in optimizations and add a few extras for list performance. Set a fixed image size to avoid loading full-resolution images, use placeholders to prevent layout shifts, and let Coil handle memory and disk caching.
-
-Configure the `ImageLoader` globally with appropriate cache sizes:
+I configure the `ImageLoader` globally with appropriate cache sizes and use fixed image dimensions in list items to avoid decoding full-resolution images.
 
 ```kotlin
 val imageLoader = ImageLoader.Builder(context)
     .memoryCache {
         MemoryCache.Builder()
-            .maxSizePercent(context, 0.25) // 25% of available memory
+            .maxSizePercent(context, 0.25)
             .build()
     }
     .diskCache {
@@ -473,7 +434,7 @@ val imageLoader = ImageLoader.Builder(context)
     .build()
 ```
 
-In list items, specify `size()` in the image request to avoid decoding at full resolution. A thumbnail in a list doesn't need a 4000x3000 pixel image — loading it at that size wastes memory and causes scroll jank.
+A thumbnail in a list doesn't need a 4000x3000 pixel image. I specify `size()` in the image request so Coil decodes at the display size, not the original resolution. Loading full-resolution images in a list wastes memory and causes scroll jank.
 
 ### Common Follow-ups
 

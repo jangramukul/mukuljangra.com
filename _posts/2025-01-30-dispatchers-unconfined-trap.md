@@ -84,7 +84,7 @@ fun testLoadTransactions() = runTest {
 }
 ```
 
-This crashes. The first `textView.text = recent.summary()` works fine because we're still on the test thread. But then `delay()` suspends the coroutine, and internally, `delay` uses `Dispatchers.Default` to schedule the timer. When the delay completes and the coroutine resumes, it needs to dispatch back to the main dispatcher. But the main dispatcher is `Dispatchers.Unconfined`, which says "don't dispatch, just run on whatever thread you're on." The coroutine resumes on the `Default` pool thread. The next line touches `textView`, which throws `CalledFromWrongThreadException` because you're not on the main thread anymore.
+This crashes. The first `textView.text = recent.summary()` works fine because we're still on the test thread. But then `delay()` suspends the coroutine. Since `Dispatchers.Unconfined` doesn't implement the `Delay` interface, the coroutine machinery falls back to the `DefaultExecutor` — a separate daemon thread that handles timer scheduling. When the delay completes and the coroutine resumes, it needs to dispatch back to the main dispatcher. But the main dispatcher is `Dispatchers.Unconfined`, which says "don't dispatch, just run on whatever thread you're on." The coroutine resumes on the `DefaultExecutor` thread instead of the main thread. The next line touches `textView`, which throws `CalledFromWrongThreadException` because you're not on the main thread anymore.
 
 Here's the key insight: **`Dispatchers.Unconfined` breaks one of coroutines' best features — making threading a local concern.** When you use `Dispatchers.Main`, you don't have to worry about what thread you're on after calling another `suspend fun`. The dispatcher handles the redispatch for you. `Dispatchers.Unconfined` removes that safety net entirely.
 
@@ -109,6 +109,14 @@ fun testLoadTransactions() = runTest {
 ```
 
 The test runs synchronously on the test thread, `delay()` behaves correctly, and the coroutine resumes on the right thread. No crash. The behavior is what you *thought* `Dispatchers.Unconfined` was giving you.
+
+There's a bonus here when using `runTest`. The `TestScope` that `runTest` creates uses a `StandardTestDispatcher` by default. This dispatcher implements the `Delay` interface, which means it handles `delay()` calls with virtual time — delays are skipped instantly instead of waiting. When you inject `EmptyCoroutineContext`, the `TestDispatcher` stays in place as the active dispatcher. This means your delay-skipping behavior is preserved. If you had injected `Dispatchers.Unconfined` instead, you'd be overwriting the `TestDispatcher`, losing virtual time, and `delay()` would fall back to the `DefaultExecutor` with a real wall-clock wait.
+
+## What About UnconfinedTestDispatcher?
+
+If you've used `kotlinx-coroutines-test`, you've probably seen `UnconfinedTestDispatcher`. The name might suggest it solves this problem, but it's solving a different one. `UnconfinedTestDispatcher` is a `TestDispatcher` that eagerly enters `launch` and `async` blocks instead of requiring you to call `advanceUntilIdle()` or `runCurrent()`. It shares the "unconfined" behavior of executing immediately on the current thread, but because it's a `TestDispatcher`, it integrates with `TestCoroutineScheduler` and supports virtual time. It still skips delays.
+
+The key distinction is scope. `UnconfinedTestDispatcher` is designed to be the dispatcher for `runTest` itself — you pass it as `runTest(UnconfinedTestDispatcher())` to change how the test scope dispatches work. It's not meant to be injected into your production classes as a replacement for `Dispatchers.IO` or `Dispatchers.Main`. For that injection site, `EmptyCoroutineContext` is still the right answer.
 
 ## Change Your Injection Type to CoroutineContext
 

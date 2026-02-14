@@ -10,13 +10,11 @@ description: "The to-do or notes app is the purest test of Android fundamentals 
 
 ## Build a To-Do / Notes App
 
-The to-do or notes app is the purest test of Android fundamentals. There's no external API to blame for issues — everything runs locally. It tests Room, CRUD operations, state management, form validation, and how cleanly you structure code when the scope is small but the expectations are high.
+Everything runs locally in a notes app. No external API to hide behind — it's a direct test of Room, CRUD, state management, and how cleanly you structure code.
 
-### Core Questions (Beginner → Intermediate)
+#### How do you set up Room for a notes app?
 
-#### Q1: How do you set up Room for a notes app?
-
-Define an entity for the note, a DAO with suspend functions for CRUD operations, and a database class. Room generates the implementation at compile time from these annotations.
+I define an entity, a DAO with suspend functions for CRUD, and a database class. Room generates the implementation at compile time.
 
 ```kotlin
 @Entity(tableName = "notes")
@@ -53,11 +51,11 @@ abstract class AppDatabase : RoomDatabase() {
 }
 ```
 
-The DAO returns `Flow<List<NoteEntity>>` for the list query so the UI updates automatically whenever the database changes. Individual operations like `insert` and `delete` are suspend functions.
+The list query returns `Flow<List<NoteEntity>>` so the UI updates automatically when the database changes. Individual operations like `insert` and `delete` are suspend functions since they're one-shot.
 
-#### Q2: How do you display notes in a LazyColumn?
+#### How do you display notes in a LazyColumn?
 
-Collect the `Flow` from the DAO in the ViewModel and expose it as `StateFlow`. The composable renders each note as a card in a `LazyColumn`.
+I collect the `Flow` from the DAO in the ViewModel, expose it as `StateFlow`, and render each note as a card in a `LazyColumn`.
 
 ```kotlin
 @Composable
@@ -86,11 +84,11 @@ fun NoteListScreen(
 }
 ```
 
-The `key = { it.id }` is important for animations and state preservation. Without it, swipe-to-delete and reordering won't work correctly because Compose tracks items by position.
+Setting `key = { it.id }` is important. Without it, Compose tracks items by position, so swipe-to-delete and reordering break.
 
-#### Q3: How do you implement swipe-to-delete?
+#### How do you implement swipe-to-delete?
 
-Use the `SwipeToDismissBox` composable from Material 3. It wraps each list item and handles the swipe gesture. On dismiss, delete the note and show a Snackbar with an undo option.
+I use `SwipeToDismissBox` from Material 3. It wraps each list item and handles the gesture. On dismiss, I delete the note and show a Snackbar with undo.
 
 ```kotlin
 @Composable
@@ -128,11 +126,11 @@ fun SwipeableNoteCard(
 }
 ```
 
-The swipe direction matters. `EndToStart` means swiping from right to left, which is the standard delete gesture.
+`EndToStart` means swiping right to left, which is the standard delete gesture on Android.
 
-#### Q4: How do you implement undo delete with a Snackbar?
+#### How do you implement undo delete with a Snackbar?
 
-When the user deletes a note, save a reference to it and show a Snackbar. If they tap "Undo," re-insert the note. If the Snackbar dismisses, the delete is final.
+I hold a reference to the last deleted note. If the user taps "Undo" on the Snackbar, I re-insert it. If the Snackbar dismisses, the delete stays.
 
 ```kotlin
 class NoteListViewModel(
@@ -158,11 +156,11 @@ class NoteListViewModel(
 }
 ```
 
-In the composable, use `SnackbarHostState` and show the Snackbar with an action button. The ViewModel doesn't need to know about Snackbars — it just exposes `deleteNote()` and `undoDelete()`.
+The composable uses `SnackbarHostState` to show the Snackbar with an action button. The ViewModel doesn't know about Snackbars — it just exposes `deleteNote()` and `undoDelete()`.
 
-#### Q5: How do you build the add/edit note screen with form validation?
+#### How do you build the add/edit note screen with form validation?
 
-Use a single screen for both adding and editing. If a note ID is passed through navigation, load the existing note. Validate that the title is not empty before saving.
+I use one screen for both add and edit. If a note ID comes through navigation, I load the existing note. I validate that the title isn't blank before saving.
 
 ```kotlin
 @HiltViewModel
@@ -216,11 +214,11 @@ class NoteEditViewModel @Inject constructor(
 }
 ```
 
-The `save()` function returns a boolean so the UI knows whether to navigate back. Clearing `titleError` when the user types again gives immediate feedback.
+`save()` returns a boolean so the UI knows whether to navigate back. I clear `titleError` when the user types again for immediate feedback.
 
-#### Q6: How do you implement search and filter for notes?
+#### How do you implement search and filter for notes?
 
-Combine the search query with the notes flow. Filter on the client side since all data is local. Room's `LIKE` query works too, but client-side filtering is simpler and fast enough for typical note counts.
+I combine the search query with the notes flow using `combine`. Since all data is local, client-side filtering is simple and fast enough for typical note counts.
 
 ```kotlin
 class NoteListViewModel(
@@ -243,11 +241,11 @@ class NoteListViewModel(
 }
 ```
 
-The `combine` operator re-runs the filter whenever either the notes list or the query changes. This means if a note is added while a search is active, the filtered results update automatically.
+`combine` re-runs the filter whenever either the notes or the query changes. If a note is added while a search is active, the results update automatically. I could also use Room's `LIKE` query, but client-side is simpler here.
 
-#### Q7: How do you implement sorting by date or priority?
+#### How do you implement sorting by date or priority?
 
-Add a sort option to the ViewModel and combine it with the notes flow. Use an enum for sort types and apply the appropriate comparator.
+I add a sort option as a `StateFlow` and combine it with the notes flow. An enum defines the sort types.
 
 ```kotlin
 enum class SortOrder { DATE_NEWEST, DATE_OLDEST, PRIORITY_HIGH, PRIORITY_LOW }
@@ -272,13 +270,11 @@ class NoteListViewModel(
 }
 ```
 
-You could also do sorting in the Room query with `ORDER BY`, but handling it in the ViewModel makes it easier to combine with search filtering without writing multiple DAO queries.
+I could sort in the Room query with `ORDER BY`, but doing it in the ViewModel makes it easier to combine with search filtering without writing multiple DAO methods.
 
-### Deep Dive Questions (Advanced → Expert)
+#### How do you structure clean architecture for a notes app?
 
-#### Q8: How do you structure clean architecture for a notes app?
-
-Even for a small app, separating data, domain, and presentation layers makes the code testable and organized. The domain layer is thin here — mostly the model and a repository interface.
+I separate data, domain, and presentation layers even for a small app. It keeps the code testable. The domain layer is thin — just the model and a repository interface.
 
 ```kotlin
 // Domain layer
@@ -314,11 +310,11 @@ class NoteRepositoryImpl(
 }
 ```
 
-Use cases are optional for a notes app. If the only thing a use case does is call one repository method, it's unnecessary indirection. Add them only when the operation involves combining multiple repositories or applying business rules.
+Use cases are optional here. If a use case just calls one repository method, it's unnecessary indirection. I'd add them only when combining multiple repositories or applying real business rules.
 
-#### Q9: How do you set up Hilt for dependency injection?
+#### How do you set up Hilt for dependency injection?
 
-Create a module that provides the Room database, DAO, and repository. Annotate the ViewModel with `@HiltViewModel` and inject the repository through the constructor.
+I create a module that provides the Room database, DAO, and repository. The ViewModel gets `@HiltViewModel` and the repository is injected through the constructor.
 
 ```kotlin
 @Module
@@ -344,19 +340,17 @@ abstract class RepositoryModule {
 }
 ```
 
-Use `@Binds` for interface-to-implementation bindings — it's more efficient than `@Provides` because it doesn't create a wrapper method. The ViewModel gets the repository automatically through `@Inject constructor`.
+I use `@Binds` for interface-to-implementation bindings. It's more efficient than `@Provides` because Dagger doesn't create a wrapper method.
 
-#### Q10: How do you handle offline-first architecture in a notes app?
+#### How do you handle offline-first architecture in a notes app?
 
-A notes app is inherently offline-first since Room is the primary data store. The key design decision is whether to add cloud sync. If sync is required, treat Room as the source of truth and sync changes to the server in the background.
+A notes app is offline-first by default since Room is the primary data store. The real question is whether to add cloud sync. If sync is needed, I treat Room as the source of truth and sync in the background.
 
-The pattern is: write to Room immediately, queue the sync operation with WorkManager, and handle conflicts when the sync response comes back. The user never waits for a network call to save a note. This makes the app feel fast and reliable regardless of connectivity.
+The pattern is: write to Room immediately, queue the sync with WorkManager, and handle conflicts when the response comes back. The user never waits for a network call. If cloud sync isn't in scope, the architecture is just Room with `Flow` — the simplest form.
 
-If cloud sync isn't in scope, the offline-first architecture is just Room with `Flow` — the simplest form. Mention that you'd add WorkManager-based sync if the requirements called for it.
+#### How do you support dark mode?
 
-#### Q11: How do you support dark mode?
-
-Use Material 3 dynamic theming. Define a theme that switches between light and dark color schemes based on the system setting. Don't hardcode any colors in composables.
+I use Material 3 theming. I define a theme composable that switches between light and dark color schemes based on the system setting.
 
 ```kotlin
 @Composable
@@ -374,11 +368,11 @@ fun NotesAppTheme(
 }
 ```
 
-Use `MaterialTheme.colorScheme.surface`, `onSurface`, `primary`, etc. in all composables instead of hardcoded `Color.White` or `Color.Black`. If you want user-controlled dark mode (not just system), store the preference in DataStore and provide it to the theme composable.
+I use `MaterialTheme.colorScheme.surface`, `onSurface`, `primary`, etc. everywhere instead of hardcoded colors. For user-controlled dark mode beyond the system setting, I store the preference in DataStore and pass it to the theme composable.
 
-#### Q12: How do you unit test the ViewModel with StateFlow?
+#### How do you unit test the ViewModel?
 
-Create a fake repository, pass it to the ViewModel, and use Turbine to collect and assert on the StateFlow emissions.
+I create a fake repository, pass it to the ViewModel, and assert on the `StateFlow` emissions.
 
 ```kotlin
 class NoteListViewModelTest {
@@ -411,11 +405,11 @@ class NoteListViewModelTest {
 }
 ```
 
-The fake repository uses a `MutableStateFlow<List<Note>>` internally so it behaves like the real one. This is simpler and more reliable than mocking Room's `Flow` return type.
+The fake repository uses a `MutableStateFlow<List<Note>>` internally so it behaves like the real one. This is simpler than mocking Room's `Flow` return type.
 
-#### Q13: How do you write UI tests for the notes app?
+#### How do you write UI tests for the notes app?
 
-Use `ComposeTestRule` to render composables and interact with them. Test the core flows: adding a note, seeing it in the list, editing it, and deleting it.
+I use `ComposeTestRule` to render composables and interact with them. I test the core flows: adding a note, seeing it in the list, editing, deleting.
 
 ```kotlin
 @HiltAndroidTest
@@ -438,17 +432,17 @@ class NoteListScreenTest {
 }
 ```
 
-Use `testTag` for input fields since they don't always have visible text to match on. Keep UI tests focused on user-visible behavior, not implementation details.
+I use `testTag` for input fields since they don't always have visible text to match on. UI tests should focus on user-visible behavior, not implementation details.
 
-#### Q14: Why is the to-do app a good test of fundamentals?
+#### Why is the to-do app a good test of fundamentals?
 
-It strips away the complexity of networking and forces you to demonstrate core skills. There's no external API to hide behind — your Room setup, state management, navigation, and UI code are all exposed. Evaluators can see how you handle CRUD operations, form validation, state persistence across configuration changes, and error cases like empty lists or invalid input.
+It strips away networking complexity and exposes core skills directly. Room setup, state management, navigation, UI code — everything is visible. The evaluator can see how I handle CRUD, form validation, state persistence across config changes, and edge cases like empty lists.
 
-It also reveals coding habits. Do you add a FAB for creating notes or hide the action in a menu? Do you handle the back press during editing? Do you confirm before deleting? These UX details aren't in the requirements, but they show product thinking.
+It also reveals product thinking. Do I add a FAB or hide the action in a menu? Do I handle back press during editing? Do I confirm before deleting? These UX details aren't in the requirements but they show how I think about the full experience.
 
-#### Q15: How do you handle the back press when the user is editing a note with unsaved changes?
+#### How do you handle the back press when editing a note with unsaved changes?
 
-Track whether the form has been modified and intercept the back navigation. Show a confirmation dialog if there are unsaved changes.
+I track whether the form has been modified and intercept back navigation with `BackHandler`. If there are unsaved changes, I show a confirmation dialog.
 
 ```kotlin
 @Composable
@@ -480,7 +474,7 @@ fun NoteEditScreen(
 }
 ```
 
-This is a detail most candidates skip. It shows you think about the full user experience, not just the happy path.
+Most candidates skip this. It's a small detail but it shows I think about the full user experience, not just the happy path.
 
 ### Common Follow-ups
 

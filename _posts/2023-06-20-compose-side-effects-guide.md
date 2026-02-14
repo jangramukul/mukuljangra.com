@@ -178,7 +178,123 @@ fun CheckoutScreen(
 
 The scope returned by `rememberCoroutineScope` is cancelled when the composable leaves the composition — so any coroutines launched from it are automatically cleaned up. This is important. If you used `GlobalScope.launch` instead, the coroutine would keep running even after the user navigated away, potentially updating state on a composable that no longer exists.
 
-The distinction between `LaunchedEffect` and `rememberCoroutineScope` is worth repeating: `LaunchedEffect` launches automatically when the composable enters composition (or when the key changes). `rememberCoroutineScope` gives you a scope to launch from manually, in response to events. If the work should happen on entry, use `LaunchedEffect`. If the work should happen on user action, use `rememberCoroutineScope`.
+## rememberUpdatedState — Capturing Latest Values in Long-Lived Effects
+
+Here's a subtle but important problem: you have a `LaunchedEffect` that runs for a long time (or runs once), but inside it you reference a lambda or value that might change. Since `LaunchedEffect(Unit)` never restarts, it captures the initial value and never sees updates.
+
+`rememberUpdatedState` solves this by holding a reference that always points to the latest value, even inside a non-restarting effect.
+
+```kotlin
+@Composable
+fun SplashScreen(onTimeout: () -> Unit) {
+    // If the parent recomposes with a different onTimeout lambda,
+    // the LaunchedEffect below still calls the OLD one without this
+    val currentOnTimeout by rememberUpdatedState(onTimeout)
+
+    LaunchedEffect(Unit) {
+        delay(3000L)
+        currentOnTimeout()  // Always calls the latest lambda
+    }
+
+    // Splash UI...
+}
+```
+
+Real-world use case: timer-based effects where the callback might change, long-running animations where the completion handler is updated, or any `LaunchedEffect(Unit)` that references composable parameters.
+
+## produceState — Converting Non-Compose Sources to State
+
+`produceState` creates a Compose `State` from a non-Compose data source. It launches a coroutine that updates the state, and it's lifecycle-aware — the coroutine is cancelled when the composable leaves composition.
+
+```kotlin
+@Composable
+fun ConnectivityBanner(connectivityManager: ConnectivityManager) {
+    val isConnected by produceState(initialValue = true) {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { value = true }
+            override fun onLost(network: Network) { value = false }
+        }
+        connectivityManager.registerDefaultNetworkCallback(callback)
+        awaitDispose {
+            connectivityManager.unregisterNetworkCallback(callback)
+        }
+    }
+
+    AnimatedVisibility(visible = !isConnected) {
+        Text(
+            "No internet connection",
+            modifier = Modifier.fillMaxWidth().background(Color.Red).padding(8.dp),
+            color = Color.White
+        )
+    }
+}
+```
+
+`produceState` is essentially a `LaunchedEffect` that produces a `State<T>`. The `awaitDispose` block inside it handles cleanup when the composable leaves composition — similar to `DisposableEffect`'s `onDispose`. Use it when you need to convert a callback-based API into Compose state.
+
+## snapshotFlow — Converting Compose State to Flow
+
+The inverse of `produceState`. `snapshotFlow` reads Compose state and emits it as a Flow. Every time the state value changes, the flow emits the new value.
+
+```kotlin
+@Composable
+fun OrderListScreen(lazyListState: LazyListState = rememberLazyListState()) {
+    // Convert scroll state to a Flow for pagination logic
+    LaunchedEffect(lazyListState) {
+        snapshotFlow {
+            val layoutInfo = lazyListState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = layoutInfo.totalItemsCount
+            lastVisibleIndex >= totalItems - 5  // within 5 items of the end
+        }
+            .distinctUntilChanged()
+            .filter { it }  // only when we're near the end
+            .collect { viewModel.loadNextPage() }
+    }
+
+    LazyColumn(state = lazyListState) {
+        // ... items
+    }
+}
+```
+
+Real-world use case: triggering pagination based on scroll position, logging analytics when a user scrolls past a certain point, saving scroll position to persistence when the user stops scrolling.
+
+## derivedStateOf — Computed State Without Recomposition
+
+`derivedStateOf` creates a state value that only changes when the computation result actually changes, not when the inputs change. This is a performance tool — it prevents unnecessary recompositions when the derived value stays the same despite input changes.
+
+```kotlin
+@Composable
+fun ShoppingCart(items: List<CartItem>) {
+    // Without derivedStateOf, any scroll or item change recomputes
+    // the button's enabled state on every recomposition
+    val isCheckoutEnabled by remember {
+        derivedStateOf { items.isNotEmpty() && items.all { it.quantity > 0 } }
+    }
+
+    val totalPrice by remember {
+        derivedStateOf {
+            items.sumOf { it.price * it.quantity }
+        }
+    }
+
+    Column {
+        LazyColumn {
+            items(items) { item -> CartItemRow(item) }
+        }
+        Text("Total: $${String.format("%.2f", totalPrice)}")
+        Button(
+            onClick = { /* checkout */ },
+            enabled = isCheckoutEnabled
+        ) {
+            Text("Checkout")
+        }
+    }
+}
+```
+
+The key insight: `derivedStateOf` reads Compose state objects and only triggers recomposition of its readers when the computed value actually changes. If `items` has 50 elements and one of them changes its `quantity` but the total stays the same (unlikely but possible), the `Text` showing the total doesn't recompose. For lists where the `isNotEmpty()` check is the same 99% of the time, this avoids a lot of wasted recomposition.
 
 ## Choosing the Right Effect
 
@@ -192,7 +308,13 @@ The decision tree is simpler than it looks once you internalize it.
 
 **Does the effect need to launch in response to a user action (button click, gesture)?** Use `rememberCoroutineScope` and launch from the callback.
 
-**Does the effect need both async work AND cleanup?** This is the tricky case. You can use `DisposableEffect` for setup/teardown and launch coroutines inside it using a remembered scope. Or you can use `LaunchedEffect` if the coroutine's cancellation serves as your cleanup (which it often does for Flow collection).
+**Do you need to convert a callback-based API into Compose state?** Use `produceState`.
+
+**Do you need to convert Compose state into a Flow?** Use `snapshotFlow` inside a `LaunchedEffect`.
+
+**Do you need a computed value that avoids recomposition when the result doesn't change?** Use `derivedStateOf`.
+
+**Does a long-running effect reference a lambda that might change?** Use `rememberUpdatedState` to always capture the latest value.
 
 ```kotlin
 @Composable

@@ -8,9 +8,9 @@ tags:
   - Kotlin
 ---
 
-A while back, I was working on a screen that displayed a list of transactions — maybe a couple thousand rows, nothing extreme. The UI was visibly laggy. Scrolling felt sluggish, and the initial load took nearly 400ms on a mid-range device. I profiled it, expecting some layout issue or a heavy composable. The bottleneck was the Room query. A simple `SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC` was doing a full table scan because I never added an index on `account_id`. After adding a single index, the query dropped to under 5ms. One line of annotation, and the problem disappeared.
+A while back, I was working on a screen that displayed a list of transactions — maybe a couple thousand rows. The UI was visibly laggy, and the initial load took nearly 400ms on a mid-range device. I profiled it, expecting some layout issue. The bottleneck was the Room query — a simple `SELECT * FROM transactions WHERE account_id = ? ORDER BY created_at DESC` doing a full table scan because I never added an index on `account_id`. After adding a single index, the query dropped to under 5ms.
 
-That experience stuck with me because it exposed something I hadn't thought about before. Room does an excellent job of hiding SQLite from you. You write a DAO interface, annotate it, and Room generates the implementation. But "it just works" is a dangerous place to stay. Room generates real SQL queries that hit real B-tree indexes — or do full table scans. Understanding what Room generates and how SQLite plans those queries is the difference between a 2ms query and a 200ms one.
+That experience exposed something important. Room hides SQLite from you — you write a DAO interface, annotate it, and Room generates the implementation. But "it just works" is a dangerous place to stay. Room generates real SQL queries that hit real B-tree indexes or do full table scans. Understanding what Room generates and how SQLite plans those queries is the difference between a 2ms query and a 200ms one.
 
 ## What Room Actually Generates
 
@@ -63,11 +63,17 @@ class TransactionDao_Impl(
 }
 ```
 
-A few things stand out. First, Room resolves column indexes by name using `CursorUtil.getColumnIndexOrThrow`. This means if you rename a column in your entity but forget to update the query, you get a runtime crash — not a compile-time error. Second, the cursor is iterated row by row and each row is manually mapped into your entity. For 5,000 rows, that's 5,000 object allocations in a tight loop. Third, Room wraps this in `CoroutinesRoom.createFlow` with the table name `"transactions"`. This is how Room knows to re-execute the query when the table changes — and we'll get to why that matters more than you'd expect.
+A few things stand out. Room resolves column indexes by name using `CursorUtil.getColumnIndexOrThrow`, so renaming a column without updating the query gives you a runtime crash, not a compile error. The cursor is iterated row by row — for 5,000 rows, that's 5,000 object allocations in a tight loop. And Room wraps this in `CoroutinesRoom.createFlow` with the table name `"transactions"`, which is how it knows to re-execute when the table changes.
+
+### Cursor vs Flow — When Raw Access Wins
+
+That generated code shows Room converting a raw `Cursor` into typed objects wrapped in a `Flow`. Most of the time, that's what you want. But there are cases where a raw `Cursor` makes a measurable difference — if you have a one-shot query returning thousands of rows and you only need to aggregate them (sum, count, max), mapping every row into an entity just to loop again is wasteful. A raw `SupportSQLiteQuery` with cursor access lets you iterate once without intermediate allocations.
+
+The tradeoff is clear — you lose type safety, reactive updates, and you take on cursor lifecycle management yourself. I use raw cursors for heavy one-shot aggregations where allocation pressure matters, and when passing data directly to a `CursorAdapter` in legacy code. For everything else, `Flow<List<Entity>>` is the right default because Room handles re-query on data change, cursor closing, and thread safety for you.
 
 ## Reading the Execution Plan
 
-Once I started caring about query performance, the next question was: how do I know whether my query is using an index or doing a full table scan? SQLite has `EXPLAIN QUERY PLAN`, and you can run it directly in Room. I usually run it during development using Android Studio's Database Inspector or by writing a quick debug utility:
+Once I started caring about query performance, the next question was: how do I know whether my query is using an index or doing a full table scan? SQLite has `EXPLAIN QUERY PLAN`, and you can run it directly. I usually run it during development using Android Studio's Database Inspector or by writing a quick debug utility:
 
 ```kotlin
 fun debugQueryPlan(db: SupportSQLiteDatabase, sql: String) {
@@ -80,15 +86,17 @@ fun debugQueryPlan(db: SupportSQLiteDatabase, sql: String) {
 }
 ```
 
-The output tells you exactly how SQLite plans to execute your query. There are two things you're looking for. **SCAN TABLE** means SQLite is reading every row — this is a full table scan, O(n) where n is your total row count. **SEARCH TABLE USING INDEX** means SQLite is using a B-tree index to jump directly to matching rows — O(log n) for the lookup plus the number of matching rows. On a table with 50,000 rows, a full scan might take 80-100ms while an indexed search takes 1-2ms. When you multiply that by how often Room re-executes reactive queries (which is more often than you'd think), those milliseconds compound into real user-visible lag.
+The output tells you how SQLite plans to execute your query. **SCAN TABLE** means a full table scan — O(n). **SEARCH TABLE USING INDEX** means an indexed B-tree lookup — O(log n). On 50,000 rows, a full scan might take 80-100ms while an indexed search takes 1-2ms. Multiply that by how often Room re-executes reactive queries, and those milliseconds compound into real jank. There's also **SEARCH TABLE USING COVERING INDEX**, where SQLite answers the query entirely from the index without touching the main table — the fastest option.
 
-There's a third output you might see: **SEARCH TABLE USING COVERING INDEX**. This means SQLite can answer the entire query from the index alone without touching the main table. It's the fastest option because it avoids the second B-tree lookup from the index back to the table data.
+### Database Inspector for Live Debugging
+
+Running `EXPLAIN QUERY PLAN` in code works, but Android Studio's Database Inspector is faster for iterative debugging. With your app on API 26+, open **App Inspection > Database Inspector** for a live view of every Room database. You can browse tables, run arbitrary SQL, and see results instantly — no code changes needed. I use it constantly to test query plans before writing the DAO method, and to inspect live data for integrity issues.
 
 ## Indexing Strategies
 
-Here's the thing about indexes — they're not a "just add them everywhere" solution. Every index you create is a separate B-tree structure that SQLite maintains alongside your data. When you insert, update, or delete a row, SQLite has to update every index on that table. More indexes means slower writes and a larger database file on disk.
+Here's the thing about indexes — they're not a "just add them everywhere" solution. Every index is a separate B-tree that SQLite maintains alongside your data. When you insert, update, or delete a row, SQLite updates every index on that table. More indexes means slower writes and a larger database file.
 
-The basic rule is simple: index columns that appear in WHERE clauses and JOIN conditions. In Room, you can do this in the entity annotation:
+The basic rule: index columns that appear in WHERE clauses and JOIN conditions. In Room, you do this in the entity annotation:
 
 ```kotlin
 @Entity(
@@ -106,7 +114,7 @@ data class TransactionEntity(
 )
 ```
 
-But single-column indexes aren't always enough. If your query filters on `account_id` AND orders by `created_at`, SQLite might use the index for the WHERE but still need a temporary B-tree to sort the results. A **composite index** on both columns, in the right order, solves this:
+But single-column indexes aren't always enough. If your query filters on `account_id` AND orders by `created_at`, SQLite might use the index for the WHERE but still need a temporary B-tree to sort results. A **composite index** on both columns, in the right order, solves this:
 
 ```kotlin
 @Entity(
@@ -123,21 +131,19 @@ data class TransactionEntity(
 )
 ```
 
-The order matters. A composite index on `["account_id", "created_at"]` works for queries that filter by `account_id` alone, or by `account_id` AND `created_at`. But it won't help a query that only filters by `created_at` — SQLite reads composite indexes left to right. Think of it like a phone book sorted by last name, then first name. You can find all the "Jangra" entries quickly, but you can't efficiently find all entries with first name "Mukul" without scanning the whole book.
+The order matters. `["account_id", "created_at"]` helps queries filtering by `account_id` alone, or by both columns. But it won't help a query filtering only by `created_at` — SQLite reads composite indexes left to right. Think of a phone book sorted by last name, then first name: you can find all "Jangra" entries quickly, but finding everyone named "Mukul" requires scanning the whole book.
 
-The honest tradeoff: in one of my projects, adding 4 indexes to a frequently-written table increased insert time by about 30%. For a read-heavy, write-light table (like a cache of fetched articles), indexes are almost always worth it. For a table that sees constant writes (like an analytics events queue), you need to be more selective. I've also seen database sizes grow 20-40% from heavy indexing on tables with hundreds of thousands of rows.
+The honest tradeoff: in one of my projects, adding 4 indexes to a frequently-written table increased insert time by about 30%. For a read-heavy table (like a cache of fetched articles), indexes are almost always worth it. For a table that sees constant writes (like an analytics events queue), you need to be more selective.
 
 ## WAL Mode and Concurrent Access
 
-SQLite, by default, uses a rollback journal for transactions. This means writes lock the entire database — no reads can happen while a write is in progress. For an Android app where you might be writing synced data on a background thread while the UI thread is trying to read, this creates contention and jank.
+SQLite by default uses a rollback journal, meaning writes lock the entire database — no reads while a write is in progress. **Write-Ahead Logging (WAL)** mode changes this by writing changes to a separate log file instead. Readers continue reading from the original database while the writer appends to the WAL file, allowing one writer and multiple readers simultaneously. Room has enabled WAL by default since version 2.0.
 
-**Write-Ahead Logging (WAL)** mode changes this. Instead of writing changes directly to the database file and maintaining a rollback journal, WAL writes changes to a separate WAL file. Readers continue reading from the original database file (they see the state before the write started), while the writer appends to the WAL file. This allows concurrent reads and writes — one writer and multiple readers can operate simultaneously without blocking each other. Room has enabled WAL mode by default since version 2.0, but many developers don't realize this or understand what it means for their app's concurrency behavior.
-
-The WAL file periodically gets "checkpointed" — merged back into the main database file. SQLite does this automatically when the WAL file reaches about 1000 pages (~4MB). But here's the tradeoff: WAL mode uses more disk space. You have the main database file, the WAL file, and a shared-memory file (`-shm`) used for coordination. I've seen WAL files grow to 5-10MB on apps that do heavy batch syncing before a checkpoint happens.
+The WAL file periodically gets "checkpointed" — merged back into the main database — when it reaches about 1000 pages (~4MB). The tradeoff is disk space: you have the main file, the WAL file, and a shared-memory file (`-shm`). I've seen WAL files grow to 5-10MB on apps doing heavy batch syncing before a checkpoint happens.
 
 ## Batch Operations and Transactions
 
-This one surprised me the most when I first measured it. If you insert 1,000 rows into a Room database without wrapping them in a transaction, each individual insert is its own transaction. Each transaction involves an `fsync` call — a disk flush that guarantees the data is physically written. On Android, this `fsync` cost is significant because flash storage has high write latency. The result: inserting 1,000 rows one-by-one can take 3-5 seconds, while wrapping them in a single transaction drops it to 50-100ms. That's a **30-50x difference** for the same data.
+This one surprised me the most when I first measured it. Without a wrapping transaction, each insert is its own transaction with its own `fsync` call — a disk flush with significant latency on Android's flash storage. Inserting 1,000 rows one-by-one takes 3-5 seconds; wrapping them in a single transaction drops it to 50-100ms. That's a **30-50x difference**.
 
 Room makes this easy with the `@Transaction` annotation:
 
@@ -158,25 +164,84 @@ interface TransactionDao {
 }
 ```
 
-Without `@Transaction` on `replaceAllForAccount`, the delete and insert would be separate transactions. If the app crashes between them, you'd have an account with no transactions — data inconsistency. The `@Transaction` annotation wraps everything in `BEGIN IMMEDIATE` ... `COMMIT`, ensuring atomicity. But what people miss is that even `insertAll` with a list benefits from being batched. Room does wrap list inserts in a transaction automatically when you pass a `List` to an `@Insert` method. However, if you're calling a single-item `@Insert` in a loop from your repository, each call is its own transaction with its own `fsync`.
+Without `@Transaction` on `replaceAllForAccount`, the delete and insert would be separate transactions — a crash between them means an account with no transactions. The annotation wraps everything in `BEGIN IMMEDIATE` ... `COMMIT`. Room does wrap list inserts in a transaction automatically when you pass a `List` to `@Insert`, but calling a single-item `@Insert` in a loop means each call is its own transaction.
 
-I've seen production code where a sync operation called a single-row insert method inside a `forEach` loop. Changing it to collect all items first and call the list-based insert once dropped the sync time from 8 seconds to 200ms. It's the kind of optimization that feels obvious in hindsight but is easy to miss when you're focused on the business logic.
+I've seen production code where a sync operation called a single-row insert inside a `forEach` loop. Changing it to collect all items first and call the list-based insert once dropped the sync time from 8 seconds to 200ms.
 
 ## Room's InvalidationTracker
 
-This is the piece of Room that I think most developers don't understand, and it has real performance implications. When you return a `Flow` from a DAO method, Room needs to know when to re-execute the query and emit a new value. It does this through the `InvalidationTracker`.
+This is the piece of Room that most developers don't understand. When you return a `Flow` from a DAO, Room needs to know when to re-execute the query. It does this through the `InvalidationTracker` — shadow tables with SQLite triggers that flag when a table is modified. The `InvalidationTracker` periodically checks these flags and tells every active `Flow` observing that table to re-execute.
 
-Here's how it works under the hood. When you build the database, Room creates shadow tables — one for each table in your schema. Room then installs SQLite triggers on your actual tables. Every time a row is inserted, updated, or deleted in the `transactions` table, the trigger writes a flag to the corresponding shadow table. The `InvalidationTracker` periodically checks these shadow tables and when it sees that a table has been modified, it tells every active `Flow` observing that table to re-execute its query.
+The hidden cost: **invalidation is table-level, not row-level.** If a Flow watches `SELECT * FROM transactions WHERE account_id = 42` and someone inserts for account_id 99, your Flow still re-executes. Room only knows the `transactions` table was modified. For high write frequency apps, this causes unnecessary re-queries across every Flow touching that table.
 
-Here's the hidden cost: **the invalidation is table-level, not row-level or query-level.** If you have a Flow watching `SELECT * FROM transactions WHERE account_id = 42`, and someone inserts a transaction for account_id 99, your Flow still re-executes. Room doesn't know that the insert is irrelevant to your query — it only knows that the `transactions` table was modified. For apps with high write frequency, this can cause a cascade of unnecessary re-queries across every active Flow that touches the modified table.
+It gets worse — invalidation fires on **any write, even if data didn't change.** An `@Insert(onConflict = REPLACE)` with identical data still triggers all Flows to re-execute. In one project, a background sync upserted the same data every 30 seconds, triggering re-queries for 6 Flows on screen — all doing cursor iteration and allocation for nothing. The fix was to diff data before writing.
 
-It gets worse. The invalidation fires on **any write operation, even if the data didn't actually change.** If you call `@Insert(onConflict = OnConflictStrategy.REPLACE)` with the same data that's already in the database, the trigger still fires, and all Flows observing that table re-execute. In one project, we had a background sync that ran every 30 seconds and "upserted" the same data. Every sync triggered re-queries for 6 different Flows on the screen, each doing cursor iteration and object allocation, even though nothing changed. The fix was to check whether the data actually differed before writing — not something Room does for you.
+## Pagination with Paging 3
+
+The InvalidationTracker issue gets particularly nasty with large datasets. If your query returns thousands of rows into a `Flow<List<Entity>>`, you pay for full cursor iteration and object allocation on every table invalidation. Room integrates with Paging 3 through `PagingSource`, and it genuinely earns its complexity.
+
+When you return a `PagingSource` from a DAO, Room generates a `LimitOffsetPagingSource` that only loads the visible page — say, 30 rows at a time via `SELECT ... LIMIT 30 OFFSET ?`. Here's what it looks like:
+
+```kotlin
+@Dao
+interface TransactionDao {
+    @Query("SELECT * FROM transactions WHERE account_id = :accountId ORDER BY created_at DESC")
+    fun getTransactionsPaged(accountId: Long): PagingSource<Int, TransactionEntity>
+}
+
+// In your ViewModel
+class TransactionViewModel(
+    private val transactionDao: TransactionDao,
+    private val accountId: Long,
+) : ViewModel() {
+
+    val transactions: Flow<PagingData<TransactionEntity>> = Pager(
+        config = PagingConfig(
+            pageSize = 30,
+            prefetchDistance = 10,
+            enablePlaceholders = false,
+        ),
+        pagingSourceFactory = { transactionDao.getTransactionsPaged(accountId) }
+    ).flow.cachedIn(viewModelScope)
+}
+```
+
+Room ties the `PagingSource` into the `InvalidationTracker`, so when the table is modified, the current `PagingSource` is invalidated and the Pager creates a fresh one. Paginated queries still react to data changes, but each page only loads 30 rows instead of the full dataset. On a table with 50,000 transactions, that's the difference between allocating 50,000 objects and allocating 30.
+
+## Real-World Performance Patterns
+
+Beyond the fundamentals, there are patterns I've found useful in production that don't get talked about enough.
+
+### Denormalization for Read Performance
+
+In one project, a transaction list needed the account name alongside each transaction. The normalized JOIN added 15-20ms per query on 20,000 rows. Since account names rarely change, I denormalized — stored `account_name` directly on the entity. Reads dropped to 3ms. Writes now update two places on rename, but for a read-heavy screen refreshing on every invalidation, the tradeoff was worth it.
+
+### Multi-Map Returns
+
+Room 2.4 introduced multi-map return types, letting you express one-to-many relationships directly in a query without a separate data class. Instead of a `TransactionWithAccount` wrapper, return a `Map` from the DAO:
+
+```kotlin
+@Dao
+interface TransactionDao {
+    @Query("""
+        SELECT accounts.name AS accountName, 
+               transactions.* 
+        FROM transactions 
+        INNER JOIN accounts ON transactions.account_id = accounts.id
+        WHERE transactions.created_at > :since
+        ORDER BY transactions.created_at DESC
+    """)
+    fun getRecentWithAccounts(since: Long): Flow<Map<String, List<TransactionEntity>>>
+}
+```
+
+Room generates the grouping logic for you, which eliminates boilerplate and keeps the relationship logic in SQL where it belongs. I reach for this pattern whenever I need grouped data for a sectioned list — it's cleaner than doing the grouping in Kotlin after the query returns.
 
 ## Room vs SQLDelight
 
-I want to talk briefly about SQLDelight, because IMO it solves a genuine problem that Room doesn't address. The fundamental difference is where the SQL lives and when it's verified. In Room, you write SQL inside `@Query` annotation strings. Room's annotation processor validates these at compile time to some extent — it checks that tables and columns exist — but there are categories of errors that only surface at runtime. Malformed queries, type mismatches in complex joins, and certain edge cases with type converters can all pass the annotation processor and crash on the device.
+I want to talk briefly about SQLDelight, because IMO it solves a genuine problem Room doesn't address. In Room, you write SQL inside `@Query` annotation strings. Room validates these at compile time to some extent, but malformed queries, type mismatches in complex joins, and certain type converter edge cases only surface at runtime.
 
-SQLDelight takes the opposite approach. You write SQL in `.sq` files — actual SQL, not strings embedded in Kotlin annotations. The SQLDelight compiler parses this SQL fully, validates it against your schema, and generates type-safe Kotlin code. If your query has a typo, references a non-existent column, or has a type mismatch, the build fails. You get a compiler error, not a runtime crash.
+SQLDelight takes the opposite approach — you write SQL in `.sq` files, the compiler parses it fully and validates against your schema. A typo or non-existent column fails the build, not the app.
 
 ```sql
 -- transactions.sq
@@ -195,21 +260,18 @@ WHERE account_id = :accountId
 ORDER BY created_at DESC;
 ```
 
-SQLDelight also generates type-safe query functions with proper Kotlin types, including nullable handling that matches your schema exactly. And because it works with raw SQL, you get full access to SQLite features that Room sometimes abstracts away — window functions, recursive CTEs, partial indexes.
-
-But the honest tradeoff is significant. SQLDelight has a steeper learning curve — you need to be comfortable writing SQL directly and managing `.sq` files. The community is smaller than Room's, which means fewer blog posts, fewer Stack Overflow answers, and fewer teammates who've used it before. Room's integration with the rest of Jetpack (Navigation, Paging, Hilt) is more seamless. And for most Android apps with straightforward CRUD queries, Room's compile-time validation is sufficient.
-
-I think the right way to frame this choice is: Room is the right default for most Android apps. SQLDelight earns its keep when your app has genuinely complex SQL, when you're doing Kotlin Multiplatform and need a shared database layer, or when you've been bitten enough by runtime query failures that compile-time safety becomes a priority.
+SQLDelight also gives you full access to SQLite features that Room abstracts away — window functions, recursive CTEs, partial indexes. But the tradeoff is real: steeper learning curve, smaller community, and Room's Jetpack integration (Paging, Hilt) is more seamless. Room is the right default for most Android apps. SQLDelight earns its keep when you have genuinely complex SQL, when you're doing Kotlin Multiplatform, or when compile-time query safety is a priority.
 
 ## Making It Practical
 
 The performance optimizations I've described aren't theoretical — they're things I've applied in production apps. If I had to summarize the highest-impact changes:
 
-- **Always check EXPLAIN QUERY PLAN** for queries that touch screens with large datasets. Two minutes of query planning can save hours of profiling
+- **Always check EXPLAIN QUERY PLAN** for queries that touch large datasets — use Database Inspector to iterate quickly without code changes
 - **Index columns in WHERE and JOIN clauses**, but be deliberate. Don't index everything — measure your read/write ratio first
 - **Wrap related writes in @Transaction**. If you're calling single-row inserts in a loop, you're paying 30-50x more than you need to
-- **Be aware of InvalidationTracker's table-level granularity**. If you see unnecessary Flow emissions after irrelevant writes, this is likely why
-- **WAL mode is already on** — Room enables it by default. Understand that readers see a consistent snapshot from before the current write, and that the WAL file adds disk overhead
+- **Use Paging 3** for any list that could grow beyond a few hundred rows. Loading the full dataset into memory on every invalidation is the most common performance mistake I see with Room
+- **Be aware of InvalidationTracker's table-level granularity**. If you see unnecessary Flow emissions after irrelevant writes, diff before you write
+- **Denormalize read-heavy screens** when JOINs become a bottleneck, and use multi-map returns to keep relationship queries clean
 
 The gap between "Room works fine" and "Room works well" is about understanding what happens one layer below your DAO interface — in the generated code, in SQLite's query planner, and in Room's invalidation system. Once you see that layer, you stop guessing about performance and start reasoning about it.
 

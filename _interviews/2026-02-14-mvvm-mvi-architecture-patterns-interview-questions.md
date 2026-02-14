@@ -8,23 +8,13 @@ sequence: 33
 description: "Architecture pattern questions come up in every senior Android interview."
 ---
 
-## MVVM, MVI & Architecture Patterns — What Interviewers Really Ask
+## MVVM, MVI & Architecture Patterns
 
-Architecture pattern questions come up in every senior Android interview. Interviewers want to know that you understand the tradeoffs between patterns and can justify why you chose one over another in a real project.
+Architecture pattern questions show up in nearly every senior Android interview. You need to know the tradeoffs between patterns and be able to explain why you'd pick one over another.
 
-### Core Questions (Beginner → Intermediate)
+#### What is MVVM?
 
-#### Q1: What is MVC and how does it work in Android?
-
-MVC stands for Model-View-Controller. The Model holds data and business logic, the View displays the UI, and the Controller handles user input and updates the Model. In Android, the Activity or Fragment often ends up acting as both the View and the Controller, which is why MVC leads to massive Activities. There's no clean separation — the Activity handles UI rendering, user events, and business logic all in one place.
-
-#### Q2: What is MVP and how is it different from MVC?
-
-MVP stands for Model-View-Presenter. The key difference is that the Presenter replaces the Controller and has no direct reference to Android framework classes. The View (Activity/Fragment) implements an interface, and the Presenter communicates through that interface. This makes the Presenter unit-testable because it doesn't depend on Android APIs. The downside is boilerplate — every screen needs a View interface, a Presenter class, and a contract tying them together.
-
-#### Q3: What is MVVM?
-
-MVVM stands for Model-View-ViewModel. The ViewModel holds UI state and business logic, and the View observes state changes through LiveData, StateFlow, or Compose state. Unlike MVP, the ViewModel doesn't hold a reference to the View at all — it just exposes state, and the View observes it. This is a reactive approach where the View reacts to state changes instead of being told what to do.
+MVVM stands for Model-View-ViewModel. The ViewModel holds UI state and business logic, and the View observes state changes through LiveData, StateFlow, or Compose state. The ViewModel doesn't hold a reference to the View — it just exposes state, and the View reacts to changes. This is the default architecture pattern for modern Android apps.
 
 ```kotlin
 class LoginViewModel(
@@ -47,18 +37,26 @@ class LoginViewModel(
 }
 ```
 
-#### Q4: What is MVI?
+#### What is a ViewModel and why does it survive configuration changes?
 
-MVI stands for Model-View-Intent. Intent here is not Android's Intent class — it means a user intention or action. MVI enforces unidirectional data flow: the View sends Intents (user actions) to the ViewModel, the ViewModel processes them through a reducer and produces a new State, and the View renders that State. The state is immutable and there's only one source of truth.
+ViewModel is a Jetpack class that holds UI state and survives configuration changes like screen rotation. It's stored in a `ViewModelStore` owned by the `ViewModelStoreOwner` (Activity or Fragment). During a configuration change, the Activity is destroyed and recreated, but the `ViewModelStore` is retained through `NonConfigurationInstances`. The ViewModel is only cleared when the Activity is truly finished — when `onDestroy()` is called and `isChangingConfigurations` is false.
+
+#### What is the difference between LiveData and StateFlow for UI state?
+
+LiveData is lifecycle-aware and only delivers updates when the observer is in at least STARTED state. StateFlow is a coroutines API that always holds a value and emits to collectors. StateFlow requires `repeatOnLifecycle` or `collectAsStateWithLifecycle` in Compose to be lifecycle-aware.
+
+I prefer StateFlow because it works naturally with coroutines and supports operators like `map`, `combine`, and `flatMapLatest`. LiveData is simpler for basic cases but gets awkward for complex transformations. Most modern codebases have moved to StateFlow.
+
+#### What is MVI?
+
+MVI stands for Model-View-Intent. Intent here doesn't mean Android's `Intent` class — it means a user action or intention. The View sends Intents to the ViewModel, the ViewModel processes them through a reducer and produces a new State, and the View renders that State. The state is immutable with a single source of truth.
 
 ```kotlin
-// Intent — what the user wants to do
 sealed class SearchIntent {
     data class Query(val text: String) : SearchIntent()
     data object ClearResults : SearchIntent()
 }
 
-// State — single source of truth
 data class SearchState(
     val query: String = "",
     val results: List<Product> = emptyList(),
@@ -78,29 +76,27 @@ class SearchViewModel : ViewModel() {
 }
 ```
 
-#### Q5: What is unidirectional data flow?
+#### What is the difference between MVVM and MVI?
 
-Unidirectional data flow means data flows in one direction — from state to UI and from UI events back to state updates. The cycle is: UI renders state → user performs action → action updates state → UI re-renders. There's no two-way binding where the View can directly modify the state. The state is always updated through a defined path (like a reducer or ViewModel method), which makes the flow predictable and easier to debug.
+In MVVM, the ViewModel can expose multiple observable streams — one for user data, one for loading, one for errors. The View observes each independently. In MVI, the entire screen state is a single immutable object. Every update produces a new state instance.
 
-#### Q6: What is the difference between MVVM and MVI?
+MVI is more predictable because you can't end up with `isLoading = true` and `error != null` at the same time if your reducer doesn't allow it. MVVM is more flexible with less boilerplate, but it's easier to get inconsistent state across multiple streams. For complex screens, MVI is safer. For simple screens, MVVM is usually enough.
 
-In MVVM, the ViewModel can expose multiple observable streams for different pieces of state — one for user data, one for loading, one for errors. The View observes each stream independently. In MVI, the entire screen state is a single immutable object. Every update produces a new state instance, and the View always renders the complete state.
+#### What is unidirectional data flow?
 
-MVI is more predictable because the state is always consistent — you can't have `isLoading = true` and `error != null` at the same time if your reducer doesn't allow it. MVVM is more flexible and has less boilerplate, but it's easier to end up with inconsistent state across multiple streams. For complex screens with many state interactions, MVI is safer. For simpler screens, MVVM is usually enough.
+Data flows in one direction: state goes to the UI, user events go back to state updates. The cycle is UI renders state, user acts, action updates state, UI re-renders. There's no two-way binding where the View directly modifies state. State is always updated through a defined path like a reducer or ViewModel method, which makes the flow predictable and easy to debug.
 
-#### Q7: What is a ViewModel and why does it survive configuration changes?
+#### What is MVC and how does it work in Android?
 
-ViewModel is a class from Android Jetpack that holds UI-related state and survives configuration changes like screen rotation. It works because the ViewModel is stored in a `ViewModelStore` owned by the `ViewModelStoreOwner` (Activity or Fragment). During a configuration change, the Activity is destroyed and recreated, but the `ViewModelStore` is retained by the framework through `NonConfigurationInstances`. The ViewModel is only cleared when the Activity is finished for real — when `onDestroy()` is called and `isChangingConfigurations` is false.
+MVC is Model-View-Controller. The Model holds data, the View displays UI, and the Controller handles user input. In Android, the Activity ends up acting as both View and Controller, which leads to massive Activities. There's no clean separation — the Activity handles UI rendering, user events, and business logic all in one place. That's why MVC fell out of favor for Android.
 
-#### Q8: What is the difference between LiveData and StateFlow for UI state?
+#### What is MVP and how is it different from MVC?
 
-LiveData is lifecycle-aware and only delivers updates when the observer is in at least STARTED state. StateFlow is a Kotlin coroutines API that always has a value and emits updates to collectors. LiveData automatically handles lifecycle — it pauses delivery when the Activity is stopped. StateFlow requires `repeatOnLifecycle` or `collectAsStateWithLifecycle` in Compose to be lifecycle-aware.
+MVP is Model-View-Presenter. The Presenter replaces the Controller and has no direct reference to Android framework classes. The View (Activity/Fragment) implements an interface, and the Presenter communicates through it. This makes the Presenter unit-testable because it doesn't depend on Android APIs. The downside is boilerplate — every screen needs a View interface, a Presenter, and a contract.
 
-StateFlow is better for MVVM because it works naturally with coroutines, supports operators like `map`, `combine`, and `flatMapLatest`, and doesn't depend on Android framework classes. LiveData is simpler for basic cases but becomes awkward for complex transformations. Most modern codebases use StateFlow.
+#### What is the Repository pattern?
 
-#### Q9: What is the Repository pattern and what problem does it solve?
-
-Repository is an abstraction layer between the ViewModel and data sources. It decides where to get data from — network, local database, or cache — and the ViewModel doesn't need to know. This makes it easy to swap data sources, add caching, or change the network library without touching the ViewModel.
+Repository is an abstraction layer between the ViewModel and data sources. It decides where to get data from — network, database, or cache — and the ViewModel doesn't need to know the details.
 
 ```kotlin
 class UserRepository(
@@ -108,11 +104,9 @@ class UserRepository(
     private val dao: UserDao
 ) {
     fun getUser(userId: String): Flow<User> = flow {
-        // Try cache first
         val cached = dao.getUser(userId)
         if (cached != null) emit(cached)
 
-        // Fetch from network and update cache
         val remote = api.fetchUser(userId)
         dao.insert(remote)
         emit(remote)
@@ -120,17 +114,16 @@ class UserRepository(
 }
 ```
 
-The Repository also provides a clean boundary for testing. In tests, you can replace the real repository with a fake that returns predefined data without touching the network or database.
+This makes it easy to swap data sources, add caching, or change the network library without touching the ViewModel. It also gives you a clean boundary for testing — replace the real repository with a fake that returns predefined data.
 
-#### Q10: What is the SingleLiveEvent problem?
+#### What is the SingleLiveEvent problem?
 
-In MVVM, one-time events like showing a toast, navigating to another screen, or showing a snackbar don't fit well into LiveData or StateFlow. If you put a navigation event in a StateFlow, the navigation happens again on configuration change because the collector re-reads the current state value.
+One-time events like navigation, toasts, or snackbars don't fit well into LiveData or StateFlow. If I put a navigation event in a StateFlow, it fires again on configuration change because the collector re-reads the current value.
 
-The `SingleLiveEvent` was a workaround that only delivered the value once, but it didn't work well with multiple observers. The modern solutions are using a `Channel` with `receiveAsFlow()` for one-time events, or modeling events as part of the state and consuming them explicitly.
+`SingleLiveEvent` was a workaround that delivered the value only once, but it broke with multiple observers. The modern approach is using a `Channel` with `receiveAsFlow()` for one-time events.
 
 ```kotlin
 class CheckoutViewModel : ViewModel() {
-    // One-time events via Channel
     private val _events = Channel<CheckoutEvent>(Channel.BUFFERED)
     val events: Flow<CheckoutEvent> = _events.receiveAsFlow()
 
@@ -143,11 +136,23 @@ class CheckoutViewModel : ViewModel() {
 }
 ```
 
-### Deep Dive Questions (Advanced → Expert)
+#### What is separation of concerns and how do architecture patterns enforce it?
 
-#### Q11: What is a reducer in MVI and how does it ensure state consistency?
+Each component should have one clear responsibility. The UI layer renders state and captures input. The ViewModel holds UI state and business logic. The Repository provides data. The data source handles actual API calls or database queries.
 
-A reducer is a pure function that takes the current state and an action, and returns a new state. It's pure because it has no side effects — given the same inputs, it always produces the same output. This makes state transitions predictable and testable.
+Architecture patterns enforce this with boundaries. In MVVM, the ViewModel doesn't know about Views or Activities — it only exposes state. In Clean Architecture, this goes further with a dependency rule — inner layers can't reference outer layers, so domain logic never depends on Android framework classes, Retrofit, or Room. Without these patterns, you end up with Activities that make network calls, parse JSON, update the database, and render UI all in one class.
+
+#### How does the ViewModel communicate with the View in different patterns?
+
+In MVP, the Presenter holds a reference to the View interface and calls methods like `view.showLoading()`. This is imperative — the Presenter tells the View what to do.
+
+In MVVM, the ViewModel exposes observable state via StateFlow, and the View subscribes. This is reactive — the View reacts to state changes. The ViewModel never references the View.
+
+In MVI, the ViewModel exposes a single state stream and an optional side-effect stream. The View sends intents and renders the full state. The progression from MVP to MVVM to MVI is a progression toward less coupling.
+
+#### What is a reducer in MVI?
+
+A reducer is a pure function that takes the current state and an action and returns a new state. No side effects — same inputs always produce the same output.
 
 ```kotlin
 fun reduce(currentState: CartState, action: CartAction): CartState {
@@ -165,11 +170,11 @@ fun reduce(currentState: CartState, action: CartAction): CartState {
 }
 ```
 
-Because the state is a single immutable data class and the reducer is the only way to change it, you can never end up in an invalid state unless the reducer creates one. You can also log every action and state transition for debugging, which is basically time-travel debugging.
+Because state is a single immutable data class and the reducer is the only way to change it, you can't end up in an invalid state unless the reducer creates one. You can also log every action and state transition for debugging.
 
-#### Q12: How do you handle side effects in MVI?
+#### How do you handle side effects in MVI?
 
-Side effects are operations that interact with the outside world — network calls, database writes, navigation, showing toasts. In MVI, side effects can't go through the reducer because reducers must be pure functions. The common approach is to process intents in the ViewModel, trigger side effects separately, and dispatch the result as a new action to the reducer.
+Side effects are things like network calls, database writes, navigation, and toasts. They can't go through the reducer because reducers must be pure. I process intents in the ViewModel, trigger side effects separately, and dispatch the result as a new action to the reducer.
 
 ```kotlin
 fun handleIntent(intent: OrderIntent) {
@@ -190,61 +195,17 @@ fun handleIntent(intent: OrderIntent) {
 }
 ```
 
-Side effects that affect the UI but aren't part of the state (navigation, snackbar, toast) are sent through a separate `Channel` or `SharedFlow`. This keeps the state clean and the side effects consumable only once.
+Side effects that affect the UI but aren't part of state (navigation, snackbar) go through a separate `Channel` or `SharedFlow`. This keeps state clean and side effects consumable only once.
 
-#### Q13: When would you choose MVI over MVVM?
+#### When would you choose MVI over MVVM?
 
-Choose MVI when the screen has complex state interactions — multiple interdependent data sources, optimistic updates, undo/redo, or real-time sync. MVI's single state object ensures you never have inconsistent UI. It also makes debugging easier because you can trace every state change back to a specific intent.
+I'd choose MVI when the screen has complex state interactions — multiple interdependent data sources, optimistic updates, undo/redo, or real-time sync. MVI's single state object means you never get inconsistent UI.
 
-Choose MVVM for simpler screens where state management is straightforward — a list screen, a detail screen, or a settings page. MVVM has less boilerplate and doesn't force you to model every user action as a sealed class. In practice, most apps use MVVM for most screens and MVI for the few complex ones. You can mix patterns in the same app — there's no rule that says everything must follow one pattern.
+For simpler screens like a list, detail, or settings page, MVVM is usually enough. Less boilerplate, and you don't have to model every user action as a sealed class. In practice, most apps use MVVM for most screens and MVI for the complex ones. You can mix patterns in the same app.
 
-#### Q14: What is the Presenter pattern in Compose (Circuit/Molecule)?
+#### How do you test a ViewModel?
 
-Molecule and Circuit are libraries that use the Compose runtime to build presenters. Instead of using `StateFlow` and `viewModelScope.launch`, you write a `@Composable` function that produces state. The Compose runtime handles recomposition — when inputs change, the presenter recomposes and emits new state.
-
-```kotlin
-@Composable
-fun ProfilePresenter(userId: String): ProfileState {
-    var user by remember { mutableStateOf<User?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(userId) {
-        isLoading = true
-        user = userRepository.getUser(userId)
-        isLoading = false
-    }
-
-    return when {
-        isLoading -> ProfileState.Loading
-        user != null -> ProfileState.Success(user!!)
-        else -> ProfileState.Error("User not found")
-    }
-}
-```
-
-The advantage is that state management uses Compose's snapshot system instead of manually combining StateFlows. For complex state with multiple data sources, this eliminates the `combine()` chains that make ViewModels hard to read. The Cash App team built Circuit because their production ViewModels had become unreadable with 5-6 combined flows.
-
-#### Q15: What is separation of concerns and how do architecture patterns enforce it?
-
-Separation of concerns means each component has one clear responsibility. The UI layer renders state and captures user input. The ViewModel/Presenter holds UI state and business logic. The Repository provides data. The data source handles the actual API calls or database queries.
-
-Architecture patterns enforce this by defining boundaries. In MVVM, the ViewModel doesn't know about Views or Activities — it only exposes state. The View doesn't do business logic — it only renders. In Clean Architecture, this is taken further with a dependency rule — inner layers can't reference outer layers, so your domain logic never depends on Android framework classes, Retrofit, or Room.
-
-Without these patterns, you get Activities that make network calls, parse JSON, update the database, and render the UI all in the same class. At 50 lines it's fine. At 500 lines it's unmaintainable.
-
-#### Q16: How does ViewModel communicate with the View layer in different patterns?
-
-In MVP, the Presenter holds a reference to the View interface and calls methods like `view.showLoading()`, `view.showUser(user)`. This is imperative — the Presenter tells the View what to do.
-
-In MVVM, the ViewModel exposes observable state via LiveData or StateFlow, and the View subscribes to it. This is reactive — the View reacts to state changes. The ViewModel never references the View.
-
-In MVI, the ViewModel exposes a single state stream and an optional side-effect stream. The View sends intents to the ViewModel and renders the entire state. This is the strictest separation because the ViewModel only knows about state and intents, nothing about the View.
-
-The progression from MVP to MVVM to MVI is a progression toward less coupling between the ViewModel and the View.
-
-#### Q17: How do you test a ViewModel in MVVM vs MVI?
-
-In MVVM, you test the ViewModel by calling its methods and asserting on the emitted StateFlow values. You need a `TestDispatcher` to control coroutine execution and Turbine or similar library to collect flow emissions.
+I test a ViewModel by calling its methods and asserting on the emitted StateFlow values. I use a `TestDispatcher` to control coroutine execution and Turbine to collect flow emissions.
 
 ```kotlin
 @Test
@@ -261,13 +222,19 @@ fun `login success updates state`() = runTest {
 }
 ```
 
-In MVI, testing is even more straightforward because you send intents and assert on state transitions. The reducer is a pure function, so you can test it directly without any coroutines or mocking — just pass a state and action, and assert the output. Side effects are tested separately through the effects channel.
+In MVI, testing is even simpler because the reducer is a pure function. I can test it directly — pass a state and action, assert the output. No coroutines or mocking needed. Side effects get tested separately through the effects channel.
 
-#### Q18: What are the common mistakes when implementing MVVM in Android?
+#### What are common mistakes when implementing MVVM?
 
-Putting UI logic in the ViewModel is the most common one. The ViewModel should hold state and business logic, not format strings or decide view visibility. String formatting, date formatting, and similar display concerns belong in the View layer or a separate UI model mapper.
+Putting UI logic in the ViewModel is the biggest one. The ViewModel should hold state and business logic, not format strings or decide view visibility. Display concerns like string formatting belong in the View layer or a UI model mapper.
 
-Another mistake is exposing `MutableStateFlow` directly instead of backing it with a private mutable property and a public read-only `StateFlow`. Leaking the mutable reference lets the View modify state directly, which breaks the pattern. Also, doing too much in the ViewModel constructor — heavy initialization should be lazy or triggered by an explicit method call, not in `init`.
+Another mistake is exposing `MutableStateFlow` directly instead of backing it with a private mutable property and a public read-only `StateFlow`. Leaking the mutable reference lets the View modify state directly, which breaks the pattern. Also, doing heavy work in the ViewModel constructor — initialization should be lazy or triggered by an explicit method call, not in `init`.
+
+#### What is the role of the domain layer in Clean Architecture?
+
+The domain layer sits between the UI layer and the data layer. It contains use cases (also called interactors) that encapsulate a single piece of business logic. Each use case does one thing — like fetching a user profile, placing an order, or validating input.
+
+The domain layer doesn't depend on Android framework classes or any specific library. It only knows about plain Kotlin types and interfaces. The data layer implements those interfaces. This makes the domain logic fully testable and reusable — I can test a use case with plain JUnit, no Android test runner needed. Google's official architecture guide makes the domain layer optional, but for larger apps with shared business logic across screens, I find it keeps things clean.
 
 ### Common Follow-ups
 
@@ -278,4 +245,3 @@ Another mistake is exposing `MutableStateFlow` directly instead of backing it wi
 - How does `SavedStateHandle` fit into the ViewModel pattern?
 - What is the difference between UI state and domain state?
 - How do you handle partial state updates in MVI without copying the entire state?
-- How does Orbit MVI simplify the MVI pattern compared to manual implementation?

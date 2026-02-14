@@ -7,47 +7,61 @@ tags:
   - Architecture
 ---
 
-I once spent a full afternoon debugging an ANR that only happened on low-end devices during cold starts. The stack trace pointed to `SharedPreferences.getString()` — a call I assumed was instantaneous. It turns out, the first access to a SharedPreferences file on a cold start blocks the calling thread until the entire XML file is parsed from disk. On a device with slow flash storage and a 2MB preferences file (accumulated over years of feature flags and cached values), that blocking read took over 800ms on the main thread. The 5-second ANR threshold was triggered because three different components all hit SharedPreferences during `onCreate()`.
+I once spent a full afternoon debugging an ANR that only happened on low-end devices during cold starts. The stack trace pointed to `SharedPreferences.getString()` — a call I assumed was instantaneous. Turns out, the first access to a SharedPreferences file blocks the calling thread until the entire XML file is parsed from disk. On a device with slow flash storage and a 2MB preferences file accumulated over years of feature flags and cached values, that blocking read took over 800ms on the main thread. Three different components all hit SharedPreferences during `onCreate()`, and the 5-second ANR threshold fired.
 
-SharedPreferences has been the default key-value storage on Android since API level 1. It's simple, synchronous, and familiar. It's also fundamentally broken for modern Android development. The synchronous reads block whatever thread calls them. The `apply()` method, which everyone uses to avoid blocking writes, can still cause ANRs — it schedules a write to disk and registers a completion callback with `ActivityThread`, and if the Activity finishes before that write completes, the framework blocks on `onPause()` waiting for it. There's no type safety beyond the basic primitives. And there's no way to observe changes as a reactive stream without polling or using the deprecated `OnSharedPreferenceChangeListener` (which leaks if you forget to unregister and doesn't tell you what the previous value was).
+SharedPreferences has been Android's default key-value storage since API level 1. Simple, synchronous, familiar — and fundamentally broken for modern development. The synchronous reads block whatever thread calls them. The `apply()` method everyone uses to avoid blocking writes can still cause ANRs: it schedules a write and registers a completion callback with `ActivityThread`, and if the Activity finishes before that write completes, the framework blocks `onPause()` waiting for it. There's no type safety beyond basic primitives. And there's no way to observe changes as a reactive stream without polling or using the deprecated `OnSharedPreferenceChangeListener`, which leaks if you forget to unregister.
 
-Jetpack DataStore was built to fix all of this. It uses Kotlin coroutines for non-blocking reads, Flow for reactive observation, and guarantees transactional writes. But it has its own set of rules, and I've seen teams introduce bugs by treating it like a drop-in SharedPreferences replacement without understanding those rules.
+Jetpack DataStore fixes all of this — coroutines for non-blocking reads, Flow for reactive observation, transactional writes. But I've seen teams introduce bugs by treating it like a drop-in SharedPreferences replacement without understanding its rules. Here's the thing: DataStore isn't just SharedPreferences with coroutines. It's a fundamentally different storage model that happens to solve the same problem.
 
-## Two Flavors of DataStore
+## Preferences DataStore vs Proto DataStore
 
-DataStore comes in two variants, and choosing the wrong one adds unnecessary complexity.
+DataStore comes in two variants, and choosing the wrong one creates unnecessary complexity.
 
-**Preferences DataStore** is the direct SharedPreferences replacement. It's a key-value store with typed keys, non-blocking access, and Flow-based observation. If your stored data is simple — user settings, feature flags, small cached values — this is what you want. No schema definition, no code generation, minimal setup.
+**Preferences DataStore** is the direct SharedPreferences replacement — a key-value store with typed keys, non-blocking access, and Flow-based observation. If your stored data is simple (user settings, feature flags, small cached values), this is what you want. No schema, no code generation, minimal setup.
 
-**Proto DataStore** is for structured, typed data. Instead of string keys and primitive values, you define your data as a class and DataStore serializes/deserializes the entire object atomically. This gives you compile-time type safety for complex structures — nested objects, enums, collections — that Preferences DataStore can't express cleanly. The tradeoff is setup overhead: you need a serializer (Protocol Buffers or kotlinx.serialization) and a schema definition.
+**Proto DataStore** stores structured, typed data. Instead of string keys and primitives, you define your data as a class and DataStore serializes the entire object atomically. This gives you compile-time type safety for complex structures — nested objects, enums, collections — that Preferences DataStore can't express cleanly. The tradeoff is setup overhead: you need a serializer (Protocol Buffers or kotlinx.serialization) and a schema definition.
 
-The rule of thumb I use: if your data fits in 5-10 key-value pairs with primitive types, use Preferences DataStore. If you're storing a structured object with multiple fields that change together, use Proto DataStore. If you're storing large datasets, collections of items, or anything that needs querying — use Room, not DataStore. DataStore reads and writes the entire file on every operation, so it doesn't scale for large data.
+The rule of thumb I use: if your data fits in 5-10 key-value pairs with primitive types, use Preferences DataStore. If you're storing a structured object with multiple fields that change together (like an `AppSettings` data class with theme, notification preferences, and display config), use Proto DataStore. If you're storing large datasets or anything that needs querying — use Room, not DataStore. DataStore reads and writes the entire file on every operation. It doesn't scale for large data.
 
-## Migrating from SharedPreferences
+## Setup
 
-The migration path is straightforward. DataStore provides a `SharedPreferencesMigration` class that reads your existing SharedPreferences file and writes the values into DataStore on first access. After migration, it deletes the SharedPreferences file to avoid dual-source-of-truth issues.
+Gradle dependencies differ based on which variant you pick. For Preferences DataStore:
 
 ```kotlin
-private val Context.userPrefsDataStore by preferencesDataStore(
-    name = "user_preferences",
-    produceMigrations = { context ->
-        listOf(
-            SharedPreferencesMigration(
-                context,
-                "user_prefs" // Name of the old SharedPreferences file
-            )
-        )
-    }
+dependencies {
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
+}
+```
+
+For Proto DataStore (typed DataStore with a custom serializer):
+
+```kotlin
+dependencies {
+    implementation("androidx.datastore:datastore:1.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+}
+```
+
+Proto DataStore also needs the kotlinx.serialization Gradle plugin, or the protobuf plugin if you're going the Protocol Buffers route. I'll cover the kotlinx.serialization approach later — it's simpler and sufficient for most apps.
+
+Creating the DataStore instance uses a property delegate at the top level of a Kotlin file. For Preferences DataStore, it's `preferencesDataStore`. For Proto DataStore, it's `dataStore` with a serializer:
+
+```kotlin
+// Preferences DataStore
+private val Context.settingsDataStore by preferencesDataStore(name = "settings")
+
+// Proto DataStore (typed)
+private val Context.appSettingsDataStore by dataStore(
+    fileName = "app_settings.json",
+    serializer = AppSettingsSerializer
 )
 ```
 
-The migration runs exactly once, on the first access to the DataStore. It's atomic — either all values migrate successfully, or none do. If the migration fails (disk full, corrupted SharedPreferences file), DataStore throws an exception and the old SharedPreferences file is preserved untouched. You can catch this and retry on the next app launch.
+Both delegates must live at the top level of a file, not inside a class. This matters — I'll explain why in the singleton section.
 
-One thing that catches people off guard: the `produceMigrations` lambda is called every time the DataStore is accessed, but the migration itself only executes if it hasn't been completed before. DataStore tracks migration completion internally, so the lambda doesn't need to check whether migration has already happened.
+## The Singleton Rule
 
-## The Singleton Rule — Get This Wrong and Your App Crashes
-
-This is the single most important DataStore rule, and I've seen it violated in almost every codebase that adopts DataStore without reading the docs carefully: **you must never create more than one DataStore instance for the same file.** If two DataStore instances point to the same underlying file, you get an `IllegalStateException` at runtime.
+This is the single most important DataStore rule, and I've seen it violated in nearly every codebase that adopts DataStore without reading the docs: **never create more than one DataStore instance for the same file.** Two instances pointing to the same file throws an `IllegalStateException` at runtime.
 
 ```kotlin
 // WRONG — creates a new DataStore every time the function is called
@@ -57,7 +71,7 @@ fun getPreferences(context: Context): DataStore<Preferences> {
     }
 }
 
-// WRONG — creates a new instance in every ViewModel
+// WRONG — new instance in every ViewModel
 class SettingsViewModel(context: Context) : ViewModel() {
     private val dataStore = PreferencesDataStoreFactory.create {
         context.preferencesDataStoreFile("settings")
@@ -65,15 +79,13 @@ class SettingsViewModel(context: Context) : ViewModel() {
 }
 ```
 
-Both of these will crash. The `preferencesDataStore` property delegate at the top level of a file is the correct pattern because Kotlin property delegates are lazy singletons — the DataStore is created once and reused:
+Both of these crash. The `preferencesDataStore` property delegate at the top level of a file is the correct pattern because Kotlin property delegates are lazy singletons — created once, reused everywhere:
 
 ```kotlin
-// CORRECT — singleton via property delegate at file top level
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "settings"
 )
 
-// Usage anywhere with a Context
 class SettingsRepository(private val context: Context) {
     private val dataStore = context.settingsDataStore
 
@@ -83,11 +95,11 @@ class SettingsRepository(private val context: Context) {
 }
 ```
 
-The delegate must be declared at the top level of a Kotlin file (not inside a class), and it uses the `Context` as the receiver to ensure there's exactly one instance per file name across the entire app. If you're using dependency injection, you can also create the singleton in your DI module and inject it — just make sure only one instance is ever created per file.
+The delegate uses `Context` as the receiver to ensure there's exactly one instance per file name across the app. If you're using dependency injection, create the singleton in your DI module and inject it — just guarantee only one instance per file exists.
 
-## Reading and Writing With Preferences DataStore
+## Reading and Writing
 
-Reads in DataStore return a `Flow<Preferences>`, which means they're non-blocking and reactive. Every time a value changes, downstream collectors receive the updated preferences object. You use typed `Preferences.Key` instances to access values:
+Reads return a `Flow<Preferences>` — non-blocking and reactive. Every time a value changes, downstream collectors receive the updated preferences. You define typed `Preferences.Key` instances to access values, which eliminates the string-key-plus-wrong-type bugs that plague SharedPreferences:
 
 ```kotlin
 object PreferenceKeys {
@@ -121,22 +133,76 @@ class UserPreferencesRepository(private val dataStore: DataStore<Preferences>) {
             prefs[PreferenceKeys.DARK_MODE] = enabled
         }
     }
+}
+```
 
-    suspend fun updateFontSize(size: Int) {
-        dataStore.edit { prefs ->
-            prefs[PreferenceKeys.FONT_SIZE] = size
-        }
+The `.catch` block handles file corruption. Without it, a corrupted file throws an `IOException` on every read, effectively bricking that preference file. Emitting `emptyPreferences()` resets to defaults — losing user preferences is annoying but not catastrophic. The alternative is the app crashing because it can't read whether dark mode is enabled, which is objectively worse.
+
+### Transactional Writes With `edit`
+
+Writes use the `edit` suspend function, which is transactional. The lambda receives a `MutablePreferences` object, and all changes within the lambda are applied atomically. If the lambda throws an exception, nothing is written to disk. This is a real improvement over SharedPreferences' `edit().putString().apply()` pattern, where a crash between two `put` calls could leave the file in an inconsistent state.
+
+```kotlin
+suspend fun completeOnboarding(username: String) {
+    dataStore.edit { prefs ->
+        prefs[PreferenceKeys.ONBOARDING_COMPLETE] = true
+        prefs[PreferenceKeys.USERNAME] = username
+        // Both values are written atomically — either both persist, or neither does
     }
 }
 ```
 
-The `.catch` block on the data flow handles the case where the DataStore file is corrupted. Without it, a corrupted file throws an `IOException` every time you try to read, effectively bricking that preference file. Emitting `emptyPreferences()` resets to defaults, which is usually the right behavior — losing user preferences is annoying but not catastrophic. The alternative is showing an error screen because the app can't read whether dark mode is enabled, which is worse.
+Under the hood, `edit` writes to a temporary file first, then atomically renames it to the actual DataStore file. This prevents partial writes from corrupting data. Writes are also serialized — if two coroutines call `edit` simultaneously, the second waits for the first to complete.
 
-Writes use the `edit` suspend function, which is transactional. The lambda receives a `MutablePreferences` object, and all changes within the lambda are applied atomically. If the lambda throws, no changes are written. This is a significant improvement over SharedPreferences' `edit().putString().apply()` pattern, where a crash between two `put` calls could leave the file in an inconsistent state.
+## Flow Integration
+
+This is where DataStore genuinely shines over SharedPreferences. Because reads are `Flow`-based, you can combine preferences with other reactive streams using standard Flow operators. No more polling, no more listeners that leak:
+
+```kotlin
+class SettingsViewModel(
+    private val prefsRepository: UserPreferencesRepository,
+    private val featureFlagRepository: FeatureFlagRepository
+) : ViewModel() {
+
+    val uiState: StateFlow<SettingsUiState> = prefsRepository.userPreferences
+        .combine(featureFlagRepository.flags) { prefs, flags ->
+            SettingsUiState(
+                darkMode = prefs.darkMode,
+                fontSize = prefs.fontSize,
+                showExperimentalSettings = flags.experimentalUiEnabled
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+}
+```
+
+The preferences flow emits every time any value in the DataStore changes. Combined with `stateIn`, you get a reactive pipeline that automatically updates the UI when preferences change — from any screen, any coroutine, anywhere in the app. This replaces the entire pattern of `OnSharedPreferenceChangeListener` registrations, manual unregistrations, and the memory leaks that come when you forget.
+
+## Migration From SharedPreferences
+
+DataStore provides `SharedPreferencesMigration` — it reads your existing SharedPreferences file and writes the values into DataStore on first access. After migration succeeds, it deletes the old file to avoid dual-source-of-truth issues:
+
+```kotlin
+private val Context.userPrefsDataStore by preferencesDataStore(
+    name = "user_preferences",
+    produceMigrations = { context ->
+        listOf(
+            SharedPreferencesMigration(
+                context,
+                "user_prefs" // Name of the old SharedPreferences file
+            )
+        )
+    }
+)
+```
+
+The migration runs exactly once, on the first access to the DataStore. It's atomic — all values migrate successfully, or none do. If migration fails (disk full, corrupted file), DataStore throws an exception and the old SharedPreferences file is preserved. One thing that catches people off guard: the `produceMigrations` lambda is called every time the DataStore is accessed, but the migration itself only executes if it hasn't completed before. DataStore tracks this internally.
+
+**Migration is a one-way door.** Once you migrate and delete the SharedPreferences file, there's no rollback. Test your migration on devices with real user data before rolling it out, especially if you have custom SharedPreferences logic like encrypted preferences.
 
 ## Proto DataStore With kotlinx.serialization
 
-For structured data, Proto DataStore gives you type safety that Preferences DataStore can't match. The traditional approach uses Protocol Buffers (`.proto` files, code generation, the protobuf Gradle plugin), which is powerful but adds build complexity. A simpler alternative is using `kotlinx.serialization` with JSON:
+When your preferences grow beyond 10-15 keys, or when values logically belong together (theme + font size + compact mode = display settings), Proto DataStore with kotlinx.serialization removes the key-mapping ceremony entirely. You define a data class, write a serializer, and DataStore handles the rest:
 
 ```kotlin
 @Serializable
@@ -156,11 +222,7 @@ data class DisplayConfig(
 
 @Serializable
 enum class Theme { LIGHT, DARK, SYSTEM }
-```
 
-The serializer bridges DataStore and your data class:
-
-```kotlin
 object AppSettingsSerializer : Serializer<AppSettings> {
     override val defaultValue: AppSettings = AppSettings()
 
@@ -171,7 +233,7 @@ object AppSettingsSerializer : Serializer<AppSettings> {
                 input.readBytes().decodeToString()
             )
         } catch (e: SerializationException) {
-            defaultValue // Corrupted file — reset to defaults
+            defaultValue
         }
     }
 
@@ -181,37 +243,41 @@ object AppSettingsSerializer : Serializer<AppSettings> {
         )
     }
 }
-
-// Create the DataStore
-private val Context.appSettingsDataStore by dataStore(
-    fileName = "app_settings.json",
-    serializer = AppSettingsSerializer
-)
 ```
 
-Here's the critical rule that's easy to miss: **the generic type parameter for Proto DataStore must be immutable.** DataStore compares old and new values to determine whether to notify observers, and mutable types break this comparison. Using `data class` with `val` properties (which Kotlin data classes enforce by convention) satisfies this requirement. If you accidentally use a `MutableList` as a property, DataStore won't detect changes correctly.
+Now reads and writes are fully typed — no string keys, no wrong-type bugs, no manual mapping:
 
-The kotlinx.serialization approach trades some performance for simplicity. Protocol Buffers produce smaller, faster serialized output, but require `.proto` schema files, the protobuf Gradle plugin, and generated Java classes that don't always play nicely with Kotlin data classes. For most apps where the settings object is small (under a few KB), JSON serialization is fast enough and the setup is significantly simpler — just add the `kotlinx-serialization` plugin and write regular Kotlin data classes.
+```kotlin
+// Read
+val themeFlow: Flow<Theme> = context.appSettingsDataStore.data.map { it.theme }
 
-## Performance Characteristics
+// Write
+suspend fun updateTheme(theme: Theme) {
+    context.appSettingsDataStore.updateData { settings ->
+        settings.copy(theme = theme)
+    }
+}
+```
 
-DataStore's performance model is fundamentally different from SharedPreferences, and understanding it explains when to use each.
+Here's the critical rule: **the generic type for Proto DataStore must be immutable.** DataStore compares old and new values to decide whether to notify observers. Mutable types break this comparison. Using `data class` with `val` properties satisfies this. If you accidentally use a `MutableList` as a property, DataStore won't detect changes correctly.
 
-**Reads are non-blocking.** DataStore reads the file once on first access, caches the result in memory, and serves subsequent reads from cache. The Flow you get from `dataStore.data` emits the cached value immediately and then emits again whenever the data changes. This means the first read has disk I/O latency (similar to SharedPreferences), but all subsequent reads are memory-only. SharedPreferences also caches after first read, but that first read blocks the calling thread. DataStore's first read happens on a coroutine dispatcher — it never blocks the main thread.
+Protocol Buffers produce smaller, faster serialized output, but require `.proto` schema files, the protobuf Gradle plugin, and generated Java classes that don't always play nicely with Kotlin. For most apps where the settings object is under a few KB, JSON serialization is fast enough and the setup is significantly simpler.
 
-**Writes are transactional and sequential.** Every `edit` call writes to a temporary file first, then atomically renames it to the actual DataStore file. This prevents partial writes from corrupting data. Writes are also serialized — if two coroutines call `edit` simultaneously, the second one waits for the first to complete. This guarantees consistency but means writes are inherently sequential, which is fine for preference-style data but would be a bottleneck for high-frequency writes (use Room for that).
+## Real-World Patterns
 
-**The entire file is read and written on every operation.** This is the key scalability limitation. DataStore doesn't do partial reads or delta writes. If your data file grows to 100KB (which is large for preferences but possible with accumulated data), every read parses 100KB and every write serializes 100KB. Google's documentation recommends keeping DataStore files under 1MB and warns about performance degradation beyond that. For reference, 1MB of JSON is a LOT of preferences — you'd need thousands of key-value pairs to hit that limit. But if you're storing a list that grows over time (search history, cached items), cap its size or move it to Room.
+Here's how I think about DataStore in practice. Most apps need a handful of these patterns:
 
-## MultiProcessDataStore for Multi-Process Apps
+**User preferences** — theme, font size, language, notification toggles. This is the bread-and-butter use case. A single `UserPreferencesRepository` with typed keys handles it. I keep preference keys and the repository in the same file so the keys stay private.
 
-Most apps run in a single process, but if your app has services or content providers in separate processes (declared with `android:process` in the manifest), standard DataStore is not safe. Two processes accessing the same DataStore file will corrupt it.
+**Feature flags** — remote config values cached locally so the app has values before the network responds. Store them in a separate DataStore file from user preferences. Feature flags change on every app update or config fetch; user preferences change when the user explicitly changes them. Mixing them in one file means every config refresh triggers a re-emission for user preference observers too.
 
-`MultiProcessDataStore` solves this by using file locking and cross-process coordination. The API is identical — you just use a different factory method with the same serializer and corruption handler patterns. The tradeoff is real: multi-process DataStore has higher overhead due to file locking, and writes are slower because of the cross-process synchronization. If your app doesn't use multiple processes (and most don't), stick with standard DataStore. The multi-process variant exists for apps like browsers (with a separate renderer process) or messaging apps (with a background sync service in a separate process).
+**Onboarding state** — whether the user has completed onboarding, which screens they've seen, whether they've granted permissions. A single boolean key works for simple cases. For multi-step onboarding, a Proto DataStore with an enum tracking the last completed step is cleaner than five separate boolean keys.
+
+**Theme settings** — light/dark/system, dynamic color toggle, accent color. If you're using Compose, the theme `Flow` from DataStore pipes directly into your `MaterialTheme` wrapper. The reactive update means the theme switch is instant — no Activity recreation needed.
 
 ## Testing DataStore
 
-DataStore is straightforward to test because you can create an instance that uses a temporary file. No mocking needed — you create a real DataStore pointed at a test directory and interact with it just like production code:
+DataStore is straightforward to test. You create a real instance pointed at a temporary file — no mocking, no faking:
 
 ```kotlin
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -247,20 +313,24 @@ class UserPreferencesRepositoryTest {
 }
 ```
 
-The `TemporaryFolder` JUnit rule creates and cleans up temporary files automatically. Each test gets a fresh DataStore with no leftover state from previous tests. The `TestScope` with `UnconfinedTestDispatcher` ensures DataStore operations execute immediately in tests rather than being dispatched asynchronously. This is important — without the test dispatcher, your `first()` call might return before the `edit()` has been flushed to disk.
+`TemporaryFolder` creates and cleans up files automatically, so each test gets a fresh DataStore with no leftover state. The `TestScope` with `UnconfinedTestDispatcher` is important — it ensures DataStore operations execute immediately rather than being dispatched asynchronously. Without it, your `first()` call might return before the `edit()` flushes to disk.
+
+## Performance and MultiProcessDataStore
+
+DataStore's performance model is fundamentally different from SharedPreferences. It reads the file once on first access, caches the result in memory, and serves subsequent reads from cache. The `Flow` from `dataStore.data` emits the cached value immediately and then re-emits whenever data changes. SharedPreferences also caches after first read, but that first read blocks the calling thread. DataStore's first read runs on a coroutine dispatcher — it never blocks the main thread.
+
+Here's the reframe: **DataStore isn't slower than SharedPreferences. It just moves the latency to a place where it can't cause ANRs.** The total I/O work is comparable, but DataStore guarantees it happens off the main thread. That's the entire point.
+
+Every `edit` call writes to a temporary file, then atomically renames it. Writes are serialized — two simultaneous `edit` calls execute sequentially. The entire file is read and written on every operation, which is the key scalability limitation. Google recommends keeping DataStore files under 1MB. For reference, 1MB of JSON is thousands of key-value pairs — you'd have to try hard to hit that. But if you're storing a list that grows over time (search history, cached items), cap its size or move it to Room.
+
+For multi-process apps (services or content providers with `android:process` in the manifest), standard DataStore is not safe — two processes accessing the same file will corrupt it. `MultiProcessDataStore` handles this with file locking and cross-process coordination. Same API, just a different factory method. The overhead is real though: file locking slows writes, and most apps don't need it. Stick with standard DataStore unless you explicitly run components in separate processes.
 
 ## The Honest Tradeoffs
 
-DataStore is strictly better than SharedPreferences for the problems it solves — non-blocking reads, transactional writes, type safety, reactive observation. But it introduces complexity that SharedPreferences didn't have.
+DataStore is strictly better than SharedPreferences for the problems it solves. But the API is more verbose — reading a single preference in SharedPreferences is one line (`prefs.getString("key", "default")`), while DataStore requires a Flow, a map, and an IOException catch block. For "read a boolean flag," this feels like overkill.
 
-**The API is more verbose.** Reading a single preference in SharedPreferences is one line: `prefs.getString("key", "default")`. In DataStore, it's a Flow that you need to collect, map, and handle errors on. For simple use cases — "read a boolean flag" — this feels like overkill. The ceremony of defining keys, mapping preferences objects, and handling the IOException catch block adds real boilerplate.
+But I think that verbosity is the right trade. The ceremony exists because DataStore forces you to handle things SharedPreferences silently ignored — file corruption, thread safety, reactive updates. SharedPreferences let you write `prefs.getString()` on the main thread and pretended everything was fine, until it wasn't. DataStore makes the complexity explicit. The extra code isn't boilerplate — it's error handling that SharedPreferences should have required all along.
 
-**Proto DataStore setup is non-trivial.** Whether you use Protocol Buffers or kotlinx.serialization, there's a setup cost — Gradle plugins, serializers, schema definitions. For a simple key-value store, Preferences DataStore avoids this. But if you find yourself with 15+ typed keys and manual mapping logic, the upfront Proto DataStore setup pays for itself in reduced mapping errors.
-
-**DataStore is not a database replacement.** I've seen teams try to use DataStore for storing lists of items, caches of API responses, or anything that grows unboundedly. DataStore reads and writes the entire file every time. For anything that needs indexing, querying, or partial updates, Room is the right tool. DataStore is for preferences-sized data — under 1MB, ideally under 100KB.
-
-**Migration is a one-way door.** Once you migrate from SharedPreferences to DataStore and delete the SharedPreferences file, there's no going back. Test your migration thoroughly on devices with real user data before rolling it out, especially if you have custom SharedPreferences logic like encrypted preferences or custom serialization.
-
-Despite these tradeoffs, the direction is clear. SharedPreferences was designed for single-threaded, synchronous Android development. Modern Android apps are coroutine-based, reactive, and multi-threaded. DataStore aligns with that reality. The ANR risk from `apply()` alone is enough reason to migrate — that's not a theoretical concern, it's a real crash that shows up in your Play Console vitals. The key is to adopt DataStore with the right expectations: use it as a preferences store, keep the data small, respect the singleton rule, and reach for Room when your data outgrows what DataStore was designed for.
+Use DataStore as a preferences store, keep the data small, respect the singleton rule, and reach for Room when your data outgrows what DataStore was designed for.
 
 Thanks for reading!

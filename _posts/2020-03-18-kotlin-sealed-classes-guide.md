@@ -97,11 +97,96 @@ data class CachedSuccess<T>(
 ) : NetworkResult<T>, Cacheable
 ```
 
+The concrete differences between sealed class and sealed interface matter in practice. Sealed classes can have constructors, `init` blocks, and shared mutable state in the base class. Sealed interfaces can't — they're purely abstract contracts. Sealed classes also let subclasses share common initialization logic through `super()` calls. But sealed interfaces allow multiple inheritance, which is the more common need.
+
 I default to `sealed interface` unless I need shared state or behavior in a base class. Interfaces are more flexible, and in most cases your sealed type is purely a data container — it doesn't need constructors, init blocks, or mutable state. If it does, sealed class is still there.
+
+### data object — Singleton Subtypes Done Right
+
+Before `data object` (introduced in Kotlin 1.9), singleton subtypes in a sealed hierarchy used regular `object`, which had a quirk: its `toString()` printed something like `Loading@3a4b5c` instead of `Loading`. `data object` fixes this by generating a readable `toString()`, plus consistent `equals()` and `hashCode()`.
+
+```kotlin
+sealed interface SyncState {
+    data object Idle : SyncState           // toString() = "Idle"
+    data object Syncing : SyncState        // toString() = "Syncing"
+    data class Failed(val reason: String) : SyncState
+    data class Complete(val itemCount: Int) : SyncState
+}
+```
+
+Use `data object` for any sealed subtype that carries no data. It's a small detail, but it makes logging and debugging cleaner — you see `Idle` in your logs instead of an object hash.
+
+## Nested Sealed Hierarchies
+
+For complex state machines, you can nest sealed types to create multi-level hierarchies. This is particularly useful when a state has its own sub-states.
+
+```kotlin
+sealed interface MediaPlayerState {
+    data object Idle : MediaPlayerState
+
+    sealed interface Playing : MediaPlayerState {
+        data class Streaming(val bufferPercent: Int) : Playing
+        data class LocalFile(val filePath: String) : Playing
+    }
+
+    sealed interface Paused : MediaPlayerState {
+        data class UserPaused(val position: Long) : Paused
+        data class BufferingPaused(val position: Long) : Paused
+    }
+
+    data class Error(val message: String) : MediaPlayerState
+}
+```
+
+Nested hierarchies let you match at different granularities. You can match on `MediaPlayerState.Playing` to handle any playing sub-state, or match on `MediaPlayerState.Playing.Streaming` to handle only the streaming case. The `when` expression remains exhaustive at every level.
 
 ## State Modeling — The Real Use Case
 
-Beyond UI state, sealed types are excellent for modeling domain events, navigation actions, and any scenario where you have a fixed set of operations with varying payloads. I use them heavily for modeling side effects in ViewModels.
+Beyond UI state, sealed types are excellent for modeling domain events, navigation actions, and any scenario where you have a fixed set of operations with varying payloads. In Compose, sealed types combine with exhaustive `when` to create UI code that's impossible to render incorrectly — you literally can't forget to handle a state because the compiler won't let you.
+
+```kotlin
+// Comprehensive screen state for a real app feature
+sealed interface OrderScreenState {
+    data object Loading : OrderScreenState
+    data class Content(
+        val orders: List<Order>,
+        val selectedFilter: OrderFilter,
+        val isRefreshing: Boolean
+    ) : OrderScreenState
+    data class Error(val message: String, val canRetry: Boolean) : OrderScreenState
+    data object Empty : OrderScreenState
+}
+
+@Composable
+fun OrderScreen(state: OrderScreenState, onAction: (OrderAction) -> Unit) {
+    // Exhaustive when — add a new state variant and
+    // this composable immediately shows a compile error
+    when (state) {
+        is OrderScreenState.Loading -> {
+            CircularProgressIndicator(modifier = Modifier.fillMaxSize())
+        }
+        is OrderScreenState.Content -> {
+            OrderList(
+                orders = state.orders,
+                isRefreshing = state.isRefreshing,
+                onRefresh = { onAction(OrderAction.Refresh) },
+                onOrderClick = { onAction(OrderAction.SelectOrder(it.id)) }
+            )
+        }
+        is OrderScreenState.Error -> {
+            ErrorView(
+                message = state.message,
+                onRetry = if (state.canRetry) {{ onAction(OrderAction.Retry) }} else null
+            )
+        }
+        is OrderScreenState.Empty -> {
+            EmptyState(message = "No orders yet")
+        }
+    }
+}
+```
+
+I use sealed types heavily for modeling side effects in ViewModels — navigation events, snackbar messages, dialogs — anything that's a one-shot event rather than persistent state.
 
 ```kotlin
 sealed interface NavigationEvent {

@@ -139,6 +139,8 @@ For lists and complex objects, I prefer flattening into separate tables with for
 
 Room supports relationships between entities through `@Relation` annotations and embedding. The key abstraction is the "relation POJO" — a plain class that bundles a parent entity with its children.
 
+### One-to-Many With @Relation
+
 ```kotlin
 @Entity(tableName = "order_items")
 data class OrderItemEntity(
@@ -165,9 +167,118 @@ data class OrderWithItems(
 )
 ```
 
+`@Embedded` flattens the entity's columns into the parent. This is also useful on its own — if you have an `Address` data class that you want to store as columns inside an `Order` table rather than as a separate table, `@Embedded` does that without needing a relation or a foreign key.
+
+```kotlin
+data class Address(
+    val street: String,
+    val city: String,
+    val zipCode: String
+)
+
+@Entity(tableName = "customers")
+data class CustomerEntity(
+    @PrimaryKey
+    val customerId: String,
+    val name: String,
+    @Embedded(prefix = "shipping_")
+    val shippingAddress: Address,
+    @Embedded(prefix = "billing_")
+    val billingAddress: Address
+)
+```
+
+The `prefix` parameter on `@Embedded` is essential when you embed the same type twice — without it, Room would see duplicate column names (`street`, `city`, `zipCode` appearing twice) and fail at compile time.
+
+### Many-to-Many With @Junction
+
+Many-to-many relationships require a junction table. A `Product` can be in many `Category` entries, and a `Category` can contain many `Product` entries. Room handles this with `@Junction`.
+
+```kotlin
+@Entity(tableName = "products")
+data class ProductEntity(
+    @PrimaryKey val productId: String,
+    val name: String,
+    val price: Double
+)
+
+@Entity(tableName = "categories")
+data class CategoryEntity(
+    @PrimaryKey val categoryId: String,
+    val name: String
+)
+
+@Entity(
+    tableName = "product_category_cross_ref",
+    primaryKeys = ["productId", "categoryId"]
+)
+data class ProductCategoryCrossRef(
+    val productId: String,
+    val categoryId: String
+)
+
+data class CategoryWithProducts(
+    @Embedded val category: CategoryEntity,
+    @Relation(
+        parentColumn = "categoryId",
+        entityColumn = "productId",
+        associateBy = Junction(ProductCategoryCrossRef::class)
+    )
+    val products: List<ProductEntity>
+)
+```
+
+### Multimap Return Types
+
+Since Room 2.4, you can return `Map` types directly from DAO queries without creating a dedicated POJO class. This is cleaner for cases where you need to group data by a key.
+
+```kotlin
+@Dao
+interface AnalyticsDao {
+
+    @Query("""
+        SELECT * FROM orders
+        JOIN order_items ON orders.orderId = order_items.order_id
+    """)
+    fun getOrdersWithItems(): Flow<Map<OrderEntity, List<OrderItemEntity>>>
+
+    @Query("""
+        SELECT status, COUNT(*) as count FROM orders GROUP BY status
+    """)
+    fun getOrderCountByStatus(): Flow<Map<String, Int>>
+}
+```
+
+Multimap queries reduce boilerplate — you don't need a `@Relation` POJO for every join. The tradeoff is that complex queries with multiple joins can return deeply nested maps that are harder to reason about than dedicated data classes.
+
 The `@Transaction` annotation on the DAO query is essential when loading relations. Without it, Room executes two separate queries — one for the order, one for the items — and if another thread modifies the data between them, you get an inconsistent result. `@Transaction` wraps both queries in a single SQLite transaction, guaranteeing consistency.
 
 One gotcha that I've seen trip people up: Room relations always load eagerly. When you query `OrderWithItems`, Room fetches all items for that order immediately. There's no lazy loading. For a one-to-many relationship with a small number of children, this is fine. For a parent with thousands of children, you might want to query them separately with pagination.
+
+## Full-Text Search (FTS)
+
+For text-heavy apps — notes, messaging, content browsers — Room supports SQLite's FTS (Full-Text Search) engine. FTS tables are optimized for text search queries and are dramatically faster than `LIKE '%query%'` on large datasets.
+
+```kotlin
+@Fts4(contentEntity = ArticleEntity::class)
+@Entity(tableName = "articles_fts")
+data class ArticleFts(
+    val title: String,
+    val body: String
+)
+
+@Dao
+interface SearchDao {
+    @Query("""
+        SELECT articles.* FROM articles
+        JOIN articles_fts ON articles.rowid = articles_fts.rowid
+        WHERE articles_fts MATCH :query
+    """)
+    fun searchArticles(query: String): Flow<List<ArticleEntity>>
+}
+```
+
+The `contentEntity` parameter links the FTS table to the real entity. Room keeps them in sync — when you insert into the content entity, the FTS table is updated automatically. FTS4 supports features like prefix queries (`"kotl*"`), phrase queries (`"\"sealed class\""`), and ranking by relevance. For apps with hundreds of thousands of text records, the performance difference between FTS and `LIKE` queries can be 100x or more.
 
 ## Migrations — Evolving Your Schema
 
@@ -313,6 +424,32 @@ class OrderRepository(
 The beauty of returning `Flow` from DAO queries is that your repository doesn't need to do any manual invalidation. Insert new orders, and every collector of `pendingOrders` automatically gets the updated list. This is Room observing SQLite's invalidation tracker under the hood — it watches for write operations on the table and re-queries when changes happen.
 
 The tradeoff is that Room re-queries the entire result set on every change. If your query returns 500 rows and you update one row, Room fetches all 500 again. For most apps, SQLite is fast enough that this doesn't matter. But if you're seeing performance issues with large datasets, consider using `@RawQuery` with manual invalidation, or breaking the data into smaller, more targeted queries.
+
+## Paging Integration
+
+For large datasets, loading everything into memory isn't practical. Room integrates with Paging 3 to load data in pages, which is essential for lists with thousands of items like order histories, message threads, or product catalogs.
+
+```kotlin
+@Dao
+interface OrderDao {
+
+    @Query("SELECT * FROM orders ORDER BY created_at DESC")
+    fun getOrdersPaged(): PagingSource<Int, OrderEntity>
+}
+
+// In your ViewModel
+class OrderListViewModel(
+    private val orderDao: OrderDao
+) : ViewModel() {
+
+    val pagedOrders: Flow<PagingData<OrderEntity>> = Pager(
+        config = PagingConfig(pageSize = 20, prefetchDistance = 5),
+        pagingSourceFactory = { orderDao.getOrdersPaged() }
+    ).flow.cachedIn(viewModelScope)
+}
+```
+
+Room generates the `PagingSource` implementation for you. It handles loading pages, invalidating when data changes, and integrating with Room's invalidation tracker so new inserts trigger the PagingSource to refresh. The `cachedIn(viewModelScope)` call ensures the paging state survives configuration changes. Without it, rotating the screen would reload the entire list from page one.
 
 ## The Reframe — Room Is a Compiler, Not Just a Library
 

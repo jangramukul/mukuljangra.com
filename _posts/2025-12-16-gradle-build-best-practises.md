@@ -53,6 +53,50 @@ org.gradle.configuration-cache.problems=warn
 
 Start with `problems=warn` because some plugins aren't configuration-cache compatible yet. The Gradle build will report which plugins or build logic access project state in ways that can't be cached. Common offenders are older versions of the Android Gradle Plugin (pre-8.0), some KSP processors, and custom tasks that read `project` properties at execution time. The fix is usually updating the plugin or refactoring the task to capture values during configuration rather than reading `project` at execution time. Setting `problems=fail` once everything is clean ensures no regressions.
 
+## Configuration Avoidance API
+
+This one is subtle but it makes a real difference on large projects. Gradle has two ways to register tasks: `tasks.create()` and `tasks.register()`. The difference is that `create()` eagerly instantiates and configures the task immediately during the configuration phase, while `register()` defers all of that until the task is actually needed. In a 30-module project, you might have hundreds of tasks defined across all modules, but any given build only executes a fraction of them. With eager creation, Gradle still pays the cost of configuring every single one.
+
+I ran into this when a custom convention plugin was registering 6 tasks per module using `tasks.create()`. Across 25 modules, that's 150 tasks being instantiated and configured on every build — even when running something unrelated like `assembleDebug` that would never touch those tasks. Switching to `tasks.register()` dropped the configuration phase by about 3 seconds. That doesn't sound dramatic, but it's 3 seconds on every single build, including incremental ones where the actual compilation might only take 4-5 seconds. The same principle extends to Gradle's `Provider` and `Property` types — instead of resolving values at configuration time, you wrap them in providers so Gradle resolves them lazily at execution time.
+
+```kotlin
+// build-logic/convention/src/main/kotlin/CoverageReportPlugin.kt
+class CoverageReportPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        with(target) {
+            // BAD: tasks.create() eagerly configures the task
+            // even if nobody runs "coverageReport" in this build
+            // tasks.create("coverageReport") { ... }
+
+            // GOOD: tasks.register() defers configuration
+            // until the task is actually requested
+            tasks.register<JacocoReport>("coverageReport") {
+                dependsOn("testDebugUnitTest")
+
+                reports {
+                    xml.required.set(true)
+                    html.required.set(true)
+                }
+
+                // Provider-based: resolved lazily at execution time
+                val mainSrc = layout.projectDirectory.dir("src/main/kotlin")
+                sourceDirectories.setFrom(mainSrc)
+
+                val classTree = layout.buildDirectory.dir(
+                    "tmp/kotlin-classes/debug"
+                )
+                classDirectories.setFrom(classTree)
+                executionData.setFrom(
+                    fileTree(layout.buildDirectory) { include("**/*.exec") }
+                )
+            }
+        }
+    }
+}
+```
+
+The rule of thumb is simple: never use `tasks.create()` in build logic, always use `tasks.register()`. If you're also using `configurations.create()`, switch to `configurations.register()` for the same reason. Gradle's build scan will actually flag eagerly created tasks — look for the "Eager task creation" deprecation warnings. They're deprecation warnings now, but Gradle has signaled they'll become errors in a future major version.
+
 ## Convention Plugins Over Copy-Pasted Build Logic
 
 This was the single biggest improvement in that project I mentioned. Fifteen modules, each with the same `compileSdk`, `minSdk`, `composeOptions`, and Kotlin compiler settings copy-pasted into `build.gradle.kts`. Change the `compileSdk` and you're editing 15 files. Miss one and you get a mysterious build failure that takes 20 minutes to track down. Convention plugins let you define shared build configuration once and apply it with a single line.
@@ -89,6 +133,44 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 ```
 
 Then in any module: `plugins { id("myapp.android.library") }`. One line replaces 40+ lines of duplicated configuration. Google's Now In Android sample uses this exact pattern in their `build-logic/` directory. The convention plugin approach scales from 5 modules to 500 modules with the same maintenance cost.
+
+## Structuring the build-logic Directory
+
+Convention plugins need a proper home, and getting the `build-logic/` directory structure right matters more than most guides let on. I've seen teams create convention plugins but dump everything into a single flat module with no organization, and within months it becomes its own maintenance burden.
+
+The `build-logic/` directory is itself a standalone Gradle project — it has its own `settings.gradle.kts` and typically a single `convention` submodule. The root settings file pulls in the version catalog from the parent project so your convention plugins use the same dependency versions as the rest of the app.
+
+```kotlin
+// build-logic/settings.gradle.kts
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
+}
+
+include(":convention")
+```
+
+```kotlin
+// build-logic/convention/build.gradle.kts
+plugins {
+    `kotlin-dsl`
+}
+
+dependencies {
+    compileOnly(libs.android.gradlePlugin)
+    compileOnly(libs.kotlin.gradlePlugin)
+    compileOnly(libs.compose.gradlePlugin)
+}
+```
+
+The `compileOnly` scope is deliberate — the actual plugin JARs come from the consuming project's `pluginManagement` block, so `build-logic` only needs them at compile time for the API types. I prefer the `Plugin<Project>` class approach over precompiled script plugins because it gives you full Kotlin with type safety. The key thing is that this structure keeps your build logic versioned, testable, and completely decoupled from `buildSrc` cache invalidation.
 
 ## Why Composite Builds Beat buildSrc
 
@@ -133,6 +215,31 @@ The `jvmargs` line matters more than most people realize. The default Gradle JVM
 
 The tradeoff with parallel execution is that it exposes ordering issues in your build scripts. If module A writes a file that module B reads without declaring an explicit dependency, sequential builds work fine but parallel builds fail intermittently. These are legitimate bugs in your build configuration that parallel mode surfaces early — which is actually a good thing.
 
+## Dependency Analysis Plugin
+
+Most teams think they know their dependency graph, but every multi-module Android project has unused dependencies and misused `api` vs `implementation` declarations. Gradle doesn't tell you about this. You declare `implementation(libs.gson)` in a module, stop using Gson six months later, and nobody notices because the build still compiles — the dependency just bloats your configuration time and APK size for no reason.
+
+The [Dependency Analysis Gradle Plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin) by Tony Robalik catches exactly this. It scans your bytecode and source to determine which dependencies are actually used, which are unused, which are used transitively but should be declared directly, and which `api` dependencies should be `implementation`. On a 20-module project I ran it on, it found 34 unused dependencies and 12 incorrect `api` vs `implementation` declarations. Removing the unused ones shaved 8 seconds off a clean build.
+
+```kotlin
+// root build.gradle.kts
+plugins {
+    id("com.autonomousapps.dependency-analysis") version "2.7.1"
+}
+
+dependencyAnalysis {
+    issues {
+        all {
+            onUsedTransitiveDependencies { severity("fail") }
+            onUnusedDependencies { severity("fail") }
+            onIncorrectConfiguration { severity("fail") }
+        }
+    }
+}
+```
+
+Run `./gradlew buildHealth` and it produces a report telling you exactly what to fix — which dependencies to remove, which to add, and which to change from `api` to `implementation`. Setting the severity to `fail` means CI will catch any regressions. The `api` vs `implementation` distinction matters more than people think: declaring something as `api` exposes it to all downstream modules, which means changing that library's version triggers recompilation across a wider graph. Keeping everything as `implementation` unless a module genuinely exposes types from that dependency in its public API minimizes the recompilation blast radius.
+
 ## Dependency Locking and Exact Versions
 
 Dynamic versions like `implementation("com.squareup.okhttp3:okhttp:4.+")` or version ranges are dangerous in production builds. They make your builds non-reproducible — the same code can produce different APKs depending on when you build, because a new transitive dependency version might have been published. I've seen a production crash caused by a transitive dependency auto-upgrading from `1.2.3` to `1.3.0` with a breaking API change that no one noticed until users reported it.
@@ -146,7 +253,7 @@ dependencyLocking {
 }
 ```
 
-Run `./gradlew dependencies --write-locks` to generate the lockfile, then commit it to version control. Now every build resolves the exact same versions. When you intentionally want to upgrade, update the lockfile explicitly. This is the same concept as `package-lock.json` in npm or `Gemfile.lock` in Ruby — reproducible dependency resolution is not optional for production software. The cost is maintenance overhead — you need to periodically regenerate lockfiles and review what changed. But compared to debugging a crash caused by an invisible transitive dependency upgrade at 2 AM, that overhead is trivial.
+Run `./gradlew dependencies --write-locks` to generate the lockfile, then commit it to version control. Now every build resolves the exact same versions. This is the same concept as `package-lock.json` in npm — reproducible dependency resolution is not optional for production software. The maintenance cost is regenerating lockfiles periodically, but compared to debugging a crash caused by an invisible transitive dependency upgrade at 2 AM, that overhead is trivial.
 
 ## R8 Full Mode
 
@@ -173,7 +280,7 @@ android {
 }
 ```
 
-The tradeoff is that full mode can break reflection-based code more aggressively. Libraries that use reflection (some serialization libraries, DI frameworks without compile-time code generation) may need additional ProGuard rules. Test your release build thoroughly after enabling full mode. The approach I recommend is: enable it, run your full test suite against the release build, check the mapping file for classes you expect to keep, and add rules only for verified breakages rather than preemptively keeping everything.
+The tradeoff is that full mode can break reflection-based code more aggressively. Libraries that use reflection (some serialization libraries, DI frameworks without compile-time code generation) may need additional ProGuard rules. The approach I recommend is: enable it, run your full test suite against the release build, and add keep rules only for verified breakages rather than preemptively keeping everything.
 
 ## Non-Transitive R Classes
 
@@ -186,11 +293,11 @@ android.nonTransitiveRClass=true
 
 This setting became the default for new projects in AGP 8.0, but existing projects need to opt in. The immediate effect is a reduction in generated code — one project I migrated saw R class generation drop from 45,000 fields to 8,000 fields across all modules. Build times improved because there's less code to compile and dex, and incremental builds are faster because changing a resource in one module doesn't trigger R class regeneration in every dependent module.
 
-The migration cost is updating resource references. After enabling non-transitive R classes, `R.string.app_name` in a feature module won't compile if `app_name` is defined in the `:core:ui` module. You need to import the correct R class: `import com.myapp.core.ui.R`. Android Studio's "Migrate to Non-Transitive R Classes" refactoring handles most of this automatically, but you'll still need to manually fix references in XML files and generated code.
+The migration cost is updating resource references. After enabling non-transitive R classes, `R.string.app_name` in a feature module won't compile if `app_name` is defined in the `:core:ui` module — you need to import the correct R class: `import com.myapp.core.ui.R`. Android Studio's "Migrate to Non-Transitive R Classes" refactoring handles most of this automatically.
 
 ## Disabling Unused Build Features
 
-The Android Gradle Plugin enables several build features by default — `BuildConfig` generation, AIDL support, RenderScript, and view binding. If you're using Compose exclusively and don't need these features, they're just adding compilation time. Disabling unused build features in every module shaves seconds off each build. Over hundreds of builds per day across a team, it adds up to real time.
+The Android Gradle Plugin enables several build features by default — `BuildConfig` generation, AIDL support, RenderScript, and view binding. If you're using Compose exclusively and don't need these features, they're just adding compilation time. Disabling unused build features in every module shaves seconds off each build.
 
 ```kotlin
 // Convention plugin or per-module build.gradle.kts
@@ -205,7 +312,7 @@ android {
 }
 ```
 
-Enable only what you use. If your app module needs `BuildConfig` for version info, enable it there but keep it disabled in library modules. If a module uses Compose, enable `compose = true` only in that module. The principle is that every enabled build feature adds a code generation step and associated compilation. Multiply that by your module count and you're looking at real time savings — on a 30-module project, disabling `BuildConfig` in 25 library modules saved ~4 seconds per incremental build.
+Enable only what you use. If your app module needs `BuildConfig` for version info, enable it there but keep it disabled in library modules. The principle is that every enabled build feature adds a code generation step — multiply that by your module count and the savings are real. On a 30-module project, disabling `BuildConfig` in 25 library modules saved ~4 seconds per incremental build.
 
 ## Profile Before You Optimize
 
@@ -219,7 +326,7 @@ I saved this for last because it's the most important principle, and it's the on
 ./gradlew assembleDebug --profile
 ```
 
-The `--profile` flag generates an HTML report in `build/reports/profile/` without uploading anything. Look for the longest-running tasks, tasks that run but shouldn't (cache misses when you expect hits), and configuration time that grows with module count. Common findings: Kapt is usually the slowest step — migrating to KSP can cut annotation processing time by 50-70%. Unused `kapt` configurations in modules that don't need them add 2-3 seconds each. Resource merging in the app module scales linearly with the total resource count across all modules.
+The `--profile` flag generates an HTML report in `build/reports/profile/` without uploading anything. Look for the longest-running tasks, cache misses when you expect hits, and configuration time that grows with module count. Common findings: Kapt is usually the slowest step — migrating to KSP can cut annotation processing time by 50-70%. Unused `kapt` configurations in modules that don't need them add 2-3 seconds each.
 
 The mistake I see teams make is applying build optimizations they read about without profiling first. They enable configuration cache but their bottleneck is Kapt. They add more RAM but their build is IO-bound. Profile first, optimize second, measure the improvement. That's the cycle that actually produces results.
 

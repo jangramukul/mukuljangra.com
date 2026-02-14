@@ -12,40 +12,28 @@ description: "Lifecycle is the most commonly asked topic in Android interviews. 
 
 Lifecycle is the most commonly asked topic in Android interviews. Every company will ask at least 2-3 lifecycle questions.
 
-### Core Questions (Beginner → Intermediate)
+#### Walk me through the Activity lifecycle callbacks and what each one is meant for.
 
-#### Q1: Walk me through the Activity lifecycle callbacks and what each one is meant for.
+- **onCreate** — Called once when the Activity is created. Initialize everything here — `setContentView()`, ViewModel setup, restoring saved state from the Bundle.
+- **onStart** — Activity becomes visible but not interactive yet. UI-related setup that needs to happen every time the Activity appears goes here.
+- **onResume** — Activity is in the foreground and interactive. Acquire resources like camera, sensors, and location updates here.
+- **onPause** — User is leaving. The Activity may still be partially visible (multi-window, dialog on top). Release battery-draining resources but keep it lightweight.
+- **onStop** — Activity is no longer visible. Persist data, stop animations, release heavier resources. You have time for CPU-intensive work here unlike `onPause`.
+- **onDestroy** — Final cleanup. Called either because the user finished the Activity or the system destroyed it for a configuration change. Check `isFinishing()` to tell them apart.
 
-- **onCreate** — Activity enters the Created state. This is where all initialization happens like calling `setContentView()`, setting up the ViewModel, and restoring saved state from the Bundle.
-- **onStart** — Activity becomes visible to the user but isn't interactive yet. This is where UI-related setup that should happen every time the Activity becomes visible goes.
-- **onResume** — Activity is in the foreground and the user can interact with it. Acquire resources like camera preview, sensor listeners, and location updates here.
-- **onPause** — First signal the user is leaving. The Activity may still be partially visible (multi-window or a dialog on top). Release battery-draining resources like sensors and GPS, but keep it lightweight.
-- **onStop** — Activity is no longer visible. Persist data, stop animations, and release heavier resources here. Unlike `onPause`, you have enough time for CPU-intensive operations.
-- **onDestroy** — Final cleanup before the Activity is gone. Called either because the user finished the Activity or the system destroyed it for a configuration change. You can check `isFinishing()` to distinguish between the two.
+#### What happens when the user rotates the device?
 
-In multi-window mode, an Activity can be fully visible while paused. If you release the camera in `onPause`, users in split-screen will see a blank preview.
-
-#### Q2: Why do we call setContentView() only in onCreate?
-
-`onCreate` is invoked only once per Activity instance, so the view hierarchy only needs to be set up once. Setting it in `onCreate` also means views are available for subsequent lifecycle callbacks like `onStart` and `onRestoreInstanceState`. If you inflated in `onResume`, you'd re-inflate the entire view tree every time the user returned to the Activity, which would be expensive and wipe out view state.
-
-#### Q3: What happens when the user rotates the device? Walk through the exact callback order.
-
-Rotation is a configuration change. The system destroys and recreates the Activity. The exact sequence on API 28+ is:
+Rotation is a configuration change. The system destroys and recreates the Activity. The callback order on API 28+ is:
 
 `onPause` → `onStop` → `onSaveInstanceState` → `onDestroy` → `onCreate` → `onStart` → `onRestoreInstanceState` → `onResume`
 
-On API 28+, `onSaveInstanceState` is called after `onStop`. On older APIs, it was called before `onStop`. `onRestoreInstanceState` is called after `onStart`, not inside `onCreate`. You can restore state in `onCreate` using the `savedInstanceState` bundle, but `onRestoreInstanceState` is only called when there's actually saved state to restore — no null check needed.
+On API 28+, `onSaveInstanceState` is called after `onStop`. On older APIs, it was called before `onStop`. `onRestoreInstanceState` is only called when there's actually saved state to restore, so no null check needed.
 
-#### Q4: When does onDestroy get called without onPause and onStop being called first?
+#### What is the difference between onSaveInstanceState and onRestoreInstanceState?
 
-When you call `finish()` inside `onCreate`. The system skips directly to `onDestroy` because the Activity never reached the Started or Resumed state. Lifecycle callbacks are tied to state transitions, not a fixed sequence that always runs top-to-bottom.
+`onSaveInstanceState` saves transient UI state — scroll position, text input, toggle states — into a `Bundle` before the Activity is destroyed. The default implementation already saves View hierarchy state automatically (like `EditText` content).
 
-#### Q5: What is the difference between onSaveInstanceState and onRestoreInstanceState?
-
-`onSaveInstanceState` is called before the Activity is destroyed (after `onStop` on API 28+, before `onStop` on older APIs). You use it to save transient UI state — scroll position, text input, toggle states — into a `Bundle`. The default implementation already saves the View hierarchy state automatically (like `EditText` content).
-
-`onRestoreInstanceState` is called after `onStart` when the Activity is being recreated. It's **only** called when there's actually a saved state `Bundle` — if the Activity is starting fresh, this callback is never invoked.
+`onRestoreInstanceState` is called after `onStart` when the Activity is being recreated. It's only called when there's a saved state Bundle. If the Activity is starting fresh, this callback never fires.
 
 ```kotlin
 override fun onSaveInstanceState(outState: Bundle) {
@@ -61,86 +49,37 @@ override fun onRestoreInstanceState(savedInstanceState: Bundle) {
 }
 ```
 
-Avoid saving large objects in the `Bundle`. It's serialized to Binder transactions which have a ~1 MB limit. Save only lightweight identifiers and store the actual data in a `ViewModel` or local database.
+Don't save large objects in the Bundle. It's serialized to Binder transactions which have a ~1 MB limit. Save lightweight identifiers and keep actual data in a ViewModel or local database.
 
-#### Q6: List the Fragment lifecycle callbacks in order. How do they differ from Activity?
+#### How does ViewModel survive configuration changes?
 
-Fragments have 12 lifecycle methods compared to Activity's 6. The full order is:
+`ComponentActivity` holds a `ViewModelStore`, which is a `HashMap<String, ViewModel>`. During a configuration change, the framework retains this store through `NonConfigurationInstances` — a special object the system preserves across Activity recreation.
 
-`onAttach` → `onCreate` → `onCreateView` → `onViewCreated` → `onActivityCreated` (deprecated) → `onStart` → `onResume` → `onPause` → `onStop` → `onDestroyView` → `onDestroy` → `onDetach`
+When the new Activity instance is created after rotation, it retrieves the same `ViewModelStore`, so all ViewModel instances are still there with their data. The ViewModel is only cleared via `onCleared()` when the owner is permanently destroyed — `finish()` was called or the user navigated away.
 
-The six additional callbacks compared to Activity:
-- `onAttach` — Fragment is associated with its host Activity.
-- `onCreateView` — Inflate or create the Fragment's view hierarchy.
-- `onViewCreated` — View is ready, set up observers and adapters here.
-- `onActivityCreated` — Deprecated. Was for when the host Activity's `onCreate` finished.
-- `onDestroyView` — View is being removed but the Fragment itself may still exist.
-- `onDetach` — Fragment is disassociated from the host Activity.
+#### What happens when Activity A starts Activity B? Walk through the callback order.
 
-A Fragment can have its view destroyed while the Fragment itself survives. This happens when you navigate away in a FragmentTransaction with `addToBackStack` — `onDestroyView` is called, but `onDestroy` and `onDetach` are not. When the user presses back, `onCreateView` and `onViewCreated` run again with the same Fragment instance.
+The callbacks overlap between the two Activities:
 
-#### Q7: Why should Fragments only use the default (no-argument) constructor?
+1. **Activity A: `onPause()`** — A loses foreground but may still be visible
+2. **Activity B: `onCreate()`** → **`onStart()`** → **`onResume()`** — B fully initializes and takes focus
+3. **Activity A: `onStop()`** — A is completely hidden behind B
 
-The system needs the default constructor for Fragment restoration. When a configuration change happens or the system kills your process, the `FragmentManager` recreates Fragments using reflection with `Class.newInstance()`, which requires a public no-arg constructor. Data passed through a custom constructor is lost on recreation.
+Heavy work in `onPause` delays the next Activity from appearing. If A's `onPause` takes 500ms, the user sees a frozen screen for that long before B shows up.
 
-The correct approach is `setArguments()` with a `Bundle`:
+#### What happens during process death? How is it different from a configuration change?
 
-```kotlin
-class UserProfileFragment : Fragment() {
-    companion object {
-        fun newInstance(userId: String): UserProfileFragment {
-            return UserProfileFragment().apply {
-                arguments = Bundle().apply {
-                    putString("USER_ID", userId)
-                }
-            }
-        }
-    }
+During a configuration change, the system destroys and immediately recreates the Activity. The process stays alive and ViewModel survives.
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val userId = requireArguments().getString("USER_ID")
-    }
-}
-```
+Process death is different. The system kills the entire Linux process. Every Activity, Service, ViewModel, and in-memory object is gone. There's no `onDestroy` callback — the process is killed forcefully. The Bundle from `onSaveInstanceState` is the only thing that survives because the system stores it outside the process.
 
-The `arguments` Bundle is automatically saved and restored by the `FragmentManager`. Custom constructors will compile and run, but the app will crash after a configuration change or process death when the system tries to recreate the Fragment.
+When the user returns from Recents, the system recreates the Activity with the saved Bundle and a fresh ViewModel. Any data only stored in the ViewModel is lost. You can simulate process death with "Terminate Application" in Logcat or `adb shell am kill <package>`.
 
-#### Q8: What is viewLifecycleOwner in a Fragment and why does it matter?
+#### What's the difference between ViewModel and SavedStateHandle?
 
-A Fragment has two separate `Lifecycle` objects — one for the Fragment itself (`this`) and one for its view (`viewLifecycleOwner`). The Fragment's view can be destroyed and recreated while the Fragment object stays alive, like when navigating away and coming back via the back stack.
+`ViewModel` survives configuration changes but not process death. If the system kills your app in the background, the ViewModel and all its data are gone.
 
-When observing `LiveData` or collecting `Flow` in a Fragment, use `viewLifecycleOwner` instead of `this`:
-
-```kotlin
-override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    super.onViewCreated(view, savedInstanceState)
-
-    // Correct — observation stops when view is destroyed
-    viewModel.uiState.observe(viewLifecycleOwner) { state ->
-        updateUI(state)
-    }
-
-    // Wrong — observation leaks because Fragment outlives its view
-    viewModel.uiState.observe(this) { state ->
-        updateUI(state)
-    }
-}
-```
-
-If you observe with `this`, the observer stays active even after `onDestroyView`. When `onCreateView` runs again, you register a second observer — two observers updating the same UI causes duplicate updates, stale references, and potential crashes.
-
-#### Q9: How does ViewModel survive configuration changes?
-
-`ComponentActivity` implements `ViewModelStoreOwner` and holds a `ViewModelStore`, which is essentially a `HashMap<String, ViewModel>`. During a configuration change, the framework retains this `ViewModelStore` through `NonConfigurationInstances`, a special object the system preserves across Activity recreation.
-
-When the new Activity instance is created after rotation, it retrieves the same `ViewModelStore` from the retained `NonConfigurationInstances`, so your `ViewModel` instances are still there with all their data. The `ViewModel` is only cleared via `onCleared()` when the owner is permanently destroyed — `finish()` was called, the user navigated away, or the Fragment was detached for good.
-
-#### Q10: What's the difference between ViewModel and SavedStateHandle? When do you need both?
-
-`ViewModel` survives configuration changes (rotation, language change) but does **not** survive process death. If the system kills your app in the background, the `ViewModel` and all its in-memory data are gone.
-
-`SavedStateHandle` survives both configuration changes and process death. It's backed by the `savedInstanceState` Bundle mechanism, same as `onSaveInstanceState` but accessible from within the ViewModel.
+`SavedStateHandle` survives both configuration changes and process death. It's backed by the `savedInstanceState` Bundle mechanism, accessible from within the ViewModel.
 
 ```kotlin
 class SearchViewModel(
@@ -165,102 +104,138 @@ class SearchViewModel(
 }
 ```
 
-Use `SavedStateHandle` for lightweight state the user expects to survive (search query, scroll position, selected tab) and regular ViewModel state for data that can be re-fetched (API results, repository data). If losing the data would confuse the user, put it in `SavedStateHandle`.
+Use `SavedStateHandle` for state the user expects to survive — search query, scroll position, selected tab. Use regular ViewModel state for data that can be re-fetched like API results.
 
-### Deep Dive Questions (Advanced → Expert)
+#### List the Fragment lifecycle callbacks. How do they differ from Activity?
 
-#### Q11: Explain the Activity transition lifecycle — what happens when Activity A starts Activity B?
+Fragments have additional callbacks compared to Activity. The full order is:
 
-The callback sequence overlaps between the two Activities:
+`onAttach` → `onCreate` → `onCreateView` → `onViewCreated` → `onStart` → `onResume` → `onPause` → `onStop` → `onDestroyView` → `onDestroy` → `onDetach`
 
-1. **Activity A: `onPause()`** — A loses foreground but may still be visible
-2. **Activity B: `onCreate()`** → **`onStart()`** → **`onResume()`** — B fully initializes and takes focus
-3. **Activity A: `onStop()`** — A is now completely hidden behind B
+The extra callbacks compared to Activity:
+- **onAttach** — Fragment is associated with its host Activity.
+- **onCreateView** — Inflate the Fragment's view hierarchy.
+- **onViewCreated** — View is ready. Set up observers and adapters here.
+- **onDestroyView** — View is removed but the Fragment itself may still exist.
+- **onDetach** — Fragment is disassociated from the host Activity.
 
-Long-running operations in `onPause` will delay the next Activity from appearing. If A's `onPause` takes 500ms, the user sees a frozen screen for 500ms before B shows up.
+A Fragment can have its view destroyed while the Fragment itself survives. This happens with `addToBackStack` — `onDestroyView` is called, but `onDestroy` and `onDetach` are not. When the user presses back, `onCreateView` and `onViewCreated` run again with the same Fragment instance.
 
-#### Q12: What happens during process death? How is it different from a configuration change?
+#### What is viewLifecycleOwner in a Fragment and why does it matter?
 
-During a configuration change, the system destroys and immediately recreates the Activity. The process stays alive, `ViewModel` survives, and `onSaveInstanceState`/`onRestoreInstanceState` handle the UI state.
+A Fragment has two Lifecycle objects — one for the Fragment itself (`this`) and one for its view (`viewLifecycleOwner`). The view can be destroyed and recreated while the Fragment object stays alive, like when navigating away and coming back via the back stack.
 
-Process death is different — the system kills the entire Linux process. Every Activity, Service, ViewModel, and in-memory object is gone. There's no `onDestroy` callback because the process is killed forcefully. The `Bundle` from `onSaveInstanceState` is the only thing that survives because the system stores it outside the process.
+When observing LiveData or collecting Flow in a Fragment, use `viewLifecycleOwner`:
 
-When the user taps the app from the Recents screen, the system recreates the Activity with the saved `Bundle` and a fresh `ViewModel` instance. Any data only stored in the `ViewModel` is lost. This is why `SavedStateHandle` exists — it bridges the gap between ViewModel's in-memory state and the Bundle's process-death-safe persistence.
+```kotlin
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
 
-You can simulate process death in Android Studio via "Terminate Application" in Logcat while the app is backgrounded, or use `adb shell am kill <package>`.
+    // Correct — observation stops when view is destroyed
+    viewModel.uiState.observe(viewLifecycleOwner) { state ->
+        updateUI(state)
+    }
 
-#### Q13: Explain onNewIntent. When is it called and with which launch modes?
+    // Wrong — observation leaks because Fragment outlives its view
+    viewModel.uiState.observe(this) { state ->
+        updateUI(state)
+    }
+}
+```
 
-`onNewIntent` is called when an Activity receives a new `Intent` without being recreated. This happens with specific launch modes:
+If you observe with `this`, the observer stays active after `onDestroyView`. When `onCreateView` runs again, you register a second observer — causing duplicate updates, stale references, and potential crashes.
 
-- **singleTop** — If the Activity is already at the top of the task stack, the system calls `onNewIntent` instead of creating a new instance. The sequence is `onNewIntent` → `onResume`.
-- **singleTask** — If the Activity exists anywhere in the task, it's brought to the top and all Activities above it are destroyed. `onNewIntent` delivers the new Intent.
-- **singleInstance** — Similar to `singleTask` but the Activity is always the only member of its task.
+#### Why should Fragments only use the default no-argument constructor?
 
-Note that `getIntent()` still returns the original Intent after `onNewIntent`. You must call `setIntent(newIntent)` explicitly:
+The system needs the default constructor for Fragment restoration. During configuration changes or process death, the `FragmentManager` recreates Fragments using reflection with `Class.newInstance()`, which requires a public no-arg constructor. Data passed through a custom constructor is lost.
+
+Use `setArguments()` with a Bundle instead:
+
+```kotlin
+class UserProfileFragment : Fragment() {
+    companion object {
+        fun newInstance(userId: String): UserProfileFragment {
+            return UserProfileFragment().apply {
+                arguments = Bundle().apply {
+                    putString("USER_ID", userId)
+                }
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val userId = requireArguments().getString("USER_ID")
+    }
+}
+```
+
+The `arguments` Bundle is automatically saved and restored by the FragmentManager. Custom constructors will compile but the app crashes after recreation when the system can't find the no-arg constructor.
+
+#### Why do I call setContentView() only in onCreate?
+
+`onCreate` is called once per Activity instance, so the view hierarchy only needs to be set up once. Setting it here also means views are available for subsequent callbacks like `onStart` and `onRestoreInstanceState`. If you inflated in `onResume`, you'd re-inflate the entire view tree every time the user returned, which is expensive and wipes out view state.
+
+#### Explain onNewIntent. When is it called?
+
+`onNewIntent` is called when an Activity receives a new Intent without being recreated. This happens with specific launch modes:
+
+- **singleTop** — Activity is at the top of the stack, so the system calls `onNewIntent` instead of creating a new instance.
+- **singleTask** — Activity exists anywhere in the task. It's brought to the top and all Activities above it are destroyed.
+- **singleInstance** — Same as singleTask but the Activity is always the only member of its task.
+
+`getIntent()` still returns the original Intent after `onNewIntent`. You must call `setIntent(newIntent)` explicitly:
 
 ```kotlin
 override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
-    setIntent(intent)  // Update so getIntent() returns the new one
+    setIntent(intent)
     handleDeepLink(intent)
 }
 ```
 
-Without calling `setIntent()`, deep links work on first launch but silently fail when the Activity already exists.
+Without `setIntent()`, deep links work on first launch but silently fail when the Activity already exists.
 
-#### Q14: How does multi-window mode affect the Activity lifecycle?
+#### When does onDestroy get called without onPause and onStop?
 
-In multi-window (split-screen) mode, only one Activity has focus at a time. The other Activity is in the Paused state but still fully visible. This means `onPause` does not imply the Activity is no longer visible.
+When you call `finish()` inside `onCreate`. The system skips directly to `onDestroy` because the Activity never reached the Started or Resumed state. Lifecycle callbacks are tied to state transitions, not a fixed sequence.
 
-If you release the camera, pause video, or stop animations in `onPause`, users in split-screen see a frozen or blank screen. Move those operations to `onStop` instead, which means the Activity is genuinely no longer visible. If you need the camera active during multi-window, initialize it in `onStart` and release in `onStop`.
+#### How does multi-window mode affect the lifecycle?
 
-Picture-in-Picture (PiP) follows the same principle — the Activity enters PiP and receives `onPause` but is still visible as a floating window. Interactive elements should be disabled, but playback should continue.
+In split-screen, only one Activity has focus. The other is in the Paused state but still fully visible. So `onPause` does not mean the Activity is no longer visible.
 
-#### Q15: What is setRetainInstance(true) on a Fragment, and why is it deprecated?
+If you release the camera or stop animations in `onPause`, split-screen users see a frozen or blank screen. Move those operations to `onStop`, which means the Activity is genuinely not visible. Initialize camera in `onStart` and release in `onStop`.
 
-`setRetainInstance(true)` told the `FragmentManager` to keep the Fragment instance alive across configuration changes. The Fragment would skip `onDestroy` and `onDetach` during rotation and go through `onDestroyView` → `onCreateView` instead of the full destruction cycle.
+Picture-in-Picture follows the same rule — the Activity receives `onPause` but stays visible as a floating window. Playback should continue.
 
-It's deprecated because `ViewModel` does the same job better. Retained Fragments couldn't be added to the back stack, complicated the Fragment lifecycle, and mixed data retention with UI logic. `ViewModel` cleanly separates concerns — it holds data, the Fragment manages UI.
+#### How does ViewModel scoping work?
 
-#### Q16: Explain the difference between FragmentPagerAdapter and FragmentStatePagerAdapter.
+`ViewModelStoreOwner` is an interface with one method: `getViewModelStore()`. Three classes implement it:
 
-Both are deprecated in favor of `ViewPager2` with `FragmentStateAdapter`.
+- **ComponentActivity** — ViewModel lives until `finish()` is called.
+- **Fragment** — ViewModel lives until the Fragment is permanently detached.
+- **NavBackStackEntry** — ViewModel lives until the destination is popped from the back stack.
 
-**FragmentPagerAdapter** keeps every Fragment instance in memory. When you swipe away, the Fragment is detached (`onDestroyView` is called) but not destroyed. Good for a small, fixed number of pages.
-
-**FragmentStatePagerAdapter** destroys Fragments when they're off-screen and saves their state via `onSaveInstanceState`. Only the currently visible Fragment and its immediate neighbors (based on `offscreenPageLimit`) are alive. This is what you want for large datasets.
-
-The modern `ViewPager2`'s `FragmentStateAdapter` behaves like `FragmentStatePagerAdapter` — it destroys and recreates Fragments using the `RecyclerView` recycling mechanism.
-
-#### Q17: How does ViewModel scoping work? What's a ViewModelStoreOwner?
-
-`ViewModelStoreOwner` is an interface with a single method: `getViewModelStore()`. Three classes implement it:
-
-- **ComponentActivity** — ViewModel lives until `finish()` is called
-- **Fragment** — ViewModel lives until the Fragment is permanently detached
-- **NavBackStackEntry** — ViewModel lives until the destination is popped from the back stack
-
-When you call `ViewModelProvider(owner).get(MyViewModel::class.java)`, it looks up or creates the ViewModel in that owner's `ViewModelStore`. If both Fragments use the Activity as the owner, they get the same ViewModel instance:
+When both Fragments use the Activity as the owner, they share the same ViewModel:
 
 ```kotlin
 // In FragmentA — scoped to the Activity
 val sharedViewModel: OrderViewModel by activityViewModels()
 
-// In FragmentB — same ViewModel instance
+// In FragmentB — same instance
 val sharedViewModel: OrderViewModel by activityViewModels()
 
-// In FragmentC — scoped to the Fragment itself (different instance)
+// In FragmentC — scoped to Fragment itself (different instance)
 val localViewModel: OrderViewModel by viewModels()
 ```
 
-With Navigation Component, you can also scope to a navigation graph. This is cleaner than Activity scoping because the ViewModel gets cleared when the user leaves that navigation flow, not when the entire Activity finishes.
+With Navigation Component, you can scope to a navigation graph. This is cleaner than Activity scoping because the ViewModel clears when the user leaves that flow, not when the entire Activity finishes.
 
-#### Q18: What are lifecycle-aware components? How do LifecycleObserver and DefaultLifecycleObserver work?
+#### What are lifecycle-aware components?
 
-Lifecycle-aware components observe the lifecycle without holding direct references to Activities or Fragments. The Lifecycle API has two pieces — `LifecycleOwner` (Activities, Fragments, and viewLifecycleOwner implement this) and `LifecycleObserver` (your components implement this to react to lifecycle events).
+Lifecycle-aware components observe the lifecycle without holding direct references to Activities or Fragments. The API has two pieces — `LifecycleOwner` (implemented by Activities and Fragments) and `LifecycleObserver` (your components implement this).
 
-`DefaultLifecycleObserver` is the recommended approach (the annotation-based `@OnLifecycleEvent` is deprecated):
+`DefaultLifecycleObserver` is the recommended approach:
 
 ```kotlin
 class LocationTracker(
@@ -280,46 +255,19 @@ class LocationTracker(
 lifecycle.addObserver(LocationTracker(fusedLocationClient))
 ```
 
-The `LocationTracker` manages its own lifecycle without the Activity knowing anything about location logic. The observer handles registering and unregistering callbacks automatically. This is the pattern behind Jetpack libraries like `LiveData`, `WorkManager`, and `ProcessLifecycleOwner`.
+The LocationTracker manages its own lifecycle without the Activity knowing about location logic. This is the pattern behind LiveData, WorkManager, and ProcessLifecycleOwner.
 
-#### Q19: What is ProcessLifecycleOwner and when would you use it?
+#### Can a Fragment's lifecycle state exceed its host Activity's state?
 
-`ProcessLifecycleOwner` provides a `Lifecycle` for the entire application process, not individual Activities. It moves to `ON_START` when the first Activity becomes visible and to `ON_STOP` when the last Activity becomes invisible. It tells you whether your app is in the foreground or background.
+No. A Fragment can never have a lifecycle state higher than its host FragmentManager's state, which is constrained by the Activity. If the Activity is in `STARTED` state, no Fragment can be in `RESUMED` state.
 
-`ON_DESTROY` is never dispatched because process death can happen without warning. `ON_CREATE` is dispatched only once when the process starts.
+You can further restrict a Fragment's maximum state using `setMaxLifecycle()`. This is how ViewPager2's FragmentStateAdapter works — it sets off-screen Fragments to `STARTED` so they never reach `RESUMED`.
 
-Common use cases include detecting foreground/background transitions for analytics, pausing/resuming a WebSocket connection, or refreshing auth tokens when the user returns to the app.
+Use `FragmentContainerView` instead of the `<fragment>` XML tag. The `<fragment>` tag can allow Fragments to exceed their FragmentManager's state during initialization.
 
-#### Q20: How would you test Activity lifecycle behavior?
+#### What is the Fragment Result API?
 
-`ActivityScenario` from the `androidx.test` library gives you programmatic control over an Activity's lifecycle state:
-
-```kotlin
-@Test
-fun activityRecreation_preservesViewModelData() {
-    val scenario = ActivityScenario.launch(SearchActivity::class.java)
-
-    // Simulate user entering a search query
-    scenario.onActivity { activity ->
-        activity.viewModel.onQueryChanged("kotlin coroutines")
-    }
-
-    // Simulate configuration change (rotation)
-    scenario.recreate()
-
-    // Verify ViewModel data survived
-    scenario.onActivity { activity ->
-        assertEquals("kotlin coroutines",
-            activity.viewModel.searchQuery.value)
-    }
-}
-```
-
-You can also move the Activity to specific states with `moveToState(Lifecycle.State.CREATED)` to test behavior at each lifecycle stage. For Fragment testing, `FragmentScenario` provides the same capabilities.
-
-#### Q21: What is the Fragment Result API and how does it replace Fragment-to-Fragment communication?
-
-The Fragment Result API (`setFragmentResult` / `setFragmentResultListener`) replaces the old pattern of communicating between Fragments via shared ViewModels or callback interfaces. It uses the `FragmentManager` as a mediator:
+The Fragment Result API replaces communicating between Fragments via shared ViewModels or callback interfaces. It uses the FragmentManager as a mediator:
 
 ```kotlin
 // FragmentA — listening for a result
@@ -332,15 +280,52 @@ setFragmentResultListener("filter_request") { requestKey, bundle ->
 setFragmentResult("filter_request", bundleOf("selected_filter" to "price_low"))
 ```
 
-The result is delivered when the listener's Fragment is in `STARTED` state or later. If FragmentB sets a result while FragmentA is stopped, the result is delivered when FragmentA reaches `STARTED` again. Only the latest result is kept for each key — setting a new result with the same key replaces the previous one. This API is lifecycle-aware and avoids direct Fragment references.
+The result is delivered when the listener's Fragment is in `STARTED` state or later. Only the latest result is kept per key — setting a new result replaces the previous one. This API is lifecycle-aware and avoids direct Fragment references.
 
-#### Q22: Explain the relationship between Fragment lifecycle and Activity lifecycle. Can a Fragment's state exceed its host Activity's state?
+#### What is setRetainInstance(true) and why is it deprecated?
 
-A Fragment can never have a lifecycle state that exceeds its host `FragmentManager`'s state, which is constrained by the Activity. If the Activity is in `STARTED` state, no Fragment can be in `RESUMED` state. The parent must reach a state before any child Fragment can reach that state.
+`setRetainInstance(true)` told the FragmentManager to keep the Fragment instance alive across configuration changes. The Fragment would skip `onDestroy` and `onDetach` during rotation and go through `onDestroyView` → `onCreateView` instead.
 
-The reverse also applies — child Fragments must be stopped before their parent Activity stops. You can further restrict a Fragment's maximum lifecycle state using `setMaxLifecycle()` on the FragmentTransaction. This is how `ViewPager2`'s `FragmentStateAdapter` works — it sets off-screen Fragments to `STARTED` state maximum so they never reach `RESUMED`.
+It's deprecated because ViewModel does the same job better. Retained Fragments couldn't be added to the back stack, complicated the lifecycle, and mixed data retention with UI logic.
 
-Use `FragmentContainerView` instead of the `<fragment>` XML tag. The `<fragment>` tag can allow Fragments to exceed their FragmentManager's state during initialization, while `FragmentContainerView` enforces proper lifecycle ordering.
+#### What is ProcessLifecycleOwner?
+
+`ProcessLifecycleOwner` provides a Lifecycle for the entire application process, not individual Activities. It moves to `ON_START` when the first Activity becomes visible and `ON_STOP` when the last Activity becomes invisible. It tells you if your app is in the foreground or background.
+
+`ON_DESTROY` is never dispatched because process death happens without warning. `ON_CREATE` is dispatched only once when the process starts. Common use cases are foreground/background detection for analytics, pausing WebSocket connections, or refreshing auth tokens when the user returns.
+
+#### What's the difference between FragmentTransaction add() and replace()?
+
+`add()` adds the Fragment on top of the existing one. The existing Fragment stays in its current lifecycle state — it doesn't get `onPause` or `onStop` unless you explicitly hide it. Both Fragments exist in the container.
+
+`replace()` removes the existing Fragment and adds the new one. The old Fragment goes through `onDestroyView` (and `onDestroy` if not on the back stack). If you called `addToBackStack()`, pressing back will recreate the old Fragment's view.
+
+Use `replace()` for most navigation. Use `add()` when you need to overlay Fragments like bottom sheets or dialogs.
+
+#### How do you test Activity lifecycle behavior?
+
+`ActivityScenario` from `androidx.test` gives you programmatic control over lifecycle state:
+
+```kotlin
+@Test
+fun activityRecreation_preservesViewModelData() {
+    val scenario = ActivityScenario.launch(SearchActivity::class.java)
+
+    scenario.onActivity { activity ->
+        activity.viewModel.onQueryChanged("kotlin coroutines")
+    }
+
+    // Simulate configuration change
+    scenario.recreate()
+
+    scenario.onActivity { activity ->
+        assertEquals("kotlin coroutines",
+            activity.viewModel.searchQuery.value)
+    }
+}
+```
+
+You can move the Activity to specific states with `moveToState(Lifecycle.State.CREATED)` to test behavior at each stage. For Fragments, `FragmentScenario` provides the same capabilities.
 
 ### Common Follow-ups
 

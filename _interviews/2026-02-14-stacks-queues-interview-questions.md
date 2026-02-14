@@ -12,19 +12,9 @@ description: "Stacks and queues are among the most frequently tested data struct
 
 Stacks and queues are among the most frequently tested data structures in coding interviews. They show up in parentheses matching, expression evaluation, monotonic patterns, and sliding window problems.
 
-### Core Questions (Beginner → Intermediate)
+#### How do you check if a string of parentheses is valid?
 
-#### Q1: What is a stack and what are its core operations?
-
-A stack is a Last-In-First-Out (LIFO) data structure. The element added last is the first one removed. Core operations are `push` (add to top), `pop` (remove from top), and `peek` (view top without removing). All three run in O(1) time. In Kotlin, you can use `ArrayDeque` as a stack — it provides `addLast`, `removeLast`, and `last()`.
-
-#### Q2: What is a queue and how does it differ from a stack?
-
-A queue is a First-In-First-Out (FIFO) data structure. The element added first is the first one removed — like a real-world queue. Core operations are `enqueue` (add to back), `dequeue` (remove from front), and `peek` (view front). In Kotlin, `ArrayDeque` works as a queue using `addLast` and `removeFirst`. The key difference is ordering — a stack reverses the insertion order, a queue preserves it.
-
-#### Q3: How do you check if a string of parentheses is valid?
-
-Push every opening bracket onto the stack. When you see a closing bracket, check if the top of the stack is the matching opening bracket. If yes, pop it. If no, return false. At the end, the stack should be empty.
+Push every opening bracket onto the stack. When you see a closing bracket, check if the top of the stack is the matching opener. If yes, pop. If no, return false. Stack should be empty at the end.
 
 ```kotlin
 fun isValid(s: String): Boolean {
@@ -42,11 +32,9 @@ fun isValid(s: String): Boolean {
 }
 ```
 
-Time: O(n), Space: O(n).
+#### How do you design a Min Stack that supports getMin in O(1)?
 
-#### Q4: How do you design a Min Stack that supports push, pop, top, and getMin in O(1)?
-
-Use two stacks — one for actual values and one for tracking the current minimum. Every time you push a value, also push the minimum of the new value and the current min onto the min stack. When you pop, pop from both stacks.
+Use two stacks — one for values, one for tracking the current minimum. Push the minimum of the new value and current min onto the min stack with every push.
 
 ```kotlin
 class MinStack {
@@ -66,11 +54,84 @@ class MinStack {
 }
 ```
 
-Time: O(1) for all operations. Space: O(n) for the extra min stack.
+All operations O(1). Space O(n) for the extra stack.
 
-#### Q5: How do you evaluate a Reverse Polish Notation (RPN) expression?
+#### What is a monotonic stack and how does it solve "next greater element"?
 
-Walk through the tokens. If the token is a number, push it onto the stack. If it's an operator, pop two operands, apply the operator, and push the result back. The final value left on the stack is the answer.
+A monotonic stack maintains elements in sorted order. For next greater element, iterate from right to left. Pop elements smaller than or equal to the current — the top of the stack is the next greater element.
+
+```kotlin
+fun nextGreaterElement(nums: IntArray): IntArray {
+    val result = IntArray(nums.size) { -1 }
+    val stack = ArrayDeque<Int>()
+    for (i in nums.indices.reversed()) {
+        while (stack.isNotEmpty() && stack.last() <= nums[i]) {
+            stack.removeLast()
+        }
+        if (stack.isNotEmpty()) result[i] = stack.last()
+        stack.addLast(nums[i])
+    }
+    return result
+}
+```
+
+Time O(n) — each element is pushed and popped at most once.
+
+#### How do you find the largest rectangle in a histogram?
+
+Use a monotonic increasing stack of indices. When you encounter a shorter bar, pop and calculate the area with the popped bar's height. The width extends from the current index back to the new stack top.
+
+```kotlin
+fun largestRectangleArea(heights: IntArray): Int {
+    val stack = ArrayDeque<Int>()
+    var maxArea = 0
+    for (i in 0..heights.size) {
+        val currentHeight = if (i == heights.size) 0 else heights[i]
+        while (stack.isNotEmpty() && currentHeight < heights[stack.last()]) {
+            val height = heights[stack.removeLast()]
+            val width = if (stack.isEmpty()) i
+                        else i - stack.last() - 1
+            maxArea = maxOf(maxArea, height * width)
+        }
+        stack.addLast(i)
+    }
+    return maxArea
+}
+```
+
+Time O(n), space O(n). One of the hardest stack problems.
+
+#### What is a stack and what are its core operations?
+
+A stack is a Last-In-First-Out (LIFO) data structure. Core operations: `push` (add to top), `pop` (remove from top), `peek` (view top). All O(1). In Kotlin, use `ArrayDeque` as a stack with `addLast`, `removeLast`, and `last()`.
+
+#### What is a queue and how does it differ from a stack?
+
+A queue is a First-In-First-Out (FIFO) data structure. Elements come out in the order they went in. A stack reverses insertion order, a queue preserves it. In Kotlin, `ArrayDeque` works as a queue using `addLast` and `removeFirst`.
+
+#### How do you solve Daily Temperatures using a monotonic stack?
+
+For each day, find how many days until a warmer temperature. Use a monotonic decreasing stack storing indices. When the current temperature is higher than the top index's temperature, pop and record the distance.
+
+```kotlin
+fun dailyTemperatures(temperatures: IntArray): IntArray {
+    val result = IntArray(temperatures.size)
+    val stack = ArrayDeque<Int>()
+    for (i in temperatures.indices) {
+        while (stack.isNotEmpty() &&
+               temperatures[i] > temperatures[stack.last()]) {
+            val prevIndex = stack.removeLast()
+            result[prevIndex] = i - prevIndex
+        }
+        stack.addLast(i)
+    }
+    return result
+}
+```
+
+#### How do you evaluate a Reverse Polish Notation expression?
+
+Walk through tokens. Numbers go on the stack. Operators pop two operands, compute, and push the result back.
 
 ```kotlin
 fun evalRPN(tokens: Array<String>): Int {
@@ -94,41 +155,9 @@ fun evalRPN(tokens: Array<String>): Int {
 }
 ```
 
-Time: O(n), Space: O(n). Note that `a` is the first operand (pushed earlier) and `b` is the second — order matters for subtraction and division.
+#### How do you implement a queue using two stacks?
 
-#### Q6: What is a deque and when would you use one?
-
-A deque (double-ended queue) supports insertion and removal from both ends in O(1) time. It combines the capabilities of a stack and a queue. Kotlin's `ArrayDeque` is a deque backed by a resizable circular array. You'd use a deque when you need efficient operations on both ends — like the sliding window maximum problem, BFS with 0-1 weighted edges, or implementing both a stack and a queue from a single data structure.
-
-#### Q7: How do you implement a stack using two queues?
-
-Use two queues. On `push`, add the element to the empty queue, then move all elements from the other queue into this one. This way, the most recently added element is always at the front.
-
-```kotlin
-class StackUsingQueues {
-    private var primary = ArrayDeque<Int>()
-    private var secondary = ArrayDeque<Int>()
-
-    fun push(value: Int) {
-        secondary.addLast(value)
-        while (primary.isNotEmpty()) {
-            secondary.addLast(primary.removeFirst())
-        }
-        val temp = primary
-        primary = secondary
-        secondary = temp
-    }
-
-    fun pop(): Int = primary.removeFirst()
-    fun top(): Int = primary.first()
-}
-```
-
-Time: O(n) for push, O(1) for pop and top. Space: O(n). You can also make push O(1) and pop O(n) by deferring the rearrangement to the pop operation instead.
-
-#### Q8: How do you implement a queue using two stacks?
-
-Use an input stack and an output stack. Push onto the input stack. When you need to dequeue, if the output stack is empty, pop everything from the input stack onto the output stack — this reverses the order, giving FIFO behavior. Then pop from the output stack.
+Use an input stack and an output stack. Push onto input. When dequeuing, if output is empty, pop everything from input onto output — this reverses the order for FIFO behavior.
 
 ```kotlin
 class QueueUsingStacks {
@@ -153,152 +182,20 @@ class QueueUsingStacks {
 }
 ```
 
-Time: Amortized O(1) for both enqueue and dequeue. Each element is moved between stacks at most once. Space: O(n).
+Amortized O(1) for both operations.
 
-### Deep Dive Questions (Advanced → Expert)
+#### How do you solve the Sliding Window Maximum problem?
 
-#### Q9: What is a monotonic stack and how does it solve the "next greater element" problem?
-
-A monotonic stack maintains elements in sorted order (either increasing or decreasing) from bottom to top. For next greater element, iterate from right to left. Before pushing the current element, pop all elements from the stack that are smaller than or equal to it — they can't be the "next greater" for any earlier element. The top of the stack is the next greater element for the current index.
-
-```kotlin
-fun nextGreaterElement(nums: IntArray): IntArray {
-    val result = IntArray(nums.size) { -1 }
-    val stack = ArrayDeque<Int>()
-    for (i in nums.indices.reversed()) {
-        while (stack.isNotEmpty() && stack.last() <= nums[i]) {
-            stack.removeLast()
-        }
-        if (stack.isNotEmpty()) result[i] = stack.last()
-        stack.addLast(nums[i])
-    }
-    return result
-}
-```
-
-Time: O(n) — each element is pushed and popped at most once. Space: O(n).
-
-#### Q10: How do you solve the Daily Temperatures problem using a monotonic stack?
-
-For each day, find how many days until a warmer temperature. Use a monotonic decreasing stack that stores indices. Iterate through temperatures — when the current temperature is higher than the temperature at the top index, pop and record the distance.
-
-```kotlin
-fun dailyTemperatures(temperatures: IntArray): IntArray {
-    val result = IntArray(temperatures.size)
-    val stack = ArrayDeque<Int>() // stores indices
-    for (i in temperatures.indices) {
-        while (stack.isNotEmpty() &&
-               temperatures[i] > temperatures[stack.last()]) {
-            val prevIndex = stack.removeLast()
-            result[prevIndex] = i - prevIndex
-        }
-        stack.addLast(i)
-    }
-    return result
-}
-```
-
-Time: O(n), Space: O(n). Storing indices instead of values lets you calculate the distance between days directly.
-
-#### Q11: How do you find the largest rectangle in a histogram?
-
-Use a monotonic increasing stack of indices. When you encounter a bar shorter than the stack's top, pop and calculate the area with the popped bar's height. The width extends from the current index back to the new stack top. After processing all bars, pop remaining entries.
-
-```kotlin
-fun largestRectangleArea(heights: IntArray): Int {
-    val stack = ArrayDeque<Int>()
-    var maxArea = 0
-    for (i in 0..heights.size) {
-        val currentHeight = if (i == heights.size) 0 else heights[i]
-        while (stack.isNotEmpty() && currentHeight < heights[stack.last()]) {
-            val height = heights[stack.removeLast()]
-            val width = if (stack.isEmpty()) i
-                        else i - stack.last() - 1
-            maxArea = maxOf(maxArea, height * width)
-        }
-        stack.addLast(i)
-    }
-    return maxArea
-}
-```
-
-Time: O(n), Space: O(n). The sentinel value of 0 at index `heights.size` forces all remaining bars to be popped and evaluated. This is one of the hardest stack problems — understanding that the width calculation uses the new stack top as the left boundary is the key insight.
-
-#### Q12: What is a priority queue and how does it differ from a regular queue?
-
-A priority queue removes elements based on priority rather than insertion order. The highest-priority element (smallest in a min-heap, largest in a max-heap) is dequeued first regardless of when it was added. It's typically implemented using a binary heap. In Kotlin, `PriorityQueue` is a min-heap by default — the smallest element is at the front.
-
-```kotlin
-// Min-heap: smallest element first
-val minHeap = PriorityQueue<Int>()
-minHeap.add(5); minHeap.add(1); minHeap.add(3)
-println(minHeap.poll()) // 1
-
-// Max-heap: largest element first
-val maxHeap = PriorityQueue<Int>(compareByDescending { it })
-maxHeap.add(5); maxHeap.add(1); maxHeap.add(3)
-println(maxHeap.poll()) // 5
-```
-
-Insert and remove operations are O(log n) because the heap needs to maintain its ordering property. Peek is O(1). Priority queues are used in Dijkstra's algorithm, task scheduling, merge K sorted lists, and finding the Kth largest element.
-
-#### Q13: How do you find the Kth largest element using a min-heap?
-
-Maintain a min-heap of size K. Walk through the array — if the heap has fewer than K elements, add the current one. Otherwise, if the current element is larger than the heap's minimum, remove the minimum and add the current element. At the end, the heap's minimum is the Kth largest.
-
-```kotlin
-fun findKthLargest(nums: IntArray, k: Int): Int {
-    val minHeap = PriorityQueue<Int>()
-    for (num in nums) {
-        minHeap.add(num)
-        if (minHeap.size > k) {
-            minHeap.poll()
-        }
-    }
-    return minHeap.peek()
-}
-```
-
-Time: O(n log k), Space: O(k). This is more efficient than sorting the entire array (O(n log n)) when k is much smaller than n. An alternative approach is Quickselect which gives O(n) average time but O(n^2) worst case.
-
-#### Q14: How do you merge K sorted lists using a priority queue?
-
-Put the head node of each list into a min-heap. Poll the smallest, add it to the result, and push that node's next element into the heap. Repeat until the heap is empty.
-
-```kotlin
-fun mergeKLists(lists: List<ListNode?>): ListNode? {
-    val heap = PriorityQueue<ListNode>(compareBy { it.value })
-    for (list in lists) {
-        list?.let { heap.add(it) }
-    }
-    val dummy = ListNode(0)
-    var current = dummy
-    while (heap.isNotEmpty()) {
-        val smallest = heap.poll()
-        current.next = smallest
-        current = smallest
-        smallest.next?.let { heap.add(it) }
-    }
-    return dummy.next
-}
-```
-
-Time: O(n log k) where n is total number of nodes and k is the number of lists. Space: O(k) for the heap. The heap always has at most k elements, so each insertion and removal is O(log k).
-
-#### Q15: How do you solve the Sliding Window Maximum problem?
-
-Use a deque that stores indices. Maintain a monotonic decreasing deque — when adding a new element, remove all indices from the back whose values are smaller than the current element. The front of the deque always has the index of the maximum in the current window. Remove the front if it's outside the window.
+Use a deque storing indices. Maintain a monotonic decreasing deque. When adding a new element, remove smaller values from the back. The front always has the maximum. Remove front if it's outside the window.
 
 ```kotlin
 fun maxSlidingWindow(nums: IntArray, k: Int): IntArray {
     val deque = ArrayDeque<Int>()
     val result = IntArray(nums.size - k + 1)
     for (i in nums.indices) {
-        // Remove indices outside the window
         if (deque.isNotEmpty() && deque.first() <= i - k) {
             deque.removeFirst()
         }
-        // Remove smaller elements from the back
         while (deque.isNotEmpty() && nums[deque.last()] <= nums[i]) {
             deque.removeLast()
         }
@@ -311,19 +208,66 @@ fun maxSlidingWindow(nums: IntArray, k: Int): IntArray {
 }
 ```
 
-Time: O(n), Space: O(k). Each element is added and removed from the deque at most once. The brute force approach is O(nk) — comparing every element in every window. This deque approach reduces it to linear time by tracking only useful candidates for the maximum.
+Time O(n), space O(k).
 
-#### Q16: When would you choose a stack over a queue, and vice versa?
+#### What is a deque and when would you use one?
 
-Use a stack when you need to process the most recent element first — undo operations, matching brackets, DFS traversal, backtracking, and expression evaluation. Use a queue when you need to process elements in the order they arrived — BFS traversal, task scheduling, message processing, and buffering. Use a priority queue when processing order depends on a value, not arrival time — Dijkstra's shortest path, event-driven simulation, or top-K problems. Use a deque when you need efficient operations on both ends — sliding window problems or palindrome checking.
+A deque (double-ended queue) supports insertion and removal from both ends in O(1). It combines stack and queue capabilities. Use it for sliding window problems, BFS with 0-1 weighted edges, or palindrome checking.
+
+#### What is a priority queue and how does it differ from a regular queue?
+
+A priority queue removes elements based on priority, not insertion order. Implemented using a binary heap. In Kotlin, `PriorityQueue` is a min-heap by default. Insert and remove are O(log n), peek is O(1). Used in Dijkstra's, task scheduling, merge K lists, and top-K problems.
+
+#### How do you find the Kth largest element using a min-heap?
+
+Maintain a min-heap of size K. Walk through the array — add each element, remove the smallest when heap exceeds K. The root is the Kth largest.
+
+```kotlin
+fun findKthLargest(nums: IntArray, k: Int): Int {
+    val minHeap = PriorityQueue<Int>()
+    for (num in nums) {
+        minHeap.add(num)
+        if (minHeap.size > k) minHeap.poll()
+    }
+    return minHeap.peek()
+}
+```
+
+Time O(n log k), space O(k).
+
+#### How do you merge K sorted lists using a priority queue?
+
+Put each list's head into a min-heap. Poll the smallest, add to result, push that node's next into the heap. Repeat until empty.
+
+```kotlin
+fun mergeKLists(lists: List<ListNode?>): ListNode? {
+    val heap = PriorityQueue<ListNode>(compareBy { it.value })
+    for (list in lists) list?.let { heap.add(it) }
+    val dummy = ListNode(0)
+    var current = dummy
+    while (heap.isNotEmpty()) {
+        val smallest = heap.poll()
+        current.next = smallest
+        current = smallest
+        smallest.next?.let { heap.add(it) }
+    }
+    return dummy.next
+}
+```
+
+Time O(n log k) where n is total nodes and k is number of lists.
+
+#### When would you choose a stack over a queue?
+
+Use a stack when you need to process the most recent element first — undo operations, matching brackets, DFS, expression evaluation. Use a queue for processing in arrival order — BFS, task scheduling. Use a priority queue when order depends on value — Dijkstra's, top-K. Use a deque for efficient operations on both ends — sliding window.
 
 ### Common Follow-ups
 
 - How would you implement a circular queue with a fixed-size array?
 - Can you solve valid parentheses with more than three bracket types?
 - How do you find the maximum element in a stack in O(1) time?
-- What is the time complexity of building a heap from an unsorted array? Why is it O(n) and not O(n log n)?
+- Why is building a heap O(n) and not O(n log n)?
+- Can you use a monotonic stack to solve trapping rain water?
+- How does the largest rectangle in histogram relate to maximal rectangle in a binary matrix?
+- What happens if you need Kth smallest instead of Kth largest?
 - How would you implement a stack that supports push, pop, and getMedian?
-- Can you use a monotonic stack to solve the trapping rain water problem?
-- How does the largest rectangle in histogram problem relate to the maximal rectangle in a binary matrix?
-- What happens if you need the Kth smallest instead of Kth largest — how does the heap approach change?

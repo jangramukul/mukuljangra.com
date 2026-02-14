@@ -4,47 +4,192 @@ layout: post
 categories: post
 tags:
   - Architecture
-  
+  - Android
 ---
 
-Choosing the right software architecture is a crucial decision that can significantly impact your project's success. While there's no one-size-fits-all solution, there are clear principles and considerations that can guide your decision-making process.
+I've worked on projects that used MVC, MVP, MVVM, and MVI. Every time we picked an architecture, someone on the team was convinced it was the wrong choice. Looking back, the architecture itself was rarely the problem. The problem was either picking something too complex for a simple project or too simple for a complex one. The right architecture depends on your project's complexity, your team's experience, and the specific problems you're trying to solve — not on which pattern is trending on Medium this month.
 
-**Scalability and Maintainability**
-The architecture should scale with your application's growth. Code should be maintainable and easy to understand. Changes should be implementable without major refactoring.
+Let me walk through the major Android architectures, when each one fits, and a practical framework for making the decision.
 
-**Code Organization**
-Clear separation of concerns is essential. Use modular design for better code reuse. Maintain well-defined boundaries between components.
+## MVC — Model-View-Controller
 
-**Testability**
-Components should be easily testable in isolation. Support for unit testing, integration testing, and end-to-end testing is crucial. Clear dependencies that can be mocked or stubbed are important.
+MVC was the original Android pattern, whether developers called it that or not. The Activity or Fragment acted as both the View and the Controller — it received user input AND managed the UI. The Model was whatever data classes and database helpers you had.
 
-**Project Requirements**
-What are the functional and non-functional requirements? What is the expected scale of the application? What are the performance requirements?
+The problem with MVC in Android is that the Controller (Activity/Fragment) is tightly coupled to the Android lifecycle. You can't unit test the controller without an emulator or Robolectric. Business logic, UI updates, and lifecycle management all live in the same file. For a simple app with 3-5 screens, this works fine. For anything larger, the Activities grow into "god objects" with 1000+ lines.
 
-**Team Considerations**
-What is the team's expertise and experience? How large is the development team? What are the team's preferred technologies?
+**When MVC fits:** Quick prototypes, simple utility apps, proof-of-concept projects. If the entire feature is one screen with minimal logic, MVC is the least ceremony.
 
-**Start Simple**
-Begin with a simple architecture that meets current needs. Avoid over-engineering. Allow for evolution as requirements become clearer.
+**When MVC breaks:** The moment you need to test business logic without Android, when Activities start exceeding 500 lines, or when the same logic is needed across multiple screens.
 
-Remember, the best architecture is one that:
-- Solves your specific problems
-- Is understood by your team
-- Can evolve with your needs
-- Maintains a balance between flexibility and structure
+## MVP — Model-View-Presenter
 
-Choose an architecture that aligns with your project's goals, team capabilities, and future growth plans. Don't be afraid to start simple and evolve as needed.
+MVP separates the Controller into a Presenter that has no Android dependencies. The View (Activity/Fragment) is passive — it implements an interface, and the Presenter calls methods on that interface to update the UI. The Presenter holds the business logic and is independently testable.
 
+```kotlin
+// View interface — the contract between Presenter and View
+interface OrderListView {
+    fun showOrders(orders: List<OrderUiModel>)
+    fun showLoading()
+    fun showError(message: String)
+    fun navigateToDetail(orderId: String)
+}
 
-Thank You!
+// Presenter — no Android imports, fully testable
+class OrderListPresenter(
+    private val repository: OrderRepository
+) {
+    private var view: OrderListView? = null
 
+    fun attachView(view: OrderListView) { this.view = view }
+    fun detachView() { this.view = null }
 
+    fun loadOrders() {
+        view?.showLoading()
+        // ... fetch orders, call view?.showOrders(orders)
+    }
+}
+```
 
+MVP was the dominant architecture pattern in Android for several years. The biggest problem is lifecycle management — you need to attach and detach the view at the right lifecycle callbacks, and forgetting to detach leaks the Activity. The View interface also becomes verbose as the screen grows — every possible UI update needs a method declaration.
 
+**When MVP fits:** Projects that need testable business logic but can't adopt Jetpack ViewModel (legacy codebases, multi-platform shared presenters, non-standard lifecycle requirements).
 
+**When MVP breaks:** When the View interface becomes unwieldy (20+ methods), when you need to survive configuration changes (Presenters aren't lifecycle-aware by default), or when the team size grows and the View/Presenter contracts create merge conflicts.
 
+## MVVM — Model-View-ViewModel
 
+MVVM replaced MVP as the recommended Android architecture when Google introduced `ViewModel` and `LiveData`. The key difference from MVP is that the ViewModel doesn't hold a reference to the View. Instead, the View observes the ViewModel's state. This eliminates the attach/detach lifecycle problem that plagued MVP and naturally supports configuration changes since `ViewModel` survives rotation.
 
+```kotlin
+@HiltViewModel
+class OrderListViewModel @Inject constructor(
+    private val repository: OrderRepository
+) : ViewModel() {
 
+    private val _uiState = MutableStateFlow<OrderListState>(OrderListState.Loading)
+    val uiState: StateFlow<OrderListState> = _uiState.asStateFlow()
 
+    init { loadOrders() }
 
+    fun loadOrders() {
+        viewModelScope.launch {
+            _uiState.value = OrderListState.Loading
+            try {
+                val orders = repository.getOrders()
+                _uiState.value = OrderListState.Success(orders)
+            } catch (e: Exception) {
+                _uiState.value = OrderListState.Error(e.message ?: "Failed")
+            }
+        }
+    }
+
+    fun onOrderClicked(orderId: String) {
+        // handle navigation event
+    }
+}
+```
+
+MVVM is the current standard recommendation from Google. It works well with Compose (composables observe StateFlow directly), it's lifecycle-aware out of the box, and the ViewModel pattern is well-understood across the Android ecosystem. Most Android libraries and samples assume MVVM.
+
+**When MVVM fits:** Most Android apps. It's the sweet spot of testability, lifecycle handling, and community support. If you have no strong reason to choose something else, MVVM is the default.
+
+**When MVVM breaks:** When the ViewModel accumulates too many responsibilities (state management, navigation, business logic, formatting), when multiple user actions can modify the same state simultaneously causing race conditions, or when the team needs a more structured approach to state management.
+
+## MVI — Model-View-Intent
+
+MVI takes MVVM further by making state management unidirectional and explicit. The View sends Intents (user actions) to the ViewModel, the ViewModel processes them through a reducer function, and a single State object is emitted back to the View. State changes are predictable because they always flow in one direction: View → Intent → Reducer → State → View.
+
+```kotlin
+// State — single immutable object describing the screen
+data class OrderListState(
+    val orders: List<OrderUiModel> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val selectedFilter: OrderFilter = OrderFilter.ALL
+)
+
+// Intent — every possible user action
+sealed interface OrderListIntent {
+    data object LoadOrders : OrderListIntent
+    data object Refresh : OrderListIntent
+    data class FilterChanged(val filter: OrderFilter) : OrderListIntent
+    data class OrderClicked(val orderId: String) : OrderListIntent
+    data object ErrorDismissed : OrderListIntent
+}
+
+@HiltViewModel
+class OrderListViewModel @Inject constructor(
+    private val repository: OrderRepository
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(OrderListState())
+    val state: StateFlow<OrderListState> = _state.asStateFlow()
+
+    fun handleIntent(intent: OrderListIntent) {
+        when (intent) {
+            is OrderListIntent.LoadOrders -> loadOrders()
+            is OrderListIntent.Refresh -> refresh()
+            is OrderListIntent.FilterChanged -> applyFilter(intent.filter)
+            is OrderListIntent.OrderClicked -> navigateToDetail(intent.orderId)
+            is OrderListIntent.ErrorDismissed -> {
+                _state.update { it.copy(error = null) }
+            }
+        }
+    }
+
+    private fun loadOrders() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            try {
+                val orders = repository.getOrders()
+                _state.update { it.copy(orders = orders, isLoading = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message, isLoading = false) }
+            }
+        }
+    }
+
+    private fun applyFilter(filter: OrderFilter) {
+        _state.update { it.copy(selectedFilter = filter) }
+        loadOrders()  // reload with new filter
+    }
+}
+```
+
+The unidirectional flow makes debugging easier — you can log every Intent and every State transition to see exactly what happened. State is always consistent because there's a single mutable reference. And the sealed interface of Intents documents every possible user action exhaustively.
+
+**When MVI fits:** Complex screens with many user interactions, apps that need detailed state debugging (financial apps, editors), teams that benefit from strict patterns and want to eliminate "where does this state come from?" questions.
+
+**When MVI breaks:** Simple screens where the overhead of defining Intents and a reducer for every action is ceremony without benefit. If your screen has two buttons and a list, MVI is overkill.
+
+## The Decision Framework
+
+Instead of asking "which architecture should I use," ask these questions:
+
+**How many developers are working on this?** A solo developer can keep the architecture in their head. A team of ten needs explicit patterns that everyone follows. Larger teams benefit from the structure of MVI or strict MVVM because it reduces ambiguity in code reviews.
+
+**How complex is the business logic?** CRUD apps with simple data display need MVVM at most. Apps with complex state machines (editors, financial workflows, multi-step processes) benefit from MVI's explicit state management.
+
+**How long will this project be maintained?** A prototype that ships in two weeks can use MVC. A product that will be maintained for years needs the testability and separation that MVVM or MVI provide.
+
+**Does the team have experience with the pattern?** An architecture the team knows well and uses consistently will produce better results than a theoretically superior architecture that's poorly understood. If the team knows MVVM, don't switch to MVI for a new project unless there's a specific problem MVVM can't solve.
+
+**What problems are you actually experiencing?** Architecture changes should solve real problems, not hypothetical ones. If you're not having testability issues, don't add layers just for testability. If you're not having state consistency bugs, you don't need MVI's strict unidirectional flow.
+
+## My Practical Recommendations
+
+For **small apps** (personal projects, utilities, 5-10 screens, one developer): MVVM with ViewModel + StateFlow + Repository. No use cases, no domain layer, no multi-module. Keep it simple.
+
+For **medium apps** (startup products, 10-30 screens, 2-5 developers): MVVM with Clean Architecture layers (data, domain optional, presentation). Multi-module when build times start hurting. Convention plugins for consistent setup.
+
+For **large apps** (enterprise products, 30+ screens, 5+ developers): MVI or strict MVVM with unidirectional data flow, full Clean Architecture, multi-module with feature/core split, comprehensive testing strategy.
+
+## The Reframe — Architecture Is a Tradeoff, Not a Score
+
+Here's what I think most architecture discussions get wrong: **there's no "best" architecture. There's only the best fit for your constraints.** MVC isn't bad — it's fast to build and easy to understand. MVI isn't good — it's verbose and requires more boilerplate. The question is always which tradeoffs are acceptable for this project, this team, and this timeline.
+
+The worst architectural mistake isn't picking the wrong pattern. It's picking an architecture and then not following it consistently. A team that does MVVM well — with consistent state management, clear separation, and good testing — will ship better software than a team that does MVI poorly, with half the screens following the pattern and half not.
+
+Start with the simplest architecture that solves your current problems. Add structure when you feel the pain of not having it. And remember that refactoring from MVVM to MVI is a lot easier than refactoring from no architecture to any architecture. The foundations matter more than the specific pattern.
+
+Thanks for reading!

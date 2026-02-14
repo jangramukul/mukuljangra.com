@@ -10,13 +10,11 @@ description: "The StackOverflow users or GitHub repos app tests API integration,
 
 ## Build a StackOverflow Users / GitHub Repos App
 
-This coding test asks you to build an app that fetches data from a public REST API (StackOverflow or GitHub), displays it in a scrollable list, and lets users search and view details. It covers networking, pagination, caching, and how well you structure a real project under time pressure.
+This coding test asks you to build an app that hits a public REST API (StackOverflow or GitHub), shows results in a list, and lets users search and view details. It covers networking, pagination, caching, and project structure under time pressure.
 
-### Core Questions (Beginner → Intermediate)
+#### How do you set up Retrofit to call the StackOverflow or GitHub API?
 
-#### Q1: How do you set up Retrofit to call the StackOverflow or GitHub API?
-
-Define an interface with suspend functions for each endpoint. The StackOverflow API uses query parameters like `site=stackoverflow` and `order=desc`. The GitHub API uses `Accept: application/vnd.github.v3+json` headers.
+I define an interface with suspend functions for each endpoint. The StackOverflow API needs query parameters like `site=stackoverflow`. The GitHub API needs an `Accept: application/vnd.github.v3+json` header.
 
 ```kotlin
 interface GitHubApi {
@@ -45,11 +43,11 @@ interface StackOverflowApi {
 }
 ```
 
-Both APIs are free and don't require authentication for basic read operations. GitHub has a rate limit of 60 requests per hour for unauthenticated calls, so add a token if you need more.
+Both APIs are free and don't need authentication for basic reads. GitHub caps unauthenticated calls at 60 per hour, so I add a token if I need more.
 
-#### Q2: How do you display the fetched users or repos in a LazyColumn?
+#### How do you display the fetched users or repos in a LazyColumn?
 
-Pass the list of items to a `LazyColumn` with a `key` parameter for each item. The key should be the user ID or repo ID so Compose can track items across recomposition.
+I pass the list to a `LazyColumn` and set a `key` on each item using the user ID or repo ID. This lets Compose track items correctly across recomposition.
 
 ```kotlin
 @Composable
@@ -81,9 +79,80 @@ fun RepoCard(repo: Repo, onClick: () -> Unit) {
 }
 ```
 
-#### Q3: How do you implement search with debounce?
+#### How do you handle loading, error, and empty states?
 
-Use a `MutableStateFlow` for the query and apply `debounce`, `distinctUntilChanged`, and `filter` before triggering the API call. This prevents firing a request on every keystroke.
+I use a sealed interface for UI state. I include an explicit empty state because a search might return zero results, and that shouldn't look like a loading screen.
+
+```kotlin
+sealed interface RepoUiState {
+    data object Loading : RepoUiState
+    data class Success(val repos: List<Repo>) : RepoUiState
+    data object Empty : RepoUiState
+    data class Error(val message: String) : RepoUiState
+}
+```
+
+I map the API response to these states in the ViewModel. I show a retry button on error and a "No repositories found" message on empty.
+
+#### How do you display user avatars with Coil?
+
+I use `AsyncImage` from the Coil Compose library. Both APIs return image URLs — `avatar_url` for GitHub and `profile_image` for StackOverflow.
+
+```kotlin
+@Composable
+fun UserAvatar(imageUrl: String, username: String) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .crossfade(true)
+            .placeholder(R.drawable.avatar_placeholder)
+            .error(R.drawable.avatar_placeholder)
+            .build(),
+        contentDescription = "$username avatar",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+    )
+}
+```
+
+I always set `placeholder` and `error` drawables. Without them, the image area is blank while loading and it looks broken.
+
+#### How do you navigate to a detail screen?
+
+I pass the user ID or repo ID through navigation arguments. The detail screen's ViewModel fetches full data by that ID. I don't serialize the entire object through navigation.
+
+```kotlin
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+    NavHost(navController, startDestination = "repos") {
+        composable("repos") {
+            RepoListScreen(
+                onRepoClick = { repo ->
+                    navController.navigate("repos/${repo.owner}/${repo.name}")
+                }
+            )
+        }
+        composable(
+            route = "repos/{owner}/{name}",
+            arguments = listOf(
+                navArgument("owner") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType }
+            )
+        ) {
+            RepoDetailScreen()
+        }
+    }
+}
+```
+
+For GitHub repos, I need both the owner and repo name to fetch details. For StackOverflow users, a single user ID is enough.
+
+#### How do you implement search with debounce?
+
+I use a `MutableStateFlow` for the query and chain `debounce`, `distinctUntilChanged`, and `filter` before triggering the API call. This avoids firing a request on every keystroke.
 
 ```kotlin
 class SearchViewModel(
@@ -113,100 +182,27 @@ class SearchViewModel(
 }
 ```
 
-400ms is a good debounce value. Lower than that and you'll still hit the API too often. Higher and the search feels sluggish.
+400ms is a good debounce value. Lower and I hit the API too often. Higher and the search feels sluggish.
 
-#### Q4: How do you navigate to a user detail or repo detail screen?
+#### How do you structure the project packages?
 
-Pass the user ID or repo ID through navigation arguments. The detail screen's ViewModel fetches the full data by that ID. Don't serialize the entire object through navigation.
-
-```kotlin
-@Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-    NavHost(navController, startDestination = "repos") {
-        composable("repos") {
-            RepoListScreen(
-                onRepoClick = { repo ->
-                    navController.navigate("repos/${repo.owner}/${repo.name}")
-                }
-            )
-        }
-        composable(
-            route = "repos/{owner}/{name}",
-            arguments = listOf(
-                navArgument("owner") { type = NavType.StringType },
-                navArgument("name") { type = NavType.StringType }
-            )
-        ) {
-            RepoDetailScreen()
-        }
-    }
-}
-```
-
-For GitHub repos, you typically need both the owner and repo name to fetch details. For StackOverflow users, a single user ID is enough.
-
-#### Q5: How do you display user avatars or repo owner images with Coil?
-
-Use `AsyncImage` from the Coil Compose library. Both APIs return image URLs — `avatar_url` for GitHub and `profile_image` for StackOverflow.
-
-```kotlin
-@Composable
-fun UserAvatar(imageUrl: String, username: String) {
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUrl)
-            .crossfade(true)
-            .placeholder(R.drawable.avatar_placeholder)
-            .error(R.drawable.avatar_placeholder)
-            .build(),
-        contentDescription = "$username avatar",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-    )
-}
-```
-
-Always provide `placeholder` and `error` drawables. Without them, the image area is blank while loading, which looks broken.
-
-#### Q6: How do you handle loading, error, and empty states?
-
-Use a sealed interface for UI state. Include an explicit empty state — searching for something obscure might return zero results, and that shouldn't look like a loading screen.
-
-```kotlin
-sealed interface RepoUiState {
-    data object Loading : RepoUiState
-    data class Success(val repos: List<Repo>) : RepoUiState
-    data object Empty : RepoUiState
-    data class Error(val message: String) : RepoUiState
-}
-```
-
-Map the API response to these states in the ViewModel. Show a retry button on error and a message like "No repositories found" on empty. These small details show evaluators you think about real user experience.
-
-#### Q7: How do you structure the project packages for a coding test?
-
-Organize by feature with shared layers. A clean structure for a coding test looks like this:
+I organize by feature with shared layers. A clean structure for a coding test:
 
 - `data/remote/` — API interfaces, DTOs, response models
 - `data/local/` — Room database, DAOs, entities
 - `data/repository/` — Repository implementations
-- `domain/model/` — Domain models used by the rest of the app
+- `domain/model/` — Domain models
 - `domain/repository/` — Repository interfaces
 - `ui/list/` — List screen composables and ViewModel
 - `ui/detail/` — Detail screen composables and ViewModel
 - `ui/search/` — Search screen composables and ViewModel
 - `di/` — Hilt modules
 
-Don't over-engineer the structure for a coding test. If you only have two screens, you don't need a `domain/usecase/` package with single-method use case classes.
+I don't over-engineer a coding test. If I only have two screens, I don't need a `domain/usecase/` package with single-method use case classes.
 
-### Deep Dive Questions (Advanced → Expert)
+#### How do you implement pagination with Paging 3?
 
-#### Q8: How do you implement pagination for the StackOverflow or GitHub API?
-
-Both APIs support page-based pagination. The StackOverflow API returns a `has_more` boolean. The GitHub API returns `Link` headers with `rel="next"`. Use Paging 3's `PagingSource` to handle this.
+Both APIs support page-based pagination. The StackOverflow API returns a `has_more` boolean. The GitHub API uses `Link` headers with `rel="next"`. I use Paging 3's `PagingSource` to handle this.
 
 ```kotlin
 class RepoPagingSource(
@@ -238,11 +234,11 @@ class RepoPagingSource(
 }
 ```
 
-In the ViewModel, create a `Pager` and use `cachedIn(viewModelScope)` so loaded pages survive configuration changes.
+In the ViewModel, I create a `Pager` and use `cachedIn(viewModelScope)` so loaded pages survive configuration changes.
 
-#### Q9: How do you implement manual pagination without Paging 3?
+#### How do you implement manual pagination without Paging 3?
 
-If Paging 3 feels like overkill or you want to show you understand the underlying pattern, track the current page and loading state yourself. Trigger the next page load when the user scrolls near the end of the list.
+I track the current page and loading state myself. I trigger the next page load when the user scrolls near the end of the list.
 
 ```kotlin
 class RepoViewModel(
@@ -274,11 +270,50 @@ class RepoViewModel(
 }
 ```
 
-In the composable, detect when the last visible item is near the end of the list and call `loadNextPage()`. This approach works but misses Paging 3's built-in error handling, retry, and refresh logic.
+This approach works but misses Paging 3's built-in error handling, retry, and refresh logic.
 
-#### Q10: How do you cache API responses in Room for offline access?
+#### How do you separate DTOs from domain models?
 
-Create a Room entity that mirrors your domain model and a DAO for CRUD operations. The repository fetches from the API and stores results locally, then serves data from Room as the source of truth.
+DTOs mirror the API response exactly. Domain models contain only the fields the app needs. Mapper functions convert between them. This keeps the API structure from leaking into UI code.
+
+```kotlin
+@JsonClass(generateAdapter = true)
+data class RepoDto(
+    val id: Long,
+    val name: String,
+    val owner: OwnerDto,
+    val description: String?,
+    @Json(name = "stargazers_count") val stars: Int,
+    val language: String?,
+    val fork: Boolean
+)
+
+data class Repo(
+    val id: Long,
+    val name: String,
+    val ownerName: String,
+    val ownerAvatarUrl: String,
+    val description: String?,
+    val stars: Int,
+    val language: String?
+)
+
+fun RepoDto.toDomain() = Repo(
+    id = id,
+    name = name,
+    ownerName = owner.login,
+    ownerAvatarUrl = owner.avatarUrl,
+    description = description,
+    stars = stars,
+    language = language
+)
+```
+
+If the GitHub API changes its field names, I update the DTO and the mapper. The rest of the app stays the same.
+
+#### How do you cache API responses in Room for offline access?
+
+I create a Room entity that mirrors my domain model and a DAO for CRUD operations. The repository fetches from the API and stores results locally, then serves data from Room as the source of truth.
 
 ```kotlin
 @Entity(tableName = "repos")
@@ -306,11 +341,11 @@ interface RepoDao {
 }
 ```
 
-The `lastUpdated` field lets you invalidate stale data. If cached repos are older than an hour, fetch fresh data. If the network call fails, fall back to whatever's in the cache.
+The `lastUpdated` field lets me invalidate stale data. If cached repos are older than an hour, I fetch fresh data. If the network call fails, I fall back to whatever's in the cache.
 
-#### Q11: How do you set up Hilt dependency injection for this project?
+#### How do you set up Hilt dependency injection for this project?
 
-Create a module that provides the Retrofit instance, API interfaces, Room database, and repository. Hilt wires everything together at compile time.
+I create a module that provides the Retrofit instance, API interface, Room database, and repository. Hilt wires everything together at compile time.
 
 ```kotlin
 @Module
@@ -344,11 +379,50 @@ object AppModule {
 }
 ```
 
-Use `@Singleton` for the Retrofit instance, database, and repository. DAOs don't need `@Singleton` because they're lightweight and Room returns the same instance from the database anyway.
+I use `@Singleton` for the Retrofit instance, database, and repository. DAOs don't need `@Singleton` because Room returns the same instance from the database anyway.
 
-#### Q12: How do you unit test the ViewModel?
+#### How do you handle GitHub API rate limiting?
 
-Use a fake repository instead of mocking. Set up the fake with known data, create the ViewModel, and assert the UI state transitions.
+The GitHub API returns `429 Too Many Requests` or `403 Forbidden` when I hit the rate limit. I check the `X-RateLimit-Remaining` header on each response using an OkHttp interceptor.
+
+```kotlin
+class RateLimitInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+        val remaining = response.header("X-RateLimit-Remaining")?.toIntOrNull()
+        if (remaining != null && remaining <= 0) {
+            val resetTime = response.header("X-RateLimit-Reset")?.toLongOrNull()
+            // Log or notify that rate limit is hit
+        }
+        return response
+    }
+}
+```
+
+The simplest fix for a coding test is adding a personal access token as a header. That raises the limit from 60 to 5,000 requests per hour. I store the token in `local.properties` or `BuildConfig` — never hardcoded in source.
+
+#### What's the difference between the StackOverflow and GitHub API response structures?
+
+The StackOverflow API wraps all responses in an envelope with `items`, `has_more`, and `quota_remaining`. The GitHub search API wraps results in `total_count` and `items`. GitHub non-search endpoints return arrays directly with no wrapper.
+
+```kotlin
+data class StackOverflowResponse<T>(
+    val items: List<T>,
+    @Json(name = "has_more") val hasMore: Boolean,
+    @Json(name = "quota_remaining") val quotaRemaining: Int
+)
+
+data class GitHubSearchResponse<T>(
+    @Json(name = "total_count") val totalCount: Int,
+    val items: List<T>
+)
+```
+
+This means my `PagingSource` uses `hasMore` for StackOverflow and checks if `items` is empty for GitHub. I pick one API and build it correctly rather than trying to support both in a timed test.
+
+#### How do you unit test the ViewModel?
+
+I use a fake repository instead of mocking. I set up the fake with known data, create the ViewModel, and assert the UI state transitions.
 
 ```kotlin
 class RepoViewModelTest {
@@ -384,89 +458,7 @@ class RepoViewModelTest {
 }
 ```
 
-The `MainDispatcherRule` replaces `Dispatchers.Main` with `UnconfinedTestDispatcher` so coroutines run synchronously. Turbine makes collecting from `StateFlow` in tests clean and predictable.
-
-#### Q13: How do you handle GitHub API rate limiting?
-
-The GitHub API returns a `429 Too Many Requests` status or `403 Forbidden` when you hit the rate limit. Check the `X-RateLimit-Remaining` header on each response and handle it in an OkHttp interceptor.
-
-```kotlin
-class RateLimitInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
-        val remaining = response.header("X-RateLimit-Remaining")?.toIntOrNull()
-        if (remaining != null && remaining <= 0) {
-            val resetTime = response.header("X-RateLimit-Reset")?.toLongOrNull()
-            // Log or notify that rate limit is hit
-        }
-        return response
-    }
-}
-```
-
-For a coding test, the simplest approach is to add a personal access token as a header, which raises the limit from 60 to 5000 requests per hour. Store the token in `local.properties` or `BuildConfig` — never hardcode it in the source.
-
-#### Q14: What's the difference between the StackOverflow API and GitHub API in terms of response structure?
-
-The StackOverflow API wraps all responses in a common envelope with `items`, `has_more`, and `quota_remaining` fields. The GitHub search API wraps results in `total_count` and `items`. The GitHub non-search endpoints return arrays directly without a wrapper.
-
-```kotlin
-// StackOverflow response envelope
-data class StackOverflowResponse<T>(
-    val items: List<T>,
-    @Json(name = "has_more") val hasMore: Boolean,
-    @Json(name = "quota_remaining") val quotaRemaining: Int
-)
-
-// GitHub search response
-data class GitHubSearchResponse<T>(
-    @Json(name = "total_count") val totalCount: Int,
-    val items: List<T>
-)
-```
-
-This means your `PagingSource` uses `hasMore` for StackOverflow and checks if `items` is empty for GitHub. The pagination logic is slightly different for each, so pick one API and build it correctly rather than trying to support both.
-
-#### Q15: How do you separate DTOs from domain models in this project?
-
-DTOs mirror the API response exactly. Domain models contain only the fields the app cares about. Mapper functions convert between them. This keeps the API structure from leaking into your UI code.
-
-```kotlin
-// DTO from GitHub API
-@JsonClass(generateAdapter = true)
-data class RepoDto(
-    val id: Long,
-    val name: String,
-    val owner: OwnerDto,
-    val description: String?,
-    @Json(name = "stargazers_count") val stars: Int,
-    val language: String?,
-    val fork: Boolean
-)
-
-// Domain model
-data class Repo(
-    val id: Long,
-    val name: String,
-    val ownerName: String,
-    val ownerAvatarUrl: String,
-    val description: String?,
-    val stars: Int,
-    val language: String?
-)
-
-fun RepoDto.toDomain() = Repo(
-    id = id,
-    name = name,
-    ownerName = owner.login,
-    ownerAvatarUrl = owner.avatarUrl,
-    description = description,
-    stars = stars,
-    language = language
-)
-```
-
-If the GitHub API changes its field names tomorrow, you update the DTO and the mapper. The rest of the app doesn't change.
+`MainDispatcherRule` replaces `Dispatchers.Main` with `UnconfinedTestDispatcher` so coroutines run synchronously in tests.
 
 ### Common Follow-ups
 
@@ -475,5 +467,5 @@ If the GitHub API changes its field names tomorrow, you update the DTO and the m
 - What's your approach to testing the PagingSource directly?
 - How would you add a bookmarks/favorites feature that stores repos locally?
 - How do you handle the case where the search API returns thousands of results?
-- What would you change in this architecture if the app needed to support multiple API sources (both GitHub and StackOverflow)?
+- What would you change if the app needed to support both GitHub and StackOverflow?
 - How would you implement pull-to-refresh with Paging 3?

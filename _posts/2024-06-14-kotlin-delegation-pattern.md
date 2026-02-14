@@ -86,6 +86,24 @@ class ProfileEditorViewModel : ViewModel() {
 
 `vetoable` is underused IMO. It's perfect for cases where you want to enforce invariants at the property level rather than scattering validation logic across setters and state update functions. The callback receives the proposed new value and returns whether to accept it. If it returns `false`, the property retains its current value silently. This is cleaner than the alternative of setting the value and then immediately reverting it if invalid.
 
+### `by Delegates.notNull` — Late Init for Primitives
+
+`lateinit` doesn't work with primitive types (`Int`, `Boolean`, `Double`). `Delegates.notNull()` provides the same deferred initialization pattern for any type, including primitives. Accessing the property before assignment throws `IllegalStateException`.
+
+```kotlin
+class SensorTracker {
+    var samplingRateHz: Int by Delegates.notNull()
+    var isCalibrated: Boolean by Delegates.notNull()
+
+    fun configure(rate: Int, calibrated: Boolean) {
+        samplingRateHz = rate
+        isCalibrated = calibrated
+    }
+}
+```
+
+I use `Delegates.notNull()` when a value must be set during initialization but can't be set in the constructor — for example, when it depends on a callback or a lifecycle event that happens after construction.
+
 ### `by map` — Map-Backed Properties
 
 You can delegate properties to a `Map`, where each property reads its value from the map using the property name as the key. This is surprisingly useful for parsing configuration objects or JSON-like structures.
@@ -148,6 +166,39 @@ class UserPreferences(prefs: SharedPreferences) {
 ```
 
 Reading `userPreferences.darkMode` hits `SharedPreferences`. Writing to it commits the change. The calling code doesn't know or care that persistence is happening — it just reads and writes a property. This is delegation at its best: the behavior is encapsulated in the delegate, and the consuming code stays clean.
+
+### Intent Extras Delegate — Another Real-World Pattern
+
+Another practical custom delegate: reading Fragment or Activity arguments as properties. Instead of `arguments?.getString("key")` scattered throughout your Fragment, you define the argument as a delegated property.
+
+```kotlin
+class FragmentArgumentDelegate<T>(
+    private val key: String,
+    private val default: T
+) : ReadOnlyProperty<Fragment, T> {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun getValue(thisRef: Fragment, property: KProperty<*>): T {
+        return thisRef.arguments?.get(key) as? T ?: default
+    }
+}
+
+fun <T> Fragment.argument(key: String, default: T) =
+    FragmentArgumentDelegate(key, default)
+
+// Usage — clean, declarative argument access
+class OrderDetailFragment : Fragment() {
+    private val orderId: String by argument("order_id", "")
+    private val showActions: Boolean by argument("show_actions", true)
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel.loadOrder(orderId)
+    }
+}
+```
+
+The delegate encapsulates the Bundle access, null handling, and type casting. The Fragment declares its arguments as properties, and the intent is immediately clear without reading the implementation.
 
 ## The Reframe: Delegation Is Composition Made Ergonomic
 

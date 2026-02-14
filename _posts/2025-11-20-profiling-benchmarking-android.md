@@ -16,15 +16,13 @@ That experience changed how I think about performance work. **Profiling tools do
 
 ## CPU Profiler — Sampling vs Method Tracing
 
-The CPU Profiler in Android Studio gives you two very different recording modes, and choosing the wrong one will either mislead you or slow your app to the point where the profile is useless. Understanding how each mode works at the implementation level matters.
+The CPU Profiler in Android Studio gives you two very different recording modes, and choosing the wrong one will either mislead you or slow your app to the point where the profile is useless.
 
-**Sample-based recording** periodically captures the call stack of every thread at a configurable interval — typically every 1ms or 5ms. It doesn't instrument your code at all. The profiler sets up a timer that fires at the sampling interval, snapshots the current stack, and records it. The result is a statistical approximation: if method A appears in 300 out of 1000 samples, it was on the CPU roughly 30% of the time. This is how most production-grade profilers work, and the key insight is that **you're not measuring how long a method takes — you're measuring how often it's on the stack.** A method that runs for 2ms but gets called 500 times will dominate the profile just like a method that runs for 1000ms once.
+**Sample-based recording** periodically captures the call stack at a configurable interval — typically every 1ms or 5ms. The result is a statistical approximation: if method A appears in 300 out of 1000 samples, it was on the CPU roughly 30% of the time. The key insight is that **you're not measuring how long a method takes — you're measuring how often it's on the stack.** The tradeoff is that sampling can miss short-lived methods. If a function executes in 200μs and your sampling interval is 1ms, the sampler might never catch it.
 
-The tradeoff is that sampling can miss short-lived methods entirely. If a function executes in 200μs and your sampling interval is 1ms, there's a real chance the sampler never catches it on the stack. You'll never know it exists. For most performance work this is fine — you care about the methods that take the most aggregate time, not the ones that execute in microseconds.
+**Method tracing** instruments every method entry and exit. You get precise call counts and exact durations. But here's the thing: **method tracing slows your app by 5-10x.** The absolute times are meaningless — a method showing 50ms might take 5ms in production. The only thing you can trust is relative proportions.
 
-**Method tracing** is the opposite approach. It instruments every method entry and exit in your code. The profiler records the exact timestamp when each method starts and when it returns. You get precise call counts and exact durations. But here's the thing most people miss: **method tracing slows your app by 5-10x.** Every single method call now has instrumentation overhead — writing timestamps, maintaining the trace buffer, synchronizing access. The absolute times you see in a method trace are meaningless. A method that shows 50ms in the trace might take 5ms in production. The only thing you can trust is relative proportions — if method A takes 3x longer than method B in the trace, that ratio roughly holds in production too.
-
-I use sampling for initial investigation — "where is time going?" — and method tracing only when I need exact call counts. If I suspect a method is being called 10,000 times when it should be called once, method tracing gives me that number. But I never look at absolute times from a method trace and think they reflect reality.
+I use sampling for initial investigation — "where is time going?" — and method tracing only when I need exact call counts. If I suspect a method is being called 10,000 times when it should be called once, method tracing gives me that number.
 
 ```kotlin
 class TransactionListViewModel(
@@ -37,7 +35,6 @@ class TransactionListViewModel(
     fun loadTransactions() = viewModelScope.launch {
         val transactions = repository.getAll()
         val formatted = transactions.map { transaction ->
-            // formatter.format() was doing locale lookup on every call
             TransactionUiModel(
                 amount = formatter.format(transaction.amount),
                 date = formatDate(transaction.timestamp),
@@ -51,33 +48,24 @@ class TransactionListViewModel(
 
 In this case, sampling showed `CurrencyFormatter.format()` consuming 22% of the frame time. Method tracing revealed it was called 3,000 times for 50 items because the list was recomposing more aggressively than expected. Each approach told a different part of the story.
 
-## Memory Profiler — Beyond Finding Leaks
+### Memory and Network Profiler
 
-The Memory Profiler gets used mostly for one thing: finding memory leaks. And it's good at that — you capture a heap dump, look for activities or fragments that shouldn't exist, trace the reference chain back to the root, and fix it. But the more valuable use case, in my experience, is understanding **allocation pressure**.
+The Memory Profiler gets used mostly for finding leaks, but the more valuable use case is understanding **allocation pressure**. When your code creates thousands of short-lived objects in a tight loop, GC pauses stack up and cause jank. On ART, a young-generation GC pause is 2-5ms, but triggering GC every 3-4 frames adds up. The allocation tracking mode shows exactly which methods are allocating and how much per second.
 
-Allocation pressure is what happens when your code creates thousands of short-lived objects in a tight loop. The objects themselves get garbage collected quickly, but the GC runs take time. On ART, a young-generation GC pause is typically 2-5ms, but if you're triggering GC every 3-4 frames, those pauses stack up and cause visible jank. The Memory Profiler's allocation tracking mode shows you exactly which methods are allocating and how much they're creating per second.
+One pattern I've seen repeatedly is string concatenation inside `onDraw()`. Kotlin's string templates compile to `StringBuilder` allocations, and inside draw methods, you're creating garbage 60 times per second. The Memory Profiler makes this obvious — a sawtooth pattern where allocations spike, GC runs, spike again. It also breaks down Java heap, native heap, graphics memory, and stack — when total memory climbs but Java heap looks flat, native memory is usually the culprit.
 
-One pattern I've seen repeatedly in production is string concatenation inside draw or layout methods. Kotlin's string templates compile to `StringBuilder` allocations, and if you're building debug strings or formatted labels inside `onDraw()`, you're creating garbage 60 times per second. The Memory Profiler's allocation timeline makes this obvious — you see a sawtooth pattern where allocations spike during drawing, GC runs, allocations spike again. The fix is always the same: pre-allocate, cache, or move the work out of the hot path.
-
-The profiler also shows you the breakdown between Java heap, native heap, graphics memory, and stack. When your app's total memory is climbing but Java heap looks flat, native memory is usually the culprit — bitmap allocations, native libraries, or WebView internals. This distinction matters because Java heap issues respond to standard GC-based fixes, but native leaks require completely different debugging tools like `malloc` tracking or the native memory profiler.
+The Network Profiler rounds out the Android Studio tooling by showing every network request on a timeline — timing, payload size, and thread. It's useful for spotting duplicate requests and identifying calls that happen on the main thread. I find it most useful during startup, where you can see which network calls fire before the first frame.
 
 ## Perfetto and Reading Flame Charts
 
-Perfetto is where you go when Android Studio's profilers aren't enough. It's a system-wide tracing tool that captures everything — CPU scheduling, disk I/O, GPU rendering, binder transactions, and your app's custom trace points — all on a unified timeline. Under the hood, Perfetto uses Linux's `ftrace` infrastructure. It hooks into the kernel's scheduler to record exactly when each thread is running, when it gets preempted, and why it's blocked. This means you can see things like "my render thread was ready to run but was waiting 8ms for a CPU core because a background service was hogging all four cores."
+Perfetto is where you go when Android Studio's profilers aren't enough. It's a system-wide tracing tool that captures CPU scheduling, disk I/O, GPU rendering, binder transactions, and custom trace points on a unified timeline. Under the hood, Perfetto uses Linux's `ftrace` infrastructure, hooking into the kernel's scheduler to record exactly when each thread runs and why it's blocked. Traces are stored in protobuf format and opened at `ui.perfetto.dev`. Fair warning: **production traces can hit 100MB+ and the web UI struggles with traces over 200MB.** Keep durations short — 5-10 seconds max.
 
-The traces are stored in a compact protobuf format and opened in the Perfetto UI at `ui.perfetto.dev`. Fair warning: **production traces can easily hit 100MB+ and the web UI will struggle or crash with traces over 200MB.** I've learned to keep trace durations short — 5-10 seconds max — and filter to specific categories. You can use `adb shell perfetto` with a config file to control exactly which data sources you capture.
-
-Now, flame charts. I think flame charts are one of the most misunderstood visualizations in software engineering. People see colors and assume "red means hot" or "wider means worse." Here's what a flame chart actually represents: **the x-axis is time, and the y-axis is stack depth.** Each rectangle is a method on the stack. A wider rectangle means that method was on the stack for a longer wall-clock duration. The colors are arbitrary — they're just there to visually distinguish different stack frames. There's no "hot" or "cold" encoding.
-
-When you're reading a flame chart, look for three things. First, wide rectangles at the bottom of the stack — these are methods that run for a long time and are responsible for everything above them. Second, deep narrow spikes — these are deeply nested call chains that execute quickly, usually not a problem unless they repeat thousands of times. Third, gaps on the main thread timeline — these are periods where the main thread was idle or blocked, often waiting on a lock, I/O, or a binder transaction to another process.
+Now, flame charts. I think flame charts are one of the most misunderstood visualizations in engineering. People see colors and assume "red means hot." Here's what they actually represent: **the x-axis is time, the y-axis is stack depth.** A wider rectangle means longer wall-clock duration. The colors are arbitrary. When reading one, look for: wide rectangles at the bottom (long-running methods responsible for everything above them), deep narrow spikes (deeply nested chains, usually fine unless repeated thousands of times), and gaps on the main thread (blocked on a lock, I/O, or binder transaction).
 
 ```kotlin
-// Custom trace points help you find YOUR code in a Perfetto trace
-// that's full of framework and system noise
 class PaymentProcessor(
     private val paymentGateway: PaymentGateway,
     private val receiptGenerator: ReceiptGenerator,
-    private val analyticsTracker: AnalyticsTracker,
 ) {
 
     suspend fun processPayment(order: Order): PaymentResult {
@@ -95,7 +83,6 @@ class PaymentProcessor(
             val receipt = receiptGenerator.create(charge)
             Trace.endSection()
 
-            analyticsTracker.trackPurchase(order.total)
             return PaymentResult.Success(receipt)
         } finally {
             Trace.endSection()
@@ -104,41 +91,25 @@ class PaymentProcessor(
 }
 ```
 
-`Trace.beginSection` / `Trace.endSection` show up as labeled blocks in both the CPU Profiler's system trace and in Perfetto. Without these, your app's code is a blob of `invokeSuspend` and framework methods. With them, you can see exactly how long `chargeGateway` took versus `generateReceipt`. I add these to every critical path — startup, checkout, search — and leave them in production builds. They have near-zero overhead when tracing isn't active because the `Trace` API checks a flag before doing anything.
+`Trace.beginSection` / `Trace.endSection` show up as labeled blocks in both the CPU Profiler's system trace and in Perfetto. Without these, your app's code is a blob of `invokeSuspend` and framework methods. I add these to every critical path — startup, checkout, search — and leave them in production builds. They have near-zero overhead when tracing isn't active because the `Trace` API checks a flag before doing anything.
 
-## Macrobenchmark vs Microbenchmark
+## Startup Tracing — Finding Where the Seconds Go
 
-Android's Jetpack Benchmark library ships two modules, and they solve completely different problems. Getting them confused leads to bad measurements and worse decisions.
+Startup is where profiling pays off the most, because cold start involves the entire system: Zygote forks a process, ART loads DEX files, ContentProviders auto-initialize, the Application class runs `onCreate`, and your Activity inflates, measures, and draws the first frame. Any of these stages can be the bottleneck, and without tracing, you're guessing which one.
 
-**Microbenchmark** (`androidx.benchmark:benchmark-junit4`) runs inside your app's process, in a tight loop, and measures the execution time of a specific function or code block. It handles warmup iterations automatically, measures in nanoseconds, and reports median and percentile timings. Use it for questions like "is this JSON parser faster than that one?" or "does this sort implementation beat `Collections.sort` for my data shape?" Microbenchmark is a JMH-style benchmarking harness adapted for Android's runtime.
+The practical approach is to capture a Perfetto trace during cold start by configuring the CPU Profiler to start recording on app launch. In the trace, look at the main thread timeline from the first scheduling event to the `Choreographer#doFrame` that renders the first frame — that's your TTID window.
 
-**Macrobenchmark** (`androidx.benchmark:benchmark-macro-junit4`) measures app-level behavior from the outside. It launches your app using UIAutomator, drives real user interactions (scroll, tap, navigate), and captures system-level metrics via Perfetto traces. This is how you measure startup time, frame timings during scrolling, and animation smoothness. Macrobenchmark measures what users actually experience, not what a function does in isolation.
+I've found that the biggest cold start killers fall into three categories. First, ContentProvider auto-initialization — libraries like Firebase, WorkManager, and analytics SDKs each run `onCreate()` on the main thread before your Activity even starts. I've seen apps with 8-10 auto-initialized ContentProviders adding 200-400ms. Second, synchronous disk reads — SharedPreferences, database init, or config files on the main thread. Third, eager DI graph initialization in `Application.onCreate()` when most of it isn't needed until later.
 
-Here's the layer-below detail that matters: Macrobenchmark measures startup using two distinct metrics — **Time to Initial Display (TTID)** and **Time to Full Display (TTFD)**. TTID is when the first frame of your activity is drawn. The system measures this automatically. But TTFD — the moment when your screen is actually usable with real data — requires you to manually signal it by calling `reportFullyDrawn()` on your activity. If you don't call `reportFullyDrawn()`, Macrobenchmark can only report TTID, and your startup metrics will look great while your users stare at a loading spinner for another 2 seconds.
+The distinction between **TTID** and **TTFD** matters here. TTID (Time to Initial Display) is when the first frame renders — the system reports this automatically in Logcat with the `Displayed` tag. TTFD (Time to Full Display) is when your screen actually has real data and is usable. You signal TTFD by calling `reportFullyDrawn()` on your activity. A fast TTID with a skeleton screen that takes 3 seconds to populate isn't a good user experience — it's just a fast loading indicator.
 
-```kotlin
-class HomeActivity : ComponentActivity() {
+## Macrobenchmark and Microbenchmark
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+Android's Jetpack Benchmark library ships two modules that solve completely different problems. Getting them confused leads to bad measurements.
 
-            LaunchedEffect(uiState) {
-                if (uiState is HomeUiState.Loaded) {
-                    // Signal that the screen is fully rendered with real data.
-                    // Without this, Macrobenchmark only captures TTID, not TTFD.
-                    reportFullyDrawn()
-                }
-            }
+**Macrobenchmark** (`androidx.benchmark:benchmark-macro-junit4`) measures app-level behavior from the outside. It launches your app using UIAutomator, drives real user interactions, and captures system-level metrics via Perfetto traces. `StartupTimingMetric` gives you TTID and TTFD. `FrameTimingMetric` measures frame durations during scrolling and animations. This is what users actually experience. Each iteration takes 10-30 seconds because it's launching a real app on a real device — you can't shortcut this with Robolectric.
 
-            HomeScreen(uiState = uiState)
-        }
-    }
-}
-```
-
-The tradeoff with Macrobenchmark is cost. Each iteration takes 10-30 seconds because it's launching a real app, driving UI interactions, and capturing system traces. A benchmark suite with 5 scenarios and 10 iterations each can take 15-20 minutes. Microbenchmark iterations run in microseconds to milliseconds. And Macrobenchmark requires either a physical device or an emulator — it needs a real Android system to capture meaningful traces. You can't shortcut this with Robolectric or a unit test runner.
+**Microbenchmark** (`androidx.benchmark:benchmark-junit4`) runs inside your app's process in a tight loop, measuring a single function in nanoseconds. It handles warmup iterations automatically and reports median and percentile timings. Use it for questions like "is this JSON parser faster than that one?" — only after you've already identified the bottleneck with higher-level tools.
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -148,7 +119,7 @@ class StartupBenchmark {
     val benchmarkRule = MacrobenchmarkRule()
 
     @Test
-    fun startupCompilationFull() {
+    fun coldStartup() {
         benchmarkRule.measureRepeated(
             packageName = "com.example.shopapp",
             metrics = listOf(StartupTimingMetric()),
@@ -158,12 +129,7 @@ class StartupBenchmark {
         ) {
             pressHome()
             startActivityAndWait()
-
-            // Wait for the actual content to load, not just the first frame
-            device.wait(
-                Until.hasObject(By.res("product_list")),
-                10_000L,
-            )
+            device.wait(Until.hasObject(By.res("product_list")), 10_000L)
         }
     }
 
@@ -177,7 +143,6 @@ class StartupBenchmark {
             compilationMode = CompilationMode.Full(),
         ) {
             startActivityAndWait()
-
             val list = device.findObject(By.res("product_list"))
             list.setGestureMargin(device.displayWidth / 5)
             list.fling(Direction.DOWN)
@@ -187,63 +152,63 @@ class StartupBenchmark {
 }
 ```
 
-IMO, most teams should start with Macrobenchmark for startup and scroll performance — the two things users notice most — and add Microbenchmark only when they've identified a specific function that's a bottleneck and want to compare implementation alternatives.
+IMO, most teams should start with Macrobenchmark for startup and scroll performance — the two things users notice most — and add Microbenchmark only when they've identified a specific function that's a bottleneck and want to compare alternatives.
 
-## Making Performance Regression-Proof with CI Benchmarking
+## Baseline Profiles — Fixing the First Launch
 
-Having benchmarks that you run manually is better than nothing, but it's not much better. Performance regressions slip in one commit at a time — a new interceptor adds 15ms here, a data transformation adds 8ms there — and nobody notices until the app "feels slow" again three months later. The way to catch these is to run benchmarks on every PR or at least nightly.
+Here's a pattern that frustrated me for a while: the app would benchmark well after a few runs, but the very first cold start after install was noticeably worse. The reason is ART's compilation strategy. On first install, most of your code starts in interpreted mode. As the user runs the app, ART's JIT compiler identifies hot methods and compiles them to native code. After the device is idle and charging, a background `dex2oat` job AOT-compiles what the JIT identified as hot. So your app gets faster over days of use — but the first launch, when the user forms their impression, is always the worst.
 
-But here's the honest truth: **CI benchmarking on Android is hard, and the results are often noisy.** The fundamental problem is clock speed variation. Emulators run on shared CI hardware where CPU throttling, other workloads, and virtualization overhead cause significant variance between runs. I've seen the same benchmark report 450ms on one run and 620ms on the next, on the same code, on the same CI machine. That 38% variance makes it nearly impossible to detect a real 10% regression.
+**Baseline Profiles solve this by shipping JIT profile data with your APK.** Instead of waiting for the runtime to discover which methods are hot, you tell ART upfront: "these methods are used during startup and common journeys — AOT-compile them at install time." According to the official docs, Baseline Profiles improve code execution speed by about 30% from the first launch by skipping interpretation and JIT steps for included code paths.
 
-Physical devices solve the noise problem but create logistics problems. You need dedicated devices connected to your CI system, a lab setup like Firebase Test Lab, or a service like Emerald that provides consistent hardware. Firebase Test Lab works well for Macrobenchmark — it runs on real devices with consistent specs — but it adds cost and complexity to your CI pipeline. I think Firebase Test Lab is the most practical path for most teams. You upload your APK and test APK, specify the device and API level, and get back benchmark results in JSON format that you can compare against your baseline.
-
-The setup requires a separate benchmark module in your project, a CI job that builds and runs the benchmarks, and a comparison script that flags regressions above a threshold. I typically use a 5-10% threshold for startup metrics and 15-20% for frame timings, because frame timing has naturally higher variance.
+You generate Baseline Profiles using `BaselineProfileRule` in a Macrobenchmark module. The test exercises your app's startup and critical user journeys, and the rule records which methods execute:
 
 ```kotlin
-// benchmark/build.gradle.kts
-plugins {
-    id("com.android.test")
-    id("androidx.benchmark")
-}
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
 
-android {
-    namespace = "com.example.shopapp.benchmark"
-    compileSdk = 35
+    @get:Rule
+    val rule = BaselineProfileRule()
 
-    defaultConfig {
-        minSdk = 24
-        targetSdk = 35
-        testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
+    @Test
+    fun generateProfile() {
+        rule.collect(
+            packageName = "com.example.shopapp",
+            includeInStartupProfile = true,
+        ) {
+            pressHome()
+            startActivityAndWait()
 
-        // Suppress errors so benchmarks still run on emulators during development.
-        // On CI with real devices, remove this to get accurate numbers.
-        buildConfigField(
-            "Boolean",
-            "ENABLE_EMULATOR_BENCHMARKS",
-            "true",
-        )
+            findObject(By.text("Search")).click()
+            device.waitForIdle()
+
+            findObject(By.res("product_list")).scroll(Direction.DOWN, 2f)
+            device.waitForIdle()
+        }
     }
-
-    targetProjectPath = ":app"
-    experimentalProperties["android.experimental.self-instrumenting"] = true
-}
-
-dependencies {
-    implementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
-    implementation("androidx.test.ext:junit:1.2.1")
-    implementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 ```
 
-The `com.android.test` plugin creates a separate test module that installs alongside your app and instruments it from outside — this is how Macrobenchmark works. It's a different module type than your regular `androidTest` directory.
+The `includeInStartupProfile = true` parameter generates both a Baseline Profile and a Startup Profile from the same run. The Baseline Profile guides runtime AOT compilation. The Startup Profile tells R8 to reorder classes in the DEX file so startup-critical classes are close together, reducing page faults during class loading. Together they cover both CPU (interpretation vs native code) and I/O (class loading order).
 
-One thing I learned the hard way: **don't run benchmarks in debug builds.** Debug builds have no R8 optimization, have debuggable enabled (which disables ART optimizations), and include extra instrumentation. The numbers you get from a debug benchmark have no correlation to production performance. Always benchmark against a release build or a benchmark build type that mirrors your release configuration.
+The tradeoff is real but small. Baseline Profiles increase APK size by 50-200KB and AOT compilation during install takes slightly longer. On a project I worked on, generating profiles for startup plus three user journeys dropped cold start from ~3.0s to ~1.7s on a mid-range Samsung device — the single biggest improvement in our optimization effort, bigger than all the code changes combined.
 
-## Putting It All Together
+To measure the impact, run your Macrobenchmark with `CompilationMode.None()` (simulating first install without profiles) and `CompilationMode.Partial(baselineProfile = BaselineProfileMode.Require)` (with profiles applied). The difference between those two numbers is your Baseline Profile's value in milliseconds.
 
-Performance tooling on Android isn't one tool — it's a hierarchy. Start with Macrobenchmark to establish baseline metrics for what users experience: startup time, scroll smoothness, animation frame rates. When a Macrobenchmark shows a regression, drop into Perfetto or the CPU Profiler's system trace to understand where the time is going at the system level. When you've identified the suspicious component, use the CPU Profiler's method trace or sampling mode to pinpoint the exact methods. When you've found the bottleneck and want to compare solutions, use Microbenchmark to measure the alternatives in isolation.
+## CI Benchmarking and Regression Detection
 
-Each tool answers a different question at a different abstraction level. Macrobenchmark answers "is the app fast?" Perfetto answers "where is the system spending time?" CPU Profiler answers "which methods are responsible?" Microbenchmark answers "which implementation is faster?" Trying to use one tool for everything is how you end up with misleading numbers and misguided optimizations.
+Having benchmarks you run manually is better than nothing, but it's not much better. Performance regressions slip in one commit at a time — a new interceptor adds 15ms here, a data transformation adds 8ms there — and nobody notices until the app "feels slow" again three months later.
+
+But here's the honest truth: **CI benchmarking on Android is hard, and the results are often noisy.** Emulators run on shared CI hardware where CPU throttling and virtualization overhead cause significant variance. I've seen the same benchmark report 450ms on one run and 620ms on the next, on the same code. That 38% variance makes it nearly impossible to detect a 10% regression.
+
+Physical devices solve the noise problem but create logistics problems. Firebase Test Lab is, I think, the most practical path — it runs Macrobenchmark on real devices with consistent specs and returns results in JSON you can compare against a baseline. The setup requires a `com.android.test` module, a CI job that runs benchmarks, and a comparison script flagging regressions above a threshold. I use 5-10% for startup metrics and 15-20% for frame timings.
+
+One thing I learned the hard way: **don't run benchmarks in debug builds.** Debug builds have no R8 optimization, debuggable is enabled (which disables ART optimizations), and extra instrumentation is included. The numbers you get have no correlation to production performance.
+
+## The Profiling Hierarchy
+
+Performance tooling on Android isn't one tool — it's a hierarchy, and using the right level matters more than mastering any single tool. Start with **Macrobenchmark** to establish baseline metrics for what users experience. When a benchmark shows a regression, drop into **Perfetto** to understand where time goes at the system level. When you've identified the suspicious component, use the **CPU Profiler** to pinpoint the exact methods. When you've found the bottleneck and want to compare solutions, use **Microbenchmark** to measure alternatives in isolation. Then use **Baseline Profiles** to ship the optimized result to users from day one.
+
+Each tool answers a different question. Macrobenchmark: "is the app fast?" Perfetto: "where is the system spending time?" CPU Profiler: "which methods are responsible?" Microbenchmark: "which implementation is faster?" Trying to use one tool for everything is how you end up with misleading numbers.
 
 The reframe I keep coming back to is this: profiling isn't something you do when performance is bad. It's something you build into your development process so you know when performance changes at all. A team that runs benchmarks on CI and reviews flame charts during code review will catch the 15ms regression before it compounds into the 500ms "feels slow" ticket. A team that only profiles when there's a fire will spend days hunting for a problem that could have been caught in minutes.
 

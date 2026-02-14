@@ -12,13 +12,11 @@ description: "Designing a file downloader library tests your understanding of HT
 
 This is a classic mobile system design problem. It touches networking, concurrency, disk I/O, background processing, and state management all in one question.
 
-### Requirements & Scope
-
-#### Q1: What are the core functional requirements for a file downloader library?
+#### What are the core functional requirements for a file downloader library?
 
 The library needs to download files from a URL to local storage, support pause and resume, track progress, and handle multiple concurrent downloads with a queue. Users should be able to enqueue a download, get a handle back to control it (pause, resume, cancel), and observe its progress. The downloads must survive app backgrounding — if the user switches apps, the download keeps going.
 
-#### Q2: What are the non-functional requirements?
+#### What are the non-functional requirements?
 
 - Downloads must continue in the background even when the app is not visible
 - Battery efficiency — don't keep the CPU awake unnecessarily or poll the network
@@ -26,19 +24,17 @@ The library needs to download files from a URL to local storage, support pause a
 - Reliability — retry on transient failures, resume after network loss, persist state across process death
 - Configurable concurrency — limit parallel downloads to avoid saturating bandwidth and disk I/O
 
-#### Q3: What would you keep out of scope for an initial design?
+#### What would you keep out of scope for an initial design?
 
 For a first version, skip multi-segment parallel downloads (splitting one file across multiple connections), download speed throttling, and authentication. Also skip chunked transfer encoding handling and redirect chains. These are real concerns but they add complexity without changing the core architecture. Focus on single-connection downloads with pause/resume, a task queue, and progress reporting.
 
-### High-Level Design
-
-#### Q4: What are the main components in the architecture?
+#### What are the main components in the architecture?
 
 Three core components. **DownloadManager** is the public-facing entry point — it accepts requests, returns download IDs, and exposes pause/resume/cancel/observe APIs. **TaskQueue** manages ordering and concurrency — it holds pending tasks in a priority queue and limits how many run at once. **StorageManager** handles disk space checks, file allocation, and buffered writes.
 
 Supporting these: a **Room database** persists download state so everything survives process death, a **NetworkMonitor** watches connectivity changes, and a **NotificationManager** shows progress to the user. The DownloadManager coordinates all of them.
 
-#### Q5: How would you design the public API?
+#### How would you design the public API?
 
 Keep it simple for common use. A builder pattern for requests, a download ID for control, and a Flow for observation.
 
@@ -66,7 +62,7 @@ FileDownloader.observe(downloadId).collect { status ->
 
 Return a `downloadId` on enqueue so the caller can control and observe the download later. Use a sealed class for status so the compiler forces the caller to handle every state.
 
-#### Q6: What does the data model look like for a download task?
+#### What does the data model look like for a download task?
 
 Each download is represented as a `DownloadTask` entity persisted in Room. It holds everything needed to resume a download from scratch after process death.
 
@@ -88,13 +84,13 @@ data class DownloadTask(
 
 The `etag` field stores the server's ETag from the initial response. When resuming, you send `If-Range: <etag>` alongside the Range header. If the file changed on the server since you started, the server returns the full file instead of a partial response, and you restart.
 
-#### Q7: How do HTTP Range requests enable resume?
+#### How do HTTP Range requests enable resume?
 
 When the user pauses, you save the byte count already written to disk. To resume, send a `Range: bytes=<downloaded>-` header. The server responds with 206 (Partial Content) and sends only the remaining bytes. You open the file in append mode and keep writing from where you left off.
 
 Not all servers support this. Check the `Accept-Ranges: bytes` header on the initial response. If the server returns 200 instead of 206 on a ranged request, it doesn't support partial content and you restart from scratch.
 
-#### Q8: What states can a download be in, and how do transitions work?
+#### What states can a download be in, and how do transitions work?
 
 A download moves through five states: **Queued**, **Downloading**, **Paused**, **Completed**, and **Failed**.
 
@@ -107,7 +103,7 @@ A download moves through five states: **Queued**, **Downloading**, **Paused**, *
 
 Every state transition gets persisted to Room immediately. On app restart, query for tasks in Queued or Downloading state and re-enqueue them.
 
-#### Q9: How does notification integration work?
+#### How does notification integration work?
 
 Use a foreground service to keep the process alive during downloads. The notification shows file name, progress bar, download speed, and pause/cancel actions.
 
@@ -131,9 +127,7 @@ class DownloadService : Service() {
 
 Update the notification at most once per second. More frequent updates cause flicker and waste battery. When the download completes, replace the ongoing notification with a non-ongoing one that opens the file on tap. Group multiple download notifications to avoid spamming the shade.
 
-### Low-Level Design & Deep Dives
-
-#### Q10: Walk through the pause/resume implementation in detail.
+#### Walk through the pause/resume implementation in detail.
 
 On pause, cancel the coroutine doing the download. The coroutine's finally block flushes any buffered bytes and updates the database with the exact byte count. On resume, read the persisted byte count, send a Range request, and append to the existing file.
 
@@ -158,7 +152,7 @@ suspend fun resumeDownload(task: DownloadTask) {
 
 If you stored an ETag, include `If-Range: <etag>` in the request. This tells the server to only honor the Range if the file hasn't changed. If it has changed, the server sends the whole file with a 200, and you overwrite.
 
-#### Q11: How do you manage concurrent downloads?
+#### How do you manage concurrent downloads?
 
 Use a coroutine `Semaphore` to cap parallelism. Each download acquires a permit before starting and releases it when done, paused, or failed. Pending downloads suspend on `semaphore.acquire()` until a slot opens.
 
@@ -188,7 +182,7 @@ class DownloadExecutor(
 
 Three to four concurrent downloads is a good default. More than that and you start thrashing the disk and splitting bandwidth too thin. The semaphore approach is cleaner than managing a thread pool manually because coroutines handle the suspension transparently.
 
-#### Q12: How do you implement progress tracking without flooding the UI?
+#### How do you implement progress tracking without flooding the UI?
 
 Emit progress on every chunk write, but throttle what reaches the UI. A `StateFlow` with a time gate works well — emit at most every 200ms.
 
@@ -210,13 +204,13 @@ class ProgressTracker(private val taskId: String) {
 
 200ms gives smooth progress bar animation without wasting CPU. For notifications, throttle even more — once per second is enough. Calculate speed by dividing bytes written in the last interval by the interval duration.
 
-#### Q13: How should background downloads work on Android?
+#### How should background downloads work on Android?
 
 Use a foreground service for active downloads the user triggered. The system won't kill a foreground service, so the download runs uninterrupted. Android 12+ requires `FOREGROUND_SERVICE` permission and Android 14+ requires `FOREGROUND_SERVICE_DATA_SYNC` type.
 
 For retrying failed downloads or deferred sync, use WorkManager. It survives process death, respects Doze mode, and lets you set constraints like `NetworkType.UNMETERED` (Wi-Fi only). The right pattern is a foreground service for active downloads with WorkManager as the fallback for recovery and background syncing.
 
-#### Q14: What disk I/O strategy should you use?
+#### What disk I/O strategy should you use?
 
 Stream the HTTP response body and write in 8 KB chunks. Never load the whole file into memory. For large files, pre-allocate disk space before downloading so you fail early if there isn't enough room.
 
@@ -241,7 +235,7 @@ suspend fun streamToFile(
 
 Wrapping the output in `BufferedOutputStream` reduces the number of system calls. The default 8 KB buffer means you're doing one system write per 8 KB instead of potentially many smaller ones. Flush periodically (every few hundred KB) so that data isn't lost if the process is killed, but don't flush on every chunk — that kills throughput.
 
-#### Q15: How do you verify file integrity after download?
+#### How do you verify file integrity after download?
 
 Compute a checksum of the downloaded file and compare it to what the server provides. The server might include a hash in a response header, a separate endpoint, or alongside the download link.
 
@@ -264,7 +258,7 @@ suspend fun verifyChecksum(
 
 If verification fails, delete the file and re-download. For APK downloads and OTA updates, checksum verification is mandatory for security. SHA-256 is the standard choice — MD5 is fast but has known collision vulnerabilities.
 
-#### Q16: How do you handle retry on network failure?
+#### How do you handle retry on network failure?
 
 Use exponential backoff with jitter. Wait 1 second after the first failure, then 2, 4, 8, capped at a few minutes. Jitter prevents all failed downloads from retrying at the same instant.
 
@@ -291,7 +285,7 @@ class RetryPolicy(
 
 Only retry on transient errors — network timeouts, connection resets, 503 responses. Don't retry on 404 or 401. If the download was partially done and the server supports Range, resume from the last persisted byte offset instead of restarting.
 
-#### Q17: How does the priority queue work?
+#### How does the priority queue work?
 
 Use a `PriorityBlockingQueue` ordered by priority descending. When a slot opens, the highest-priority pending task gets picked up. If a user-initiated (HIGH) download arrives and all slots are full, you can optionally pause the lowest-priority active download to make room.
 
@@ -314,7 +308,7 @@ class TaskQueue {
 
 IMMEDIATE priority should bypass the queue entirely and start right away, even if it means exceeding the concurrency limit briefly. This is for critical downloads like security patches.
 
-#### Q18: How would you test a file downloader library?
+#### How would you test a file downloader library?
 
 Unit test the components in isolation. Mock the HTTP client to return controlled responses — partial content (206), full content (200), errors (503), and missing Range support. Use a fake file system or temp directory for disk operations. Test the state machine transitions: enqueue goes to Queued, start goes to Downloading, network loss goes to Failed or Paused depending on policy.
 

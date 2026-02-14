@@ -211,6 +211,123 @@ If you catch `Exception` (which includes `CancellationException`) and don't reth
 
 The safest pattern is to catch specific exception types (`IOException`, `HttpException`) rather than broad `Exception`. If you must catch `Exception`, always check for `CancellationException` and rethrow it. Some teams add a lint rule for this because swallowing cancellation is such a common and hard-to-debug mistake.
 
+## NonCancellable — When Cleanup Must Complete
+
+Sometimes you need to run code that must complete even if the coroutine is being cancelled. Database writes that ensure consistency, cleanup operations that release resources, or logging that tracks what happened — these shouldn't be interrupted mid-execution.
+
+`NonCancellable` is a `Job` that is always active and can't be cancelled. Wrapping code in `withContext(NonCancellable)` ensures it runs to completion.
+
+```kotlin
+class OrderSyncWorker(
+    private val orderDao: OrderDao,
+    private val orderApi: OrderApi
+) {
+
+    suspend fun syncOrder(orderId: String) {
+        try {
+            val order = orderDao.getOrder(orderId)
+            orderApi.uploadOrder(order)
+        } finally {
+            // Even if the coroutine is cancelled mid-sync,
+            // mark the order as "sync attempted" so we don't retry endlessly
+            withContext(NonCancellable) {
+                orderDao.markSyncAttempted(orderId)
+                analytics.logSyncAttempt(orderId)
+            }
+        }
+    }
+}
+```
+
+Use `NonCancellable` sparingly. It exists for critical cleanup, not for circumventing cancellation. If you find yourself wrapping entire functions in `NonCancellable`, the design probably needs rethinking.
+
+## Exception Handling in Flows
+
+Flows have their own exception handling mechanisms that interact with coroutine exception handling.
+
+```kotlin
+class OrderViewModel(
+    private val repository: OrderRepository
+) : ViewModel() {
+
+    val orders: StateFlow<OrderUiState> = repository.observeOrders()
+        .map<List<Order>, OrderUiState> { OrderUiState.Success(it) }
+        .catch { e ->
+            // catch handles upstream exceptions
+            emit(OrderUiState.Error(e.message ?: "Failed to load orders"))
+        }
+        .retry(retries = 2) { cause ->
+            cause is IOException
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            OrderUiState.Loading
+        )
+}
+```
+
+`catch` in Flow is upstream-only — it catches exceptions from operators above it in the chain. It does NOT catch exceptions in the terminal `collect` operator. If you need to handle exceptions in `collect`, use try/catch around the `collect` call.
+
+`retry` re-subscribes to the upstream flow when an exception occurs. Combined with `catch` as a final fallback, you get a resilient pipeline: try the operation, retry on transient failures, fall back to an error state if retries are exhausted.
+
+## Real-World ViewModel Error Handling
+
+Here's the pattern I've settled on for ViewModels after dealing with exception handling issues in production. The key insight is separating recoverable errors (show to user) from unrecoverable errors (log and move on).
+
+```kotlin
+@HiltViewModel
+class OrderListViewModel @Inject constructor(
+    private val orderRepository: OrderRepository,
+    private val analyticsTracker: AnalyticsTracker
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<OrderListState>(OrderListState.Loading)
+    val uiState: StateFlow<OrderListState> = _uiState.asStateFlow()
+
+    init {
+        loadOrders()
+    }
+
+    fun loadOrders() {
+        viewModelScope.launch {
+            _uiState.value = OrderListState.Loading
+            _uiState.value = try {
+                val orders = orderRepository.getOrders()
+                if (orders.isEmpty()) OrderListState.Empty
+                else OrderListState.Success(orders)
+            } catch (e: IOException) {
+                // Recoverable — network issue, show retry option
+                OrderListState.Error(
+                    message = "Check your internet connection",
+                    canRetry = true
+                )
+            } catch (e: HttpException) {
+                // Server error — may or may not be retryable
+                val canRetry = e.code() in 500..599
+                OrderListState.Error(
+                    message = "Server error (${e.code()})",
+                    canRetry = canRetry
+                )
+            }
+        }
+    }
+
+    fun refreshWithFallback() {
+        viewModelScope.launch {
+            // Don't show loading for refresh — keep showing current data
+            try {
+                orderRepository.refreshOrders()
+                // If using Flow from Room, the UI updates automatically
+            } catch (e: IOException) {
+                // Soft failure — show a snackbar, don't wipe the screen
+                _events.emit(UiEvent.ShowSnackbar("Couldn't refresh. Showing cached data."))
+            }
+        }
+    }
+}
+```
+
 ## Structured Concurrency — The Bigger Picture
 
 All of these exception handling mechanisms are part of Kotlin's structured concurrency model. The core principle is that coroutines form a hierarchy — parent scopes own child coroutines, and the lifetime of children is bounded by the lifetime of the parent. Exception propagation follows this hierarchy.

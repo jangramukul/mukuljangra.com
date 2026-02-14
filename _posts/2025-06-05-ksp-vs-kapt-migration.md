@@ -8,45 +8,53 @@ tags:
   - Performance
 ---
 
-Last year I migrated a mid-sized project from KAPT to KSP, and the build times dropped from around 4 minutes to just under 2 minutes for a clean debug build. The incremental builds improved even more — what used to take 45 seconds after a single-file change came down to about 20. But the performance win isn't even the most compelling reason to migrate. The real urgency is that KAPT is actively blocking your adoption of the K2 compiler, and the longer you wait, the more painful the eventual migration becomes.
+Last year I migrated a mid-sized Android project from KAPT to KSP. Clean debug builds dropped from around 4 minutes to just under 2 minutes. Incremental builds — the ones you actually feel during development — went from 45 seconds after a single-file change to about 20. But here's the thing: the performance win isn't even the most important reason to migrate. KAPT is actively blocking your path to the K2 compiler, and every month you delay, the migration debt compounds.
 
-I'll be honest — I put off this migration for months because I assumed it would be a weekend-long ordeal of fixing obscure annotation processor issues. It ended up being about two hours for the main module. Most of that time was reading documentation, not fixing bugs. If your project uses Room, Hilt, and Moshi — which covers a huge percentage of Android apps — you can migrate today with minimal friction.
+I put off this migration for months because I assumed it would be a weekend of debugging obscure annotation processor failures. It ended up being about two hours for the main module, and most of that was reading documentation, not fixing bugs. If your project uses Room, Hilt, and Moshi — which covers a huge chunk of Android apps — you can migrate today with almost no friction. The libraries have done the hard work already.
 
-## How KAPT Actually Works (And Why It's Slow)
+## How KAPT Actually Works
 
-To understand why KSP is faster, you need to understand what KAPT does under the hood. KAPT stands for Kotlin Annotation Processing Tool, and its core mechanism is a workaround for a fundamental incompatibility: Java annotation processors (JSR 269) only understand Java code, but your code is written in Kotlin.
+To understand why KSP is faster, you need to understand what KAPT does under the hood. KAPT — Kotlin Annotation Processing Tool — exists because of a fundamental incompatibility: Java annotation processors (JSR 269) only understand Java code, but your source code is Kotlin. KAPT's solution is a workaround. Before any annotation processing happens, the Kotlin compiler runs a partial compilation pass that generates `.java` stub files for every Kotlin class that might be relevant. These stubs contain the class structure — methods, fields, annotations — but no implementation bodies. Then, standard Java annotation processors run against these stubs as if they were real Java source files.
 
-KAPT's solution is generating Java stubs. Before any annotation processing happens, the Kotlin compiler runs a partial compilation pass that generates `.java` stub files for every Kotlin class that might be relevant to annotation processing. These stubs contain the class structure — methods, fields, annotations — but no implementation. Then, standard Java annotation processors run against these stubs as if they were real Java source files.
+This stub generation phase is where the cost lives. According to the [official KSP documentation](https://kotlinlang.org/docs/ksp-why-ksp.html), stub generation alone costs roughly one-third of a full `kotlinc` analysis — roughly the same order as `kotlinc` code generation itself. For a module with 200 Kotlin files, KAPT generates 200 corresponding Java stubs, even if only 10 of those files have annotations that any processor cares about. The stub generator can't know which files are relevant, so it processes everything. You're effectively paying for an extra compilation pass before annotation processing even begins.
 
-This stub generation phase is expensive. For a module with 200 Kotlin files, KAPT generates 200 corresponding Java stubs, even if only 10 of those files have annotations that any processor cares about. The stub generator doesn't know which files are relevant, so it processes everything. And because it runs as part of the Kotlin compiler, it effectively adds a full compilation pass before annotation processing even begins.
+There's a practical cost beyond raw time. KAPT generates stub files that sometimes linger from previous builds. When incremental compilation tries to reuse cached stubs, it occasionally picks up stale versions, leading to cryptic compilation errors that vanish after `./gradlew clean`. If you've ever had clean builds succeed while incremental builds fail with impossible errors about missing generated types, stale KAPT stubs were probably the cause.
 
-There's another cost: KAPT runs annotation processors in a separate JVM process. The communication overhead between the Kotlin compiler and the annotation processor adds latency, and the processor's JVM needs its own warmup time. In large projects with multiple modules, you're paying this cost for every module that uses KAPT.
+## What KSP Is and How It Differs
 
-The kotlin daemon stale files problem makes this worse in practice. KAPT generates stub files that sometimes linger from previous builds. When the incremental compilation tries to reuse cached stubs, it occasionally picks up stale versions, leading to cryptic compilation errors that disappear with a clean build. If you've ever run `./gradlew clean` as your first debugging step, KAPT's stale stubs were probably the root cause at least some of those times.
+KSP — Kotlin Symbol Processing — is a Google-built API for developing lightweight compiler plugins. Rather than generating Java stubs and running Java annotation processors against them, KSP plugs directly into the Kotlin compiler and provides processors with a structured symbol graph of your Kotlin code. Classes, functions, properties, annotations, type parameters — a KSP processor sees all of these as first-class Kotlin symbols through the `Resolver` API. No Java translation layer in between.
 
-## How KSP Works Differently
+This is a fundamental architectural difference, not just an optimization. KAPT delegates to `javac` and forces everything through a Java lens. Kotlin-specific features like extension functions, sealed classes, `value` classes, declaration-site variance, and `suspend` functions are awkward or impossible to represent accurately in Java stubs. KSP understands these natively because it operates on Kotlin's own symbol model — conceptually similar to `kotlin.reflect.KType`, but resolved at compile time.
 
-KSP — Kotlin Symbol Processing — takes a fundamentally different approach. Instead of generating Java stubs and running Java annotation processors, KSP works directly with Kotlin's compiler symbols. A KSP processor receives a structured representation of your Kotlin code — classes, functions, properties, annotations — as a Kotlin symbol graph. No Java translation needed.
+The performance numbers follow directly from the architecture. The [official KSP benchmarks](https://kotlinlang.org/docs/ksp-why-ksp.html) show that for a simplified Glide processor running against the Tachiyomi project, KAPT took 8.67 seconds while the KSP implementation took 1.15 seconds — with a total Kotlin compilation time of 21.55 seconds. That's roughly a 7.5x speedup for the processing step itself. In practice, across typical Room and Dagger workloads, the overall build improvement is around 2x because stub generation was the dominant cost and KSP eliminates it entirely.
 
-This design eliminates the stub generation pass entirely. KSP doesn't need to convert your Kotlin code to Java because it never leaves the Kotlin world. The processor sees Kotlin code as Kotlin, including Kotlin-specific features like extension functions, sealed classes, inline classes, and suspend functions that are awkward or impossible to represent accurately in Java stubs.
+### Incremental Processing Done Right
 
-The performance difference is significant. In my experience, KSP is roughly 2x faster than KAPT for annotation-heavy modules. Google's own benchmarks show similar numbers — 2x or more improvement for typical Room and Dagger usage. The gains come from two places: eliminating stub generation (which was effectively a full compilation pass) and more efficient incremental processing. KSP tracks which files are affected by code changes and only reprocesses those files, while KAPT tends to rerun the full stub generation even for small changes.
+The day-to-day impact shows up most in incremental builds. KAPT's incremental support has always been fragile. Many annotation processors don't properly declare their incremental behavior, so Gradle falls back to full reprocessing on any source change. KSP was designed with incremental processing as a first-class concern.
 
-The incremental processing is where KSP really shines in day-to-day development. KAPT's incremental support is fragile — many annotation processors don't properly declare their incremental behavior, so Gradle falls back to full reprocessing. KSP was designed with incremental processing as a first-class concern. Processors explicitly declare whether they depend on specific files or the entire module, and KSP only re-invokes them when their declared inputs change.
+KSP uses a dependency model with two categories: **isolating** outputs that depend only on their declared source files, and **aggregating** outputs that may depend on any input. A Room DAO processor, for example, generates an implementation class for each `@Dao` interface — that's isolating. If you change `PaymentDao.kt`, only its generated implementation gets reprocessed. The `UserDao` output is untouched. KAPT's stub generation can't be this selective because it regenerates stubs for every file in the module regardless of what changed.
+
+## Build Time Comparison
+
+The 2x improvement I mentioned isn't a theoretical number — it came from actual Gradle build scans before and after migration. On a project with 15 modules, 3 of which used annotation processing heavily (Room, Moshi, Hilt), the numbers broke down like this. Clean debug builds went from ~4 minutes to ~2 minutes. Incremental builds after touching a single file in an annotated module dropped from ~45 seconds to ~20 seconds. The `kaptGenerateStubs` task, which was consistently one of the slowest tasks in the build, simply disappeared from the timeline.
+
+The incremental improvement matters more than the clean build improvement because you run incremental builds hundreds of times a day. Saving 25 seconds per build across a team of five engineers doing 50 builds each per day adds up to over 100 minutes of recovered engineering time daily. That's not theoretical productivity math — it's real time you spend staring at the build output instead of writing code.
 
 ## The K2 Compiler Blocker
 
-Here's the thing that makes this migration urgent rather than just nice-to-have: **KAPT is incompatible with the K2 compiler**. If your project uses KAPT, you must keep `languageVersion = "1.9"` in your Kotlin compiler settings. You cannot adopt K2, which means you miss out on the K2 compiler's substantial improvements — faster compilation, better type inference, smarter smart casts, and the new compiler frontend that JetBrains is building all future Kotlin features on.
+Here's what makes this migration urgent rather than just nice-to-have: **KAPT is incompatible with the K2 compiler**. If your project uses KAPT, you're pinned to `languageVersion = "1.9"`. You cannot adopt K2, which means you miss out on faster compilation, better type inference, smarter smart casts, and the new compiler frontend that JetBrains is building all future Kotlin features on top of.
 
-Starting with Kotlin 2.0, K2 is the default compiler. JetBrains has stated that the old compiler frontend will eventually be deprecated. KAPT compatibility mode exists to keep old projects working, but it forces you onto a legacy code path that won't receive new optimizations or features. Every month you stay on KAPT is another month of accumulating migration debt.
+Starting with Kotlin 2.0, K2 is the default compiler. JetBrains has stated that the old compiler frontend will eventually be deprecated. KAPT has a compatibility mode that keeps old projects building, but it forces you onto a legacy code path that won't receive new optimizations. I know teams that wanted to adopt K2 for its compile-time improvements but couldn't because a single KAPT dependency in one module held the entire project back. In a multi-module project, one module using KAPT forces every module to stay on the legacy compiler.
 
-KSP, on the other hand, is fully compatible with K2. It was designed to work with Kotlin's compiler infrastructure directly, so the K2 transition is seamless for KSP processors. This isn't just a theoretical concern — I know teams that wanted to adopt K2 for its compile-time improvements but couldn't because one KAPT dependency held them back. In a 15-module project, a single module using KAPT forces the entire project to stay on the legacy compiler path.
+KSP is fully compatible with K2 because it was designed to work with Kotlin's compiler infrastructure directly. The K2 transition is seamless for KSP processors. This is the reframe: **the KSP migration isn't really about build speed — it's about unblocking the K2 compiler, which itself gives you build speed, better language features, and a path forward that KAPT permanently blocks.**
 
-## The Migration Path
+## Migrating Room, Moshi, and Hilt
 
-For most Android projects, the migration is straightforward because the major libraries already have KSP support.
+For most Android projects, the migration is straightforward because the major libraries already support KSP.
 
-**Room** has full KSP support and has had it since Room 2.4. Room was actually one of the first major libraries to adopt KSP, and Google's own samples use the KSP configuration. The migration is a build file change:
+### Room
+
+Room has had full KSP support since version 2.4. It was one of the first major Jetpack libraries to adopt KSP, and Google's own sample apps use the KSP configuration. The migration is a build file change — nothing in your Kotlin source code changes:
 
 ```kotlin
 // build.gradle.kts — BEFORE (KAPT)
@@ -72,11 +80,25 @@ dependencies {
 }
 ```
 
-That's it. Replace the `kapt` plugin with `ksp`, change `kapt(...)` to `ksp(...)` in your dependencies. Room's KSP processor generates the same output as the KAPT processor, so your `@Dao`, `@Entity`, and `@Database` annotations work identically.
+Replace the `kapt` plugin with `ksp`, change `kapt(...)` to `ksp(...)` in your dependencies. Your `@Dao`, `@Entity`, and `@Database` annotations work identically — Room's KSP processor generates the same output as the KAPT one.
 
-**Moshi** has KSP support through `moshi-kotlin-codegen`. Replace `kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")` with `ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")`. Same artifact, just swap the configuration. Zac Sweers (who maintains Moshi) was an early advocate of KSP and built the KSP support alongside the KAPT version.
+### Moshi
 
-**Hilt** added KSP support as well. The migration requires updating to the latest Hilt version and switching the annotation processor:
+Moshi has KSP support through `moshi-kotlin-codegen`. The artifact name doesn't change — swap the configuration from `kapt` to `ksp`:
+
+```kotlin
+// BEFORE
+kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+
+// AFTER
+ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+```
+
+Zac Sweers, who maintains Moshi, was an early KSP advocate and built the KSP support alongside the KAPT version. The processor output is identical — your `@JsonClass(generateAdapter = true)` annotations continue to work without changes.
+
+### Hilt and Dagger
+
+This one requires a note of caution. Dagger's KSP support is currently in **alpha** according to the [official Dagger documentation](https://dagger.dev/dev-guide/ksp). It works, and many teams are using it in production, but it's not at the same maturity level as Room or Moshi's KSP support:
 
 ```kotlin
 // build.gradle.kts — Hilt with KSP
@@ -91,13 +113,26 @@ dependencies {
 }
 ```
 
-One important gotcha with Hilt's KSP migration: if you have custom `@EntryPoint` interfaces or complex multi-module setups, test thoroughly. The KSP processor is functionally equivalent, but I've seen edge cases where argument passing in deeply nested component hierarchies behaved slightly differently during the initial migration. A full test suite run after migration is essential.
+One important gotcha: **KSP processors cannot resolve types generated by other KAPT processors**. If you have a KAPT processor generating classes that Hilt needs to inject, both processors must be on KSP. The `androidx.hilt:hilt-compiler` also needs to be migrated to the `ksp` configuration — KSP support is available from version 1.1.x. Test thoroughly after migration, especially in multi-module setups with complex component hierarchies.
 
-## When You Can't Migrate (Yet)
+## Library Support Status
 
-Not every annotation processor has a KSP equivalent. Some older or less maintained libraries still require KAPT. If your project depends on one of these, you have a few options.
+The ecosystem has moved fast. Here's where the major libraries stand:
 
-You can run KAPT and KSP side by side in the same module. This isn't ideal — you're paying the KAPT stub generation cost for the remaining KAPT processors — but it lets you migrate the libraries you can while keeping the ones you can't. Migrate Room, Moshi, and Hilt to KSP, leave the remaining processor on KAPT, and remove KAPT entirely when the last dependency gets KSP support.
+- **Room** — full KSP support since 2.4, stable and production-ready
+- **Moshi** — full KSP support, same artifact, just swap the configuration
+- **Glide** — full KSP support, [officially supported](https://github.com/bumptech/glide)
+- **Koin Annotations** — full KSP support
+- **Dagger/Hilt** — KSP support in alpha, works but not yet stable
+- **Epoxy** (Airbnb) — full KSP support
+- **Ktorfit** — full KSP support
+- **AutoFactory** — not yet supported, still requires KAPT
+
+IMO, for most Android projects, Room and Moshi alone cover the majority of annotation processing needs. If those are your only KAPT dependencies, you can migrate completely today.
+
+## Mixed KAPT + KSP Setup
+
+Not every annotation processor has a KSP equivalent yet. If your project depends on a library that still requires KAPT, you can run both side by side in the same module. This is a transitional setup, not a permanent solution:
 
 ```kotlin
 // build.gradle.kts — Mixed KAPT + KSP (transitional)
@@ -113,22 +148,22 @@ dependencies {
 }
 ```
 
-The build performance benefit is reduced in this configuration because KAPT still runs its stub generation phase. But any processor you move to KSP is one less that runs through the stub pipeline, so there's still a measurable improvement.
+The build performance benefit is reduced in this configuration because KAPT still runs its stub generation phase for the remaining processors. But every processor you move to KSP is one less running through the stub pipeline, so there's still a measurable improvement. The key thing to understand: **as long as even one `kapt(...)` dependency exists in a module, that module pays the full stub generation cost.** This means migrating 3 out of 4 processors to KSP helps, but you only get the full benefit when the last one is gone.
 
-## The Future: Compiler Plugins Skip Both
+This mixed mode also doesn't solve the K2 blocker. You need zero KAPT dependencies across your entire project before K2 becomes an option.
 
-Here's a broader perspective that I think is worth understanding. Both KAPT and KSP are annotation processing tools — they run after (or during) compilation, inspect annotations, and generate code. But a newer category of tools skips this model entirely: **compiler plugins**.
+## The Future: Compiler Plugins
 
-Jetpack Compose is the most prominent example. The Compose compiler plugin runs as part of the Kotlin compiler itself. It doesn't process annotations in the traditional sense — it transforms `@Composable` functions at the IR (intermediate representation) level, rewriting them into state-tracking code. There's no separate processing step, no generated files in a `build/generated` directory, no incremental processing to worry about. The transformation is part of compilation.
+Both KAPT and KSP are annotation processing tools — they inspect annotations and generate code. But a newer category of tools skips this model entirely: **Kotlin compiler plugins**.
 
-Metro, a DI framework from the Slack team built by Zac Sweers, takes the same approach. Instead of using annotations processed by KAPT or KSP to generate Dagger-like components, Metro is a compiler plugin that does dependency injection graph resolution and code generation as a compiler pass. The motivation was explicit — annotation processing, even KSP, adds overhead and complexity that a compiler plugin can avoid entirely.
+Jetpack Compose is the most prominent example. The Compose compiler plugin runs as part of the Kotlin compiler itself, transforming `@Composable` functions at the IR (intermediate representation) level. There's no separate processing step, no generated files sitting in `build/generated`, no incremental processing to manage. The transformation is part of compilation itself.
 
-This is the trajectory of the Kotlin ecosystem. The K2 compiler's plugin API is more powerful and stable than the old one, which means more libraries will move to compiler plugins over time. KSP is the right choice today — it's the bridge between the annotation processing world and the compiler plugin future. KAPT is the past.
+Metro, a DI framework from the Slack team built by Zac Sweers, takes the same approach. Instead of using annotation processing to generate Dagger-like components, Metro resolves dependency injection graphs and generates code as a compiler pass. The motivation was explicit — even KSP adds overhead that a compiler plugin can avoid entirely. The K2 compiler's plugin API is more powerful and stable than the old one, so more libraries will move to compiler plugins over time. KSP is the bridge between the annotation processing world and the compiler plugin future. KAPT is the past.
 
 ## My Migration Checklist
 
-When I migrate a project, I follow this order to minimize risk. First, audit every `kapt(...)` dependency in your build files and check if a KSP equivalent exists. Room, Moshi, Hilt, and Glide all have KSP support. Second, migrate one module at a time, starting with the module that has the fewest KAPT dependencies. Run the full test suite after each module. Third, once a module has zero `kapt(...)` dependencies, remove the `kotlin-kapt` plugin from that module's build file. Don't leave it applied with nothing to process — it still adds overhead. Fourth, when every module is free of KAPT, try enabling K2 by removing the `languageVersion = "1.9"` constraint and running a full build.
+When I migrate a project, I follow this order to minimize risk. First, audit every `kapt(...)` dependency in your build files and check if a KSP equivalent exists — Room, Moshi, Hilt, and Glide all have one. Second, migrate one module at a time, starting with the module that has the fewest KAPT dependencies. Run the full test suite after each module. Third, once a module has zero `kapt(...)` dependencies, remove the `kotlin-kapt` plugin from that module's build file entirely — don't leave it applied with nothing to process, because it still adds overhead from initializing the stub generation infrastructure. Fourth, when every module is free of KAPT, try enabling K2 by removing the `languageVersion = "1.9"` constraint and running a full build.
 
-The biggest lesson from my migration was that the hardest part was deciding to start. The actual code changes were mechanical — find `kapt`, replace with `ksp`, run tests. The libraries have done the work to make this seamless. IMO, if you're still on KAPT for libraries that already support KSP, you're paying a build-time tax and accumulating K2 migration debt for no reason.
+The biggest lesson from my migration: the hardest part was deciding to start. The actual changes were mechanical — find `kapt`, replace with `ksp`, run tests, verify. The libraries have done the work to make this seamless. IMO, if you're still on KAPT for libraries that already support KSP, you're paying a build-time tax and accumulating K2 migration debt for no good reason. The migration path is clear, the tooling is ready, and the benefits — faster builds, K2 enablement, fewer stale stub headaches — are immediate.
 
 Thanks for reading!

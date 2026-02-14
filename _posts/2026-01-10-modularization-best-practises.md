@@ -15,91 +15,70 @@ Modularization isn't something you do because a conference talk told you to. It'
 
 Here's what I've learned actually matters when modularizing an Android codebase. Not the theory-heavy stuff you find in architecture docs, but the practical decisions that determine whether your multi-module setup helps or hurts your team.
 
+## Module Types and Naming Conventions
+
+Before writing any code, you need a clear taxonomy of what kinds of modules exist in your project and what goes where. I've seen teams invent module names ad hoc — `:utils`, `:shared`, `:common`, `:base` — and six months later nobody can tell you what the difference between `:common` and `:shared` is. A consistent naming convention prevents this entirely.
+
+The module types I've found work best across projects of different sizes are `:app`, `:feature:*`, `:core:*`, and `:lib:*`. The `:app` module is your application entry point — it applies the `com.android.application` plugin, owns `Application` class, wires DI, and declares the navigation graph. It depends on everything but nothing depends on it. Feature modules follow the `:feature:<name>` pattern — `:feature:search`, `:feature:checkout`, `:feature:profile`. Each one owns its screens, ViewModels, repositories, and DI bindings for a single user-facing feature. Core modules use `:core:<name>` for shared infrastructure — `:core:network`, `:core:database`, `:core:ui`, `:core:testing`. These are owned by a platform team and should have a stable API that rarely changes. Finally, `:lib:*` is for pure Kotlin/Java libraries with no Android dependencies — `:lib:analytics-api`, `:lib:formatting`. These compile faster because they skip the Android Gradle plugin overhead entirely.
+
+When you adopt the API/impl split, the naming extends naturally. `:core:network:api` holds the interfaces and models, `:core:network:impl` holds the Retrofit or Ktor implementation. Feature modules only depend on `:api` modules, never on `:impl`. The `:app` module is the only place that wires `:impl` to `:api` through DI bindings.
+
+```kotlin
+// settings.gradle.kts — a well-structured module graph
+include(":app")
+
+// Feature modules — one per user-facing feature
+include(":feature:search")
+include(":feature:checkout")
+include(":feature:profile")
+include(":feature:order-history")
+
+// Core modules — shared Android infrastructure
+include(":core:network:api")
+include(":core:network:impl")
+include(":core:database")
+include(":core:ui")
+include(":core:navigation")
+include(":core:testing")
+
+// Lib modules — pure Kotlin, no Android dependency
+include(":lib:analytics-api")
+include(":lib:formatting")
+include(":lib:result")
+```
+
+The naming convention itself is the documentation. When a new developer sees `:feature:checkout`, they know it's a self-contained feature. When they see `:core:network:api`, they know it's a stable interface module. Teams that establish this taxonomy early spend far less time debating "where does this code go?" in code review.
+
 ## Feature-Based Modules and Team Ownership
 
 The most common modularization mistake is splitting by architectural layer — a `:data` module, a `:domain` module, a `:presentation` module. This feels clean on a diagram, but it creates modules that change for every feature. Add a new screen? You touch all three modules. Every pull request crosses module boundaries, and you lose the main benefit of modularization: independent, parallel work on isolated features.
 
-Feature-based modules group everything a feature needs — its UI, its repository, its use cases, its models — into one module. The `:search` module contains search-related screens, data sources, and domain logic. The `:checkout` module owns the checkout flow end to end. Shared infrastructure like networking and database lives in a `:core` module. Two developers working on search and checkout never touch the same files or create merge conflicts.
-
-```kotlin
-// Feature-based module structure
-// :feature:search/
-//   ui/SearchScreen.kt
-//   data/SearchRepository.kt
-//   domain/SearchUseCase.kt
-//   di/SearchModule.kt
-//
-// :feature:checkout/
-//   ui/CheckoutScreen.kt
-//   data/CheckoutRepository.kt
-//   domain/CheckoutUseCase.kt
-//   di/CheckoutModule.kt
-//
-// :core:network/
-//   HttpClient.kt
-//   AuthInterceptor.kt
-//
-// :core:database/
-//   AppDatabase.kt
-```
+Feature-based modules group everything a feature needs — its UI, its repository, its use cases, its models — into one module. The `:feature:search` module contains search-related screens, data sources, and domain logic. The `:feature:checkout` module owns the checkout flow end to end. Two developers working on search and checkout never touch the same files or create merge conflicts.
 
 The tradeoff is that feature modules can duplicate some code. Two features might define similar data classes or utility functions. The instinct is to extract everything shared into `:core`, but over-extracting creates a bloated core module that everything depends on — defeating the purpose of modularization. My rule of thumb: duplicate code across features until you see the same abstraction appear three times, then extract it. Premature extraction creates coupling; late extraction is a simple refactor.
 
-This structure works even better when technical boundaries and team boundaries align. If the payments team owns `:feature:payment` and the search team owns `:feature:search`, module boundaries become ownership boundaries. Each team can work autonomously — they own their module's tests, their CI pipeline, their release cadence if using dynamic feature modules. When module boundaries don't match team boundaries, you get constant cross-team pull requests. The search team needs a change in the `:data` layer module that the platform team owns, so they submit a PR, wait for review, negotiate the API — a 2-day delay for a 10-minute code change. Feature modules owned by a single team eliminate this coordination overhead.
-
-This also affects how you decide what goes into `:core`. Core modules should be owned by a platform or infrastructure team, and they should have a stable API that changes infrequently. If `:core` is changing every sprint because feature teams keep needing new utilities, either the core module's scope is too broad or the feature modules need to own more of their dependencies. The healthiest multi-module codebases I've seen have a small, stable core and fat, autonomous feature modules.
+This structure works even better when module boundaries and team boundaries align. If the payments team owns `:feature:payment` and the search team owns `:feature:search`, module boundaries become ownership boundaries. Each team works autonomously — they own their tests, their CI pipeline, their release cadence. When module boundaries don't match team boundaries, you get constant cross-team pull requests — a 2-day delay for a 10-minute code change. The healthiest multi-module codebases I've seen have a small, stable core and fat, autonomous feature modules.
 
 ## Managing Dependencies Between Modules
 
-Circular dependencies between modules are the modularization equivalent of spaghetti code. Module A depends on Module B, which depends on Module A. Gradle won't even compile this — you get a build error. But the real problem starts earlier, when the dependency graph is technically acyclic but practically circular through transitive dependencies. Module A depends on B, B depends on C, and C depends on A through a shared utility.
+Circular dependencies between modules are the modularization equivalent of spaghetti code. Gradle won't compile them — you get a build error. But the real problem starts earlier, when the dependency graph is technically acyclic but practically circular through transitive dependencies.
 
-The fix is dependency inversion. If `:feature:checkout` needs to navigate to `:feature:profile`, it shouldn't depend on the profile module directly. Instead, both modules depend on a `:navigation` or `:core:contracts` module that defines navigation interfaces. The checkout module calls the interface; the app module wires up the concrete implementation.
-
-```kotlin
-// :core:navigation — defines contracts, depends on nothing feature-specific
-interface ProfileNavigator {
-    fun navigateToProfile(userId: String)
-}
-
-interface CheckoutNavigator {
-    fun navigateToCheckout(cartId: String)
-}
-
-// :feature:checkout — depends on :core:navigation, not on :feature:profile
-class CheckoutViewModel(
-    private val profileNavigator: ProfileNavigator
-) : ViewModel() {
-    fun onViewSellerProfile(sellerId: String) {
-        profileNavigator.navigateToProfile(sellerId)
-    }
-}
-
-// :app — wires concrete implementations
-class AppProfileNavigator(
-    private val navController: NavController
-) : ProfileNavigator {
-    override fun navigateToProfile(userId: String) {
-        navController.navigate("profile/$userId")
-    }
-}
-```
-
-This pattern adds indirection, and for a 3-module app it's over-engineering. But the moment you have 10+ feature modules, circular dependency prevention through contracts becomes the only way to keep the dependency graph clean and builds parallelizable. I've seen codebases where adding this pattern reduced build times by 40% because Gradle could finally compile modules in parallel instead of waiting for the tangled dependency chain to resolve sequentially.
-
-The same principle applies when a feature module needs data from another feature module. When `:feature:order` needs the user's shipping address, the instinct is to add a direct dependency on `:feature:profile`. This creates coupling — changes to the profile module's internal structure can break the order module, and you can't work on orders without pulling in the entire profile module. Dependency inversion flips this: define an interface in a shared module or in the consuming module, and let the app module wire up the concrete implementation at runtime through DI.
+The fix is dependency inversion. If `:feature:checkout` needs data from `:feature:profile`, define an interface in a shared module like `:core:contracts`, and let the app module wire the concrete implementation at runtime through DI. The checkout module never knows about profiles — it asks for a `ShippingAddressProvider` and gets one.
 
 ```kotlin
-// Defined in :feature:order (or :core:contracts)
+// Defined in :core:contracts
 interface ShippingAddressProvider {
     suspend fun getDefaultAddress(userId: String): ShippingAddress?
 }
 
-// Implemented in :feature:profile:impl
-class ProfileShippingAddressProvider(
+// Implemented in :feature:profile
+internal class ProfileShippingAddressProvider(
     private val profileRepository: ProfileRepository
 ) : ShippingAddressProvider {
     override suspend fun getDefaultAddress(userId: String): ShippingAddress? {
-        return profileRepository.getProfile(userId)?.defaultAddress?.toShippingAddress()
+        return profileRepository.getProfile(userId)
+            ?.defaultAddress
+            ?.toShippingAddress()
     }
 }
 
@@ -114,104 +93,161 @@ abstract class AddressBindingsModule {
 }
 ```
 
-The order module never knows about profiles. It asks for a `ShippingAddressProvider` and gets one. If you later decide to store addresses in a separate service instead of the profile, you change one implementation class and one DI binding — zero changes to the order module. This is the same dependency inversion principle from SOLID, applied at the module architecture level.
+This pattern adds indirection, and for a 3-module app it's over-engineering. But the moment you have 10+ feature modules, circular dependency prevention through contracts becomes the only way to keep the dependency graph clean and builds parallelizable. I've seen codebases where adding this pattern reduced build times by 40% because Gradle could finally compile modules in parallel instead of waiting for a tangled dependency chain to resolve sequentially.
 
-Taking this a step further, you can split each module into an API module and an implementation module. When Module A depends on Module B, it can access everything in B's public API — including internal implementation classes that happen to be `public` in Kotlin. This leaks implementation details across module boundaries. The API/impl split solves this cleanly.
+Taking this further, the API/impl split I mentioned earlier prevents a subtler problem. When Module A depends on Module B, it can access everything in B's public API — including implementation classes that happen to be `public` in Kotlin. The split puts only interfaces and data classes in `:api`, marks implementation classes `internal` in `:impl`, and ensures other modules can only depend on the stable contract. The tradeoff is double the module count, but in practice the API modules are tiny — a few interfaces and data classes each — so the maintenance burden is low.
+
+## Navigation Between Feature Modules
+
+Here's a problem that bites every multi-module project: how does `:feature:checkout` navigate to `:feature:profile` without depending on it? If the checkout module imports `ProfileScreen` directly, you've created a hard dependency. Every feature ends up depending on every other feature, and your module graph collapses into a monolith with extra Gradle files.
+
+The contract-based approach applies here too. Each feature module registers its routes as type-safe route objects in a shared `:core:navigation` module, and the `:app` module builds the full `NavHost` that wires everything together. No feature module ever imports another feature's screen composable.
 
 ```kotlin
-// :feature:search:api — only interfaces and models
-interface SearchRepository {
-    suspend fun search(query: String): List<SearchResult>
-    fun observeRecentSearches(): Flow<List<String>>
+// :core:navigation — shared route definitions
+sealed interface AppRoute {
+    @Serializable data class Profile(val userId: String) : AppRoute
+    @Serializable data class Checkout(val cartId: String) : AppRoute
+    @Serializable data object Search : AppRoute
 }
 
-data class SearchResult(
-    val id: String,
-    val title: String,
-    val relevanceScore: Float
-)
-
-// :feature:search:impl — the actual implementation, depends on :api
-internal class SearchRepositoryImpl(
-    private val searchApi: SearchApi,
-    private val searchDao: SearchDao,
-    private val ioDispatcher: CoroutineDispatcher
-) : SearchRepository {
-    override suspend fun search(query: String): List<SearchResult> {
-        return withContext(ioDispatcher) {
-            val remote = searchApi.search(query)
-            searchDao.cacheResults(remote)
-            remote.map { it.toSearchResult() }
-        }
+// :feature:checkout — navigates using route objects, no profile dependency
+@Composable
+fun CheckoutScreen(
+    cartId: String,
+    onViewSeller: (String) -> Unit
+) {
+    // ... checkout UI
+    Button(onClick = { onViewSeller(sellerId) }) {
+        Text("View Seller")
     }
+}
 
-    override fun observeRecentSearches(): Flow<List<String>> {
-        return searchDao.observeRecentQueries()
+// :app — wires the full navigation graph
+@Composable
+fun AppNavHost(navController: NavHostController) {
+    NavHost(navController, startDestination = AppRoute.Search) {
+        composable<AppRoute.Search> {
+            SearchScreen(onProductClick = { id ->
+                navController.navigate(AppRoute.Checkout(id))
+            })
+        }
+        composable<AppRoute.Checkout> { entry ->
+            val route = entry.toRoute<AppRoute.Checkout>()
+            CheckoutScreen(
+                cartId = route.cartId,
+                onViewSeller = { navController.navigate(AppRoute.Profile(it)) }
+            )
+        }
+        composable<AppRoute.Profile> { entry ->
+            ProfileScreen(userId = entry.toRoute<AppRoute.Profile>().userId)
+        }
     }
 }
 ```
 
-Other modules depend on `:feature:search:api`, not `:feature:search:impl`. The `internal` visibility modifier on the implementation class ensures nothing outside the impl module can instantiate it directly. Only the DI module wires the interface to its implementation. This is the same principle as `interface` vs `class` at the code level, applied at the module level. The tradeoff is double the module count — for 10 features, you have 20 modules. In practice, the API modules are tiny (a few interfaces and data classes each), so the maintenance burden is low.
+The key insight is that feature composables expose navigation as lambda parameters — `onViewSeller: (String) -> Unit` — instead of taking a `NavController` directly. This keeps feature modules completely unaware of the navigation framework. You could swap Navigation Compose for Circuit's navigation or even a custom solution, and no feature module changes. Deep linking works naturally too — you define URI patterns on the `composable` declarations in the `:app` module, and the same route objects handle both in-app navigation and external deep links.
+
+## Dependency Injection in Multi-Module Apps
+
+DI in a single-module app is straightforward. But the moment you split into 15 modules, questions pile up. Where do you put `@Module` classes? How does a feature module provide bindings that other modules consume? How do you access the DI graph from places Hilt doesn't natively support?
+
+With Hilt, each module defines its own `@Module`-annotated class with `@InstallIn` to specify which component it belongs to. `SingletonComponent` for app-scoped singletons, `ViewModelComponent` for ViewModel-scoped dependencies, `ActivityComponent` for activity-scoped ones. Feature modules install their bindings into the appropriate component, and Hilt merges everything at compile time. No feature module needs to know about any other feature module's bindings.
+
+```kotlin
+// :core:network:impl — provides app-scoped network dependencies
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .build()
+    }
+}
+
+// :feature:search — provides search-scoped dependencies
+@Module
+@InstallIn(ViewModelComponent::class)
+abstract class SearchModule {
+    @Binds
+    abstract fun bindSearchRepository(
+        impl: SearchRepositoryImpl
+    ): SearchRepository
+}
+
+// :feature:search — ViewModel just @Injects what it needs
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val searchRepository: SearchRepository,
+    private val analyticsTracker: AnalyticsTracker
+) : ViewModel() {
+    // searchRepository comes from SearchModule
+    // analyticsTracker comes from :core:analytics, installed in SingletonComponent
+}
+```
+
+The rule I follow: `@InstallIn(SingletonComponent::class)` for infrastructure that lives for the entire app lifetime — network clients, databases, analytics. `@InstallIn(ViewModelComponent::class)` for feature-specific bindings that should be scoped to a ViewModel's lifetime. Avoid `@InstallIn(ActivityComponent::class)` unless you genuinely need activity-scoped state, which is rarer than people think.
+
+Now, there's one more Hilt concept that becomes critical in multi-module apps: `@EntryPoint`. Hilt can only inject into classes it knows about — Activities, Fragments, ViewModels, and a few others. But sometimes you need DI access from a `ContentProvider`, a `WorkManager` worker, or a class that a third-party SDK instantiates. `@EntryPoint` defines an interface that lets you pull dependencies from the component hierarchy manually.
+
+```kotlin
+// :core:sync — needs DI access from a WorkManager Worker
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface SyncEntryPoint {
+    fun syncRepository(): SyncRepository
+    fun analyticsTracker(): AnalyticsTracker
+}
+
+class SyncWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val entryPoint = EntryPointAccessors
+            .fromApplication(applicationContext, SyncEntryPoint::class.java)
+        val syncRepo = entryPoint.syncRepository()
+        val tracker = entryPoint.analyticsTracker()
+
+        return try {
+            syncRepo.syncPendingChanges()
+            tracker.trackSyncCompleted()
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+}
+```
+
+Without `@EntryPoint`, you'd have to pass dependencies manually through the `WorkerFactory`, which gets messy across module boundaries. The entry point pattern lets any module reach into the DI graph as long as it knows the interface.
 
 ## Build Performance and Gradle Configuration
 
-One of the primary reasons to modularize is faster builds. But this only works if your module graph actually allows parallel compilation. If every module depends on `:core` and `:core` depends on half the codebase, Gradle still compiles most things sequentially.
+One of the primary reasons to modularize is faster builds. But this only works if your module graph actually allows parallel compilation. If every module depends on `:core` and `:core` depends on half the codebase, Gradle still compiles most things sequentially. The goal is a wide, shallow dependency graph — many modules at the same depth level that can compile in parallel, with minimal serial dependencies between them.
 
-The goal is a wide, shallow dependency graph — many modules at the same depth level that can compile in parallel, with minimal serial dependencies between them. Measure this by looking at your critical path: the longest chain of module dependencies from a leaf to the root.
-
-Here's what actually moves the needle on build times: use `implementation` instead of `api` in your `build.gradle.kts` dependencies. When Module A uses `api` to depend on Module B, any module depending on A also sees B's classes. This means a change in B triggers recompilation of A and everything that depends on A. With `implementation`, B's changes only recompile A — everything else is isolated.
+Here's what actually moves the needle on build times: use `implementation` instead of `api` in your `build.gradle.kts` dependencies. When Module A uses `api` to depend on Module B, any module depending on A also sees B's classes — a change in B triggers recompilation of A and everything that depends on A. With `implementation`, B's changes only recompile A. Use `api` only when a type from the dependency appears in your module's public function signatures. In a codebase I worked on, changing all unnecessary `api` declarations to `implementation` reduced incremental build times from 90 seconds to 35 seconds.
 
 ```kotlin
 // build.gradle.kts for :feature:search:impl
-
 dependencies {
-    // 'implementation' — SearchApi changes don't trigger recompilation
-    // of modules that depend on :feature:search:impl
     implementation(project(":core:network"))
     implementation(project(":core:database"))
 
-    // 'api' — only for types exposed in public function signatures
+    // 'api' only because SearchResult appears in public function signatures
     api(project(":feature:search:api"))
 }
 ```
 
-The rule is: use `api` only when a type from the dependency appears in your module's public API (public function parameters, return types, or supertypes). Everything else should be `implementation`. In a codebase I worked on, changing all unnecessary `api` declarations to `implementation` reduced incremental build times from 90 seconds to 35 seconds because Gradle could skip recompilation of unaffected modules.
+Once your module count grows, managing dependency versions across separate `build.gradle.kts` files becomes a consistency nightmare. Version catalogs solve this by centralizing every dependency in a single `libs.versions.toml` file. The type-safe accessor (`libs.retrofit.core`) gives you IDE autocomplete and compile-time errors. Updating a library version becomes a one-line change instead of find-and-replace across 15 build files.
 
-Once your module count grows, managing dependency versions across separate `build.gradle.kts` files becomes a consistency nightmare. Module A uses Retrofit 2.9.0, Module B uses 2.11.0, and Module C accidentally uses 2.8.0 because someone copied from an old template. Version catalogs solve this by centralizing every dependency version in a single `libs.versions.toml` file that every module references.
-
-```toml
-# gradle/libs.versions.toml
-[versions]
-kotlin = "2.0.21"
-coroutines = "1.9.0"
-retrofit = "2.11.0"
-room = "2.6.1"
-hilt = "2.51.1"
-
-[libraries]
-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
-
-[bundles]
-coroutines = ["kotlinx-coroutines-core", "kotlinx-coroutines-android"]
-```
-
-```kotlin
-// Any module's build.gradle.kts
-dependencies {
-    implementation(libs.retrofit.core)
-    implementation(libs.bundles.coroutines)
-    implementation(libs.room.runtime)
-    ksp(libs.room.compiler)
-}
-```
-
-The type-safe accessor (`libs.retrofit.core`) gives you IDE autocomplete and compile-time errors if you reference a dependency that doesn't exist in the catalog. Updating a library version is a one-line change in `libs.versions.toml` instead of a find-and-replace across 15 build files. The tradeoff is that version catalogs have a learning curve, and the TOML syntax is unfamiliar to most Android developers. But the investment pays for itself after the second time you need to update a library across the project.
-
-The other piece of build configuration that gets painful fast is boilerplate. Once you have more than 5 modules, every module's `build.gradle.kts` repeats the same `compileSdk`, the same `jvmTarget`, the same set of plugins. Convention plugins let you define shared build configuration once and apply it everywhere.
+Convention plugins take this further by eliminating boilerplate. Every module's `build.gradle.kts` repeats the same `compileSdk`, `jvmTarget`, and plugin set. With a convention plugin, you define it once and apply it with a single plugin ID.
 
 ```kotlin
 // build-logic/convention/src/main/kotlin/AndroidFeaturePlugin.kt
@@ -242,20 +278,19 @@ plugins {
 }
 ```
 
-Without convention plugins, adding a new module means copying 40 lines of build configuration from an existing module and hoping you didn't miss anything. With convention plugins, it's one plugin ID. More importantly, when you need to bump `compileSdk` or `minSdk`, you change it in one place instead of 15. Google's Now In Android reference project uses this pattern extensively, and it's become the standard approach for multi-module Android projects. The initial setup takes a couple of hours, but it eliminates an entire category of "my module has a different config" bugs.
+The initial setup takes a couple of hours, but it eliminates an entire category of "my module has a different config" bugs. Google's Now In Android project uses this pattern extensively.
 
 ## When and How to Enforce Boundaries
 
-Not every project needs modularization, and I think this is worth being honest about. I've seen teams spend weeks extracting modules from a 20-screen app, adding build configuration complexity, navigation indirection, and DI ceremony — only to realize that their build times went up because the Gradle module resolution overhead exceeded the parallelization gains.
+Not every project needs modularization, and I think this is worth being honest about. I've seen teams spend weeks extracting modules from a 20-screen app — only to realize their build times went up because the Gradle module resolution overhead exceeded the parallelization gains.
 
-Modularization pays off when you have more than 3 developers working on the same codebase, when your clean build exceeds 3-4 minutes, or when features are genuinely independent enough that teams can own them separately. For a solo developer or a small team on a focused app, a well-organized single-module project with clear package boundaries is simpler and faster to work with.
+Modularization pays off when you have more than 3 developers on the same codebase, when your clean build exceeds 3-4 minutes, or when features are genuinely independent enough for separate team ownership. For a solo developer or small team, a well-organized single-module project with clear package boundaries is simpler and faster. Packages give you 80% of the benefit with 20% of the complexity. Modules provide hard boundaries that Gradle enforces at compile time — and for larger teams, that's worth the overhead.
 
-The honest truth is that modularization is an organizational solution as much as a technical one. It enforces boundaries that a disciplined team could enforce through code review and convention. If your team is small and disciplined, packages with clear naming conventions give you 80% of the benefit with 20% of the complexity. If your team is large or growing, modules provide hard boundaries that don't rely on discipline — Gradle enforces them at compile time, and that's worth the overhead.
-
-But here's the thing — module boundaries only work if they're actually enforced. Without enforcement, a developer under deadline pressure adds a direct dependency on `:feature:profile:impl` from `:feature:order` because it's faster than creating an interface. Six months later, your clean module graph is a tangled mess. Gradle provides tools to enforce dependency rules programmatically. You can write custom Gradle plugins or use dependency constraints to fail the build when a module depends on something it shouldn't.
+But here's the thing — module boundaries only work if they're actually enforced. Without enforcement, a developer under deadline pressure adds a direct dependency on `:feature:profile:impl` from `:feature:order` because it's faster than creating an interface. Six months later, your clean module graph is a tangled mess. You can enforce dependency rules programmatically to fail the build when a module depends on something it shouldn't.
 
 ```kotlin
-// settings.gradle.kts — enforce that feature modules can't depend on each other's impl
+// settings.gradle.kts — enforce that feature modules can't depend
+// on each other's impl
 gradle.lifecycle.beforeProject {
     afterEvaluate {
         if (path.startsWith(":feature:") && path.endsWith(":impl")) {
@@ -266,7 +301,8 @@ gradle.lifecycle.beforeProject {
                         requested.toString() != project.path
                     ) {
                         throw GradleException(
-                            "Module $path cannot depend on another feature's impl: ${requested}"
+                            "Module $path cannot depend on " +
+                            "another feature's impl: ${requested}"
                         )
                     }
                 }
@@ -276,6 +312,6 @@ gradle.lifecycle.beforeProject {
 }
 ```
 
-This is blunt but effective. A more sophisticated approach is to use tools like Dependency Guard or custom lint rules that validate the module graph on CI. The point is that module boundaries are only as strong as their enforcement. Code review catches some violations, but automated checks catch all of them. One violation that goes unchecked sets a precedent, and soon "just this once" becomes "we always do this."
+This is blunt but effective. A more sophisticated approach is to use tools like Dependency Guard or custom lint rules that validate the module graph on CI. Module boundaries are only as strong as their enforcement — code review catches some violations, but automated checks catch all of them.
 
 Thanks for reading through all of this :), Happy Coding!
