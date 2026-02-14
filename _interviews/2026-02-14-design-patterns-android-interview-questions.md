@@ -4,7 +4,6 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 5
-level: mid
 sequence: 39
 ---
 

@@ -4,7 +4,6 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 6
-level: senior
 sequence: 65
 ---
 

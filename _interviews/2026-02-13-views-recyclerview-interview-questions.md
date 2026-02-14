@@ -4,7 +4,6 @@ date: 2026-02-13
 layout: interview
 tags: [Technical Round]
 order: 4
-level: junior
 sequence: 4
 ---
 

@@ -4,7 +4,6 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 1
-level: junior
 sequence: 23
 ---
 

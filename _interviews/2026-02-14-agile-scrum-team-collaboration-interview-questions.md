@@ -4,7 +4,6 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 3
-level: junior
 sequence: 22
 ---
 

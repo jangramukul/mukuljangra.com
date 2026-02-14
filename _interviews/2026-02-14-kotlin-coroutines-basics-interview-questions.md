@@ -4,7 +4,6 @@ date: 2026-02-14
 layout: interview
 tags: [Kotlin Round]
 order: 4
-level: junior
 sequence: 12
 ---
 

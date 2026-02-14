@@ -1360,9 +1360,15 @@
         <!-- Interview Prep tab -->
         <div class="tab-content" id="tab-interviews">
           <div class="interview-level-chips">
-            <div class="category-chip level-chip" data-level="junior">Junior Level</div>
-            <div class="category-chip level-chip" data-level="mid">Mid Level</div>
-            <div class="category-chip level-chip active" data-level="senior">Senior Level</div>
+            <div class="category-chip level-chip active" data-itag="all">All</div>
+            <div class="category-chip level-chip" data-itag="Technical_Round">Technical Round</div>
+            <div class="category-chip level-chip" data-itag="Kotlin_Round">Kotlin Round</div>
+            <div class="category-chip level-chip" data-itag="Jetpack_Compose_Round">Jetpack Compose Round</div>
+            <div class="category-chip level-chip" data-itag="DSA_Round">DSA Round</div>
+            <div class="category-chip level-chip" data-itag="System_Design_Round">System Design Round</div>
+            <div class="category-chip level-chip" data-itag="Architecture_Round">Architecture Round</div>
+            <div class="category-chip level-chip" data-itag="Behavioral_Round">Behavioral Round</div>
+            <div class="category-chip level-chip" data-itag="Coding_Test">Coding Test</div>
           </div>
           {% assign interviews = site.interviews | sort: 'sequence' %}
           {% if interviews.size > 0 %}
@@ -1447,9 +1453,6 @@
           'gradle': 6,
           'jetpack compose': 2,
           'technical round': 3,
-          'junior level': 3,
-          'mid level': 2,
-          'senior level': 1,
         };
 
         function applyTagColor(el) {
@@ -1543,35 +1546,31 @@
           });
         });
 
-        // Interview level chip filtering
-        const levelChips = document.querySelectorAll('.level-chip');
+        // Interview round chip filtering
+        const iChips = document.querySelectorAll('.level-chip');
         const iPosts = document.querySelectorAll('#tab-interviews .interview-post-link');
-        const LEVEL_HIERARCHY = { junior: ['junior'], mid: ['junior', 'mid'], senior: ['junior', 'mid', 'senior'] };
 
-        function filterByLevel(level) {
-          const allowed = LEVEL_HIERARCHY[level];
-          let dayNum = 1;
-          iPosts.forEach(post => {
-            const postLevel = post.dataset.level;
-            if (allowed.includes(postLevel)) {
-              post.classList.remove('hidden');
-              post.querySelector('.day-num').textContent = dayNum++;
-            } else {
-              post.classList.add('hidden');
-            }
-          });
-        }
-
-        levelChips.forEach(chip => {
+        iChips.forEach(chip => {
           chip.addEventListener('click', function() {
-            levelChips.forEach(c => c.classList.remove('active'));
+            const tag = this.dataset.itag;
+            iChips.forEach(c => c.classList.remove('active'));
             this.classList.add('active');
-            filterByLevel(this.dataset.level);
+
+            let dayNum = 1;
+            iPosts.forEach(post => {
+              if (tag === 'all') {
+                post.classList.remove('hidden');
+                post.querySelector('.day-num').textContent = dayNum++;
+              } else {
+                const postTags = post.dataset.tags.split('|');
+                const normalizedTag = tag.replace(/_/g, ' ');
+                const match = postTags.includes(normalizedTag);
+                post.classList.toggle('hidden', !match);
+                if (match) post.querySelector('.day-num').textContent = dayNum++;
+              }
+            });
           });
         });
-
-        // Default: show all (senior)
-        filterByLevel('senior');
 
         // Restore state from URL
         const urlParams = new URLSearchParams(window.location.search);
