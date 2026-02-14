@@ -31,6 +31,10 @@ collections:
     output: true
     permalink: /interview/:title/
 
+  courses:
+    output: true
+    permalink: /course/:title/
+
   newsletters:
     output: true
     permalink: /newsletter/:title/

@@ -331,6 +331,153 @@
         border-bottom-color: #60a5fa;
       }
 
+      .section-tab.active[data-tab="courses"] {
+        color: #a78bfa;
+        border-bottom-color: #a78bfa;
+      }
+
+      .section-tab.active[data-tab="courses"] .tab-count {
+        background-color: rgba(167, 139, 250, 0.15);
+        color: #a78bfa;
+      }
+
+      /* Courses grid */
+      .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .course-card-link {
+        text-decoration: none !important;
+        color: inherit !important;
+        display: block;
+      }
+
+      .course-card-link:hover {
+        text-decoration: none !important;
+        color: inherit !important;
+      }
+
+      .course-card {
+        background-color: rgba(17, 24, 39, 0.6);
+        border: 1px solid rgba(75, 85, 99, 0.3);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .course-card:hover {
+        border-color: rgba(167, 139, 250, 0.6);
+        background-color: rgba(17, 24, 39, 0.8);
+        transform: translateY(-2px);
+      }
+
+      .course-card-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .course-card-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .course-card-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.15em;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      .course-card-desc {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85em;
+        color: #9ca3af;
+        line-height: 1.5;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .course-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .course-card-stat {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.78em;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .course-card-dot {
+        color: #4b5563;
+        font-size: 0.7em;
+      }
+
+      .course-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 8px;
+      }
+
+      .course-card-difficulty {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72em;
+        font-weight: 500;
+        color: #a78bfa;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        background-color: rgba(167, 139, 250, 0.12);
+        border: 1px solid rgba(167, 139, 250, 0.25);
+      }
+
+      .course-card-cta {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8em;
+        font-weight: 600;
+        color: #60a5fa;
+        transition: color 0.2s ease;
+      }
+
+      .course-card:hover .course-card-cta {
+        color: #93c5fd;
+      }
+
+      @media (max-width: 768px) {
+        .courses-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .course-card {
+          padding: 20px;
+        }
+      }
+
       /* Roadmap */
       .roadmap-accordion {
         display: flex;
@@ -1295,6 +1442,7 @@
           <div class="section-tab active" data-tab="articles">Guides <span class="tab-count">{{ site.posts | size }}</span></div>
           <div class="section-tab" data-tab="newsletter">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
           <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
+          <div class="section-tab" data-tab="courses">Courses <span class="tab-count">{{ site.courses | size }}</span></div>
           <div class="section-tab" data-tab="roadmap">Roadmap</div>
           <div class="section-tab" data-tab="tools">Tools I Use</div>
           <div class="section-tab" data-tab="resources">Resources</div>
@@ -1430,6 +1578,11 @@
         <!-- Roadmap tab -->
         <div class="tab-content" id="tab-roadmap">
           {% include roadmap-tab.html %}
+        </div>
+
+        <!-- Courses tab -->
+        <div class="tab-content" id="tab-courses">
+          {% include courses-tab.html %}
         </div>
 
         <!-- Tools tab -->

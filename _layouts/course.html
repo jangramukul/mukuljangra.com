@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.site_name }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐝</text></svg>">
+    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" type="text/css">
+    <link rel="stylesheet" href="/static/app.css" type="text/css">
+    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
+    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
+    <meta name="theme-color" content="#111827">
+    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
+    <link rel="stylesheet" href="/static/footer.css" type="text/css">
+    <style type="text/css">
+      :root {
+        --background-color: #111827;
+        --text-color: #e5e7eb;
+        --sidebar-bg: #1e293b;
+        --code-bg: #1e293b;
+        --blockquote-color: #9ca3af;
+        --blockquote-border: rgba(96, 165, 250, 0.4);
+        --link-color: #60a5fa;
+        --link-color-hover: #93c5fd;
+      }
+
+      body, .right-column, .content, .content.post {
+        background-color: transparent !important;
+      }
+
+      body {
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .right-column {
+        width: 100%;
+        flex: 1;
+        padding: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .content {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .content.post {
+        font-size: 16px;
+        line-height: 1.7;
+        margin: 0 auto;
+        color: var(--text-color);
+        max-width: 1000px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+        padding: 0;
+        width: 100%;
+      }
+
+      /* Back navigation */
+      .back-navigation {
+        margin-bottom: 20px;
+        width: 100%;
+        padding-top: 70px;
+        padding-bottom: 30px;
+      }
+
+      .back-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: auto;
+        height: 36px;
+        background-color: rgba(55, 65, 81, 0.3);
+        border-radius: 9999px;
+        text-decoration: none;
+        color: #d1d5db;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(75, 85, 99, 0.4);
+        line-height: 1;
+        padding: 0 16px;
+        font-family: 'Inter', sans-serif;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .back-button:hover {
+        background-color: rgba(96, 165, 250, 0.15);
+        color: #ffffff;
+        border-color: rgba(96, 165, 250, 0.3);
+      }
+
+      /* Course hero */
+      .course-hero {
+        margin-bottom: 40px;
+        padding-bottom: 32px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .course-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      .course-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 2em;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0 0 12px 0;
+        line-height: 1.2;
+        border: none !important;
+        padding: 0 !important;
+      }
+
+      .course-description {
+        font-size: 1.1em;
+        color: #9ca3af;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        max-width: 700px;
+      }
+
+      .course-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .course-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-size: 0.85em;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        background-color: rgba(55, 65, 81, 0.4);
+        color: #d1d5db;
+        border: 1px solid rgba(75, 85, 99, 0.3);
+      }
+
+      .course-meta-icon {
+        font-size: 14px;
+      }
+
+      .course-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .course-tag {
+        padding: 3px 10px;
+        background-color: rgba(55, 65, 81, 0.4);
+        border-radius: 9999px;
+        font-size: 0.75em;
+        color: #9ca3af;
+        border: 1px solid transparent;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+      }
+
+      /* Course content (modules and lessons) */
+      .course-content {
+        margin-top: 0;
+      }
+
+      .content.post h2 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.4em;
+        margin-top: 2em;
+        margin-bottom: 0.8em;
+        color: #ffffff;
+        border-left: 3px solid #60a5fa;
+        padding: 4px 0 4px 12px;
+        border-bottom: none;
+        border-image: none;
+        font-weight: 700;
+        width: 100%;
+        max-width: 100%;
+        display: block;
+      }
+
+      .content.post h3 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.2em;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+        color: #ffffff;
+        border-left: 2px solid #a78bfa;
+        padding: 2px 0 2px 10px;
+        border-bottom: none;
+        border-image: none;
+        font-weight: 600;
+        display: block;
+      }
+
+      .content.post h4 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.1em;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+        color: #ffffff;
+        border-left: 2px solid #c084fc;
+        padding: 1px 0 1px 8px;
+        border-bottom: none;
+        border-image: none;
+        font-weight: 600;
+        display: block;
+      }
+
+      .content.post p {
+        font-size: 1.08em;
+        margin-bottom: 1.5em;
+        color: #d1d5db;
+        max-width: 100%;
+        box-sizing: border-box;
+        line-height: 1.7;
+      }
+
+      .content.post ul,
+      .content.post ol {
+        font-size: 1.01em;
+        margin-top: 0.5em;
+        margin-bottom: 1.5em;
+        padding-left: 2em;
+        color: #d1d5db;
+        max-width: 100%;
+        box-sizing: border-box;
+        list-style-position: outside;
+      }
+
+      .content.post li {
+        font-size: 1.01em;
+        margin-bottom: 0.5em;
+        color: #d1d5db;
+        padding-left: 0.25em;
+      }
+
+      .content.post code {
+        background-color: var(--code-bg);
+        color: var(--text-color);
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+
+      .content.post pre {
+        background-color: var(--code-bg);
+        color: var(--text-color);
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid rgba(55, 65, 81, 0.4);
+      }
+
+      .content.post .highlight {
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 1.5em;
+      }
+
+      .content.post .highlight pre {
+        margin: 0;
+        border-radius: 12px;
+      }
+
+      .content.post pre code {
+        padding: 0;
+        border-radius: 0;
+        background-color: transparent;
+      }
+
+      .content.post blockquote {
+        border-left: 3px solid rgba(96, 165, 250, 0.4);
+        padding-left: 1em;
+        color: var(--blockquote-color);
+        border-radius: 0 8px 8px 0;
+        background-color: rgba(30, 41, 59, 0.3);
+        padding: 12px 16px 12px 16px;
+        overflow: hidden;
+      }
+
+      .content.post strong {
+        color: #e5e7eb;
+      }
+
+      /* Progress indicator */
+      .course-progress-bar {
+        width: 100%;
+        height: 4px;
+        background-color: rgba(55, 65, 81, 0.5);
+        border-radius: 2px;
+        margin-top: 20px;
+        overflow: hidden;
+      }
+
+      .course-progress-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+      }
+
+      @media (max-width: 768px) {
+        .right-column {
+          padding: 20px;
+        }
+
+        .content, .content.post {
+          padding: 0;
+          max-width: 100%;
+          width: 100%;
+        }
+
+        .back-navigation {
+          padding-top: 40px;
+          padding-bottom: 20px;
+        }
+
+        .course-title {
+          font-size: 1.5em;
+        }
+
+        .course-meta {
+          gap: 8px;
+        }
+
+        .course-icon {
+          font-size: 36px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="gradient-bg"></div>
+    <div style="position:fixed;top:0;left:0;right:0;height:50vh;z-index:0;pointer-events:none;overflow:hidden;">
+      <div class="star-subtle" style="left:8%;top:12%;animation-delay:0.2s;animation-duration:3.5s"></div>
+      <div class="star-subtle" style="left:22%;top:20%;animation-delay:1.8s;animation-duration:4.2s"></div>
+      <div class="star-subtle" style="left:45%;top:30%;animation-delay:0.5s;animation-duration:3.8s"></div>
+      <div class="star-subtle" style="left:68%;top:10%;animation-delay:2.5s;animation-duration:4.5s"></div>
+      <div class="star-subtle" style="left:88%;top:40%;animation-delay:1.1s;animation-duration:3.3s"></div>
+      <div class="star-subtle" style="left:35%;top:55%;animation-delay:0.8s;animation-duration:3.6s"></div>
+      <div class="star-subtle" style="left:58%;top:65%;animation-delay:2s;animation-duration:4.3s"></div>
+      <div class="star-subtle" style="left:78%;top:75%;animation-delay:1.5s;animation-duration:3.9s"></div>
+      <div class="star-subtle" style="left:12%;top:70%;animation-delay:3.2s;animation-duration:4s"></div>
+      <div class="star-subtle" style="left:95%;top:25%;animation-delay:2.8s;animation-duration:4.1s"></div>
+    </div>
+    <div class="main-background" style="z-index: -2;"></div>
+
+    <div class="right-column">
+      <div class="content post" style="background-color: transparent !important;">
+        <div class="back-navigation">
+          <a href="/?tab=courses" class="back-button">
+            <span class="nav-arrow">←</span>
+            <span class="nav-text">All Courses</span>
+          </a>
+        </div>
+
+        <!-- Course Hero -->
+        <div class="course-hero">
+          <span class="course-icon">{{ page.icon }}</span>
+          <h1 class="course-title">{{ page.title }}</h1>
+          <p class="course-description">{{ page.description }}</p>
+          <div class="course-meta">
+            <span class="course-meta-item"><span class="course-meta-icon">📊</span> {{ page.difficulty }}</span>
+            <span class="course-meta-item"><span class="course-meta-icon">📦</span> {{ page.modules }} Modules</span>
+            <span class="course-meta-item"><span class="course-meta-icon">📖</span> {{ page.lessons }} Lessons</span>
+            <span class="course-meta-item"><span class="course-meta-icon">⏱️</span> {{ page.duration }}</span>
+          </div>
+          {% if page.tags %}
+          <div class="course-tags">
+            {% for tag in page.tags %}
+            <span class="course-tag">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="course-progress-bar">
+            <div class="course-progress-fill" style="width: 0%; background: linear-gradient(90deg, {{ page.color | default: '#60a5fa' }}, #a78bfa);"></div>
+          </div>
+        </div>
+
+        <!-- Course Content -->
+        <div class="course-content">
+          {{ content }}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+
+        // Tag colors
+        const TAG_COLORS = [
+          { bg: 'rgba(255, 215, 0, 0.18)', border: 'rgba(255, 215, 0, 0.5)', color: '#FFD700' },
+          { bg: 'rgba(191, 64, 255, 0.18)', border: 'rgba(191, 64, 255, 0.5)', color: '#BF40FF' },
+          { bg: 'rgba(0, 150, 255, 0.18)', border: 'rgba(0, 150, 255, 0.5)', color: '#0096FF' },
+          { bg: 'rgba(0, 224, 0, 0.18)', border: 'rgba(0, 224, 0, 0.5)', color: '#00E000' },
+          { bg: 'rgba(255, 64, 129, 0.18)', border: 'rgba(255, 64, 129, 0.5)', color: '#FF4081' },
+          { bg: 'rgba(0, 230, 210, 0.18)', border: 'rgba(0, 230, 210, 0.5)', color: '#00E6D2' },
+          { bg: 'rgba(255, 145, 0, 0.18)', border: 'rgba(255, 145, 0, 0.5)', color: '#FF9100' },
+          { bg: 'rgba(255, 50, 50, 0.18)', border: 'rgba(255, 50, 50, 0.5)', color: '#FF3232' },
+        ];
+        function hashTagName(name) {
+          var hash = 0;
+          for (var i = 0; i < name.length; i++) { hash = ((hash * 7) + name.charCodeAt(i)) | 0; }
+          return Math.abs(hash) % TAG_COLORS.length;
+        }
+        document.querySelectorAll('.course-tag').forEach(function(el) {
+          var tag = el.textContent.trim();
+          var c = TAG_COLORS[hashTagName(tag)];
+          el.style.backgroundColor = c.bg;
+          el.style.borderColor = c.border;
+          el.style.color = c.color;
+        });
+      });
+    </script>
+
+    {% include footer.html %}
+  </body>
+</html>
