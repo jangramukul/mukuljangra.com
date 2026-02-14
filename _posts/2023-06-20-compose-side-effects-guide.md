@@ -8,19 +8,13 @@ tags:
   - Kotlin Coroutines
 ---
 
-The first time I used `LaunchedEffect` in a real project, I created an infinite loop that crashed the app. The composable was recomposing, which restarted the effect, which updated state, which triggered recomposition, which restarted the effect. Around and around it went, like a dog chasing its own tail — except the dog was my app, and the tail was an OOM crash.
+The first time I used `LaunchedEffect` in a real project, I misunderstood the key parameter and created an infinite loop that crashed the app. The composable was recomposing, which restarted the effect, which updated state, which triggered recomposition, which restarted the effect. It took me an embarrassing amount of time to realize that I was using `Unit` as the key — meaning the effect never restarted intentionally — but the effect itself was triggering recomposition by updating a state that the composable read. The effect wasn't the problem. My understanding of when effects run and restart was the problem.
 
-It took me an embarrassing amount of time to figure out what happened. I was using `Unit` as the key, which meant the effect never restarted intentionally. But the effect itself was updating a state that the composable was reading. The effect wasn't the problem. My understanding of *when* effects run and restart was the problem.
-
-Here's the thing about Compose side effects — surface-level understanding leads directly to bugs. The core idea sounds simple enough: composable functions can recompose at any time, so anything that shouldn't repeat on every recomposition — network calls, analytics events, subscriptions, one-time navigation — needs to be wrapped in a side effect API. But picking the *right* API for the *right* situation? That requires going deeper than most tutorials bother to go.
-
-Think of it like kitchen appliances. You've got a blender, a food processor, a mixer, and a juicer. They all "process food," but if you try to make bread dough in a juicer, you're going to have a bad time. Compose gives you seven side effect tools, and each one has a very specific job. Use the wrong one and your app won't explode immediately — it'll just leak memory, fire phantom callbacks, or loop infinitely at 2 AM before a release.
+Compose side effects are one of those topics where surface-level understanding leads directly to bugs. The core idea is simple: Composable functions can recompose at any time, so anything that shouldn't repeat on every recomposition — network calls, analytics events, subscriptions, one-time navigation — needs to be wrapped in a side effect API. But choosing the right API for the right situation, and understanding the lifecycle semantics of each one, requires going a layer deeper than most tutorials cover.
 
 ## LaunchedEffect — The Workhorse
 
-`LaunchedEffect` is the side effect you'll reach for most often. It launches a coroutine that's tied to the composition lifecycle. When the composable enters the composition, the coroutine starts. When the composable leaves, the coroutine is cancelled. If the key changes, the current coroutine is cancelled and a new one starts.
-
-Think of it like a dedicated assistant who works only while you're in the office. You walk in, they start working. You leave, they stop. If you change what project you're working on (the key changes), they drop the old project and start the new one.
+`LaunchedEffect` launches a coroutine that's tied to the composition lifecycle. When the composable enters the composition, the coroutine starts. When the composable leaves the composition, the coroutine is cancelled. If the key changes, the current coroutine is cancelled and a new one starts.
 
 ```kotlin
 @Composable
@@ -59,15 +53,11 @@ fun OrderDetailScreen(
 }
 ```
 
-Now, the key parameter is the most important thing to get right, and it's where most people trip up. `LaunchedEffect(Unit)` runs once when the composable enters composition and never restarts — good for one-time initialization. `LaunchedEffect(someId)` restarts when `someId` changes — good for loading data based on an argument. `LaunchedEffect(someState)` restarts every time `someState` changes — useful but easy to overuse.
+The key parameter is the most important thing to get right. `LaunchedEffect(Unit)` runs once when the composable enters composition and never restarts — good for one-time initialization. `LaunchedEffect(someId)` restarts when `someId` changes — good for loading data based on an argument. `LaunchedEffect(someState)` restarts every time `someState` changes — useful but easy to overuse.
 
-Here's the reframe that finally made it click for me: **the key isn't "when should this run." It's "what input does this effect depend on."** If your effect depends on `orderId`, the key is `orderId`. If it depends on nothing (it's a one-time setup), the key is `Unit` or `true`. If you're not sure what the key should be, you probably don't fully understand what triggers your effect — and that's the real problem to solve first.
-
-> **💡 The "aha" moment:** Stop thinking of the key as "when to run." Start thinking of it as "what does this effect care about." The key answers the question: if *this* value changes, should the effect restart from scratch?
+Here's the reframe that helped me: **the key isn't "when should this run." It's "what input does this effect depend on."** If your effect depends on `orderId`, the key is `orderId`. If it depends on nothing (it's a one-time setup), the key is `Unit` or `true`. If you're not sure what the key should be, you probably don't fully understand what triggers your effect, and that's the real problem to solve first.
 
 ## DisposableEffect — Setup and Teardown
-
-Imagine you're staying at a hotel. You check in, you use the room, and when you check out, housekeeping comes in to clean up after you. That's `DisposableEffect` — it's the check-in *and* the checkout.
 
 `DisposableEffect` is for effects that need cleanup. It provides an `onDispose` block that runs when the composable leaves the composition or when the key changes (before the effect restarts). This is the Compose equivalent of `onResume`/`onPause` or `addListener`/`removeListener`.
 
@@ -113,15 +103,13 @@ fun LocationTrackingScreen(
 }
 ```
 
-The rule is straightforward: if you register something, you need to unregister it. If you acquire a resource, you need to release it. If you add a listener, you need to remove it. Any of those patterns means `DisposableEffect`, not `LaunchedEffect`.
+The rule is straightforward: if you register something, you need to unregister it. If you acquire a resource, you need to release it. If you add a listener, you need to remove it. Any of those patterns means `DisposableEffect`, not `LaunchedEffect`. If you use `LaunchedEffect` for a listener, the listener is never removed — it'll keep firing even after the composable is gone from the screen, causing memory leaks and phantom updates.
 
-What happens if you use `LaunchedEffect` for a listener instead? The listener is never removed. It keeps firing even after the composable is gone from the screen, causing memory leaks and phantom updates. Your user navigated away three screens ago, but the location callback is still happily updating a state object that nobody reads anymore. Not great.
-
-One subtle point worth calling out: `DisposableEffect` does not provide a coroutine scope. The body runs synchronously on the main thread. If you need to do async setup followed by cleanup, you might need both — `LaunchedEffect` for the async work and `DisposableEffect` for the cleanup. But in practice, most cleanup scenarios are synchronous (removing a callback, closing a stream), so `DisposableEffect` alone is usually sufficient.
+One subtle point: `DisposableEffect` does not provide a coroutine scope. The body runs synchronously on the main thread. If you need to do async setup followed by cleanup, you might need both — `LaunchedEffect` for the async work and `DisposableEffect` for the cleanup. But in practice, most cleanup scenarios are synchronous (removing a callback, closing a stream), so `DisposableEffect` alone is usually sufficient.
 
 ## SideEffect — Synchronizing With Non-Compose Code
 
-`SideEffect` is the oddball of the family. It runs after every successful recomposition. No key. No coroutine scope. No cleanup. It's the "fire and forget" option — for synchronizing Compose state with non-Compose code like analytics, logging, or updating external systems that need to stay in sync with the UI.
+`SideEffect` runs after every successful recomposition. It has no key, no coroutine scope, and no cleanup. It's for synchronizing Compose state with non-Compose code — analytics, logging, or updating external systems that need to stay in sync with the UI.
 
 ```kotlin
 @Composable
@@ -144,19 +132,13 @@ fun ProductDetailScreen(
 }
 ```
 
-`SideEffect` is the least-used of the three core effect APIs, and for good reason — most side effects need either a coroutine (`LaunchedEffect`) or cleanup (`DisposableEffect`). The niche for `SideEffect` is narrow: fire-and-forget synchronization that should happen on every recomposition, with no async work and no cleanup needed. Analytics screen tracking and logging are the most common real-world uses I've seen.
+`SideEffect` is the least-used of the three, and for good reason — most side effects need either a coroutine (`LaunchedEffect`) or cleanup (`DisposableEffect`). The niche for `SideEffect` is narrow: fire-and-forget synchronization that should happen on every recomposition, with no async work and no cleanup needed. Analytics screen tracking and logging are the most common uses I've seen.
 
-But here's where it gets dangerous. `SideEffect` runs *after* recomposition, not during. So what happens if you update state inside `SideEffect`? That state change triggers another recomposition — which triggers another `SideEffect` — which updates state again. You guessed it: infinite loop. This is the exact same trap that bit me with `LaunchedEffect`, and it's even easier to fall into with `SideEffect` because it runs on every recomposition by default.
-
-> **🧠 Think about it:** If `SideEffect` runs after *every* successful recomposition, what would happen if you called `mutableState.value = newValue` inside one? Walk through the chain of events in your head before moving on.
+The important thing to understand is that `SideEffect` runs after recomposition, not during. If you update state inside `SideEffect`, it triggers another recomposition — which triggers another `SideEffect`. This is the same infinite loop potential that bit me with `LaunchedEffect`, and it's even easier to trigger with `SideEffect` because it runs on every recomposition by default.
 
 ## rememberCoroutineScope — Launching From Callbacks
 
-`LaunchedEffect` ties a coroutine to the composition lifecycle — it starts automatically when the composable appears. But what about coroutines that should start when the *user* does something? A button click, a swipe, a long press?
-
-You can't use `LaunchedEffect` for this because you don't want the coroutine to launch when the composable enters composition. You want it to launch when the user taps "Pay Now." That's where `rememberCoroutineScope` comes in.
-
-Think of it this way: `LaunchedEffect` is an automatic sprinkler system — it turns on by itself on a schedule. `rememberCoroutineScope` is a garden hose — you pick it up and turn it on when you want to water something specific.
+`LaunchedEffect` ties a coroutine to the composition lifecycle. But sometimes you need to launch a coroutine from a callback — a button click, a gesture, a user action. You can't use `LaunchedEffect` for this because the coroutine should start on the user's action, not when the composable enters composition. That's where `rememberCoroutineScope` comes in.
 
 ```kotlin
 @Composable
@@ -194,13 +176,13 @@ fun CheckoutScreen(
 }
 ```
 
-The scope returned by `rememberCoroutineScope` is cancelled when the composable leaves the composition — so any coroutines launched from it are automatically cleaned up. This matters more than you might think. If you used `GlobalScope.launch` instead, that coroutine would keep running even after the user navigated away, potentially updating state on a composable that no longer exists. That's a recipe for crashes and ghost state updates.
+The scope returned by `rememberCoroutineScope` is cancelled when the composable leaves the composition — so any coroutines launched from it are automatically cleaned up. This is important. If you used `GlobalScope.launch` instead, the coroutine would keep running even after the user navigated away, potentially updating state on a composable that no longer exists.
 
 ## rememberUpdatedState — Capturing Latest Values in Long-Lived Effects
 
-Here's a tricky scenario. Imagine you have a `LaunchedEffect(Unit)` — it runs once and never restarts. Inside it, you reference a lambda that was passed in as a parameter. Three seconds later, the parent recomposes and passes a *different* lambda. But your effect already captured the old one. It's like taking a photo of someone's phone number — if they change their number later, your photo is outdated.
+Here's a subtle but important problem: you have a `LaunchedEffect` that runs for a long time (or runs once), but inside it you reference a lambda or value that might change. Since `LaunchedEffect(Unit)` never restarts, it captures the initial value and never sees updates.
 
-`rememberUpdatedState` solves this by holding a reference that always points to the latest value, even inside a non-restarting effect. Instead of a photo, it's more like a contact card that auto-updates.
+`rememberUpdatedState` solves this by holding a reference that always points to the latest value, even inside a non-restarting effect.
 
 ```kotlin
 @Composable
@@ -218,13 +200,11 @@ fun SplashScreen(onTimeout: () -> Unit) {
 }
 ```
 
-Real-world use case: timer-based effects where the callback might change, long-running animations where the completion handler is updated, or any `LaunchedEffect(Unit)` that references composable parameters. Anytime you have a long-lived effect that touches values from the outside world, ask yourself: could this value change while my effect is still running? If yes, `rememberUpdatedState` is your friend.
+Real-world use case: timer-based effects where the callback might change, long-running animations where the completion handler is updated, or any `LaunchedEffect(Unit)` that references composable parameters.
 
 ## produceState — Converting Non-Compose Sources to State
 
 `produceState` creates a Compose `State` from a non-Compose data source. It launches a coroutine that updates the state, and it's lifecycle-aware — the coroutine is cancelled when the composable leaves composition.
-
-Think of it as a translator sitting between two people who speak different languages. The callback-based API speaks "callback," Compose speaks "state," and `produceState` translates between them in real time.
 
 ```kotlin
 @Composable
@@ -250,13 +230,11 @@ fun ConnectivityBanner(connectivityManager: ConnectivityManager) {
 }
 ```
 
-`produceState` is essentially a `LaunchedEffect` that produces a `State<T>`. The `awaitDispose` block inside it handles cleanup when the composable leaves composition — similar to `DisposableEffect`'s `onDispose`. Use it when you need to convert a callback-based API into Compose state. If you find yourself writing a `LaunchedEffect` that just updates a `mutableStateOf`, that's a sign you probably want `produceState` instead — it bundles that whole pattern into one clean call.
+`produceState` is essentially a `LaunchedEffect` that produces a `State<T>`. The `awaitDispose` block inside it handles cleanup when the composable leaves composition — similar to `DisposableEffect`'s `onDispose`. Use it when you need to convert a callback-based API into Compose state.
 
 ## snapshotFlow — Converting Compose State to Flow
 
-Now we go the other direction. If `produceState` converts callback-world into Compose-state-world, `snapshotFlow` converts Compose-state-world into Flow-world. It reads Compose state and emits it as a Flow. Every time the state value changes, the flow emits the new value.
-
-Why would you want this? Because Flows give you operators. You can `distinctUntilChanged()`, `debounce()`, `filter()`, and `map()` your Compose state changes before reacting to them. That's powerful.
+The inverse of `produceState`. `snapshotFlow` reads Compose state and emits it as a Flow. Every time the state value changes, the flow emits the new value.
 
 ```kotlin
 @Composable
@@ -280,13 +258,11 @@ fun OrderListScreen(lazyListState: LazyListState = rememberLazyListState()) {
 }
 ```
 
-Real-world use case: triggering pagination based on scroll position (like the example above), logging analytics when a user scrolls past a certain point, or saving scroll position to persistence when the user stops scrolling. Anytime you want to *react* to Compose state changes with Flow operators instead of raw recomposition, reach for `snapshotFlow`.
+Real-world use case: triggering pagination based on scroll position, logging analytics when a user scrolls past a certain point, saving scroll position to persistence when the user stops scrolling.
 
 ## derivedStateOf — Computed State Without Recomposition
 
-`derivedStateOf` is a performance tool that solves a specific problem. It creates a state value that only changes when the *computation result* actually changes, not when the inputs change. Sounds like the same thing? It's not.
-
-Imagine a shopping cart with 50 items. The user scrolls the list, quantities update, items get added and removed. Every change triggers recomposition. But your "Checkout" button only cares about one thing: is the cart non-empty and do all items have a quantity greater than zero? That answer is `true` probably 99% of the time across all those recompositions. Without `derivedStateOf`, the button recomposes every single time. With it, the button only recomposes when the answer flips between `true` and `false`.
+`derivedStateOf` creates a state value that only changes when the computation result actually changes, not when the inputs change. This is a performance tool — it prevents unnecessary recompositions when the derived value stays the same despite input changes.
 
 ```kotlin
 @Composable
@@ -318,13 +294,11 @@ fun ShoppingCart(items: List<CartItem>) {
 }
 ```
 
-The key insight: `derivedStateOf` reads Compose state objects and only triggers recomposition of its readers when the computed value actually changes. If `items` has 50 elements and one of them changes its `quantity` but the total stays the same (unlikely but possible), the `Text` showing the total doesn't recompose. For the `isNotEmpty()` check that's `true` 99% of the time, this avoids a lot of wasted recomposition.
-
-> **⚡ Quick check:** You have a `LazyColumn` with 200 items and a "scroll to top" FAB that should only appear when the user has scrolled past the first item. Would you use `derivedStateOf` here? Why or why not?
+The key insight: `derivedStateOf` reads Compose state objects and only triggers recomposition of its readers when the computed value actually changes. If `items` has 50 elements and one of them changes its `quantity` but the total stays the same (unlikely but possible), the `Text` showing the total doesn't recompose. For lists where the `isNotEmpty()` check is the same 99% of the time, this avoids a lot of wasted recomposition.
 
 ## Choosing the Right Effect
 
-Alright, seven APIs. That can feel overwhelming. But the decision tree is actually simpler than it looks once you internalize it. Walk through these questions in order:
+The decision tree is simpler than it looks once you internalize it.
 
 **Does the effect need to launch automatically when the composable appears?** Use `LaunchedEffect`. The key should be whatever input the effect depends on.
 
@@ -341,8 +315,6 @@ Alright, seven APIs. That can feel overwhelming. But the decision tree is actual
 **Do you need a computed value that avoids recomposition when the result doesn't change?** Use `derivedStateOf`.
 
 **Does a long-running effect reference a lambda that might change?** Use `rememberUpdatedState` to always capture the latest value.
-
-Here's a real example that puts two of these together in the same screen:
 
 ```kotlin
 @Composable
@@ -374,11 +346,9 @@ fun LiveUpdatesScreen(
 }
 ```
 
-Notice how `LaunchedEffect` doesn't need an `onDispose` — coroutine cancellation *is* the cleanup. But the lifecycle observer can't rely on cancellation. It's a plain callback, so `DisposableEffect` with `onDispose` is the right fit.
+IMO, the most common mistake I see is reaching for `rememberCoroutineScope` when `LaunchedEffect` is the right choice. If the work should start automatically and restart when inputs change, `LaunchedEffect` gives you that behavior for free. Using `rememberCoroutineScope` with a `LaunchedEffect` to trigger it is adding complexity for no benefit.
 
-> **🔥 Real talk:** IMO, the most common mistake I see in codebases is reaching for `rememberCoroutineScope` when `LaunchedEffect` is the right choice. If the work should start automatically and restart when inputs change, `LaunchedEffect` gives you that behavior for free. Wrapping `rememberCoroutineScope` with a `LaunchedEffect` to trigger it is like hiring a middleman to hand a letter to someone standing right next to you.
-
-The second most common mistake is forgetting that `LaunchedEffect` cancels its coroutine when the key changes. If you're collecting a Flow in a `LaunchedEffect` keyed to some state, every time that state changes, the Flow collection restarts from scratch. For most ViewModels emitting StateFlow, this is fine — the collector immediately gets the current value. But for SharedFlow or cold Flows with expensive setup, it can cause unexpected behavior that's hard to debug.
+The second most common mistake is forgetting that `LaunchedEffect` cancels its coroutine when the key changes. If you're collecting a Flow in a `LaunchedEffect` keyed to some state, every time that state changes, the Flow collection restarts from scratch. For most ViewModels emitting StateFlow, this is fine — the collector immediately gets the current value. But for SharedFlow or cold Flows with expensive setup, it can cause unexpected behavior.
 
 Compose's effect system takes some time to internalize, but once you understand the lifecycle semantics — when each effect starts, restarts, and cleans up — they become predictable tools rather than mysterious APIs. The key is matching the effect to the lifecycle behavior you actually need, not reaching for the one you used last time.
 

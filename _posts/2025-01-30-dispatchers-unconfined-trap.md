@@ -12,8 +12,6 @@ I've been injecting `Dispatchers.IO` and `Dispatchers.Main` into my classes for 
 
 Except it has a subtle, devastating bug that will crash your app at the worst possible time. And the fix isn't a different dispatcher — it's a completely different type.
 
-Think of it like this: imagine you hire a cab driver and tell them "take me wherever the road goes." That sounds freeing, right? But what happens when you stop for coffee and come back outside? Your driver has no idea where you were supposed to be going. They just sit wherever the car happens to be parked. That's `Dispatchers.Unconfined`. It doesn't remember where to take you back after a stop. And in coroutines, "stops" happen all the time — they're called suspension points.
-
 Colin White from Cash App wrote about this in January 2025, and it changed how I think about dispatchers, `CoroutineContext`, and the difference between "don't dispatch" and "don't override the dispatcher." These sound like the same thing. They are not.
 
 ## How Dispatchers.Unconfined Actually Works
@@ -37,13 +35,11 @@ object Unconfined : CoroutineDispatcher() {
 }
 ```
 
-Two things stand out. First, `isDispatchNeeded` always returns `false`. This tells the coroutine machinery "don't bother dispatching — just run the code on whatever thread we're currently on." Second — and this is the part that should make you raise an eyebrow — the `dispatch` method *throws an exception* because it should never be called. `Dispatchers.Unconfined` has one job: never change threads when entering its context.
+Two things stand out. First, `isDispatchNeeded` always returns `false`. This tells the coroutine machinery "don't bother dispatching — just run the code on whatever thread we're currently on." Second, the `dispatch` method throws an exception because it should never be called. `Dispatchers.Unconfined` has one job: never change threads when entering its context.
 
 This is fundamentally different from `Dispatchers.Main` or `Dispatchers.Default`. Those dispatchers have backing thread pools, and when you enter their context, they check whether you're already on one of their threads. If not, they dispatch you to the right thread. If yes, they skip the dispatch. The important part is: they also dispatch you *back* to the right thread after a suspension point.
 
 `Dispatchers.Unconfined` doesn't do this. It opts out of the dispatch mechanism entirely. And that's where the trap is.
-
-Going back to our cab analogy — `Dispatchers.Main` is like a cab driver who always brings you back to Main Street after every errand. `Dispatchers.IO` always brings you back to the IO District. `Dispatchers.Unconfined`? That driver abandoned the car and left. Good luck finding your way back.
 
 ## The Crash Scenario
 
@@ -88,19 +84,15 @@ fun testLoadTransactions() = runTest {
 }
 ```
 
-This crashes. Can you guess why?
+This crashes. The first `textView.text = recent.summary()` works fine because we're still on the test thread. But then `delay()` suspends the coroutine. Since `Dispatchers.Unconfined` doesn't implement the `Delay` interface, the coroutine machinery falls back to the `DefaultExecutor` — a separate daemon thread that handles timer scheduling. When the delay completes and the coroutine resumes, it needs to dispatch back to the main dispatcher. But the main dispatcher is `Dispatchers.Unconfined`, which says "don't dispatch, just run on whatever thread you're on." The coroutine resumes on the `DefaultExecutor` thread instead of the main thread. The next line touches `textView`, which throws `CalledFromWrongThreadException` because you're not on the main thread anymore.
 
-The first `textView.text = recent.summary()` works fine because we're still on the test thread. But then `delay()` suspends the coroutine. Since `Dispatchers.Unconfined` doesn't implement the `Delay` interface, the coroutine machinery falls back to the `DefaultExecutor` — a separate daemon thread that handles timer scheduling. When the delay completes and the coroutine resumes, it needs to dispatch back to the main dispatcher. But the main dispatcher is `Dispatchers.Unconfined`, which says "don't dispatch, just run on whatever thread you're on." The coroutine resumes on the `DefaultExecutor` thread instead of the main thread. The next line touches `textView`, which throws `CalledFromWrongThreadException` because you're not on the main thread anymore.
-
-> **💡 The "aha" moment:** `Dispatchers.Unconfined` breaks one of coroutines' best features — making threading a local concern. When you use `Dispatchers.Main`, you don't have to worry about what thread you're on after calling another `suspend fun`. The dispatcher handles the redispatch for you. `Dispatchers.Unconfined` removes that safety net entirely.
+Here's the key insight: **`Dispatchers.Unconfined` breaks one of coroutines' best features — making threading a local concern.** When you use `Dispatchers.Main`, you don't have to worry about what thread you're on after calling another `suspend fun`. The dispatcher handles the redispatch for you. `Dispatchers.Unconfined` removes that safety net entirely.
 
 ## The Fix: EmptyCoroutineContext
 
-Here's where it gets interesting. The solution is to stop thinking in terms of dispatchers and start thinking in terms of `CoroutineContext`. When you call `withContext(someDispatcher)`, you're updating the coroutine context's dispatcher key. `Dispatchers.Unconfined` overwrites that key with a dispatcher that never dispatches. But what if you just... didn't overwrite the key at all?
+The solution is to stop thinking in terms of dispatchers and start thinking in terms of `CoroutineContext`. When you call `withContext(someDispatcher)`, you're updating the coroutine context's dispatcher key. `Dispatchers.Unconfined` overwrites that key with a dispatcher that never dispatches. But what if you just... didn't overwrite the key at all?
 
-That's exactly what `EmptyCoroutineContext` does. It's an empty map. Think of it like walking into a meeting room where someone already set up the projector, arranged the chairs, and queued up the slides. `Dispatchers.Unconfined` is like barging in and ripping out all the AV equipment — "We don't need any of this!" `EmptyCoroutineContext` is like walking in, looking around, and saying "Looks good, I'll just sit down." Everything that was already set up stays in place.
-
-When you call `withContext(EmptyCoroutineContext)`, the coroutine context doesn't change. The existing dispatcher stays in place. The coroutine continues on whatever thread it was already on — no dispatch needed because the context hasn't changed — but crucially, if something like `delay()` moves the coroutine to a different thread, the original dispatcher can still dispatch it back.
+That's exactly what `EmptyCoroutineContext` does. It's an empty map. When you call `withContext(EmptyCoroutineContext)`, the coroutine context doesn't change. The existing dispatcher stays in place. The coroutine continues on whatever thread it was already on — no dispatch needed because the context hasn't changed — but crucially, if something like `delay()` moves the coroutine to a different thread, the original dispatcher can still dispatch it back.
 
 ```kotlin
 @Test
@@ -120,15 +112,11 @@ The test runs synchronously on the test thread, `delay()` behaves correctly, and
 
 There's a bonus here when using `runTest`. The `TestScope` that `runTest` creates uses a `StandardTestDispatcher` by default. This dispatcher implements the `Delay` interface, which means it handles `delay()` calls with virtual time — delays are skipped instantly instead of waiting. When you inject `EmptyCoroutineContext`, the `TestDispatcher` stays in place as the active dispatcher. This means your delay-skipping behavior is preserved. If you had injected `Dispatchers.Unconfined` instead, you'd be overwriting the `TestDispatcher`, losing virtual time, and `delay()` would fall back to the `DefaultExecutor` with a real wall-clock wait.
 
-So `EmptyCoroutineContext` doesn't just fix the crash — it also keeps your test's virtual time working. Two bugs squashed with one empty map.
-
 ## What About UnconfinedTestDispatcher?
 
-If you've used `kotlinx-coroutines-test`, you've probably seen `UnconfinedTestDispatcher`. The name might suggest it solves this problem, but it's solving a different one entirely.
+If you've used `kotlinx-coroutines-test`, you've probably seen `UnconfinedTestDispatcher`. The name might suggest it solves this problem, but it's solving a different one. `UnconfinedTestDispatcher` is a `TestDispatcher` that eagerly enters `launch` and `async` blocks instead of requiring you to call `advanceUntilIdle()` or `runCurrent()`. It shares the "unconfined" behavior of executing immediately on the current thread, but because it's a `TestDispatcher`, it integrates with `TestCoroutineScheduler` and supports virtual time. It still skips delays.
 
-`UnconfinedTestDispatcher` is a `TestDispatcher` that eagerly enters `launch` and `async` blocks instead of requiring you to call `advanceUntilIdle()` or `runCurrent()`. It shares the "unconfined" behavior of executing immediately on the current thread, but because it's a `TestDispatcher`, it integrates with `TestCoroutineScheduler` and supports virtual time. It still skips delays.
-
-> **⚡ Quick check:** If `UnconfinedTestDispatcher` supports virtual time and runs eagerly, why can't you just inject it as your `ioDispatcher` replacement in tests? Because it's designed to be the dispatcher for `runTest` itself — you pass it as `runTest(UnconfinedTestDispatcher())` to change how the test scope dispatches work. It's not meant to be injected into your production classes as a replacement for `Dispatchers.IO` or `Dispatchers.Main`. For that injection site, `EmptyCoroutineContext` is still the right answer.
+The key distinction is scope. `UnconfinedTestDispatcher` is designed to be the dispatcher for `runTest` itself — you pass it as `runTest(UnconfinedTestDispatcher())` to change how the test scope dispatches work. It's not meant to be injected into your production classes as a replacement for `Dispatchers.IO` or `Dispatchers.Main`. For that injection site, `EmptyCoroutineContext` is still the right answer.
 
 ## Change Your Injection Type to CoroutineContext
 
@@ -162,7 +150,7 @@ fun provideTestIoContext(): CoroutineContext =
     EmptyCoroutineContext
 ```
 
-Wait — why does this even compile? Because `CoroutineDispatcher` extends `CoroutineContext.Element`, which extends `CoroutineContext`. Every dispatcher is already a `CoroutineContext`. The `withContext()` function, `CoroutineScope()`, and `CoroutineContext.plus()` all accept `CoroutineContext`, not `CoroutineDispatcher`. You were using the narrower type for no reason.
+This works because `CoroutineDispatcher` extends `CoroutineContext.Element`, which extends `CoroutineContext`. Every dispatcher is already a `CoroutineContext`. The `withContext()` function, `CoroutineScope()`, and `CoroutineContext.plus()` all accept `CoroutineContext`, not `CoroutineDispatcher`. You were using the narrower type for no reason.
 
 Typing your injection as `CoroutineContext` instead of `CoroutineDispatcher` gives you more flexibility. You can inject `EmptyCoroutineContext` in tests. You can also inject a `CoroutineContext` that combines a dispatcher with a `CoroutineName` for debugging, or with an exception handler. The broader type accommodates all of these without changing the injection site.
 
@@ -174,8 +162,6 @@ The reason I call `Dispatchers.Unconfined` a trap and not just a bug is that it 
 
 Until someone adds a `delay()` for debouncing. Or you call a library function that internally uses `withContext(Dispatchers.Default)`. Or the Compose runtime suspends your coroutine and resumes it on a different thread. The crash appears in a test that was previously passing, in code that you didn't change, and the stack trace points to a line that looks completely innocent.
 
-> **🔥 Real talk:** I've seen this exact crash show up in a CI pipeline after a teammate added a `delay(100)` for a debounce. The test had been green for months. The PR had nothing to do with threading. The stack trace pointed at a `textView.text = ...` line that hadn't changed in weeks. It took us an embarrassingly long time to trace it back to `Dispatchers.Unconfined`.
-
 The tradeoff of switching to `EmptyCoroutineContext` is minimal. You lose the explicit declaration that your test is using an "unconfined" dispatcher, and some developers find `EmptyCoroutineContext` less self-documenting than `Dispatchers.Unconfined`. Fair point. But I'll take a slightly less descriptive type name over a latent `CalledFromWrongThreadException` any day.
 
 There are still legitimate uses for `Dispatchers.Unconfined` — specifically in scenarios where you genuinely want to opt out of dispatching entirely and you understand that the coroutine may resume on arbitrary threads. Event-processing loops and certain reactive patterns sometimes use it intentionally. But in the common case of "I want my test to run synchronously," `EmptyCoroutineContext` is the correct tool.
@@ -183,8 +169,6 @@ There are still legitimate uses for `Dispatchers.Unconfined` — specifically in
 ## The Broader Lesson
 
 The reframe here goes beyond just dispatchers. It's about precision in types. `CoroutineDispatcher` says "I will manage which thread this code runs on." `CoroutineContext` says "here's some context for this coroutine — maybe a dispatcher, maybe other things, maybe nothing." When you inject a `CoroutineDispatcher`, you're promising that you'll always have a dispatcher to provide. When you inject a `CoroutineContext`, you leave room for "no change needed" — which is exactly what tests want.
-
-> **🧠 Think about it:** Where else in your codebase are you injecting a narrow type and then struggling to provide a reasonable test double? Would the broader supertype work just as well?
 
 This pattern applies more broadly than just dispatchers. Anytime you find yourself injecting a narrow type and then struggling to provide a reasonable test double, ask whether the broader supertype would work. If your production code only uses the capabilities of the broader type, you're over-constraining yourself for no benefit.
 

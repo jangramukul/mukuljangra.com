@@ -10,11 +10,11 @@ description: "The StackOverflow users or GitHub repos app tests API integration,
 
 ## Build a StackOverflow Users / GitHub Repos App
 
-This is one of those coding tests that sounds simple on paper -- hit a public API, show a list, let users search. But it quietly tests everything: networking, pagination, caching, architecture, and how clean your code stays under time pressure. It's basically a mini production app squeezed into a few hours.
+This coding test asks you to build an app that hits a public REST API (StackOverflow or GitHub), shows results in a list, and lets users search and view details. It covers networking, pagination, caching, and project structure under time pressure.
 
 #### How do you set up Retrofit to call the StackOverflow or GitHub API?
 
-Think of Retrofit like a translator sitting between your app and the API. You describe what you want in Kotlin (an interface with suspend functions), and Retrofit handles the actual HTTP conversation. The StackOverflow API needs `site=stackoverflow` as a query parameter on every call. The GitHub API wants an `Accept: application/vnd.github.v3+json` header.
+I define an interface with suspend functions for each endpoint. The StackOverflow API needs query parameters like `site=stackoverflow`. The GitHub API needs an `Accept: application/vnd.github.v3+json` header.
 
 ```kotlin
 interface GitHubApi {
@@ -43,11 +43,11 @@ interface StackOverflowApi {
 }
 ```
 
-Both APIs are free and don't need authentication for basic reads. But here's the catch -- GitHub caps unauthenticated calls at 60 per hour. You'll burn through that fast while developing. Add a token if you need more headroom.
+Both APIs are free and don't need authentication for basic reads. GitHub caps unauthenticated calls at 60 per hour, so I add a token if I need more.
 
 #### How do you display the fetched users or repos in a LazyColumn?
 
-Pass your list to a `LazyColumn` and always set a `key` on each item using the user ID or repo ID. Without the key, Compose has no way to tell items apart across recomposition -- it's like a teacher trying to track students who all forgot their name tags.
+I pass the list to a `LazyColumn` and set a `key` on each item using the user ID or repo ID. This lets Compose track items correctly across recomposition.
 
 ```kotlin
 @Composable
@@ -81,7 +81,7 @@ fun RepoCard(repo: Repo, onClick: () -> Unit) {
 
 #### How do you handle loading, error, and empty states?
 
-I use a sealed interface for UI state. The important thing most people miss -- you need an explicit `Empty` state. A search returning zero results is not the same as loading. If you don't model it separately, your users stare at a spinner forever wondering if something broke.
+I use a sealed interface for UI state. I include an explicit empty state because a search might return zero results, and that shouldn't look like a loading screen.
 
 ```kotlin
 sealed interface RepoUiState {
@@ -92,13 +92,11 @@ sealed interface RepoUiState {
 }
 ```
 
-Map the API response to these states in the ViewModel. Show a retry button on error and a "No repositories found" message on empty. Simple, but it makes the difference between an app that feels polished and one that feels half-baked.
-
-> **🧠 Think about it:** If the network fails but you have cached data from a previous successful load, which state should you show -- Error or Success with stale data?
+I map the API response to these states in the ViewModel. I show a retry button on error and a "No repositories found" message on empty.
 
 #### How do you display user avatars with Coil?
 
-`AsyncImage` from the Coil Compose library does the heavy lifting. Both APIs give you image URLs -- `avatar_url` for GitHub and `profile_image` for StackOverflow.
+I use `AsyncImage` from the Coil Compose library. Both APIs return image URLs — `avatar_url` for GitHub and `profile_image` for StackOverflow.
 
 ```kotlin
 @Composable
@@ -119,11 +117,11 @@ fun UserAvatar(imageUrl: String, username: String) {
 }
 ```
 
-Always set `placeholder` and `error` drawables. Without them, the image area is just a blank hole while loading. It looks broken, even when it's not.
+I always set `placeholder` and `error` drawables. Without them, the image area is blank while loading and it looks broken.
 
 #### How do you navigate to a detail screen?
 
-Pass the user ID or repo ID through navigation arguments. The detail screen's ViewModel fetches the full data using that ID. Don't try to serialize the entire object through navigation -- it's like trying to fit a sofa through a mail slot. Just send the address and let the other side look it up.
+I pass the user ID or repo ID through navigation arguments. The detail screen's ViewModel fetches full data by that ID. I don't serialize the entire object through navigation.
 
 ```kotlin
 @Composable
@@ -150,11 +148,11 @@ fun AppNavigation() {
 }
 ```
 
-For GitHub repos, you need both the owner and repo name to fetch details. For StackOverflow users, a single user ID is enough.
+For GitHub repos, I need both the owner and repo name to fetch details. For StackOverflow users, a single user ID is enough.
 
 #### How do you implement search with debounce?
 
-Here's the thing -- you don't want to fire an API request on every single keystroke. If someone types "kotlin" that's 6 requests when you only needed one. I use a `MutableStateFlow` for the query and chain `debounce`, `distinctUntilChanged`, and `filter` before triggering the call. It's like a patient receptionist who waits until you're done talking before picking up the phone.
+I use a `MutableStateFlow` for the query and chain `debounce`, `distinctUntilChanged`, and `filter` before triggering the API call. This avoids firing a request on every keystroke.
 
 ```kotlin
 class SearchViewModel(
@@ -184,29 +182,27 @@ class SearchViewModel(
 }
 ```
 
-400ms is the sweet spot for debounce. Lower and you're hammering the API. Higher and search feels sluggish. 400ms gives the user enough time to pause between words without feeling like the app is asleep.
+400ms is a good debounce value. Lower and I hit the API too often. Higher and the search feels sluggish.
 
 #### How do you structure the project packages?
 
-I organize by feature with shared layers:
+I organize by feature with shared layers. A clean structure for a coding test:
 
-- `data/remote/` -- API interfaces, DTOs, response models
-- `data/local/` -- Room database, DAOs, entities
-- `data/repository/` -- Repository implementations
-- `domain/model/` -- Domain models
-- `domain/repository/` -- Repository interfaces
-- `ui/list/` -- List screen composables and ViewModel
-- `ui/detail/` -- Detail screen composables and ViewModel
-- `ui/search/` -- Search screen composables and ViewModel
-- `di/` -- Hilt modules
+- `data/remote/` — API interfaces, DTOs, response models
+- `data/local/` — Room database, DAOs, entities
+- `data/repository/` — Repository implementations
+- `domain/model/` — Domain models
+- `domain/repository/` — Repository interfaces
+- `ui/list/` — List screen composables and ViewModel
+- `ui/detail/` — Detail screen composables and ViewModel
+- `ui/search/` — Search screen composables and ViewModel
+- `di/` — Hilt modules
 
-Don't over-engineer a coding test. If you only have two screens, you don't need a `domain/usecase/` package with single-method use case classes. That's like building a parking garage for a bicycle.
-
-> **🧠 Think about it:** If your coding test has only two screens and no complex business logic, would adding a use case layer impress the interviewer or signal that you can't judge when abstraction adds value?
+I don't over-engineer a coding test. If I only have two screens, I don't need a `domain/usecase/` package with single-method use case classes.
 
 #### How do you implement pagination with Paging 3?
 
-Both APIs support page-based pagination, but they signal "there's more data" differently. StackOverflow hands you a `has_more` boolean. GitHub uses `Link` headers with `rel="next"`. Paging 3's `PagingSource` abstracts over both approaches.
+Both APIs support page-based pagination. The StackOverflow API returns a `has_more` boolean. The GitHub API uses `Link` headers with `rel="next"`. I use Paging 3's `PagingSource` to handle this.
 
 ```kotlin
 class RepoPagingSource(
@@ -238,11 +234,11 @@ class RepoPagingSource(
 }
 ```
 
-In the ViewModel, create a `Pager` and call `cachedIn(viewModelScope)` so loaded pages survive configuration changes. Without `cachedIn`, rotating the phone means re-fetching everything from page one.
+In the ViewModel, I create a `Pager` and use `cachedIn(viewModelScope)` so loaded pages survive configuration changes.
 
 #### How do you implement manual pagination without Paging 3?
 
-Sometimes Paging 3 is overkill or you're short on time. In that case, track the current page and loading state yourself. Trigger the next page load when the user scrolls near the bottom of the list.
+I track the current page and loading state myself. I trigger the next page load when the user scrolls near the end of the list.
 
 ```kotlin
 class RepoViewModel(
@@ -274,11 +270,11 @@ class RepoViewModel(
 }
 ```
 
-This works, but you're on your own for error handling, retry, and refresh logic. Paging 3 gives you all of that for free. Manual pagination is like building your own bookshelf instead of buying one from IKEA -- you can do it, but know what you're giving up.
+This approach works but misses Paging 3's built-in error handling, retry, and refresh logic.
 
 #### How do you separate DTOs from domain models?
 
-DTOs mirror the API response exactly -- every field, every weird name the backend chose. Domain models contain only what your app actually needs. Mapper functions translate between them. Think of it like customs at the border: the raw cargo (DTO) comes in, gets inspected and repackaged into something your country (UI) understands.
+DTOs mirror the API response exactly. Domain models contain only the fields the app needs. Mapper functions convert between them. This keeps the API structure from leaking into UI code.
 
 ```kotlin
 @JsonClass(generateAdapter = true)
@@ -313,11 +309,11 @@ fun RepoDto.toDomain() = Repo(
 )
 ```
 
-If the GitHub API changes its field names tomorrow, you update the DTO and the mapper. The rest of the app doesn't even notice. That's the whole point.
+If the GitHub API changes its field names, I update the DTO and the mapper. The rest of the app stays the same.
 
 #### How do you cache API responses in Room for offline access?
 
-Create a Room entity that mirrors your domain model and a DAO for CRUD operations. The repository fetches from the API and writes to Room, then the UI reads from Room as the single source of truth. It's the classic "network-first, cache-fallback" pattern.
+I create a Room entity that mirrors my domain model and a DAO for CRUD operations. The repository fetches from the API and stores results locally, then serves data from Room as the source of truth.
 
 ```kotlin
 @Entity(tableName = "repos")
@@ -345,11 +341,11 @@ interface RepoDao {
 }
 ```
 
-The `lastUpdated` field is your freshness check. If cached repos are older than an hour, fetch fresh data. If the network call fails, fall back to whatever's in the cache. Stale data is better than no data.
+The `lastUpdated` field lets me invalidate stale data. If cached repos are older than an hour, I fetch fresh data. If the network call fails, I fall back to whatever's in the cache.
 
 #### How do you set up Hilt dependency injection for this project?
 
-One module, all your dependencies. Hilt wires the Retrofit instance, API interface, Room database, and repository together at compile time. No runtime reflection, no manual graph building.
+I create a module that provides the Retrofit instance, API interface, Room database, and repository. Hilt wires everything together at compile time.
 
 ```kotlin
 @Module
@@ -383,11 +379,11 @@ object AppModule {
 }
 ```
 
-Notice `provideRepoDao` doesn't have `@Singleton`. Room already returns the same DAO instance from the database object, so marking it singleton would be redundant. Use `@Singleton` where it actually matters -- Retrofit, the database, and the repository.
+I use `@Singleton` for the Retrofit instance, database, and repository. DAOs don't need `@Singleton` because Room returns the same instance from the database anyway.
 
 #### How do you handle GitHub API rate limiting?
 
-GitHub sends back `429 Too Many Requests` or `403 Forbidden` when you've used up your quota. The trick is catching this before it becomes a user-facing error. I check the `X-RateLimit-Remaining` header on every response using an OkHttp interceptor.
+The GitHub API returns `429 Too Many Requests` or `403 Forbidden` when I hit the rate limit. I check the `X-RateLimit-Remaining` header on each response using an OkHttp interceptor.
 
 ```kotlin
 class RateLimitInterceptor : Interceptor {
@@ -403,13 +399,11 @@ class RateLimitInterceptor : Interceptor {
 }
 ```
 
-For a coding test, the simplest fix is adding a personal access token as a header. That bumps the limit from 60 to 5,000 requests per hour. Store the token in `local.properties` or `BuildConfig` -- never hardcoded in source. Hardcoded tokens in a coding test submission is a red flag interviewers notice.
-
-> **🧠 Think about it:** Your interceptor detects the rate limit is hit and `X-RateLimit-Reset` says 45 seconds from now. Should you show an error, silently retry after the reset, or serve cached data? What would give the best user experience?
+The simplest fix for a coding test is adding a personal access token as a header. That raises the limit from 60 to 5,000 requests per hour. I store the token in `local.properties` or `BuildConfig` — never hardcoded in source.
 
 #### What's the difference between the StackOverflow and GitHub API response structures?
 
-These two APIs wrap their responses differently, and it matters for pagination logic. StackOverflow wraps everything in an envelope with `items`, `has_more`, and `quota_remaining`. GitHub's search API wraps results in `total_count` and `items`. But here's the twist -- GitHub's non-search endpoints (like "get user repos") return raw arrays with no wrapper at all.
+The StackOverflow API wraps all responses in an envelope with `items`, `has_more`, and `quota_remaining`. The GitHub search API wraps results in `total_count` and `items`. GitHub non-search endpoints return arrays directly with no wrapper.
 
 ```kotlin
 data class StackOverflowResponse<T>(
@@ -424,11 +418,11 @@ data class GitHubSearchResponse<T>(
 )
 ```
 
-This means your `PagingSource` uses `hasMore` for StackOverflow and checks if `items` is empty for GitHub. My advice for a timed test -- pick one API and build it correctly rather than trying to support both and doing neither well.
+This means my `PagingSource` uses `hasMore` for StackOverflow and checks if `items` is empty for GitHub. I pick one API and build it correctly rather than trying to support both in a timed test.
 
 #### How do you unit test the ViewModel?
 
-Use a fake repository, not a mock. Fakes are simpler to reason about -- you set up known data, create the ViewModel, and assert the UI state transitions. No `when().thenReturn()` chains that break every time you refactor.
+I use a fake repository instead of mocking. I set up the fake with known data, create the ViewModel, and assert the UI state transitions.
 
 ```kotlin
 class RepoViewModelTest {
@@ -464,7 +458,7 @@ class RepoViewModelTest {
 }
 ```
 
-`MainDispatcherRule` replaces `Dispatchers.Main` with `UnconfinedTestDispatcher` so coroutines run synchronously in tests. Without it, your test would try to use Android's main looper, which doesn't exist in a JVM test environment. Instant crash.
+`MainDispatcherRule` replaces `Dispatchers.Main` with `UnconfinedTestDispatcher` so coroutines run synchronously in tests.
 
 ### Common Follow-ups
 

@@ -10,31 +10,31 @@ description: "Some companies hand you an existing codebase and ask you to review
 
 ## Code Review & Refactoring Challenge
 
-Some companies hand you an existing codebase and say "find the problems, fix them." No greenfield project, no clean architecture template. Just real, messy code that works but makes you wince. This round tests whether you can read unfamiliar code, spot design rot, and improve quality without breaking things.
+Some companies give you an existing codebase and ask you to review it, find problems, and refactor. This is about reading unfamiliar code, spotting design issues, and improving quality without breaking things.
 
 #### What are code smells and how do you spot them?
 
-Think of code smells like that weird noise your car makes. It still drives, but something's off under the hood. The code compiles and runs, but it's fighting you every time you try to change it. Here's what I look for in Android codebases:
+Code smells are patterns that hint at deeper design problems. The code works, but it's hard to maintain and extend. Common ones I look for in Android:
 
-- **God class** -- a ViewModel or Activity doing everything: API calls, data mapping, navigation, UI logic. If a class is over 300 lines, it's probably wearing too many hats.
-- **Long method** -- a function handling multiple responsibilities. If I need to scroll to read the whole thing, it needs to be broken up.
-- **Feature envy** -- a class that spends more time calling methods on another class than on itself. That logic is homesick. It belongs in the other class.
-- **Primitive obsession** -- passing raw strings and ints everywhere instead of creating types like `UserId`, `Email`, or `Temperature`. It's like labeling every box in your house "stuff."
+- **God class** — a ViewModel or Activity doing everything: API calls, data mapping, navigation, UI logic. If a class is over 300 lines, it's probably doing too much.
+- **Long method** — a function handling multiple responsibilities. If I need to scroll to see the whole thing, it should be split.
+- **Feature envy** — a class that calls more methods on another class than on itself. The logic probably belongs in the other class.
+- **Primitive obsession** — passing raw strings and ints everywhere instead of creating types like `UserId`, `Email`, or `Temperature`.
 
 #### How do you improve naming conventions in a codebase?
 
-Good names are like good street signs -- you shouldn't need a map to figure out where you are. When I'm reviewing code, I look for:
+Good naming makes code self-documenting. I look for:
 
-- Vague names: `data`, `info`, `temp`, `result` -- rename to what the thing actually is: `weatherResponse`, `userProfile`, `cachedArticle`
-- Abbreviated names: `usr`, `mgr`, `btn` -- spell them out unless universally understood (like `id` or `url`)
+- Vague names: `data`, `info`, `temp`, `result` — rename to what the thing actually is: `weatherResponse`, `userProfile`, `cachedArticle`
+- Abbreviated names: `usr`, `mgr`, `btn` — spell them out unless universally understood (like `id` or `url`)
 - Booleans that don't read as questions: `loading` should be `isLoading`, `enable` should be `isEnabled`
-- Functions that don't describe what they do: `process()`, `handle()`, `doWork()` -- be specific: `parseWeatherResponse()`, `submitPayment()`
+- Functions that don't describe what they do: `process()`, `handle()`, `doWork()` — be specific: `parseWeatherResponse()`, `submitPayment()`
 
 In Kotlin, follow the standard conventions: `camelCase` for functions and properties, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
 
 #### How do you reduce coupling between classes?
 
-Coupling is when one class knows way too much about another class's personal business. It's like having a coworker who can only do their job if they sit at your desk and use your keyboard. High coupling means changing one class sends shockwaves through a dozen others. I reduce it by:
+Coupling means one class depends directly on another's implementation. High coupling means changing one class forces changes in many others. I reduce it by:
 
 - Depending on interfaces instead of concrete classes
 - Passing dependencies through constructors instead of creating them internally
@@ -54,13 +54,11 @@ class OrderViewModel(
 ) : ViewModel()
 ```
 
-The first ViewModel is impossible to test without a real API and database. The second works with any `OrderRepository` implementation -- including a fake one you whip up in 10 lines for a test.
-
-> **🧠 Think about it:** You're looking at a ViewModel that directly creates a Retrofit instance, a Room DAO, and a SharedPreferences editor inside its `init` block. How many things would you need to mock just to write one unit test for it?
+The first ViewModel is impossible to test without a real API and database. The second works with any `OrderRepository` implementation.
 
 #### How do you refactor a God Activity or God ViewModel?
 
-A God ViewModel is like a Swiss Army knife that's grown to 47 tools -- technically impressive, practically unusable. I fix it by extracting responsibilities into separate classes. A ViewModel should hold UI state and delegate work. If it's making API calls, I create a repository. If it's mapping data, I create mapper functions. If it's handling navigation, I use events or a navigator class.
+I extract responsibilities into separate classes. A ViewModel should hold UI state and delegate work. If it's making API calls, I create a repository. If it's mapping data, I create mapper functions. If it's handling navigation, I use events or a navigator class.
 
 ```kotlin
 // Before: God ViewModel
@@ -89,23 +87,23 @@ The refactored ViewModel is testable because I can swap `GetProfileUseCase` with
 
 #### What does it mean to refactor toward SOLID principles?
 
-SOLID gives five guidelines for structuring code, but honestly, in a refactoring challenge, three of them do most of the heavy lifting:
+SOLID gives five guidelines for structuring code. In a refactoring challenge, the most relevant ones are:
 
-- **Single Responsibility** -- each class handles one concern. A `WeatherRepository` fetches data. A `WeatherFormatter` formats it. A `WeatherViewModel` holds UI state. One job each, no moonlighting.
-- **Open/Closed** -- use interfaces so you can add new behavior without modifying existing code. If adding a new data source requires cracking open the repository class, your abstraction needs work.
-- **Dependency Inversion** -- depend on abstractions, not concrete classes. The ViewModel depends on a `Repository` interface, not `WeatherRepositoryImpl`.
+- **Single Responsibility** — each class handles one concern. A `WeatherRepository` fetches data. A `WeatherFormatter` formats it. A `WeatherViewModel` holds UI state.
+- **Open/Closed** — use interfaces so you can add new behavior without modifying existing code. If adding a new data source requires changing the repository, the abstraction is wrong.
+- **Dependency Inversion** — depend on abstractions, not concrete classes. The ViewModel depends on a `Repository` interface, not `WeatherRepositoryImpl`.
 
-In practice, Single Responsibility and Dependency Inversion solve 80% of refactoring problems in Android code. Focus there first.
+In practice, Single Responsibility and Dependency Inversion solve 80% of refactoring problems in Android code.
 
 #### How do you spot and remove code duplication?
 
-Here's the thing -- duplication isn't always copy-paste identical code. Sometimes it's similar logic with slight variations. I look for repeated patterns: multiple ViewModels with the same loading/error/success state handling, multiple API calls with identical error handling, or similar mapping logic across features.
+Duplication isn't always identical code. Sometimes it's similar logic with slight variations. I look for repeated patterns: multiple ViewModels with the same loading/error/success state handling, multiple API calls with identical error handling, or similar mapping logic across features.
 
-I extract shared behavior into reusable functions, base classes, or utility extensions. But I'm careful about premature abstraction -- if two pieces of code look similar but serve different purposes, they might evolve independently. The rule of three is a good friend here: don't extract until you see the same pattern three times.
+I extract shared behavior into reusable functions, base classes, or utility extensions. But I'm careful about premature abstraction — if two pieces of code look similar but serve different purposes, they might evolve independently. The rule of three is useful: don't extract until you see the same pattern three times.
 
 #### How do you extract use cases from a bloated ViewModel?
 
-I look for distinct operations the ViewModel performs -- loading data, submitting a form, toggling a favorite, refreshing a list. Each becomes its own use case class with a single `invoke()` operator function. Think of it like a restaurant kitchen: instead of one chef doing everything, you have a pastry chef, a grill chef, a sauce chef. Each one does their thing well.
+I look for distinct operations the ViewModel performs — loading data, submitting a form, toggling a favorite, refreshing a list. Each becomes a use case class with a single `invoke()` operator function.
 
 ```kotlin
 class GetWeatherUseCase(
@@ -129,13 +127,11 @@ class ToggleFavoriteUseCase(
 }
 ```
 
-Use cases are optional in small apps, but valuable when multiple ViewModels need the same operation or when the operation combines data from multiple repositories. Don't create use cases that just wrap a single repository method -- that's indirection without value.
-
-> **🧠 Think about it:** You have a ViewModel with `loadOrders()`, `cancelOrder()`, `reorder()`, and `rateOrder()` -- all with their own repository calls, error handling, and analytics tracking. How would you split this into use cases without creating a use case for every tiny method?
+Use cases are optional in small apps, but valuable when multiple ViewModels need the same operation or when the operation combines data from multiple repositories. Don't create use cases that just wrap a single repository method — that's indirection without value.
 
 #### How do you replace callbacks with coroutines or Flow?
 
-Callbacks are like those Russian nesting dolls -- open one and there's another one inside, and another, and another. Before you know it, you're four levels deep and you've lost track of what happens when. I wrap callback-based APIs with `suspendCancellableCoroutine` for one-shot results and `callbackFlow` for streams.
+Callbacks create nested, hard-to-follow code. I wrap callback-based APIs with `suspendCancellableCoroutine` for one-shot results and `callbackFlow` for streams.
 
 ```kotlin
 // Before: Callback-based
@@ -162,16 +158,16 @@ suspend fun getWeatherForCurrentLocation(): Weather {
 }
 ```
 
-The coroutine version reads top-to-bottom, like a recipe. Error handling uses try-catch instead of separate callbacks. And cancellation works automatically -- if the scope is cancelled, both the location request and API call are cancelled. No cleanup code needed.
+The coroutine version reads top-to-bottom. Error handling uses try-catch instead of separate callbacks. Cancellation works automatically — if the scope is cancelled, both the location request and API call are cancelled.
 
 #### How do you improve testability of existing code?
 
-The main barriers to testability are hardcoded dependencies, static method calls, and direct framework access. It's like trying to test a car engine while it's still bolted into the car -- you need to be able to pull things apart. I fix them by:
+The main barriers to testability are hardcoded dependencies, static method calls, and direct framework access. I fix them by:
 
 - Extracting interfaces for dependencies and injecting them
 - Wrapping static calls (like `System.currentTimeMillis()`) behind an injectable interface
 - Moving business logic out of Activity/Fragment into ViewModel or use cases
-- Making functions pure where possible -- same input always gives same output
+- Making functions pure where possible — same input always gives same output
 
 ```kotlin
 // Untestable — depends on system clock
@@ -189,25 +185,24 @@ class TokenValidator(private val clock: Clock = Clock.systemUTC()) {
 }
 ```
 
-With the injectable `Clock`, I can pass a fixed-time clock in tests and verify expiration behavior without timing issues. This pattern applies to any external dependency -- network availability, feature flags, shared preferences.
+With the injectable `Clock`, I can pass a fixed-time clock in tests and verify expiration behavior without timing issues. This pattern applies to any external dependency — network availability, feature flags, shared preferences.
 
 #### What do you look for first when reviewing unfamiliar code?
 
-I start from the outside and work inward -- like reading a book's table of contents before the chapters. I read the project structure first because how modules and packages are organized tells me a lot about the architecture. Then I read the entry point (Application class or main Activity/NavHost) to understand the navigation flow. Then I pick one feature and trace it end-to-end: UI to ViewModel to Repository to API/Database.
+I start from the outside and work inward. I read the project structure first — how modules and packages are organized tells me about the architecture. Then I read the entry point (Application class or main Activity/NavHost) to understand the navigation flow. Then I pick one feature and trace it end-to-end: UI to ViewModel to Repository to API/Database.
 
 I look for:
-
-- Does the architecture separate concerns or is everything shoved into Activities?
+- Does the architecture separate concerns or is everything in Activities?
 - Is there dependency injection or are classes creating their own dependencies?
 - Are there tests? What's tested and what's not?
 - Is error handling consistent or ad-hoc?
 - Are there obvious memory leak patterns?
 
-I focus on the highest-impact issues first. Naming and formatting matter least -- architecture, correctness, and testability matter most.
+I focus on the highest-impact issues first. Naming and formatting matter least — architecture, correctness, and testability matter most.
 
 #### How do you approach a refactoring challenge without breaking existing behavior?
 
-I write tests for the existing behavior before I change anything. Even if the code is messy, it works -- and the tests document what "works" means. Think of it like taking a photo of a room before you rearrange the furniture. You want proof of what it looked like before.
+I write tests for the existing behavior before I change anything. Even if the code is messy, it works — and the tests document what "works" means. Then I refactor in small steps, running tests after each change.
 
 My workflow:
 
@@ -222,9 +217,7 @@ If there are no tests and the code is deeply entangled, I start by extracting th
 
 #### How do you spot and fix memory leaks in a code review?
 
-Memory leaks in Android almost always follow the same plot: a long-lived object holds a reference to a short-lived one. Activities and Fragments are short-lived -- they get destroyed on rotation, back press, navigation. Singletons, companion objects, and background threads are long-lived. When the long-lived thing grabs onto the short-lived thing and won't let go, you've got a leak.
-
-Common patterns:
+Common leak patterns in Android:
 
 - Storing `Activity` or `Context` references in static fields, singletons, or companion objects
 - Anonymous inner classes or lambdas that capture the outer Activity/Fragment
@@ -255,18 +248,16 @@ class MyViewModel(private val repository: Repository) : ViewModel() {
 }
 ```
 
-I flag any place where a long-lived object holds a reference to a short-lived one. If the reference outlives the thing it points to, that's your leak.
-
-> **🧠 Think about it:** You see a `BroadcastReceiver` registered in `onCreate()` but there's no corresponding `unregisterReceiver()` anywhere. The Activity gets destroyed and recreated on rotation. What happens to the old receiver -- and how many are alive after 5 rotations?
+I flag any place where a long-lived object holds a reference to a short-lived one. Activities and Fragments are short-lived. Singletons, companion objects, and background threads are long-lived.
 
 #### How do you identify and fix performance issues in a code review?
 
-Performance problems are sneaky because the code looks correct -- it just happens to be slow. I look for these patterns:
+I look for these patterns:
 
-- **Unnecessary recomposition in Compose** -- unstable parameters, inline lambdas, reading state too high in the tree. Fix with `@Immutable`, method references, and state hoisting.
-- **Missing lazy initialization** -- heavy objects created at startup that aren't needed immediately. Use `by lazy` for expensive resources.
-- **Main thread work** -- network calls, database queries, or JSON parsing on the main thread. Move to `Dispatchers.IO`.
-- **Object allocation in loops** -- creating objects inside `onDraw()`, `onBindViewHolder()`, or tight loops. Allocate once and reuse.
+- **Unnecessary recomposition in Compose** — unstable parameters, inline lambdas, reading state too high in the tree. Fix with `@Immutable`, method references, and state hoisting.
+- **Missing lazy initialization** — heavy objects created at startup that aren't needed immediately. Use `by lazy` for expensive resources.
+- **Main thread work** — network calls, database queries, or JSON parsing on the main thread. Move to `Dispatchers.IO`.
+- **Object allocation in loops** — creating objects inside `onDraw()`, `onBindViewHolder()`, or tight loops. Allocate once and reuse.
 
 ```kotlin
 // Slow: Creates Formatter on every bind
@@ -283,11 +274,11 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 }
 ```
 
-In a code review, it's not enough to say "this is slow." I explain why it's slow and what the fix is. Nobody learns from "needs improvement."
+In a code review, it's not enough to say "this is slow." I explain why it's slow and what the fix is.
 
 #### How do you refactor error handling from scattered try-catch to a structured approach?
 
-Scattered try-catch blocks are like having a fire extinguisher in every room but no fire alarm system. Each one handles its own little emergency, but there's no coordination. I replace them with a sealed class that flows through the layers. The repository catches exceptions and returns a typed result. The ViewModel maps it to UI state. The UI never sees raw exceptions.
+I replace scattered try-catch blocks with a sealed class that flows through the layers. The repository catches exceptions and returns a typed result. The ViewModel maps it to UI state. The UI never sees exceptions.
 
 ```kotlin
 sealed interface Resource<out T> {
@@ -319,11 +310,11 @@ class OrderViewModel(private val repository: OrderRepository) : ViewModel() {
 }
 ```
 
-This centralizes error handling in the data layer, where I have context for meaningful error messages. The ViewModel and UI just react to the result type -- no guessing, no duplicate catch blocks.
+This centralizes error handling in the data layer, where I have context for meaningful error messages. The ViewModel and UI just react to the result type.
 
 #### How do you suggest architectural improvements without rewriting everything?
 
-A full rewrite is almost never the answer. It's like burning down your house because the kitchen needs new cabinets. I propose incremental changes that improve the worst parts first. I prioritize by impact:
+I propose incremental changes that improve the worst parts without a full rewrite. I prioritize by impact:
 
 - Extract an interface for the biggest dependency (usually network or database) so it becomes testable
 - Move business logic from Activities/Fragments to ViewModels

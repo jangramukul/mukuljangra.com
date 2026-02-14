@@ -14,36 +14,34 @@ Recomposition is the core mechanism that makes Compose reactive. Understanding w
 
 #### What is recomposition?
 
-Recomposition is when the Compose runtime re-runs your composable functions because their input state changed. Think of it like a spreadsheet — you change one cell, and only the cells that reference it recalculate. Compose tracks which state values each composable reads, and when a state changes, only those composables get re-invoked. I describe the UI as a function of state, and the framework handles the rest.
+Recomposition is a phase in Jetpack Compose where the runtime re-executes composable functions when their input state changes so the UI can render the new state. Compose tracks which state values each composable reads, and when a state changes, only the composables that read that state are re-invoked. This is what makes Compose declarative — I describe the UI as a function of state, and the framework handles updating it.
 
 #### What triggers recomposition?
 
-A `State` object that a composable reads during composition has to change its value. This includes `mutableStateOf`, `mutableStateListOf`, `mutableStateMapOf`, and derived state like `derivedStateOf`. The moment you read `.value` of a state object, you're creating a subscription — the runtime now knows exactly which composables to invalidate when that state changes.
+Recomposition is triggered when a `State` object that a composable reads during composition changes its value. This includes `mutableStateOf`, `mutableStateListOf`, `mutableStateMapOf`, and any state derived from these like `derivedStateOf`. Reading the `.value` of a state object creates a subscription — the runtime knows exactly which composables to invalidate when that state changes.
 
-Here's the thing — if I change a regular variable (not wrapped in `State`), Compose has zero idea about it and won't recompose. It's invisible to the runtime.
+If I change a regular variable (not wrapped in `State`), Compose has no way to know about it and won't recompose.
 
 #### What is smart recomposition?
 
-Compose doesn't blindly re-execute everything when something changes. If a parent recomposes but passes the same parameters to a child, the child gets skipped entirely. The runtime compares new arguments with previous ones and says "nothing changed here, moving on."
+Smart recomposition means Compose doesn't blindly re-execute everything — it only recomposes the composables whose inputs have actually changed. If a parent composable recomposes but passes the same parameters to a child, the child can be skipped entirely. The runtime compares the new arguments with the previous ones and skips the function if they're all equal.
 
-This is why parameter types matter so much. If all parameters are stable and unchanged, Compose skips the function. But if even one parameter is unstable, Compose can't guarantee equality and has to recompose — just to be safe.
+This is why parameter types matter. If all parameters are stable and haven't changed, Compose skips the function. If even one parameter is unstable, Compose can't guarantee equality and must recompose.
 
 #### What is the stability system in Compose?
 
-The Compose compiler looks at every type used as a composable parameter and classifies it as stable or unstable. A type is stable if:
+The Compose compiler analyzes every type used as a composable parameter and classifies it as either stable or unstable. A type is considered stable if:
 
-- It's a primitive (`Int`, `String`, `Float`, `Boolean`)
+- It's a primitive type (`Int`, `String`, `Float`, `Boolean`)
 - It's a functional type (lambdas)
 - It's annotated with `@Stable` or `@Immutable`
 - It's a class where all public properties are `val` and are themselves stable types
 
-Unstable types can't be reliably compared between recompositions. So Compose takes the cautious route — it always recomposes when an unstable parameter is passed, even if the actual values haven't changed. It's like a bouncer who can't read IDs — if they're not sure, nobody gets in.
-
-> **🧠 Think about it:** If you have a data class with all `val` properties but one of them is a `List<String>`, is the class stable or unstable? Why?
+Unstable types can't be reliably compared between recompositions, so Compose always recomposes when an unstable parameter is passed — even if the actual values haven't changed.
 
 #### What is the difference between @Stable and @Immutable?
 
-`@Immutable` is the strong promise — all public properties will never change after construction. Once created, the object is frozen solid. `@Stable` is the weaker handshake — properties might change, but when they do, Compose will be notified through the snapshot system (like `MutableState`).
+`@Immutable` tells the compiler that all public properties of this type will never change after construction. Once created, the object is frozen. `@Stable` is a weaker contract — it says the type's public properties might change, but when they do, Compose will be notified through the snapshot system (like `MutableState`).
 
 ```kotlin
 @Immutable
@@ -62,13 +60,13 @@ class CartState(
 }
 ```
 
-Use `@Immutable` for data classes and models that don't change after creation. Use `@Stable` for state holders where properties can change but those changes go through Compose's state system.
+Use `@Immutable` for data classes and model classes that don't change after creation. Use `@Stable` for state holders where properties can change but changes go through Compose's state system.
 
 #### Why are collections like List<> considered unstable by default?
 
-Here's the thing — Kotlin's `List` interface doesn't guarantee immutability. A `MutableList` can be cast to `List`, so the compiler can't trust that the contents won't change behind its back. Even if you pass a `listOf(...)`, the declared type is still `kotlin.collections.List`, which the compiler marks as unstable.
+Kotlin's `List` interface doesn't guarantee immutability — a `MutableList` can be cast to `List`, so the compiler can't trust that the contents won't change. Even if I pass a `listOf(...)`, the declared type is still `kotlin.collections.List`, which the compiler marks as unstable.
 
-The fix is to use Kotlinx Immutable Collections (`ImmutableList`, `PersistentList`) or wrap the list inside a stable holder:
+The fix is to use Kotlinx Immutable Collections (`ImmutableList`, `PersistentList`) or wrap the list inside a state holder marked with `@Immutable` or `@Stable`:
 
 ```kotlin
 // Unstable — Compose can't skip
@@ -91,9 +89,9 @@ The wrapper approach is often the simplest because it doesn't need an external d
 
 #### How does Compose handle interfaces for stability?
 
-By default, the compiler treats interfaces as unstable because it can't verify what the concrete implementation will be at runtime. Even if every implementation is immutable, the interface itself doesn't carry that guarantee. It's like trusting a contract without reading the fine print.
+By default, the Compose compiler treats interfaces as unstable because it can't verify what the concrete implementation will be at runtime. Even if all implementations are immutable, the interface itself doesn't carry that guarantee.
 
-Mark the interface with `@Immutable` to tell the compiler all implementations will be immutable:
+Mark the interface with `@Immutable` to tell the compiler that all implementations will be immutable:
 
 ```kotlin
 @Immutable
@@ -106,37 +104,37 @@ data class NavigateEvent(val route: String) : UiEvent
 data class ShowSnackbar(val message: String) : UiEvent
 ```
 
-You can also mark interfaces with `@Stable` when implementations will use Compose's state system for mutations. Without these annotations, any composable that takes an interface parameter will never be skipped.
+Similarly, mark interfaces with `@Stable` when implementations will use Compose's state system for mutations. Without these annotations, any composable that takes an interface parameter will never be skipped.
 
 #### Why should I use viewModel::onClick instead of { viewModel.onClick() } in composables?
 
-When you write `{ viewModel.onClick() }`, a new lambda instance is created on every recomposition. The new instance isn't equal to the previous one, so Compose treats the parameter as changed and recomposes the child.
+When I write `{ viewModel.onClick() }`, a new lambda instance is created on every recomposition. The new instance is not equal to the previous one, so Compose treats the parameter as changed and recomposes the child composable.
 
-Plot twist — using a method reference like `viewModel::onClick` produces a stable reference that stays the same across recompositions. Compose sees the same function reference and can skip the child composable if nothing else changed. This matters most in lists or frequently recomposing UI where many lambda allocations pile up.
+Using a method reference like `viewModel::onClick` produces a stable reference that remains the same across recompositions. Compose sees the same function reference and can skip the child composable if nothing else changed. This matters most in lists or frequently recomposing UI where many lambda allocations add up.
 
 #### How does Compose compare parameters to decide whether to skip recomposition?
 
 For stable types, Compose uses `equals()` to compare old and new parameter values. If all parameters are stable and `equals()` returns true for all of them, the composable is skipped entirely.
 
-For unstable types, Compose doesn't even attempt a comparison — it always recomposes. This is exactly why marking data classes with `@Immutable` matters. Without it, a data class that has a `List` parameter is unstable, and every parent recomposition forces the child to recompose too, even when the data is identical.
+For unstable types, Compose doesn't attempt comparison — it always recomposes. This is why marking data classes with `@Immutable` matters. Without it, a data class that uses a `List` parameter is unstable, and every recomposition of the parent forces the child to recompose too, even if the actual data hasn't changed.
 
-For lambdas, it depends on whether they capture values. A non-capturing lambda is a singleton — always equal to itself. A capturing lambda gets wrapped in a `remember` block by the compiler if strong skipping mode is enabled. Otherwise, each recomposition creates a brand new instance.
+For lambda parameters, the comparison depends on whether the lambda captures any values. A non-capturing lambda is a singleton and always equal to itself. A capturing lambda is wrapped in a `remember` block by the compiler if strong skipping mode is enabled — otherwise each recomposition creates a new instance.
 
 #### What is positional memoization?
 
-Compose identifies composable calls by their position in the source code, not by any key or name. The compiler assigns a unique key to each call site based on where it sits in the code, and the runtime uses that key to match calls between compositions.
+Positional memoization is how Compose identifies composable calls — by their position in the source code, not by any key or name. The compiler assigns a unique key to each call site based on its position in the code, and the runtime uses that key to match composable calls between compositions.
 
-This is why composables inside `if/else` or loops need extra care. If a composable moves to a different position in the call tree — like items reordering in a loop — Compose treats it as a completely new composable and throws away the old state. The `key()` composable exists specifically to override positional identity when ordering can change.
+This is why calling composables inside `if/else` or loops needs care. If a composable moves to a different position in the call tree (like items reordering in a loop), Compose treats it as a new composable and throws away the old state. The `key()` composable exists to override positional identity when ordering can change.
 
 #### What is donut-hole skipping?
 
-Donut-hole skipping means Compose can skip recomposing a parent while still recomposing the content lambda inside it. Picture a donut — the outer ring is the parent composable, and the hole in the middle is the content lambda. They recompose independently.
+Donut-hole skipping means Compose can skip recomposing a parent composable while still recomposing the content lambda inside it. The "donut" is the parent and the "hole" is the content.
 
 ```kotlin
 @Composable
 fun Card(content: @Composable () -> Unit) {
     Surface(modifier = Modifier.padding(16.dp)) {
-        content() // this lambda can recompose on its own
+        content() // This lambda can recompose independently
     }
 }
 
@@ -144,18 +142,18 @@ fun Card(content: @Composable () -> Unit) {
 fun Screen() {
     val count by viewModel.count.collectAsStateWithLifecycle()
     Card {
-        Text("Count: $count") // only this recomposes when count changes
+        Text("Count: $count") // Only this recomposes when count changes
     }
 }
 ```
 
-`Card` itself doesn't recompose because its parameters haven't changed. But the content lambda captures `count`, so when `count` changes, only the lambda body re-executes. This is a natural result of how Compose tracks state reads — it scopes invalidation to the smallest composable that actually reads the changed state.
+`Card` itself doesn't recompose because its parameters haven't changed. But the content lambda captures `count`, so when `count` changes, only the lambda body re-executes. This is a natural result of how Compose tracks state reads — it scopes invalidation to the smallest composable that reads the changed state.
 
 #### What is strong skipping mode?
 
-Strong skipping mode is a compiler feature enabled by default since Compose Compiler 2.0, and it changes the game for how Compose handles unstable parameters and lambdas. Without strong skipping, a composable with any unstable parameter is never skipped — game over. With strong skipping, Compose uses instance equality (`===`) for unstable parameters instead of just giving up.
+Strong skipping mode is a compiler feature (enabled by default since Compose Compiler 2.0) that changes how Compose handles unstable parameters and lambdas. Without strong skipping, a composable with any unstable parameter is never skipped. With strong skipping, Compose uses instance equality (`===`) for unstable parameters instead of giving up entirely.
 
-The other big change is lambda memoization. Without strong skipping, capturing lambdas create a new instance on every recomposition. With it, the compiler wraps them in `remember` automatically, so the lambda instance is reused as long as its captured values haven't changed.
+The other major change is lambda memoization. Without strong skipping, capturing lambdas create a new instance on every recomposition. With strong skipping, the compiler wraps them in `remember` automatically, so the lambda instance is reused as long as its captured values haven't changed.
 
 ```kotlin
 // Without strong skipping: this lambda recreates every recomposition
@@ -165,31 +163,29 @@ Button(onClick = { viewModel.submit(formData) })
 Button(onClick = remember(formData) { { viewModel.submit(formData) } })
 ```
 
-But here's the nuance — strong skipping doesn't eliminate the need for `@Immutable` and `@Stable`. Structural equality (`equals()`) is still better than instance equality (`===`) for data classes, because `===` only catches the exact same object reference.
-
-> **🧠 Think about it:** If strong skipping uses `===` for unstable types, what happens when you create a new data class instance with the same values as the previous one? Would it skip or recompose?
+Strong skipping makes most manual optimizations around lambda stability unnecessary. But it doesn't eliminate the need for `@Immutable` and `@Stable` — structural equality (`equals()`) is still better than instance equality (`===`) for data classes.
 
 #### What are the common performance mistakes with recomposition?
 
-The ones I see most often:
+The most common ones:
 
-- **Passing unstable types to composables** — Use `@Immutable` or `@Stable` on data classes and state holders. Don't pass raw `List` — use `ImmutableList` or a stable wrapper.
-- **Reading state too high in the tree** — If only one child needs a state value, don't read it in the parent and pass it down. Let the child read it directly so recomposition stays scoped to the child.
-- **Creating lambdas inline in frequently recomposing composables** — Use method references (`viewModel::onClick`) or hoist the lambda to a `remember` block. Strong skipping helps, but method references are still cleaner.
-- **Using LazyColumn without stable keys** — Without keys, item reordering destroys and recreates item state. Always provide unique keys via `key = { item.id }`.
+- **Passing unstable types to composables** — Use `@Immutable` or `@Stable` annotations on data classes and state holders. Don't pass raw `List` — use `ImmutableList` or a stable wrapper.
+- **Reading state too high in the tree** — If only one child needs a state value, don't read it in the parent and pass it down. Let the child read it directly so recomposition is scoped to the child.
+- **Creating lambdas inline in frequently recomposing composables** — Use method references (`viewModel::onClick`) or hoist the lambda to a `remember` block. Strong skipping mode helps here, but method references are still cleaner.
+- **Using LazyColumn without stable keys** — Without keys, item reordering causes Compose to destroy and recreate item state. Always provide unique keys via `key = { item.id }`.
 - **Reading state during composition when it's only needed for layout or drawing** — Use `Modifier.graphicsLayer { alpha = animatedAlpha.value }` instead of reading the animated value during composition. Lambda-based modifiers defer the state read to a later phase.
 
 #### How does the Compose runtime handle recomposition scheduling?
 
-The runtime doesn't recompose the instant a state changes. It invalidates the affected scope and schedules recomposition for the next frame using `Choreographer.postFrameCallback`. Multiple state changes within the same frame get batched into a single recomposition pass. It's like a waiter who collects the whole table's order before walking to the kitchen, instead of making a trip for each person.
+The runtime doesn't recompose immediately when a state changes. It invalidates the affected scope and schedules recomposition for the next frame using `Choreographer.postFrameCallback`. Multiple state changes within the same frame are batched into a single recomposition pass.
 
-The recomposition process runs on the main thread during the composition phase. The runtime walks the slot table, re-executes invalidated composables, and records differences. Then the layout phase measures and positions nodes, and finally the drawing phase renders pixels. These are Compose's three phases: Composition, Layout, and Drawing.
+The recomposition process runs on the main thread during the composition phase. The runtime walks the slot table, re-executes invalidated composables, and records the differences. Then the layout phase measures and positions nodes, and finally the drawing phase renders pixels. These are the three phases of Compose: Composition, Layout, and Drawing.
 
-If state changes only affect the drawing phase — like a color or alpha change via `Modifier.graphicsLayer` — Compose can skip composition and layout entirely and just redraw. This is why reading state inside `graphicsLayer` or `drawBehind` lambdas is way more efficient for animations.
+If state changes only affect the drawing phase (like a color or alpha change via `Modifier.graphicsLayer`), Compose can skip composition and layout entirely and just redraw. This is why reading state inside `graphicsLayer` or `drawBehind` lambdas is more efficient for animations.
 
 #### How do I use graphicsLayer for performance?
 
-`Modifier.graphicsLayer` creates a separate render layer for the composable. Changes inside the lambda only trigger the draw phase — they skip composition and layout entirely. This makes it the go-to for animations.
+`Modifier.graphicsLayer` creates a separate render layer for the composable. Changes inside the lambda only trigger the draw phase — they skip composition and layout entirely. This makes it ideal for animations.
 
 ```kotlin
 val alpha by animateFloatAsState(targetValue = if (visible) 1f else 0f)
@@ -201,17 +197,17 @@ Box(modifier = Modifier.alpha(alpha))
 Box(modifier = Modifier.graphicsLayer { this.alpha = alpha })
 ```
 
-The key difference is between the lambda version `Modifier.graphicsLayer { }` and the direct parameter version `Modifier.graphicsLayer(alpha = 0.5f)`. The lambda version defers the state read to the draw phase. The direct version reads during composition, which triggers recomposition when the value changes. Always use the lambda version when the value is animated or changes frequently.
+The key difference is between the lambda version `Modifier.graphicsLayer { }` and the direct parameter version `Modifier.graphicsLayer(alpha = 0.5f)`. The lambda version defers the state read to the draw phase. The direct version reads during composition, so it triggers recomposition when the value changes. Always use the lambda version when the value is animated or changes frequently.
 
 #### What is the slot table and how does Compose use it?
 
-The slot table is Compose's internal data structure — a flat array using a gap buffer design that stores the entire composable tree. During composition, every composable call writes its state, parameters, and child information into the slot table. The runtime walks this table during recomposition to compare old values with new ones and decide what to skip.
+The slot table is Compose's internal data structure — a flat array (gap buffer) that stores the composable tree. During composition, every composable call writes its state, parameters, and child information into the slot table. The runtime walks this table during recomposition to compare old values with new ones and decide what to skip.
 
-The gap buffer is clever — it allows efficient insertions and deletions at the current position without reallocating the entire array. When a composable is added or removed, the runtime moves the gap to that position and inserts or removes slots. The Applier then maps changes from the slot table to the actual UI tree (the `LayoutNode` tree for Compose UI).
+The gap buffer design allows efficient insertions and deletions at the current position without reallocating the entire array. When a composable is added or removed, the runtime moves the gap to that position and inserts or removes slots. The Applier then maps changes from the slot table to the actual UI tree (the `LayoutNode` tree for Compose UI).
 
 #### How do I use the Compose compiler reports to diagnose stability issues?
 
-The Compose compiler can generate stability reports showing exactly how each class is classified and which composables are restartable and skippable. Enable it in the build config:
+The Compose compiler can generate stability reports that show exactly how each class is classified and which composables are restartable and skippable. Enable it in the build config:
 
 ```kotlin
 // build.gradle.kts
@@ -223,13 +219,13 @@ composeCompiler {
 
 The report generates three files per module. The `*-classes.txt` file shows each class with its stability — `stable`, `unstable`, or `runtime` — and flags which fields are causing instability. The `*-composables.txt` shows each composable function with whether it's `restartable`, `skippable`, and which parameters are stable or unstable.
 
-What you're hunting for are composables marked as `restartable` but not `skippable` — those are the ones recomposing even when their inputs haven't changed. Trace the unstable parameter back to the field causing it and fix it with `@Immutable`, `@Stable`, or by switching to immutable collections.
+Look for composables marked as `restartable` but not `skippable` — those are the ones that recompose even when their inputs haven't changed. Trace the unstable parameter back to the field causing it and fix it with `@Immutable`, `@Stable`, or by switching to immutable collections.
 
 #### How do I debug recomposition issues in a running app?
 
-Layout Inspector in Android Studio shows recomposition counts directly on the composable tree. Enable "Show Recomposition Counts" in the toolbar and interact with the app — composables that recompose frequently show high counts and get highlighted.
+Layout Inspector in Android Studio shows recomposition counts directly on the composable tree. Enable "Show Recomposition Counts" in the Layout Inspector toolbar and interact with the app — composables that recompose frequently show high counts and are highlighted.
 
-You can also add recomposition tracking in code during development:
+I can also add recomposition tracking in code during development:
 
 ```kotlin
 @Composable
@@ -241,13 +237,11 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
 }
 ```
 
-`SideEffect` runs after every successful composition, so the log tells you exactly when and how often a composable recomposes. High recomposition counts in scrolling lists or animations are the first place to look for jank.
-
-> **🧠 Think about it:** If your `LazyColumn` item composable is recomposing 50 times per scroll, what's the first thing you'd check — the item's parameter stability, the key function, or the state reads?
+`SideEffect` runs after every successful composition, so the log tells me exactly when and how often a composable recomposes. High recomposition counts in scrolling lists or animations are the first place to look for jank.
 
 #### What is the stability configuration file?
 
-The stability configuration file lets you declare classes as stable without modifying their source code. This is critical for external library classes — you can't add `@Stable` or `@Immutable` to classes you don't own, but you can list them in the config file.
+The stability configuration file lets me declare classes as stable without modifying their source code. This is critical for classes from external libraries — I can't add `@Stable` or `@Immutable` to classes I don't own, but I can list them in the config file.
 
 Create a file like `compose_stability.conf`:
 
@@ -267,11 +261,11 @@ composeCompiler {
 }
 ```
 
-The compiler treats listed classes as stable during analysis, enabling skipping for composables that use them. Without this, any composable accepting a `LocalDateTime` parameter would always recompose because the compiler can't verify that `java.time` classes are truly immutable. The config file is especially valuable for apps using `java.time`, Google Maps models, or Protocol Buffer generated classes.
+The compiler treats listed classes as stable during recomposition analysis, enabling skipping for composables that use them. Without this, any composable accepting a `LocalDateTime` parameter would always recompose because the compiler can't verify that `java.time` classes are truly immutable. The config file is especially valuable for apps using `java.time`, Google Maps models, or Protocol Buffer generated classes.
 
 #### What is movableContentOf?
 
-`movableContentOf` wraps a composable so it can move to a different position in the composition tree without losing its state. Normally, if a composable moves from one branch of an `if/else` to another, Compose treats it as a brand new composable — all `remember` state is lost and effects restart. It's like moving apartments and losing all your furniture in the process.
+`movableContentOf` wraps a composable so its content can be moved to a different position in the composition tree without losing its state or triggering disposal and re-creation. Normally, if a composable moves from one branch of an `if/else` to another, Compose treats it as a new composable — all its `remember` state is lost and effects are restarted.
 
 ```kotlin
 val content = remember {
@@ -291,7 +285,7 @@ Without `movableContentOf`, switching between full screen and compact would dest
 
 #### How does derivedStateOf help reduce unnecessary recompositions?
 
-`derivedStateOf` creates a state object that only updates when its computed result actually changes. If you have a state that changes frequently but only a derived value matters to the UI, `derivedStateOf` filters out the noise.
+`derivedStateOf` creates a state object that only updates when its computed result actually changes. If I have a state that changes frequently but only a derived value matters to the UI, `derivedStateOf` filters out the noise.
 
 ```kotlin
 val searchQuery = mutableStateOf("")
@@ -300,7 +294,7 @@ val filteredItems = derivedStateOf {
 }
 ```
 
-Without `derivedStateOf`, any composable reading `searchQuery` would recompose on every single keystroke. With it, composables reading `filteredItems` only recompose when the filtered list actually changes. This is especially useful for search, filtering, and any case where the raw state changes way more often than the derived result.
+Without `derivedStateOf`, any composable reading `searchQuery` would recompose on every keystroke. With it, composables reading `filteredItems` only recompose when the filtered list actually changes. This is especially useful for search, filtering, and any case where the raw state changes more often than the derived result.
 
 ### Common Follow-ups
 

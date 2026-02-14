@@ -10,11 +10,11 @@ description: "The weather or news reader app is the most common coding test assi
 
 ## Build a Weather / News Reader App
 
-If there's one coding test that every Android candidate will face at some point, it's this one. Build a weather app, build a news reader -- same idea, different API. It sounds simple, but it's a trojan horse. The evaluator is watching how you wire up networking, how you handle failure, how you cache data, and whether your architecture would survive a real codebase. One small project, a dozen things to get right.
+The weather or news reader app is the most common coding test assignment. It tests API integration, caching, error handling, and clean architecture in one project.
 
 #### How do you set up Retrofit for API integration?
 
-Think of Retrofit like a translator standing between your Kotlin code and a REST API. You describe what you want in a Kotlin interface, and Retrofit handles all the boring HTTP stuff behind the scenes. I define suspend functions so the calls play nicely with coroutines, and I pair it with Moshi or kotlinx.serialization -- never Gson, because Gson happily ignores Kotlin's null safety and you'll get surprise `null`s at runtime.
+I define an API interface with suspend functions and create a Retrofit instance with Moshi or kotlinx.serialization. I avoid Gson because it bypasses Kotlin null safety.
 
 ```kotlin
 interface WeatherApi {
@@ -38,11 +38,11 @@ val retrofit = Retrofit.Builder()
     .build()
 ```
 
-I add an `HttpLoggingInterceptor` for debugging and set it to `NONE` before submission. Leaving verbose network logs in your take-home is like leaving `println("HERE!!!")` in production code.
+I add an `HttpLoggingInterceptor` for debugging and set it to `NONE` before submission.
 
 #### How do you parse JSON responses into Kotlin data classes?
 
-I create data classes that mirror the JSON structure. The `@Json` annotation (Moshi) or `@SerialName` (kotlinx.serialization) handles the name mapping when the JSON field names don't match my Kotlin property names. I only parse the fields I actually need -- no point creating properties for data I'll never touch.
+I create data classes that mirror the JSON structure and use `@Json` (Moshi) or `@SerialName` (kotlinx.serialization) for field name mapping. I only parse the fields I need.
 
 ```kotlin
 @JsonClass(generateAdapter = true)
@@ -65,11 +65,11 @@ data class WeatherInfo(
 )
 ```
 
-These are DTOs -- they exist only to catch what the API throws at you. I map them to domain models in the repository so the rest of the app doesn't care if the API suddenly renames `temp` to `temperature_kelvin`.
+These are DTOs that map directly to the API response. I map them to domain models in the repository so the rest of the app doesn't depend on the API structure.
 
 #### How do you implement loading, error, and success states?
 
-Here's the thing -- your UI can only be in one of three states at any moment: loading, showing data, or showing an error. A sealed interface makes that contract explicit. The compiler will yell at you if you forget to handle a state, which is exactly what you want.
+I use a sealed interface for UI state and expose it from the ViewModel as a `StateFlow`. The UI observes this and renders the right screen.
 
 ```kotlin
 sealed interface WeatherUiState {
@@ -93,13 +93,11 @@ fun WeatherScreen(viewModel: WeatherViewModel = hiltViewModel()) {
 }
 ```
 
-I always include a retry button on the error screen. It's a small detail but evaluators notice when it's missing -- it shows you think about what the user actually does when something goes wrong.
-
-> **🧠 Think about it:** What happens if your network call fails and you show an error screen with no retry button? The user is stuck. They'd have to kill the app and reopen it. That's the kind of UX gap evaluators look for.
+I always include a retry button on the error screen. It's a small detail but it gets noticed when it's missing.
 
 #### How do you handle network errors properly?
 
-Raw exceptions leaking into your UI is like letting a plumbing problem flood your living room. You catch them at the source -- in the repository -- and translate them into something the UI can work with. Different exceptions mean different things to the user, so map them accordingly.
+I wrap network calls in try-catch and map exceptions to meaningful error types. Raw exceptions should never leak into the ViewModel or UI.
 
 ```kotlin
 class WeatherRepository(
@@ -127,11 +125,11 @@ class WeatherRepository(
 }
 ```
 
-The sneaky-good part here is the `IOException` branch. Instead of immediately showing an error, I check if there's cached data. If there is, the user sees stale data instead of a dead screen. It's not a full offline-first architecture, but it shows you think about what happens when the subway goes underground.
+The important part is the fallback to cached data on `IOException`. It shows I think about offline scenarios without building a full offline-first architecture.
 
 #### How do you structure MVVM for a weather/news feature?
 
-Think of it like a restaurant. The UI is the waiter -- it takes orders and delivers food, but never cooks anything. The ViewModel is the kitchen manager -- it coordinates what needs to happen. The repository is the actual kitchen -- it knows where the ingredients come from (API or local storage) and how to prepare them.
+The ViewModel holds UI state and calls the repository. The repository handles data fetching from remote and local sources. The UI just renders state — no business logic in composables.
 
 ```kotlin
 class WeatherViewModel(
@@ -157,11 +155,11 @@ class WeatherViewModel(
 }
 ```
 
-Using `SavedStateHandle` persists the selected city across process death. Most candidates lose the search query when Android kills the process in the background. This one detail shows you actually understand the Android lifecycle beyond just "ViewModel survives rotation."
+Using `SavedStateHandle` persists the selected city across process death. Most candidates lose the search query on process death — this shows I understand the Android lifecycle.
 
 #### How do you implement search functionality?
 
-Imagine if every single keystroke fired a network request. The user types "London" and you just made 6 API calls -- L, Lo, Lon, Lond, Londo, London. That's wasteful and potentially rate-limit-triggering. The fix is debouncing: wait until the user stops typing for 300ms, then fire one request.
+I debounce the search input so I'm not firing API calls on every keystroke. I use `StateFlow` with `debounce` and `distinctUntilChanged`.
 
 ```kotlin
 class SearchViewModel(private val repository: NewsRepository) : ViewModel() {
@@ -192,11 +190,11 @@ class SearchViewModel(private val repository: NewsRepository) : ViewModel() {
 }
 ```
 
-`debounce(300)` waits 300ms after the user stops typing. `distinctUntilChanged` prevents duplicate searches if the user types and deletes back to the same text. The `filter` skips single characters -- searching for "L" returns too many results to be useful.
+`debounce(300)` waits 300ms after the user stops typing. `distinctUntilChanged` prevents duplicate searches. The `filter` skips single characters which return too many results.
 
 #### How do you implement pull-to-refresh?
 
-I use Compose Material's `PullToRefreshBox` composable and expose an `isRefreshing` state from the ViewModel. It's the classic "user drags down, spinner appears, data refreshes" pattern.
+I use Compose Material's `PullToRefreshBox` composable and expose an `isRefreshing` state from the ViewModel.
 
 ```kotlin
 class WeatherViewModel(private val repository: WeatherRepository) : ViewModel() {
@@ -225,13 +223,11 @@ fun WeatherScreen(viewModel: WeatherViewModel = hiltViewModel()) {
 }
 ```
 
-Pull-to-refresh is a nice-to-have in a coding test. If time is tight, skip it and focus on error handling and tests -- those carry more weight with evaluators.
-
-> **🧠 Think about it:** If your repository already has a `refreshWeather` function that fetches from network and updates Room, and your UI observes Room via Flow, do you even need to manually update the UI state after refresh? The data flows automatically -- Room emits a new value, the Flow picks it up, the UI recomposes.
+Pull-to-refresh is a nice-to-have in a coding test. If time is limited, I skip it and focus on error handling and tests.
 
 #### How do you implement offline caching with Room?
 
-Room is your local database, and in a weather/news app, it plays a critical role. Think of the repository as a single source of truth -- it fetches from the network, stores in Room, and the UI always reads from Room. It's like a library that orders new books online but you always borrow from the shelf, never directly from Amazon.
+I create an entity that maps my domain model to a database table. The repository is the single source of truth — fetch from network, store in Room, observe from Room.
 
 ```kotlin
 @Entity(tableName = "weather")
@@ -256,11 +252,11 @@ interface WeatherDao {
 }
 ```
 
-`observeWeather` returns a `Flow`, so the UI updates automatically whenever the database changes -- no manual refresh needed. The `lastUpdated` field lets me do simple cache invalidation. If the data is older than 30 minutes, I fetch fresh data from the API. Simple, but effective.
+`observeWeather` returns a `Flow` so the UI updates automatically when the database changes. The `lastUpdated` field lets me do simple cache invalidation — if the data is older than 30 minutes, I fetch fresh data from the API.
 
 #### How do you handle the separation between DTOs, entities, and domain models?
 
-Three model types, three jobs. DTOs catch what the API sends. Entities map to Room tables. Domain models are what the actual app logic uses -- clean, no annotations, no dependencies on Moshi or Room.
+I use three distinct model types. DTOs represent the API response. Entities represent the Room table. Domain models are what the rest of the app uses — clean, no Moshi or Room annotations.
 
 ```kotlin
 // DTO — mirrors API JSON
@@ -299,11 +295,11 @@ fun WeatherEntity.toDomain() = Weather(
 )
 ```
 
-It's like having a shipping box (DTO), a storage container (Entity), and the actual product (domain model). If the API changes its JSON structure, only the DTO and its mapper change. The rest of the app doesn't even notice. Even just having these mapper functions shows you understand why this separation matters.
+This separation means changing the API response or database schema doesn't ripple through the entire app. Even just having DTO-to-domain mappers shows I understand this pattern.
 
 #### How do you handle empty states in a list-based app?
 
-A blank screen is the worst user experience. The user has no idea if the app is broken, if there's no data, or if something went wrong. I distinguish between three scenarios: still loading, loaded but nothing found, and actual error. Each gets its own UI.
+I distinguish between three scenarios: initial loading, loaded but empty, and error. Each needs a different UI.
 
 ```kotlin
 sealed interface NewsUiState {
@@ -327,11 +323,11 @@ val uiState: StateFlow<NewsUiState> = repository.getArticles()
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NewsUiState.Loading)
 ```
 
-An explicit `Empty` state with a message like "No articles found" is much better than a blank screen. It tells the user "we looked, there's just nothing here" instead of leaving them guessing.
+An explicit `Empty` state with a message like "No articles found" is much better than a blank screen.
 
 #### How do you unit test the repository layer?
 
-I mock the API and DAO, then verify the repository does the right thing for each scenario. The two most important tests: does it return data when the network works, and does it fall back to cache when the network doesn't?
+I mock the API and DAO, then verify the repository returns the right state for each scenario.
 
 ```kotlin
 @Test
@@ -364,11 +360,11 @@ fun `falls back to cache when network fails`() = runTest {
 }
 ```
 
-These two tests cover the most critical paths. If time allows, I add tests for specific HTTP error codes and the case where both network and cache fail. But these two alone show you think about both happy and unhappy paths.
+These two tests cover the most important paths. If time allows, I add tests for HTTP error codes and the case where both network and cache fail.
 
 #### How do you structure the data layer to make it testable?
 
-The trick is simple: program against an interface, not an implementation. I define a repository interface and inject it into the ViewModel. In tests, I swap in a fake implementation -- no mocking framework needed.
+I define a repository interface and inject it into the ViewModel. In tests, I provide a fake implementation instead of using mocking frameworks.
 
 ```kotlin
 interface WeatherRepository {
@@ -400,27 +396,25 @@ class FakeWeatherRepository : WeatherRepository {
 }
 ```
 
-A fake repository makes tests dramatically simpler. The ViewModel test doesn't need MockK or Mockito -- just set `weatherToReturn` and verify the UI state. It reads like plain English.
-
-> **🧠 Think about it:** Why are fakes often better than mocks for testing? With a mock, you verify that specific methods were called. With a fake, you verify the actual behavior -- what the ViewModel does with the data. If you refactor the repository internals, mock-based tests break even though the behavior didn't change. Fake-based tests don't care about internals.
+A fake repository makes tests simpler and more readable. The ViewModel test doesn't need MockK or Mockito — just set `weatherToReturn` and verify the UI state.
 
 #### How do you decide between StateFlow and LiveData for UI state?
 
-`StateFlow`. That's it. It's the current standard for Android apps. It works with Compose via `collectAsStateWithLifecycle`, with Views via `repeatOnLifecycle`, and it plugs into the entire coroutines ecosystem naturally. LiveData still works, but using it in a coding test signals to evaluators that you haven't kept up with how the ecosystem has moved.
+I use `StateFlow`. It's the current standard for Android apps. It works with both Compose (`collectAsStateWithLifecycle`) and Views (`repeatOnLifecycle`), and integrates naturally with the coroutines ecosystem. LiveData still works but signals to evaluators that I'm not keeping up with current practices.
 
-The one edge case is `SavedStateHandle.getLiveData()` -- but even that has a `getStateFlow()` alternative now. In a 2024+ coding test, there's no reason to reach for LiveData.
+The one edge case is `SavedStateHandle.getLiveData()` — but even that has a `getStateFlow()` alternative now. In a 2024+ coding test, there's no reason to reach for LiveData.
 
 #### What's the difference between Retrofit and Ktor for API integration?
 
-Retrofit is the annotation-based veteran. You define an interface, annotate it, and Retrofit generates the implementation. It sits on top of OkHttp and pairs with Moshi or Gson for serialization. Ktor is JetBrains' HTTP client, built on coroutines from the ground up, using a DSL for request building instead of annotations.
+Retrofit uses annotation-based interface definitions and generates the implementation at compile time. It sits on top of OkHttp and integrates with Moshi or Gson for serialization. Ktor is JetBrains' HTTP client built with coroutines and uses a DSL for request building instead of annotations.
 
-For a coding test, I go with Retrofit. Most evaluators expect it, it has more community resources, and you'll spend less time on setup. I'd switch to Ktor only if the job listing mentions Kotlin Multiplatform, because Ktor runs on both Android and iOS while Retrofit is JVM-only.
+For a coding test, I go with Retrofit — most evaluators expect it and it has more community resources. I'd choose Ktor if the job listing mentions Kotlin Multiplatform since Ktor runs on both Android and iOS while Retrofit is JVM-only.
 
 #### How do you handle configuration changes without losing UI state?
 
-ViewModel survives configuration changes by default, so any `StateFlow` or `MutableState` inside it is safe across rotations. For state that needs to survive process death -- like the current search query -- I use `SavedStateHandle`. For Compose-specific state that doesn't live in the ViewModel, like scroll position, I use `rememberSaveable`.
+ViewModel survives configuration changes by default, so any state in `StateFlow` or `MutableState` inside the ViewModel is safe. For state that needs to survive process death like the current search query, I use `SavedStateHandle`. For Compose-specific state not in the ViewModel like scroll position, I use `rememberSaveable`.
 
-`ViewModel` + `SavedStateHandle` + `rememberSaveable` covers every scenario. I test this during development by rotating the device after typing a search query and navigating to a detail screen. If anything resets, there's a state preservation gap.
+`ViewModel` + `SavedStateHandle` + `rememberSaveable` covers every scenario. I test this during development — rotate the device after typing a search query and navigating to a detail screen. If anything resets, there's a state preservation gap.
 
 ### Common Follow-ups
 

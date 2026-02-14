@@ -10,29 +10,23 @@ description: "Some coding tests ask you to build a custom UI component from scra
 
 ## Build a Custom UI Component
 
-Coding tests sometimes ask you to build a custom UI component from scratch. That means you need to understand the rendering pipeline, touch handling, and API design for both the View system and Compose. Here's the thing -- this is where your understanding of how Android actually draws pixels gets tested.
+Coding tests sometimes ask you to build a custom UI component from scratch. This covers the rendering pipeline, touch handling, and API design for both the View system and Compose.
 
 #### What is the difference between invalidate() and requestLayout()?
 
-Think of `invalidate()` like telling the painter "repaint this wall" versus `requestLayout()` which is like telling the architect "redesign the floor plan."
+`invalidate()` triggers a redraw by calling `onDraw()` again. I use it when the visual appearance changes but the size stays the same — updating progress, changing a color, animating a property.
 
-`invalidate()` triggers a redraw by calling `onDraw()` again. I use it when the visual appearance changes but the size stays the same -- updating progress, changing a color, animating a property. The view keeps its current dimensions and just redraws itself.
-
-`requestLayout()` triggers the full measure-layout-draw cycle. I use it when the view's size actually needs to change. Calling `requestLayout()` when you only need a redraw is like tearing down the whole house because you wanted to repaint the living room. Measuring is expensive -- don't do it unless the dimensions are changing.
+`requestLayout()` triggers the full measure-layout-draw cycle. I use it when the view's size needs to change. Calling `requestLayout()` when I only need a redraw is wasteful because measuring is expensive.
 
 #### What are the three phases of custom View rendering?
 
-Every custom View goes through three phases: measure, layout, and draw. Think of it like building a house -- first, the architect decides the dimensions (measure), then the contractor positions everything on the plot (layout), then the painter makes it look good (draw).
+Every custom View goes through measure, layout, and draw. `onMeasure()` determines width and height based on parent constraints. `onLayout()` positions child views within those bounds — only relevant for ViewGroups. `onDraw()` renders the actual content onto a `Canvas`.
 
-`onMeasure()` determines width and height based on parent constraints. `onLayout()` positions child views within those bounds -- only relevant for ViewGroups. `onDraw()` renders the actual content onto a `Canvas`.
-
-These phases run top-down through the View hierarchy. The parent measures itself, measures its children, positions them, then draws. Every. Single. Frame.
+These phases run top-down through the View hierarchy. The parent measures itself, measures its children, positions them, then draws.
 
 #### How do you implement onMeasure in a custom View?
 
-`onMeasure()` receives width and height `MeasureSpec` values from the parent. Each spec has a mode (`EXACTLY`, `AT_MOST`, or `UNSPECIFIED`) and a size. Think of it like a negotiation -- the parent says "here's how much space I'm willing to give you" and the child says "cool, here's how much I actually need."
-
-I calculate the desired size and call `setMeasuredDimension()`.
+`onMeasure()` receives width and height `MeasureSpec` values from the parent. Each spec has a mode (`EXACTLY`, `AT_MOST`, or `UNSPECIFIED`) and a size. I calculate the desired size and call `setMeasuredDimension()`.
 
 ```kotlin
 class CircularProgressView @JvmOverloads constructor(
@@ -49,11 +43,11 @@ class CircularProgressView @JvmOverloads constructor(
 }
 ```
 
-`resolveSize()` respects the parent's constraints -- it returns the desired size if the mode is `UNSPECIFIED`, the spec size if `EXACTLY`, and the smaller of the two if `AT_MOST`. For circular components, I take the minimum of width and height to keep the aspect ratio square.
+`resolveSize()` respects the parent's constraints — it returns the desired size if the mode is `UNSPECIFIED`, the spec size if `EXACTLY`, and the smaller of the two if `AT_MOST`. For circular components, I take the minimum of width and height to keep the aspect ratio square.
 
 #### How do you draw on a Canvas in a custom View?
 
-I override `onDraw()` and use the `Canvas` API. It provides methods for shapes (`drawCircle`, `drawRect`, `drawArc`), paths, text, and bitmaps. Appearance is controlled with `Paint` objects -- think of `Paint` as the brush and `Canvas` as the, well, canvas.
+I override `onDraw()` and use the `Canvas` API. It provides methods for shapes (`drawCircle`, `drawRect`, `drawArc`), paths, text, and bitmaps. Appearance is controlled with `Paint` objects.
 
 ```kotlin
 class CircularProgressView @JvmOverloads constructor(
@@ -88,13 +82,11 @@ class CircularProgressView @JvmOverloads constructor(
 }
 ```
 
-Notice how I create `Paint` objects as properties, never inside `onDraw()`. That method gets called on every single frame during animations. Creating objects in there is like buying a new set of paintbrushes every time you need to touch up a wall -- the garbage collector will make you pay for it with jank.
-
-> **🧠 Think about it:** If `onDraw()` runs 60 times per second during an animation, and you allocate a new `Paint` object each time, how many garbage-collectable objects are you creating in just one second?
+I create `Paint` objects as properties, never inside `onDraw()`. That method gets called on every frame during animations, and allocating objects there causes GC jank.
 
 #### How do you handle touch events in a custom View?
 
-I override `onTouchEvent()` and handle `ACTION_DOWN`, `ACTION_MOVE`, and `ACTION_UP`. Here's the key detail that trips people up -- returning `true` from `ACTION_DOWN` tells the parent "I'm claiming this gesture, send me the rest of the events." Return `false` and you'll never see the `ACTION_MOVE` or `ACTION_UP`.
+I override `onTouchEvent()` and handle `ACTION_DOWN`, `ACTION_MOVE`, and `ACTION_UP`. Returning `true` from `ACTION_DOWN` tells the parent I want the full gesture.
 
 ```kotlin
 class SliderView @JvmOverloads constructor(
@@ -120,11 +112,11 @@ class SliderView @JvmOverloads constructor(
 }
 ```
 
-For multi-touch or complex gestures like pinch and fling, I use `GestureDetector` or `ScaleGestureDetector` instead of manually tracking multiple pointers. Tracking multiple touch pointers by hand is like trying to juggle while riding a unicycle -- technically possible, but why?
+For multi-touch or complex gestures like pinch and fling, I use `GestureDetector` or `ScaleGestureDetector` instead of manually tracking multiple pointers.
 
 #### How do you do custom drawing in Compose?
 
-I use the `Canvas` composable or `Modifier.drawBehind` / `Modifier.drawWithContent`. `DrawScope` provides drawing functions similar to Android's Canvas API, but with some nice quality-of-life improvements.
+I use the `Canvas` composable or `Modifier.drawBehind` / `Modifier.drawWithContent`. `DrawScope` provides drawing functions similar to Android's Canvas API.
 
 ```kotlin
 @Composable
@@ -162,11 +154,11 @@ fun CircularProgress(
 }
 ```
 
-Unlike the View system, `DrawScope` handles density automatically -- I can use `Dp.toPx()` directly inside the scope. No need to manage `Paint` allocation either, since Compose handles that internally. It's like upgrading from a manual transmission to an automatic -- same destination, less footwork.
+Unlike the View system, `DrawScope` handles density automatically — I can use `Dp.toPx()` directly inside the scope. No need to manage `Paint` allocation either, since Compose handles that internally.
 
 #### How do you create a custom layout in Jetpack Compose?
 
-I use the `Layout` composable with a `MeasurePolicy`. Think of it like being the foreman on a construction site -- I receive the building materials (measurables) and the lot boundaries (constraints), measure each piece, and place them exactly where I want.
+I use the `Layout` composable with a `MeasurePolicy`. I receive the measurables and constraints from the parent, measure each child, and place them at specific positions.
 
 ```kotlin
 @Composable
@@ -205,11 +197,11 @@ fun FlowLayout(
 }
 ```
 
-This creates a flow layout that wraps children to the next row when they exceed the available width. But wait -- Compose enforces single-pass measurement. I can't measure a child, look at the result, and re-measure with different constraints. That's cheating. If I need that flexibility, I reach for `SubcomposeLayout`.
+This creates a flow layout that wraps children to the next row when they exceed the available width. Compose enforces single-pass measurement — I can't measure a child twice with different constraints unless I use `SubcomposeLayout`.
 
 #### How do you handle gestures in Compose?
 
-I use the `pointerInput` modifier with `detectDragGestures`, `detectTapGestures`, or `detectTransformGestures`. It's a completely different model from the View system's `onTouchEvent` -- instead of a big `when` block, I get purpose-built gesture detectors.
+I use the `pointerInput` modifier with `detectDragGestures`, `detectTapGestures`, or `detectTransformGestures`.
 
 ```kotlin
 @Composable
@@ -235,13 +227,11 @@ fun DraggableCircle(modifier: Modifier = Modifier) {
 }
 ```
 
-`pointerInput(Unit)` takes a key -- the block restarts when the key changes. I use `Unit` for gestures that don't depend on external state. If the gesture behavior depends on a changing value, I pass that value as the key so the handler picks up the latest value. Forget to update the key, and your gesture handler will be stuck reading stale state forever.
-
-> **🧠 Think about it:** What happens if you pass a state value as the `pointerInput` key but that state changes rapidly during a drag? The gesture detection restarts every time the key changes, which would interrupt the drag mid-motion.
+`pointerInput(Unit)` takes a key — the block restarts when the key changes. I use `Unit` for gestures that don't depend on external state. If the gesture behavior depends on a changing value, I pass that value as the key so the handler picks up the latest value.
 
 #### How do you animate a custom drawn component?
 
-In the View system, I use `ValueAnimator` or `ObjectAnimator` to animate a property and call `invalidate()` on each update -- it's a manual crank. In Compose, I use `animate*AsState` or `Animatable` and read the value inside `DrawScope`, and the framework handles the rest.
+In the View system, I use `ValueAnimator` or `ObjectAnimator` to animate a property and call `invalidate()` on each update. In Compose, I use `animate*AsState` or `Animatable` and read the value inside `DrawScope`.
 
 ```kotlin
 @Composable
@@ -279,13 +269,11 @@ fun AnimatedCircularProgress(targetProgress: Float) {
 }
 ```
 
-Now here's where it gets interesting. Reading `animatedProgress` inside `Canvas` means the state change only triggers a draw phase -- composition and layout are skipped entirely. The framework sees that the only thing reading this state is the draw scope, so it takes the shortcut. This is why drawing-phase animations in Compose are so efficient.
+Reading `animatedProgress` inside `Canvas` means the state change only triggers a draw phase — composition and layout are skipped entirely. This is why drawing-phase animations in Compose are efficient.
 
 #### How do you design a reusable API for a custom component?
 
-This is less about code and more about empathy for the developer who'll use your component. I expose the minimum configuration needed through composable parameters, use sensible defaults so it works out of the box, and follow platform conventions -- in Compose, that means taking a `modifier` parameter and using `MaterialTheme` colors as defaults.
-
-Think of it like designing a TV remote. The user should be able to turn it on and change channels without reading a manual. But the advanced settings are still there if they need them.
+I expose the minimum configuration needed through composable parameters, use sensible defaults so it works out of the box, and follow platform conventions — in Compose, that means taking a `modifier` parameter and using `MaterialTheme` colors as defaults.
 
 ```kotlin
 @Composable
@@ -324,13 +312,13 @@ fun RatingBar(
 }
 ```
 
-Making `onRatingChanged` nullable gives me a clean pattern -- when null, the component is display-only. When provided, it becomes interactive. One parameter controls the entire interaction model. This is a common pattern in well-designed Compose components and interviewers notice when you reach for it naturally.
+Making `onRatingChanged` nullable gives me a clean pattern — when null, the component is display-only. When provided, it becomes interactive. This is a common pattern in well-designed Compose components.
 
 #### How do you make a custom component accessible?
 
-In the View system, I override `onInitializeAccessibilityNodeInfo()` to provide semantic information -- content descriptions, roles, and state values so TalkBack can announce the component properly.
+In the View system, I override `onInitializeAccessibilityNodeInfo()` to provide semantic information — content descriptions, roles, and state values so TalkBack can announce the component properly.
 
-In Compose, I use the `semantics` modifier. It's like adding a label to a button on an elevator -- a sighted person can see the floor number, but someone using a screen reader needs that label to know what they're pressing.
+In Compose, I use the `semantics` modifier:
 
 ```kotlin
 @Composable
@@ -351,13 +339,11 @@ fun CircularProgress(progress: Float, label: String) {
 }
 ```
 
-`ProgressBarRangeInfo` tells accessibility services that this is a progress indicator and gives it the current value and range. Without it, TalkBack just announces a generic element and the user has no idea what the progress is. Skipping accessibility in a coding test is a missed opportunity to stand out.
+`ProgressBarRangeInfo` tells accessibility services that this is a progress indicator and gives it the current value and range. Without it, TalkBack just announces a generic element and the user has no idea what the progress is.
 
 #### How do you handle intrinsic measurements in a custom Compose layout?
 
-Here's the problem: Compose's single-pass measurement rule means I can't measure a child, check its height, and re-measure it with a fixed height. That would be two passes. Not allowed.
-
-So how do I make all children in a row the same height? Intrinsic measurements. They let a composable report its preferred size before the actual measurement pass -- like asking "how tall would you be if I gave you this much width?" without actually committing to that measurement.
+Intrinsic measurements let a composable report its preferred size before the actual measurement pass. I use this when siblings need to match sizes — like making all children in a row the same height.
 
 ```kotlin
 @Composable
@@ -389,11 +375,11 @@ fun EqualHeightRow(
 }
 ```
 
-`maxIntrinsicHeight` gives me the height the child would want at a given width without actually measuring it. I ask everyone "how tall would you be?", take the tallest answer, and then do the real measurement pass with that height locked in. One pass. Rules followed.
+Compose's single-pass measurement rule means I can't measure a child, check its height, and re-measure it with a fixed height. Intrinsics solve this — `maxIntrinsicHeight` gives me the height the child would want at a given width without actually measuring it.
 
 #### How do you handle pinch-to-zoom in Compose?
 
-I use `detectTransformGestures` inside `pointerInput`. It provides zoom, rotation, pan, and centroid for each frame of the gesture -- all the multitouch data I need in one callback.
+I use `detectTransformGestures` inside `pointerInput`. It provides zoom, rotation, pan, and centroid for each frame of the gesture.
 
 ```kotlin
 @Composable
@@ -421,25 +407,23 @@ fun ZoomableImage(painter: Painter, modifier: Modifier = Modifier) {
 }
 ```
 
-Using `graphicsLayer` for the visual transformation is critical here. It applies the transform at the drawing phase without triggering recomposition or relayout. If I applied scale through `Modifier.size()` instead, every single zoom frame would trigger a full composition-layout-draw cycle. That's like rebuilding the entire house every time you open a window.
-
-> **🧠 Think about it:** Why does `graphicsLayer` skip recomposition? Because it modifies the RenderNode directly -- the composable's size and position in the layout tree don't change, only how the GPU renders it. The composition and layout phases have nothing new to do.
+Using `graphicsLayer` for the visual transformation is important — it applies the transform at the drawing phase without triggering recomposition or relayout. If I applied scale through `Modifier.size()` instead, every zoom frame would trigger a full composition-layout-draw cycle.
 
 #### What are common performance pitfalls with custom drawn components?
 
 The biggest pitfall is allocating objects inside draw calls. In the View system, creating `Paint`, `Path`, `RectF`, or `Matrix` objects inside `onDraw()` causes GC pauses. In Compose, `DrawScope` handles most allocations internally, but creating `Path` objects or complex `Brush` instances inside the draw lambda still has overhead.
 
 Other pitfalls:
-- Drawing more than needed -- use `clipRect()` to skip offscreen content
+- Drawing more than needed — use `clipRect()` to skip offscreen content
 - Avoiding `Canvas.saveLayer()` when possible, since it creates an offscreen buffer
-- Overdraw -- drawing multiple opaque layers on top of each other wastes GPU time
-- Invalidating too often -- batch state changes and use `Animatable` or `ValueAnimator` instead of manually posting invalidation
+- Overdraw — drawing multiple opaque layers on top of each other wastes GPU time
+- Invalidating too often — batch state changes and use `Animatable` or `ValueAnimator` instead of manually posting invalidation
 
-For animated components, I target 16ms per frame (60fps). If `onDraw()` or the `DrawScope` block takes longer, the animation will stutter. That 16ms budget is real -- the GPU doesn't negotiate deadlines.
+For animated components, I target 16ms per frame (60fps). If `onDraw()` or the `DrawScope` block takes longer, the animation will stutter.
 
 #### How would you build a custom chart component for a coding test?
 
-I start with the simplest version that works -- a bar chart with hardcoded data -- then make it configurable. I focus on clean API design over visual polish. In a coding test, nobody is judging your gradient game.
+I start with the simplest version that works — a bar chart with hardcoded data — then make it configurable. I focus on clean API design over visual polish.
 
 ```kotlin
 @Composable
@@ -469,7 +453,7 @@ fun BarChart(
 }
 ```
 
-In a coding test, the evaluator cares more about the architecture around the chart -- how data flows from API to chart, is it testable, does it handle empty data -- than about pixel-perfect rendering. I add accessibility with a `semantics` block that describes the chart data, and handle the empty state gracefully. Get the engineering right first, make it pretty later.
+In a coding test, the evaluator cares more about the architecture around the chart — how data flows from API to chart, is it testable, does it handle empty data — than about pixel-perfect rendering. I add accessibility with a `semantics` block that describes the chart data, and handle the empty state gracefully.
 
 ### Common Follow-ups
 

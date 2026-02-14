@@ -8,9 +8,7 @@ tags:
   - Gradle
 ---
 
-When I joined a project last year, the first thing I noticed wasn't the code, the architecture, or the tech debt. It was the silence. Every few minutes, a developer would hit "Build," lean back in their chair, and just... stare. Some opened Twitter. Some refilled their coffee. One guy had a Rubik's cube he'd solve during builds. A clean build on the CI server ran for 14 minutes. Incremental builds on my M1 MacBook took 45 seconds. Nobody complained because they'd all accepted it as normal. But here's the thing: every developer on that 6-person team was losing 30+ minutes a day to build times. That's 15 hours a week of engineering time spent watching a progress bar.
-
-Think of it like a highway toll booth. Each car only waits 30 seconds, no big deal. But multiply that by thousands of cars a day and you've got a traffic jam that stretches for miles. Gradle builds are your team's toll booth, and the line is longer than anyone realizes.
+When I joined a project last year, the first thing I noticed was how long builds took. A clean build on the CI server ran for 14 minutes. Incremental builds on my M1 MacBook took 45 seconds. The team had gotten so used to it that nobody even complained — they'd trigger a build, open Twitter, and come back to check if it was done. But here's the thing: every developer on a 6-person team was losing 30+ minutes a day to build times. That's 15 hours a week of engineering time spent watching a progress bar.
 
 I spent a weekend profiling the build and found the usual suspects. Every module copy-pasted the same 40 lines of build configuration. `buildSrc` was invalidating the entire build cache on every version bump. Kapt was running in modules that didn't even use annotation processing. The Gradle JVM heap was set to the default 512MB, which meant constant garbage collection pauses during compilation. After applying a handful of targeted optimizations — not exotic tricks, just standard Gradle hygiene — the clean build dropped to 6 minutes and incremental builds went down to 12 seconds.
 
@@ -18,9 +16,7 @@ None of these optimizations were novel. They're all documented in Gradle's perfo
 
 ## Version Catalogs for Dependency Management
 
-Imagine you're running a restaurant with 20 kitchens, and each kitchen keeps its own list of ingredient suppliers. Kitchen 3 uses one brand of olive oil, Kitchen 7 uses another, Kitchen 12 is still using a supplier that went out of business six months ago. Nobody has the full picture, and when you try to switch suppliers, you need to walk into every single kitchen and update the list on the wall. Sound painful?
-
-That was Android dependency management before version catalogs. Projects scattered dependency versions across multiple `build.gradle.kts` files, or centralized them in `buildSrc` with `object` declarations. Both approaches had problems — scattered versions led to version mismatches across modules, and `buildSrc` invalidated the entire build cache on any change. Version catalogs, introduced as stable in Gradle 7.4, solve both issues with a single `libs.versions.toml` file in the `gradle/` directory. One file. One source of truth. Every kitchen reads from the same menu.
+Before version catalogs, Android projects scattered dependency versions across multiple `build.gradle.kts` files, or centralized them in `buildSrc` with `object` declarations. Both approaches had problems — scattered versions led to version mismatches across modules, and `buildSrc` invalidated the entire build cache on any change. Version catalogs, introduced as stable in Gradle 7.4, solve both issues with a single `libs.versions.toml` file in the `gradle/` directory.
 
 ```toml
 # gradle/libs.versions.toml
@@ -46,11 +42,7 @@ The catalog generates type-safe accessors — `libs.compose.ui`, `libs.coroutine
 
 ## The Configuration Cache
 
-Here's something that might surprise you. Every time you hit "Build" in your Android project, Gradle does a bunch of work *before* it actually compiles anything. It reads every `build.gradle.kts` file, resolves all your plugins, and constructs the entire task graph from scratch. Every. Single. Time. On a 15-module Android project, this "warm-up lap" alone can take 8-15 seconds.
-
-Now ask yourself: how often do your build files actually change? Almost never, right? So why is Gradle re-reading them on every build?
-
-That's exactly the question the configuration cache answers. It serializes the task graph after the first run and reuses it on subsequent builds, skipping the entire configuration phase. It's like your GPS remembering the route to work instead of recalculating it every morning. In my experience, this cuts incremental build times by 25-40% on medium to large projects.
+Gradle's configuration phase parses every `build.gradle.kts` file, resolves plugins, and builds the task graph before any task executes. On a 15-module Android project, this phase alone can take 8-15 seconds — and it runs on every single build. The configuration cache serializes the task graph after the first run and reuses it on subsequent builds, skipping the entire configuration phase. In my experience, this cuts incremental build times by 25-40% on medium to large projects.
 
 Enable it in `gradle.properties`:
 
@@ -63,13 +55,7 @@ Start with `problems=warn` because some plugins aren't configuration-cache compa
 
 ## Configuration Avoidance API
 
-This one is subtle, but once you see it, you can't unsee it.
-
-Gradle has two ways to register tasks: `tasks.create()` and `tasks.register()`. They look almost identical. Same parameters, same configuration block. So what's the difference?
-
-Think of it like ordering food. `tasks.create()` is like a restaurant that starts cooking every item on the menu the moment you walk in — even if you're only going to order a salad. `tasks.register()` is like a normal restaurant that waits for your order before firing up the stove.
-
-With `create()`, Gradle eagerly instantiates and configures the task immediately during the configuration phase. With `register()`, it defers all of that until the task is actually needed. In a 30-module project, you might have hundreds of tasks defined across all modules, but any given build only executes a fraction of them. With eager creation, Gradle still pays the cost of configuring every single one.
+This one is subtle but it makes a real difference on large projects. Gradle has two ways to register tasks: `tasks.create()` and `tasks.register()`. The difference is that `create()` eagerly instantiates and configures the task immediately during the configuration phase, while `register()` defers all of that until the task is actually needed. In a 30-module project, you might have hundreds of tasks defined across all modules, but any given build only executes a fraction of them. With eager creation, Gradle still pays the cost of configuring every single one.
 
 I ran into this when a custom convention plugin was registering 6 tasks per module using `tasks.create()`. Across 25 modules, that's 150 tasks being instantiated and configured on every build — even when running something unrelated like `assembleDebug` that would never touch those tasks. Switching to `tasks.register()` dropped the configuration phase by about 3 seconds. That doesn't sound dramatic, but it's 3 seconds on every single build, including incremental ones where the actual compilation might only take 4-5 seconds. The same principle extends to Gradle's `Provider` and `Property` types — instead of resolving values at configuration time, you wrap them in providers so Gradle resolves them lazily at execution time.
 
@@ -109,17 +95,11 @@ class CoverageReportPlugin : Plugin<Project> {
 }
 ```
 
-> **💡 The "aha" moment:** `tasks.create()` says "build this now." `tasks.register()` says "here's the blueprint, build it only if someone asks." That one-word change — `create` to `register` — means Gradle stops doing work it was never going to need.
-
 The rule of thumb is simple: never use `tasks.create()` in build logic, always use `tasks.register()`. If you're also using `configurations.create()`, switch to `configurations.register()` for the same reason. Gradle's build scan will actually flag eagerly created tasks — look for the "Eager task creation" deprecation warnings. They're deprecation warnings now, but Gradle has signaled they'll become errors in a future major version.
 
 ## Convention Plugins Over Copy-Pasted Build Logic
 
-This was the single biggest improvement in that project I mentioned. Fifteen modules, each with the same `compileSdk`, `minSdk`, `composeOptions`, and Kotlin compiler settings copy-pasted into `build.gradle.kts`. Change the `compileSdk` and you're editing 15 files. Miss one and you get a mysterious build failure that takes 20 minutes to track down.
-
-Sound familiar? It's the classic copy-paste trap. You copy a working config to a new module, tweak one thing, and move on. Six months later, you have 15 slightly different versions of the same configuration, and nobody remembers which one is "correct."
-
-Convention plugins fix this the same way functions fix copy-pasted code. You define the shared build configuration once, in one place, and apply it with a single line.
+This was the single biggest improvement in that project I mentioned. Fifteen modules, each with the same `compileSdk`, `minSdk`, `composeOptions`, and Kotlin compiler settings copy-pasted into `build.gradle.kts`. Change the `compileSdk` and you're editing 15 files. Miss one and you get a mysterious build failure that takes 20 minutes to track down. Convention plugins let you define shared build configuration once and apply it with a single line.
 
 ```kotlin
 // build-logic/convention/src/main/kotlin/AndroidLibraryConventionPlugin.kt
@@ -194,9 +174,7 @@ The `compileOnly` scope is deliberate — the actual plugin JARs come from the c
 
 ## Why Composite Builds Beat buildSrc
 
-`buildSrc` is Gradle's built-in way to share build logic, and for a while, it seems great. Centralized constants, shared plugins, everything in one place. But it has a critical flaw that most teams discover too late.
-
-Imagine you have a shared grocery list for your entire household. Every time someone adds a single item — even just "bananas" — everyone has to throw away all their food and go shopping from scratch. That's `buildSrc`. Any change to it invalidates the *entire* project's build cache. Change a single constant in your `Dependencies.kt` object, and every module recompiles from scratch. On a 20-module project, that's the difference between a 30-second incremental build and a 5-minute full rebuild.
+`buildSrc` is Gradle's built-in way to share build logic, but it has a critical flaw that most teams discover too late: any change to `buildSrc` invalidates the entire project's build cache. Change a single constant in your `Dependencies.kt` object, and every module recompiles from scratch. On a 20-module project, that's the difference between a 30-second incremental build and a 5-minute full rebuild.
 
 Composite builds (`includeBuild()` in `settings.gradle.kts`) solve this. They compile independently and only invalidate modules that actually depend on the changed code. The setup is slightly more involved — you create a separate Gradle project under `build-logic/` with its own `settings.gradle.kts` and `build.gradle.kts` — but the build performance improvement is substantial.
 
@@ -224,9 +202,7 @@ If you already have `buildSrc`, the migration is straightforward: move the conte
 
 ## Parallel Execution and Build Caching
 
-Picture a construction site where electricians, plumbers, and painters all wait in a single-file line. The electrician finishes a room, then the plumber enters, then the painter. Even though they could work in different rooms simultaneously, they don't. That's your Gradle build with parallel execution disabled — and it's disabled by default.
-
-On a multi-module project with a modern multi-core machine, enabling parallelism can cut full build times by 30-60% depending on your module graph. Build caching goes further — it stores task outputs and reuses them when inputs haven't changed, even across clean builds.
+Gradle can execute independent tasks across modules simultaneously, but parallel execution isn't enabled by default. On a multi-module project with a modern multi-core machine, enabling parallelism can cut full build times by 30-60% depending on your module graph. Build caching goes further — it stores task outputs and reuses them when inputs haven't changed, even across clean builds.
 
 ```properties
 # gradle.properties
@@ -235,17 +211,13 @@ org.gradle.caching=true
 org.gradle.jvmargs=-Xmx4g -XX:+UseParallelGC
 ```
 
-> **🔥 Real talk:** The default Gradle JVM heap is 512MB. For a multi-module Android project with Kotlin compilation, annotation processing, and resource merging all happening at once, that's like trying to run a modern game on a calculator. 4GB is a reasonable starting point — bump to 6-8GB if you have 30+ modules. `UseParallelGC` is generally the best garbage collector choice for build systems where throughput matters more than pause times.
+The `jvmargs` line matters more than most people realize. The default Gradle JVM heap is 512MB, which is laughably insufficient for a multi-module Android project with Kotlin compilation, annotation processing, and resource merging happening simultaneously. 4GB is a reasonable starting point — bump to 6-8GB if you have 30+ modules. `UseParallelGC` is generally the best garbage collector choice for build systems where throughput matters more than pause times.
 
 The tradeoff with parallel execution is that it exposes ordering issues in your build scripts. If module A writes a file that module B reads without declaring an explicit dependency, sequential builds work fine but parallel builds fail intermittently. These are legitimate bugs in your build configuration that parallel mode surfaces early — which is actually a good thing.
 
 ## Dependency Analysis Plugin
 
-Here's a question: do you know exactly which dependencies each of your modules actually uses?
-
-I mean *actually* uses. Not "declared six months ago and nobody's touched since." Not "pulled in transitively by something else." Actually referenced in the code, today.
-
-Most teams think they know, but every multi-module Android project has unused dependencies and misused `api` vs `implementation` declarations. Gradle doesn't tell you about this. You declare `implementation(libs.gson)` in a module, stop using Gson six months later, and nobody notices because the build still compiles — the dependency just bloats your configuration time and APK size for no reason. It's like paying for a gym membership you haven't used since January.
+Most teams think they know their dependency graph, but every multi-module Android project has unused dependencies and misused `api` vs `implementation` declarations. Gradle doesn't tell you about this. You declare `implementation(libs.gson)` in a module, stop using Gson six months later, and nobody notices because the build still compiles — the dependency just bloats your configuration time and APK size for no reason.
 
 The [Dependency Analysis Gradle Plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin) by Tony Robalik catches exactly this. It scans your bytecode and source to determine which dependencies are actually used, which are unused, which are used transitively but should be declared directly, and which `api` dependencies should be `implementation`. On a 20-module project I ran it on, it found 34 unused dependencies and 12 incorrect `api` vs `implementation` declarations. Removing the unused ones shaved 8 seconds off a clean build.
 
@@ -270,9 +242,7 @@ Run `./gradlew buildHealth` and it produces a report telling you exactly what to
 
 ## Dependency Locking and Exact Versions
 
-Dynamic versions like `implementation("com.squareup.okhttp3:okhttp:4.+")` or version ranges are dangerous in production builds. They make your builds non-reproducible — the same code can produce different APKs depending on *when* you build, because a new transitive dependency version might have been published between Monday and Tuesday. I've seen a production crash caused by a transitive dependency auto-upgrading from `1.2.3` to `1.3.0` with a breaking API change that no one noticed until users reported it.
-
-That's like building a bridge and letting your supplier swap out the steel grade whenever they feel like it. You wouldn't do that. So don't do it with your dependencies.
+Dynamic versions like `implementation("com.squareup.okhttp3:okhttp:4.+")` or version ranges are dangerous in production builds. They make your builds non-reproducible — the same code can produce different APKs depending on when you build, because a new transitive dependency version might have been published. I've seen a production crash caused by a transitive dependency auto-upgrading from `1.2.3` to `1.3.0` with a breaking API change that no one noticed until users reported it.
 
 Use exact versions everywhere. For transitive dependencies you want to pin, Gradle's dependency locking writes a lockfile that records every resolved version:
 
@@ -287,9 +257,7 @@ Run `./gradlew dependencies --write-locks` to generate the lockfile, then commit
 
 ## R8 Full Mode
 
-R8 is Android's code shrinker and optimizer, and most projects use it in its default "compatibility" mode. But there's a more aggressive setting hiding behind a single flag.
-
-Full mode takes the gloves off. It performs additional optimizations like class merging, more aggressive inlining, and removing more unused code. Where compatibility mode plays it safe and avoids breaking anything that *might* use reflection, full mode assumes nothing is using reflection unless you explicitly tell it otherwise. In a production app I worked on, switching from compatibility to full mode reduced the APK size by an additional 12% and improved cold start time by ~200ms.
+R8 is Android's code shrinker and optimizer, and most projects use it in its default "compatibility" mode. Full mode is more aggressive — it performs additional optimizations like class merging, more aggressive inlining, and removing more unused code. In a production app I worked on, switching from compatibility to full mode reduced the APK size by an additional 12% and improved cold start time by ~200ms.
 
 ```kotlin
 // gradle.properties
@@ -312,13 +280,11 @@ android {
 }
 ```
 
-> **🧠 Think about it:** If full mode gives better APK size and startup time, why isn't it the default? Because it breaks reflection-based code more aggressively. Libraries that use reflection — some serialization libraries, DI frameworks without compile-time code generation — may need additional ProGuard rules. The approach I recommend is: enable it, run your full test suite against the release build, and add keep rules only for verified breakages rather than preemptively keeping everything.
+The tradeoff is that full mode can break reflection-based code more aggressively. Libraries that use reflection (some serialization libraries, DI frameworks without compile-time code generation) may need additional ProGuard rules. The approach I recommend is: enable it, run your full test suite against the release build, and add keep rules only for verified breakages rather than preemptively keeping everything.
 
 ## Non-Transitive R Classes
 
-By default, Android generates R classes where each module's R class includes resource IDs from *all* its transitive dependencies. Stop and think about what that means for a 20-module project. The `:app` module's R class contains every resource ID from every module — thousands of fields generated, compiled, and dexed redundantly. It's like every employee in a company carrying a copy of every other employee's business cards, just in case.
-
-Non-transitive R classes limit each module's R class to only its own resources.
+By default, Android generates R classes where each module's R class includes resource IDs from all its transitive dependencies. In a 20-module project, this means the `:app` module's R class contains every resource ID from every module — thousands of fields generated, compiled, and dexed redundantly. Non-transitive R classes limit each module's R class to only its own resources.
 
 ```properties
 # gradle.properties
@@ -331,7 +297,7 @@ The migration cost is updating resource references. After enabling non-transitiv
 
 ## Disabling Unused Build Features
 
-The Android Gradle Plugin enables several build features by default — `BuildConfig` generation, AIDL support, RenderScript, and view binding. If you're using Compose exclusively and don't need these features, they're just adding compilation time for nothing. It's like running the dishwasher, washing machine, and dryer every day even though you only have one plate and one shirt.
+The Android Gradle Plugin enables several build features by default — `BuildConfig` generation, AIDL support, RenderScript, and view binding. If you're using Compose exclusively and don't need these features, they're just adding compilation time. Disabling unused build features in every module shaves seconds off each build.
 
 ```kotlin
 // Convention plugin or per-module build.gradle.kts
@@ -346,15 +312,11 @@ android {
 }
 ```
 
-Enable only what you use. If your app module needs `BuildConfig` for version info, enable it there but keep it disabled in library modules. Every enabled build feature adds a code generation step — multiply that by your module count and the savings are real. On a 30-module project, disabling `BuildConfig` in 25 library modules saved ~4 seconds per incremental build.
+Enable only what you use. If your app module needs `BuildConfig` for version info, enable it there but keep it disabled in library modules. The principle is that every enabled build feature adds a code generation step — multiply that by your module count and the savings are real. On a 30-module project, disabling `BuildConfig` in 25 library modules saved ~4 seconds per incremental build.
 
 ## Profile Before You Optimize
 
-I saved this for last because it's the most important principle, and it's the one most teams get backwards.
-
-Would you take medicine without knowing what's wrong with you? Probably not. But that's exactly what most teams do with build optimization. They read a blog post (yes, including this one), copy-paste some `gradle.properties` flags, and hope for the best. Sometimes it works. Sometimes they enable configuration cache when their real bottleneck is Kapt. Sometimes they add more RAM when their build is IO-bound.
-
-Before applying any optimization, know where your build time is actually spent. Gradle's built-in build scan gives you a detailed breakdown of configuration time, task execution time, and which tasks were cache hits vs cache misses. You might discover that 40% of your build time is spent on annotation processing in one module, or that a custom task is disabling incremental compilation.
+I saved this for last because it's the most important principle, and it's the one most teams get backwards. Before applying any optimization, know where your build time is actually spent. Gradle's built-in build scan gives you a detailed breakdown of configuration time, task execution time, and which tasks were cache hits vs cache misses. You might discover that 40% of your build time is spent on annotation processing in one module, or that a custom task is disabling incremental compilation.
 
 ```bash
 # Generate a build scan
@@ -366,8 +328,6 @@ Before applying any optimization, know where your build time is actually spent. 
 
 The `--profile` flag generates an HTML report in `build/reports/profile/` without uploading anything. Look for the longest-running tasks, cache misses when you expect hits, and configuration time that grows with module count. Common findings: Kapt is usually the slowest step — migrating to KSP can cut annotation processing time by 50-70%. Unused `kapt` configurations in modules that don't need them add 2-3 seconds each.
 
-> **⚡ Quick check:** Can you name the single slowest task in your current project's build? If not, run `./gradlew assembleDebug --profile` right now. The answer might surprise you.
-
-Profile first, optimize second, measure the improvement. That's the cycle that actually produces results.
+The mistake I see teams make is applying build optimizations they read about without profiling first. They enable configuration cache but their bottleneck is Kapt. They add more RAM but their build is IO-bound. Profile first, optimize second, measure the improvement. That's the cycle that actually produces results.
 
 Thanks for reading!

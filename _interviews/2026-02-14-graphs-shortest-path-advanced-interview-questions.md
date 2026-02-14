@@ -10,11 +10,11 @@ description: "Shortest path algorithms and advanced graph techniques like MST an
 
 ## Graphs — Shortest Path & Advanced
 
-So you know how to traverse a graph with BFS and DFS. But wait -- what happens when edges have weights, and you need to find the *cheapest* route from A to B? That's where shortest path algorithms come in. And once you throw in Minimum Spanning Trees and Union-Find, you've got the full toolkit that top companies love to test.
+Shortest path algorithms and advanced graph techniques like MST and Union-Find show up frequently in coding rounds at top companies. You need to know when to pick Dijkstra over Bellman-Ford and how Union-Find powers Kruskal's algorithm.
 
 #### What is Dijkstra's algorithm and when do you use it?
 
-Think of Dijkstra like a cautious traveler who always picks the cheapest next step. It finds the shortest path from a single source in a weighted graph with non-negative edge weights. It works greedily -- always process the vertex with the smallest known distance, lock it in, and move on. Like always taking the cheapest flight available right now, trusting that no future discount will beat it.
+Dijkstra finds shortest paths from a single source in a weighted graph with non-negative edge weights. Uses a greedy approach — always process the vertex with the smallest known distance.
 
 ```kotlin
 fun dijkstra(graph: Map<Int, List<Pair<Int, Int>>>, source: Int, n: Int): IntArray {
@@ -41,17 +41,15 @@ Time O((V + E) log V) with a binary heap.
 
 #### Why does Dijkstra fail with negative edge weights?
 
-Here's the thing -- Dijkstra's greedy assumption is that once a node is processed, its shortest distance is final. Negative edges break that promise. A longer path through an unprocessed node could suddenly become shorter after adding a negative weight. It's like locking in a hotel price and then finding out another route gives you a cashback that makes it cheaper -- but you already committed.
+Dijkstra assumes that once a node is processed, its shortest distance is final. With negative edges, a longer path through an unprocessed node could become shorter after adding a negative weight. The greedy assumption breaks.
 
 #### What is Union-Find (Disjoint Set Union)?
 
-Union-Find is like a club membership system. You can ask "which club does this person belong to?" (`find`) and "merge these two clubs" (`union`). Path compression flattens the internal trees during find so future lookups are faster. Union by rank attaches shorter trees under taller ones. Together they give amortized O(alpha(n)) per operation -- that's practically constant.
-
-> **🧠 Think about it:** If Dijkstra can't handle negative weights, what algorithm would you reach for instead -- and why?
+Union-Find tracks disjoint sets with two operations — `find` (which set does an element belong to?) and `union` (merge two sets). Path compression flattens trees during find. Union by rank attaches shorter trees under taller ones. Together they give amortized O(alpha(n)) per operation — practically constant.
 
 #### How do you solve Cheapest Flights Within K Stops?
 
-Modified Bellman-Ford. Run exactly K+1 relaxation rounds. But here's the trick -- use a copy of the distance array from the previous iteration to avoid propagating updates within the same round. Without the copy, you'd accidentally use paths with more stops than allowed.
+Modified Bellman-Ford. Run exactly K+1 relaxation rounds. Use a copy of the distance array from the previous iteration to avoid propagating updates within the same round.
 
 ```kotlin
 fun findCheapestPrice(
@@ -78,7 +76,7 @@ Time O(K * E), space O(V).
 
 #### What is the Bellman-Ford algorithm?
 
-Bellman-Ford is the brute-force cousin of Dijkstra. Instead of being clever about which node to process next, it just relaxes *every* edge, V-1 times. It's slower, but it handles negative edge weights -- and it has a neat bonus: if any edge can still be relaxed after V-1 passes, you've found a negative-weight cycle.
+Bellman-Ford computes shortest paths from a single source and handles negative edge weights. Relaxes every edge V-1 times. If any edge can still be relaxed after that, a negative-weight cycle exists.
 
 ```kotlin
 fun bellmanFord(edges: List<Triple<Int, Int, Int>>, n: Int, source: Int): IntArray? {
@@ -103,23 +101,19 @@ Time O(V * E).
 
 #### How do you decide which shortest path algorithm to use?
 
-This is the one you need to have on autopilot:
-
-- **Single source, non-negative weights** -- Dijkstra
-- **Single source, negative weights or edge count limit** -- Bellman-Ford
-- **All pairs, small V** -- Floyd-Warshall
-- **Unweighted graph** -- plain BFS in O(V + E)
-- **DAG** -- topological sort + relaxation in O(V + E)
-
-The key is the constraints. See "non-negative"? Dijkstra. See "at most K edges"? Bellman-Ford. See "all pairs" with V under 500? Floyd-Warshall.
+- **Single source, non-negative weights** — Dijkstra
+- **Single source, negative weights or edge count limit** — Bellman-Ford
+- **All pairs, small V** — Floyd-Warshall
+- **Unweighted graph** — plain BFS in O(V + E)
+- **DAG** — topological sort + relaxation in O(V + E)
 
 #### What is a Minimum Spanning Tree?
 
-Imagine you're laying cable to connect every house in a neighborhood. You want to connect all of them with the least total cable. That's an MST -- a subset of edges in a connected, undirected, weighted graph that connects all vertices with minimum total weight and no cycles. For V vertices, it has exactly V-1 edges. Two classic algorithms: Prim's and Kruskal's.
+An MST of a connected, undirected, weighted graph connects all vertices with minimum total edge weight and no cycles. For V vertices, it has exactly V-1 edges. Two classic algorithms: Prim's and Kruskal's.
 
 #### Explain Kruskal's algorithm and how it uses Union-Find.
 
-Kruskal's is beautifully simple. Sort all edges by weight. Go through them one by one -- add an edge if it connects two different components, skip it if it would create a cycle. Union-Find makes that cycle check nearly instant. Stop after you've added V-1 edges.
+Sort all edges by weight. Add them one by one, skipping edges that would create a cycle (checked via Union-Find). Stop after V-1 edges.
 
 ```kotlin
 fun kruskalMST(edges: List<Triple<Int, Int, Int>>, n: Int): Int {
@@ -155,11 +149,9 @@ fun kruskalMST(edges: List<Triple<Int, Int, Int>>, n: Int): Int {
 
 Time O(E log E) for sorting.
 
-> **🧠 Think about it:** Kruskal's sorts edges and picks the cheapest ones. Prim's grows from a single vertex. When would one beat the other?
-
 #### Explain Prim's algorithm for MST.
 
-Prim's works like growing a tree from a seed. Start from any vertex, and at each step, pick the cheapest edge that connects your current tree to a new vertex. It's like building a road network by always extending to the nearest unconnected town. A priority queue keeps this efficient.
+Grows the MST from a starting vertex. Uses a priority queue of crossing edges. At each step, pick the cheapest edge that adds a new vertex.
 
 ```kotlin
 fun primMST(graph: Map<Int, List<Pair<Int, Int>>>, n: Int): Int {
@@ -185,7 +177,7 @@ Time O((V + E) log V).
 
 #### How do you solve the Network Delay Time problem?
 
-This is Dijkstra in disguise. Run Dijkstra from the source node, then look at the maximum distance across all nodes. That's how long it takes for the signal to reach the farthest node. If any node is unreachable, return -1.
+Direct Dijkstra application. Find the maximum shortest path distance from the source. If any node is unreachable, return -1.
 
 ```kotlin
 fun networkDelayTime(times: Array<IntArray>, n: Int, k: Int): Int {
@@ -215,17 +207,15 @@ fun networkDelayTime(times: Array<IntArray>, n: Int, k: Int): Int {
 
 #### What are common problems where Union-Find is the right tool?
 
-Anytime you're grouping things and asking "are these two in the same group?" -- that's Union-Find territory:
-
-- **Connected components** -- union nodes sharing edges, count distinct roots
-- **Cycle detection in undirected graphs** -- same root before union means cycle
+- **Connected components** — union nodes sharing edges, count distinct roots
+- **Cycle detection in undirected graphs** — same root before union means cycle
 - **Kruskal's MST**
-- **Accounts merge** -- group accounts sharing an email
-- **Redundant connection** -- find the edge creating a cycle
+- **Accounts merge** — group accounts sharing an email
+- **Redundant connection** — find the edge creating a cycle
 
 #### What is the Floyd-Warshall algorithm?
 
-Floyd-Warshall answers the question "what's the shortest path between *every* pair of nodes?" It uses DP -- for each intermediate vertex k, check if routing through k improves the path between every pair (i, j). It's like asking "would a layover in city k make *any* trip cheaper?" for every possible layover city. Time O(V^3), so it only works for small graphs.
+All-pairs shortest paths using DP. For each intermediate vertex k, check if going through k improves the path between every pair (i, j). Time O(V^3).
 
 ```kotlin
 fun floydWarshall(dist: Array<IntArray>): Array<IntArray> {
@@ -243,15 +233,13 @@ fun floydWarshall(dist: Array<IntArray>): Array<IntArray> {
 }
 ```
 
-> **🧠 Think about it:** Floyd-Warshall runs in O(V^3). For a graph with 10,000 nodes, that's a trillion operations. At what graph size does it stop being practical?
-
 #### When would you use Prim's vs Kruskal's?
 
-Prim's works better on dense graphs because it operates on adjacency lists with a priority queue. Kruskal's wins on sparse graphs since sorting E edges is cheap when E is small. And if edges are already given as a list, Kruskal's has another advantage -- it doesn't need you to build an adjacency representation at all.
+Prim's works better on dense graphs (adjacency list + priority queue). Kruskal's works better on sparse graphs (sorting E edges is cheap when E is small). If edges are already given as a list, Kruskal's avoids building adjacency representation.
 
 #### How do you find the shortest path with 0 and 1 edge weights?
 
-Use 0-1 BFS with a deque. The idea is clever -- weight-0 edges go to the front of the deque, weight-1 edges go to the back. This preserves the BFS property that closer nodes are processed first. O(V + E) -- faster than Dijkstra for this special case.
+Use 0-1 BFS with a deque. Weight 0 edges go to the front, weight 1 edges go to the back. O(V + E) — faster than Dijkstra.
 
 ```kotlin
 fun bfs01(graph: Map<Int, List<Pair<Int, Int>>>, source: Int, n: Int): IntArray {
@@ -275,7 +263,7 @@ fun bfs01(graph: Map<Int, List<Pair<Int, Int>>>, source: Int, n: Int): IntArray 
 
 #### How do you detect a negative-weight cycle?
 
-Run Bellman-Ford for V-1 iterations, then do one more pass over all edges. If any distance can still be reduced, a negative cycle exists reachable from the source. It's like a loop in your budget where you keep finding "discounts" that never stop -- the total cost keeps dropping forever.
+Run Bellman-Ford for V-1 iterations, then one more pass. If any distance can still be reduced, a negative cycle exists reachable from the source.
 
 ### Common Follow-ups
 

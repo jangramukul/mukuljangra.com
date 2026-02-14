@@ -14,7 +14,7 @@ Recursion is the foundation for trees, graphs, and DP. Backtracking extends recu
 
 #### How do you generate all permutations of an array?
 
-Think of it like arranging people in a line. For each position, you try every person who hasn't been placed yet. You track who's already in line with a boolean array, and once the line is full, you save that arrangement.
+For each position, try every unused element. Track used elements with a boolean array. When the permutation is complete, add it to results.
 
 ```kotlin
 fun permute(nums: IntArray): List<List<Int>> {
@@ -39,11 +39,11 @@ fun permute(nums: IntArray): List<List<Int>> {
 }
 ```
 
-Time O(n! * n), space O(n). The `n!` is because there are that many permutations, and the extra `n` is for copying each one into the result.
+Time O(n! * n), space O(n).
 
 #### How do you generate all subsets of an array?
 
-At each element, you face a simple yes-or-no decision — include it or skip it. It's like standing at a buffet going down the line. For each dish, you either put it on your plate or you don't. Once you've passed every dish, whatever's on your plate is one subset.
+At each element, two choices — include it or skip it. Collect results when all elements are processed.
 
 ```kotlin
 fun subsets(nums: IntArray): List<List<Int>> {
@@ -63,17 +63,15 @@ fun subsets(nums: IntArray): List<List<Int>> {
 }
 ```
 
-Time O(2^n * n), space O(n). Two choices per element gives you 2^n subsets total.
+Time O(2^n * n), space O(n).
 
 #### What is backtracking and how does it differ from brute force?
 
-Here's the thing — brute force tries every possible combination, even the ones that are obviously wrong halfway through. Backtracking is smarter. It builds solutions one step at a time and the moment something violates a constraint, it backs up and tries a different path. It's like navigating a maze: if you hit a dead end, you don't start over from the entrance, you just go back to the last fork and try a different direction.
-
-The template is always the same: make a choice, recurse, undo the choice.
+Backtracking builds solutions incrementally and abandons a path as soon as it violates constraints. The key is pruning — don't explore paths that can't lead to valid solutions. Template: make a choice, recurse, undo the choice.
 
 #### How do you solve the N-Queens problem?
 
-You place queens row by row. For each row, you try every column and check if it's safe — meaning no other queen shares the column or either diagonal. We use sets to track which columns and diagonals are already taken.
+Place queens row by row. For each row, try every column. Check if the column and both diagonals are free using sets.
 
 ```kotlin
 fun solveNQueens(n: Int): List<List<String>> {
@@ -103,13 +101,11 @@ fun solveNQueens(n: Int): List<List<String>> {
 }
 ```
 
-Time O(n!), space O(n^2). The clever bit is the diagonal tracking: all cells on the same `\` diagonal share the value `row - col`, and all cells on the same `/` diagonal share `row + col`. Once you see that, the constraint check becomes a simple set lookup.
-
-> **🧠 Think about it:** If you removed the pruning (the `continue` check) and just placed queens everywhere, how many boards would you generate for n=8? Compare that to how many N-Queens actually explores.
+Time O(n!), space O(n^2). All cells on the same `\` diagonal share `row - col`, and `/` diagonal share `row + col`.
 
 #### How do you solve the Jump Game problem?
 
-This one is pure greedy. You walk through the array and keep track of the farthest index you can reach. If you ever land on an index that's beyond your farthest reach, you're stuck — return false. It's like crossing a river on stepping stones: at each stone, you check how far you can jump from here, and you keep extending your maximum reach.
+Track the farthest index you can reach. If you land beyond the farthest reach, you're stuck.
 
 ```kotlin
 fun canJump(nums: IntArray): Boolean {
@@ -122,23 +118,23 @@ fun canJump(nums: IntArray): Boolean {
 }
 ```
 
-Time O(n), space O(1). No recursion, no DP table — just one pass.
+Time O(n), space O(1). Greedy — extend your reach as far as possible at each step.
 
 #### What is a greedy algorithm?
 
-A greedy algorithm makes the best-looking choice at each step and never looks back. It's like always taking the shortest line at the grocery store without considering that the other line might move faster overall. It works when the problem has the greedy-choice property (local optimal leads to global optimal) and optimal substructure. Classic examples: activity selection, Huffman coding, fractional knapsack.
+A greedy algorithm makes the locally optimal choice at each step without reconsidering. It works when the problem has the greedy-choice property and optimal substructure. Classic examples: activity selection, Huffman coding, fractional knapsack.
 
 #### What is recursion and what are its essential parts?
 
-Recursion is a function calling itself to solve a smaller version of the same problem. Every recursive function needs exactly two things: a base case that stops the recursion, and a recursive case that breaks the problem into something smaller. Without a base case, you just keep calling yourself forever until you get a StackOverflowError.
+A function calling itself to solve smaller instances. Every recursive function needs a base case (stops recursion) and a recursive case (breaks into smaller version). Without a base case, you get stack overflow.
 
 #### How does the call stack work during recursion?
 
-Each recursive call pushes a new stack frame with its own local variables — like stacking plates. Frames keep piling up until you hit a base case, then they unwind one by one as each call returns. Space complexity is O(depth) because of these stacked frames. Go too deep (10,000+ levels) and you'll blow the stack.
+Each recursive call creates a new stack frame with its own local variables. Frames stack up until a base case is reached, then unwind. Space complexity is O(depth). Too deep (10,000+ levels) causes StackOverflowError.
 
 #### How do you solve Word Search on a board?
 
-You start a DFS from every cell that matches the first character of the word. From there, you explore all four neighbors looking for the next character. The trick to avoid revisiting cells is to temporarily overwrite the current cell with a sentinel value like `'#'`, then restore it on the way back.
+DFS from every cell matching the first character. At each cell, check adjacent cells. Mark visited by temporarily changing the value.
 
 ```kotlin
 fun exist(board: Array<CharArray>, word: String): Boolean {
@@ -149,10 +145,10 @@ fun exist(board: Array<CharArray>, word: String): Boolean {
         if (i !in 0 until m || j !in 0 until n) return false
         if (board[i][j] != word[k]) return false
         val temp = board[i][j]
-        board[i][j] = '#' // mark visited
+        board[i][j] = '#'
         val found = dfs(i + 1, j, k + 1) || dfs(i - 1, j, k + 1) ||
                     dfs(i, j + 1, k + 1) || dfs(i, j - 1, k + 1)
-        board[i][j] = temp // restore on backtrack
+        board[i][j] = temp
         return found
     }
     for (i in 0 until m) {
@@ -164,11 +160,9 @@ fun exist(board: Array<CharArray>, word: String): Boolean {
 }
 ```
 
-This is textbook backtracking — we modify state going forward and undo it coming back.
-
 #### How do you solve the Gas Station problem?
 
-Here's the key insight: if the total gas across all stations is less than the total cost, there's no solution, period. But if a solution exists, it's guaranteed to be unique. You iterate through the stations tracking a running surplus. The moment your surplus goes negative, you know you can't have started from any station you've already passed — so you reset your starting point to the next station.
+If total gas < total cost, no solution. Otherwise, iterate and track running surplus. When it goes negative, reset start to the next station.
 
 ```kotlin
 fun canCompleteCircuit(gas: IntArray, cost: IntArray): Int {
@@ -188,11 +182,9 @@ fun canCompleteCircuit(gas: IntArray, cost: IntArray): Int {
 }
 ```
 
-> **🧠 Think about it:** Why does resetting `start` to `i + 1` work? Why can't any station between the old start and `i` be the answer either?
-
 #### How do you solve Partition Labels?
 
-First, record the last occurrence of every character in the string. Then iterate through: as you see each character, expand the current partition's end to that character's last occurrence. When your current index reaches the partition's end, you've found a complete partition — cut it. It's like reading a book and deciding chapter breaks: you can't end a chapter until every character introduced in it has had their last appearance.
+Record the last occurrence of each character. Iterate, expanding the partition's end to the farthest last occurrence. Cut when current index reaches the end.
 
 ```kotlin
 fun partitionLabels(s: String): List<Int> {
@@ -214,7 +206,7 @@ fun partitionLabels(s: String): List<Int> {
 
 #### How do you generate combinations of k elements from n?
 
-It's similar to subsets, but with a size constraint — you stop adding once you've picked k elements. The other important thing is you only recurse forward (starting from the next number), which naturally avoids duplicates like picking [1,2] and [2,1] as separate combinations.
+Similar to subsets but with a size constraint. Only recurse forward to avoid duplicates.
 
 ```kotlin
 fun combine(n: Int, k: Int): List<List<Int>> {
@@ -237,7 +229,7 @@ fun combine(n: Int, k: Int): List<List<Int>> {
 
 #### How do you handle duplicates in subsets and combinations?
 
-Sort the input first — that's the move that makes everything else work. Then at each recursion level, if the current element is the same as the previous one at that level, skip it. You're essentially saying "I already explored all subsets that include this value at this position, so I'm not doing it again."
+Sort input first. Skip an element if it's the same as the previous one at the same recursion level.
 
 ```kotlin
 fun subsetsWithDup(nums: IntArray): List<List<Int>> {
@@ -257,21 +249,17 @@ fun subsetsWithDup(nums: IntArray): List<List<Int>> {
 }
 ```
 
-The condition `i > start` is the subtle part — it allows the first occurrence at each level but skips duplicates. If `i == start`, we haven't used this value at this level yet, so it's fine. If `i > start` and it matches the previous element, we've already been down that road.
+The condition `i > start` allows the first occurrence but skips duplicates at the same level.
 
 #### When does greedy work and when does it fail?
 
-Greedy works when making the locally best choice at every step actually leads to the globally best answer. Activity selection, minimum spanning tree, Huffman coding — these all have that property.
+Greedy works when local choices lead to global optimum: activity selection, MST, Huffman coding. It fails when they don't: 0/1 knapsack, coin change with arbitrary denominations (coins [1,3,4], amount 6 — greedy gives 3 coins, optimal is 2).
 
-Plot twist: it fails more often than you'd think. Take coin change with denominations [1, 3, 4] and amount 6. Greedy picks 4 + 1 + 1 = three coins, but the optimal answer is 3 + 3 = two coins. The greedy choice looked good locally but missed the global optimum.
-
-If you can't prove your greedy approach works (typically with an exchange argument showing you can swap any non-greedy choice for a greedy one without losing optimality), use DP instead.
-
-> **🧠 Think about it:** Why does greedy work for US coin denominations (1, 5, 10, 25) but not for arbitrary denominations? What's special about the US system?
+If you can't prove greedy with an exchange argument, use DP instead.
 
 #### How does the Activity Selection problem demonstrate greedy?
 
-Sort activities by end time, then always pick the one that finishes earliest and doesn't overlap with your last selection. Why earliest end time? Because finishing early leaves the maximum room for future activities. It's the "don't be greedy with time" approach to being greedy.
+Sort by end time. Always pick the activity that finishes earliest and doesn't overlap with the last selected one. Finishing early leaves the most room for future activities.
 
 ```kotlin
 fun activitySelection(start: IntArray, end: IntArray): Int {

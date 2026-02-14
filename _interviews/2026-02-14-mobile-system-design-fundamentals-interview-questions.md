@@ -14,21 +14,17 @@ Mobile system design interviews focus on client-side architecture, not backend s
 
 #### How do you structure the high-level architecture of a mobile app?
 
-Think of a mobile app like a well-run restaurant. The front-of-house (UI layer) handles what the customer sees. The kitchen (domain layer) is where the real cooking happens. And the supply room (data layer) manages where ingredients come from.
+The standard layered architecture has three layers:
 
-The standard layered architecture maps to exactly that:
-
-- **UI layer** — Activities, Fragments, or Composables. They observe state from ViewModels and render it. No business logic here
+- **UI layer** — Activities, Fragments, or Composables. Observes state from ViewModels and renders it. No business logic here
 - **Domain layer** (optional) — Use cases that contain business logic. Pure Kotlin, no Android dependencies
 - **Data layer** — Repositories that coordinate between remote (API) and local (Room, DataStore) data sources
 
-Here's the thing — the data layer is where most of the interesting system design decisions live. Each repository owns a specific domain like `ArticleRepository` or `UserRepository`, and the ViewModel doesn't know or care whether data came from the network or the local database.
+The data layer is where most of the interesting system design decisions live. Each repository owns a specific domain — `ArticleRepository`, `UserRepository` — and the ViewModel doesn't know or care whether data came from the network or the local database.
 
 #### What is the single source of truth pattern and why does it matter?
 
-Single source of truth means your local database is the only place the UI reads data from. The network layer writes to the database, and the UI observes the database through Flow. The UI never directly consumes API responses.
-
-It's like a library's catalog system. You don't go ask the book distributor what's available — you check the library's own catalog. The distributor drops off new books, the catalog gets updated, and you always check the catalog.
+Single source of truth means the local database is the only place the UI reads data from. The network layer writes to the database, and the UI observes the database through Flow. The UI never directly consumes API responses.
 
 ```kotlin
 class ArticleRepository(
@@ -36,7 +32,6 @@ class ArticleRepository(
     private val dao: ArticleDao,
     private val networkMonitor: NetworkMonitor
 ) {
-    // The UI only ever reads from the database
     fun getArticles(): Flow<List<Article>> {
         return dao.observeArticles().onStart {
             if (networkMonitor.isOnline.value) {
@@ -48,31 +43,29 @@ class ArticleRepository(
 }
 ```
 
-This gives you offline support for free — the database always has the last known data. You also get UI consistency because all screens showing the same entity see the same version. And you're not manually merging network responses with cached data anymore. Without this pattern, you get stale data bugs where one screen shows the old version and another shows the updated one.
+This gives you offline support for free — the database always has the last known data. It gives you UI consistency — all screens showing the same entity see the same version. And it simplifies state management because you're not manually merging network responses with cached data. Without this pattern, you get stale data bugs where one screen shows the old version and another shows the updated version.
 
 #### How do you choose an architecture pattern (MVVM, MVI) and set up dependency injection?
 
-MVVM with unidirectional data flow is the standard for Android. The ViewModel holds UI state as a `StateFlow`, the UI observes it, and user actions flow back to the ViewModel as events. MVI is a stricter version where all events are modeled as a sealed class and state transitions happen through a reducer. It's better for complex screens with many interacting states.
+MVVM with unidirectional data flow is the standard for Android. The ViewModel holds UI state as a `StateFlow`, the UI observes it, and user actions flow back to the ViewModel as events. MVI is a stricter version where all events are modeled as a sealed class and state transitions happen through a reducer — better for complex screens with many interacting states.
 
-For dependency injection, Hilt is the standard for production apps. It generates code at compile time, so there's no runtime reflection cost. Define modules for your data layer — API clients, DAOs, repositories — and let Hilt inject them into ViewModels and use cases. In a system design interview, mentioning Hilt briefly is enough. The interviewer cares more about what you inject than how.
+For dependency injection, Hilt is the standard for production apps. It generates code at compile time, so there's no runtime reflection cost. Define modules for your data layer (API clients, DAOs, repositories) and let Hilt inject them into ViewModels and use cases. In a system design interview, mentioning Hilt briefly is enough — the interviewer cares more about what you inject than how.
 
 #### How do you design caching in detail?
 
-Use a two-level cache — memory and disk. Think of it like your browser: the tab you have open is the memory cache (instant, but gone when you close it), and your browser history is the disk cache (slower, but survives a restart). The repository coordinates both: check memory first, then disk, then network. Write network results to both levels on the way back.
+Use a two-level cache — memory and disk. Memory cache (an `LruCache` or repository-scoped map) gives instant access but dies with the process. Disk cache (Room) survives restarts. The repository coordinates both: check memory first, then disk, then network. Write network results to both levels on the way back.
 
-Now here's where it gets interesting — cache invalidation. Three strategies:
+Cache invalidation is the hard part. Three strategies:
 
-- **TTL** — Expire entries after a fixed duration. Simple but blunt. You might serve stale data or evict data that's still perfectly valid
+- **TTL** — Expire entries after a fixed duration. Simple but blunt — you might serve stale data or evict data that's still valid
 - **Version-based** — Tag data with a version. When the server reports a newer version, invalidate the local copy
 - **Event-based** — Invalidate specific entries when a relevant write happens. If the user posts a new article, invalidate the article list cache
 
-Stale-while-revalidate is the sweet spot for most apps. Show cached data immediately, fetch fresh data in the background, then update the UI when it arrives. The user sees content within milliseconds instead of staring at a spinner.
-
-> **🧠 Think about it:** If you're designing a news feed, which cache invalidation strategy would you pick — and would you combine more than one?
+Stale-while-revalidate combines caching with freshness. Show cached data immediately, fetch fresh data in the background, update the UI when it arrives. The user sees content within milliseconds instead of waiting for a network round trip.
 
 #### How do you handle threading and concurrency?
 
-All UI work happens on the main thread. Everything else runs on background threads using Kotlin coroutines. It's like a restaurant kitchen — the waiter (main thread) takes orders and delivers food, but the actual cooking happens in the back.
+All UI work happens on the main thread. Everything else runs on background threads using Kotlin coroutines.
 
 - **Dispatchers.Main** — UI updates, state emission
 - **Dispatchers.IO** — Network calls, database queries, file I/O. Pool of 64 threads
@@ -97,7 +90,7 @@ Use coroutine scopes tied to lifecycle — `viewModelScope` and `lifecycleScope`
 
 #### How do you design offline support?
 
-There are three levels, and picking the right one depends on how much pain you're willing to sign up for:
+There are three levels:
 
 - **Read-only offline** — Cache previously fetched data in Room. The user can browse but can't create or modify anything. This is the minimum for most apps
 - **Offline queue** — Let the user perform write operations while offline. Queue them locally with metadata (timestamp, operation type, entity ID) and replay when connectivity returns
@@ -107,11 +100,11 @@ For most interview problems, read-only offline with an offline queue for critica
 
 #### How do you decide on client-server communication?
 
-Most mobile apps use REST over HTTPS for standard CRUD operations. That's your default unless you have a specific reason to pick something else.
+Most mobile apps use REST over HTTPS for standard CRUD operations. That's the default unless you have a reason to pick something else.
 
-Plot twist — sometimes REST isn't enough. Use WebSocket or SSE when you need real-time updates pushed from the server, like chat messages, live scores, or collaborative editing. Use GraphQL when the client needs flexible queries across multiple entity types and you want to avoid over-fetching. Use gRPC with Protocol Buffers for high-frequency, low-latency communication where payload size matters.
+Use WebSocket or SSE when you need real-time updates pushed from the server — chat messages, live scores, collaborative editing. Use GraphQL when the client needs flexible queries across multiple entity types and you want to avoid over-fetching. Use gRPC with Protocol Buffers for high-frequency, low-latency communication where payload size matters.
 
-For push notifications, FCM is the standard on Android. It's far more battery-efficient than polling the server every 30 seconds. Think of it this way — polling is like calling the pizza shop every minute to ask if your order is ready. Push is like the shop calling you when it's done. Use push to notify the client that something changed, then let the client pull the actual data.
+For push notifications (new message alerts, background data sync triggers), FCM is the standard on Android. It's far more battery-efficient than polling the server every 30 seconds. Use push to notify the client that something changed, then let the client pull the actual data.
 
 #### How do you design the API contract from the mobile client's perspective?
 
@@ -134,9 +127,9 @@ If you don't control the backend, say so. Explain the ideal API and how you'd wo
 
 #### How do you design the data model?
 
-Start with the entities visible on the screen and work backward. Identify your core entities — User, Article, Message, Order — and their relationships. Then decide what gets stored locally vs fetched on demand. Frequently accessed data goes in Room, large media stays on the server until explicitly requested.
+Start with the entities visible on the screen and work backward. Identify core entities (User, Article, Message, Order) and their relationships. Decide what gets stored locally vs fetched on demand — frequently accessed data goes in Room, large media stays on the server until explicitly requested.
 
-Here's the thing — keep network DTOs separate from database entities. Map between them in the repository. This decouples your local schema from the API contract so either side can evolve independently.
+Keep network DTOs separate from database entities. Map between them in the repository. This decouples your local schema from the API contract so either side can evolve independently.
 
 ```kotlin
 @Serializable
@@ -155,11 +148,11 @@ data class ArticleEntity(
     val authorName: String,
     val content: String,
     val createdAt: Long,
-    val lastFetchedAt: Long // local-only — tracks when we last refreshed
+    val lastFetchedAt: Long
 )
 ```
 
-That `lastFetchedAt` field is your cache freshness tracker. It tells you when to go back to the network for a newer version.
+The `lastFetchedAt` field is local-only — it tracks cache freshness so you know when to refresh from the network.
 
 #### How do you implement pagination on the client?
 
@@ -192,7 +185,7 @@ The `distinctUntilChanged()` prevents repeated triggers. Using `key` in `items()
 
 #### What's the first thing you should do when given a mobile system design problem?
 
-Ask questions. Seriously, don't start drawing architecture diagrams. Spend the first 5 minutes clarifying what you're actually building. The interviewer gives you a vague prompt on purpose — "design a photo sharing app" — and they want to see you narrow it down.
+Ask questions. Don't start drawing architecture diagrams. Spend the first 5 minutes clarifying what you're actually building. The interviewer gives you a vague prompt on purpose — "design a photo sharing app" — and they want to see you narrow it down.
 
 Split your questions into two buckets: functional requirements (what does the app do?) and non-functional requirements (how does it behave under constraints?). Write them down visibly so the interviewer can see your thought process.
 
@@ -215,8 +208,6 @@ Non-functional requirements are the constraints that shape your architecture. Th
 
 These constraints drive every architecture decision that follows. Offline support means you need a local database. Low-end device support means you need to be careful about memory and image sizes. Real-time updates mean WebSockets or SSE instead of polling.
 
-> **🧠 Think about it:** If you were designing a ride-sharing app, which non-functional requirement would change your architecture the most — offline support or real-time updates?
-
 #### How do you define scope and resource constraints?
 
 After listing requirements, draw a line between must-haves and nice-to-haves. The interviewer doesn't expect a complete production app in 45 minutes. Be explicit: "I'll focus on the feed and posting flow, and keep search and notifications out of scope."
@@ -225,7 +216,7 @@ For resources, clarify what backend support exists. Can you assume a REST API? D
 
 #### How do you address non-functional requirements in the high-level design?
 
-After laying out the architecture, walk through each non-functional requirement and show how your design handles it. Think of this as a checklist — you're proving your architecture isn't just pretty boxes on a whiteboard.
+After laying out the architecture, walk through each non-functional requirement and show how your design handles it.
 
 - **Offline support** — The single source of truth pattern handles read-only offline. For write operations while offline, queue them in a pending actions table and replay with WorkManager when connectivity returns
 - **Battery** — Batch network requests, use FCM push instead of polling, defer non-urgent work with WorkManager constraints (charging, Wi-Fi). Respect Doze mode
@@ -247,7 +238,7 @@ General strategies that apply to most designs:
 
 #### How do you handle accessibility and localization?
 
-Accessibility should be part of every system design answer, not an afterthought. It's like building a ramp into a building — you design it from the start, not bolt it on after construction.
+Accessibility should be part of every system design answer, not an afterthought.
 
 - **Content descriptions** — Every meaningful image and icon needs a description for screen readers. Decorative elements get marked as not important for accessibility
 - **Touch targets** — Minimum 48dp x 48dp for interactive elements
@@ -258,14 +249,14 @@ For localization, externalize all strings to `strings.xml` and support RTL layou
 
 #### How do you address security concerns?
 
-Security comes up when your app handles sensitive data — auth tokens, payments, personal information. You don't need to go deep in a system design interview, but mentioning the right things takes 15 seconds and shows you think about it.
+Security comes up when your app handles sensitive data — auth tokens, payments, personal information.
 
 - **Token storage** — Store auth tokens in `EncryptedSharedPreferences`, not plain SharedPreferences. Never put tokens in a database without encryption
 - **Certificate pinning** — Pin your server's certificate in OkHttp to prevent MITM attacks on compromised networks. Use backup pins for certificate rotation
 - **Network security** — Enforce HTTPS everywhere via Network Security Config. Disable cleartext traffic in production builds
 - **Data at rest** — Encrypt sensitive Room databases using SQLCipher. Use Android Keystore for cryptographic key management
 
-> **🧠 Think about it:** If you store an auth token in plain SharedPreferences on a rooted device, what's stopping an attacker from reading it?
+In a system design interview, you don't need to go deep on security. Mentioning token storage and certificate pinning takes 15 seconds and shows you think about it.
 
 ### Common Follow-ups
 

@@ -10,11 +10,11 @@ description: "Trees are one of the most asked topics in coding interviews."
 
 ## Trees & Binary Search Trees
 
-Trees show up constantly in interviews. If you're prepping for any FAANG-level round, expect at least one tree problem — traversals, BST validation, LCA, you name it. The good news is that most tree problems boil down to recursion, and once you get comfortable with DFS and BFS on trees, the patterns start to repeat themselves.
+Trees are one of the most asked topics in coding interviews. Almost every FAANG-level interview includes at least one tree problem — traversals, BST validation, or LCA. Understanding recursion and how DFS/BFS work on trees is essential.
 
 #### What is the maximum depth of a binary tree and how do you find it?
 
-Think of it like measuring the tallest branch of a real tree — you're counting nodes along the longest path from root to leaf. The recursive approach is beautifully simple: the depth of any node is 1 plus the max of its left and right subtree depths. A null node has depth 0, and that's your base case.
+The maximum depth is the number of nodes along the longest path from root to leaf. Use recursion — depth of a node is 1 plus the max of left and right subtree depths. Base case: null node has depth 0.
 
 ```kotlin
 fun maxDepth(root: TreeNode?): Int {
@@ -27,7 +27,7 @@ Time O(n), space O(h) where h is the height.
 
 #### How do you invert a binary tree?
 
-Here's the thing — this one is famously simple but trips people up because they overthink it. Just swap the left and right children of every node, recursively. That's it.
+Swap the left and right children of every node, recursively.
 
 ```kotlin
 fun invertTree(root: TreeNode?): TreeNode? {
@@ -43,7 +43,7 @@ fun invertTree(root: TreeNode?): TreeNode? {
 
 #### How do you validate whether a binary tree is a valid BST?
 
-This is where people get caught. The naive approach — just check if each node is bigger than its left child and smaller than its right — is wrong. A node deep in the right subtree must still be greater than the root, not just its immediate parent. So you pass a valid range down recursively, narrowing it at each step.
+Pass a valid range down recursively, narrowing it at each step. Each node's value must fall within its range.
 
 ```kotlin
 fun isValidBST(root: TreeNode?): Boolean {
@@ -58,13 +58,11 @@ fun validate(node: TreeNode?, min: Long, max: Long): Boolean {
 }
 ```
 
-Using `Long` avoids edge cases with `Int.MIN_VALUE` or `Int.MAX_VALUE` node values.
-
-> **🧠 Think about it:** If you did an in-order traversal of a valid BST, what property would the output have? How could you use that for validation instead?
+Using `Long` avoids edge cases with `Int.MIN_VALUE` or `Int.MAX_VALUE` node values. A common mistake is only checking a node against its parent — a node deep in the right subtree must still be greater than the root.
 
 #### How do you find the lowest common ancestor (LCA) of two nodes in a binary tree?
 
-Picture a family tree. The LCA of two people is the closest ancestor they both share. In code, if the current node matches either target, return it. Otherwise, recurse on both subtrees. If both sides return non-null, the current node is exactly where the two targets split — that's your LCA.
+If the current node matches either target, it's the LCA. Recurse on both subtrees. If both return non-null, the current node is where the targets split.
 
 ```kotlin
 fun lowestCommonAncestor(
@@ -82,7 +80,7 @@ Time O(n), space O(h). For a BST, you can do it in O(h) by comparing values.
 
 #### How do you perform a level-order traversal (BFS) of a binary tree?
 
-This is like reading a book — left to right, top to bottom, one level at a time. Use a queue. Process all nodes at the current level, then add their children for the next level.
+Use a queue. Process all nodes at the current level, add their children for the next level.
 
 ```kotlin
 fun levelOrder(root: TreeNode?): List<List<Int>> {
@@ -115,7 +113,7 @@ All are O(n) time. DFS traversals use O(h) space for the call stack.
 
 #### How do you find the diameter of a binary tree?
 
-The diameter is the longest path between any two nodes — and here's the key insight — that path doesn't have to go through the root. At each node, the longest path through it is left height + right height. You compute heights recursively and track the maximum diameter as a side effect.
+The diameter is the longest path between any two nodes. At each node, the path through it is left height + right height. Track the maximum.
 
 ```kotlin
 fun diameterOfBinaryTree(root: TreeNode?): Int {
@@ -134,7 +132,7 @@ fun diameterOfBinaryTree(root: TreeNode?): Int {
 
 #### How do you serialize and deserialize a binary tree?
 
-Plot twist — you can flatten any tree into a string and rebuild it perfectly. Use pre-order traversal, writing each value comma-separated with "null" for null children. Deserialize by reading values in the same order. The pre-order structure preserves exactly where every node goes.
+Use pre-order traversal. Write each value comma-separated, use "null" for null children. Deserialize by reading values in the same order.
 
 ```kotlin
 fun serialize(root: TreeNode?): String {
@@ -165,7 +163,7 @@ fun deserialize(data: String): TreeNode? {
 
 #### What is a binary tree and how is it represented?
 
-A binary tree is a data structure where each node has at most two children — left and right. Think of it like a decision flowchart where every step has at most two possible paths. You represent it with a node class holding a value and child pointers.
+A binary tree is a data structure where each node has at most two children — left and right. Represented with a node class holding a value and child pointers.
 
 ```kotlin
 class TreeNode(
@@ -175,11 +173,11 @@ class TreeNode(
 )
 ```
 
-A BST adds one rule on top: everything in the left subtree is smaller, everything in the right subtree is larger. That single constraint gives you O(log n) search.
+A BST is a special case where all left subtree values are smaller and all right subtree values are larger.
 
 #### How do you delete a node from a BST?
 
-This one has three cases, and the last one is where it gets interesting. No children? Just remove it. One child? Replace the node with that child. But two children — now you need to find the in-order successor (smallest value in the right subtree), copy its value into the node you're deleting, and then delete the successor instead.
+Three cases. No children: remove it. One child: replace with that child. Two children: find the in-order successor (smallest in right subtree), copy its value, delete the successor.
 
 ```kotlin
 fun deleteNode(root: TreeNode?, key: Int): TreeNode? {
@@ -200,11 +198,9 @@ fun deleteNode(root: TreeNode?, key: Int): TreeNode? {
 }
 ```
 
-> **🧠 Think about it:** Why does the in-order successor always have at most one child? What does that mean for the recursive delete call?
-
 #### How do you find the LCA in a BST specifically?
 
-Now here's where it gets nice — in a BST, you don't need to search the whole tree. You can use the ordering property like a compass. If both values are less than the current node, go left. Both greater? Go right. The moment they split — one goes left, one goes right — you've found the LCA.
+Use the BST property. If both values are less than current node, go left. If both are greater, go right. Otherwise, the current node is the split point.
 
 ```kotlin
 fun lcaBST(root: TreeNode?, p: Int, q: Int): TreeNode? {
@@ -224,7 +220,7 @@ Time O(h), space O(1) iteratively.
 
 #### How do you construct a binary tree from in-order and pre-order traversals?
 
-Here's the trick: the first element in pre-order is always the root. Find that value in in-order — everything to its left is the left subtree, everything to its right is the right subtree. Then recurse. A hash map on the in-order array makes the lookups O(1) instead of scanning every time.
+First element in pre-order is the root. Find it in in-order — left side is left subtree, right side is right subtree. Recurse.
 
 ```kotlin
 fun buildTree(preorder: IntArray, inorder: IntArray): TreeNode? {
@@ -248,7 +244,7 @@ fun buildTree(preorder: IntArray, inorder: IntArray): TreeNode? {
 
 #### How do you check if a binary tree is symmetric?
 
-A symmetric tree is its own mirror image — the left subtree is a mirror of the right subtree. So you compare them in tandem: left's left with right's right, and left's right with right's left. If every pair matches, it's symmetric.
+Compare left subtree with mirror of right subtree recursively.
 
 ```kotlin
 fun isSymmetric(root: TreeNode?): Boolean {
@@ -265,7 +261,7 @@ fun isSymmetric(root: TreeNode?): Boolean {
 
 #### How do you check if a binary tree has a path with a given sum?
 
-Walk down each root-to-leaf path, subtracting as you go. At each node, subtract its value from the target. When you hit a leaf, check if the remaining sum is zero. If any path works, you're done.
+Subtract the node's value from the target. At a leaf, check if remaining is zero.
 
 ```kotlin
 fun hasPathSum(root: TreeNode?, targetSum: Int): Boolean {
@@ -281,13 +277,11 @@ fun hasPathSum(root: TreeNode?, targetSum: Int): Boolean {
 
 #### What is a balanced binary tree and how do AVL trees maintain balance?
 
-A balanced tree keeps the height difference between left and right subtrees of every node to at most 1 — and that guarantee is what gives you O(log n) operations instead of O(n) on a skewed tree. AVL trees enforce this by checking the balance factor after every insertion and deletion, then performing rotations to fix any imbalance. There are four rotation cases: left-left, right-right, left-right, and right-left. In practice, you need to understand the concept and when rotations happen, but most interviewers won't ask you to implement them from scratch.
-
-> **🧠 Think about it:** What happens to BST operations when you insert sorted data without any balancing? What shape does the tree take?
+A balanced tree has at most 1 height difference between left and right subtrees of every node, guaranteeing O(log n) operations. AVL trees check the balance factor after every insertion/deletion and perform rotations (left-left, right-right, left-right, right-left) to restore balance. Most interviewers want you to understand the concept rather than implement rotations.
 
 #### How do you find all root-to-leaf paths?
 
-DFS with backtracking — it's like exploring a maze. Walk down each path, recording nodes as you go. When you hit a leaf, save that path. When you backtrack, remove the last node so you can try the next branch.
+DFS with backtracking. Build the path going down, add to results at leaves, remove last element when returning.
 
 ```kotlin
 fun binaryTreePaths(root: TreeNode?): List<String> {

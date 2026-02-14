@@ -10,15 +10,15 @@ description: "Testing questions come up in architecture rounds because writing t
 
 ## Testing Strategy & Testable Code
 
-Here's the thing about testing in architecture rounds — they're not really asking if you know how to write a test. They're checking whether you write code that *can* be tested in the first place. Testable code and good architecture are basically the same conversation.
+Testing comes up in architecture rounds because testable code and good architecture go hand in hand.
 
 #### What is the test pyramid and why does it matter?
 
-Think of it like building a house. The foundation is wide and solid, the walls are narrower, and the roof is the smallest part.
+The test pyramid has three layers:
 
-- **Unit tests** are the foundation. They test individual classes and functions in isolation. Fast, run on JVM, no Android dependencies.
-- **Integration tests** are the walls. They test how multiple classes work together. May use Robolectric or in-memory databases.
-- **UI tests** are the roof. They test the full screen from the user's perspective. Run on a device or emulator with Espresso or Compose test rules.
+- **Unit tests** at the base. Test individual classes and functions in isolation. Fast, run on JVM, no Android dependencies.
+- **Integration tests** in the middle. Test how multiple classes work together. May use Robolectric or in-memory databases.
+- **UI tests** at the top. Test the full screen from the user's perspective. Run on a device or emulator with Espresso or Compose test rules.
 
 I want many unit tests, fewer integration tests, and even fewer UI tests. Unit tests are fast and cheap. UI tests are slow and flaky. If your test suite is mostly UI tests, builds take forever and tests break on CI for no good reason.
 
@@ -43,7 +43,7 @@ class OrderProcessor(private val api: OrderApi) {
 }
 ```
 
-The second version lets me pass a `FakeOrderApi` in tests. The first one forces me to deal with real network calls. It's like the difference between a restaurant that grows its own vegetables and one that lets you bring ingredients — only one of those is flexible.
+The second version lets me pass a `FakeOrderApi` in tests. The first one forces me to deal with real network calls.
 
 #### What are the different types of test doubles?
 
@@ -53,8 +53,6 @@ The second version lets me pass a `FakeOrderApi` in tests. The first one forces 
 - **Spy** — wraps a real object and records calls while still executing real code. Useful when I want to verify interactions on an actual implementation.
 
 Fakes are generally better than mocks for repositories and data sources. They behave like the real thing, so tests catch more bugs. Mocks are better for verifying interactions — like checking that a logger was called when an error happened.
-
-> **🧠 Think about it:** If you had a `UserRepository` with `getUser()`, `saveUser()`, and `deleteUser()`, would you reach for a mock or a fake? Why?
 
 #### How do you write unit tests with JUnit and MockK?
 
@@ -87,13 +85,13 @@ class LoginViewModelTest {
 
 #### What is the difference between Mockito and MockK?
 
-Mockito is Java-first and works with Kotlin through `mockito-kotlin` extensions. MockK was built for Kotlin from the ground up — and you can tell. It handles `suspend` functions natively with `coEvery`/`coVerify`, can mock `object` singletons, extension functions, and top-level functions. Mockito needs extra setup for coroutines and can't mock final classes without `mockito-inline`.
+Mockito is Java-first and works with Kotlin through `mockito-kotlin` extensions. MockK is built for Kotlin from the ground up. It handles `suspend` functions natively with `coEvery`/`coVerify`, can mock `object` singletons, extension functions, and top-level functions. Mockito needs extra setup for coroutines and can't mock final classes without `mockito-inline`.
 
 For Kotlin codebases, I prefer MockK. The API feels natural — lambda-based stubbing, named arguments, and coroutine support without workarounds.
 
 #### What is the role of dependency injection in writing testable code?
 
-Here's the thing — DI separates object creation from object usage. When a class receives its dependencies through the constructor, I can pass real implementations in production and test doubles in tests. Without DI, classes create their own dependencies internally, and I can't substitute them. It's like hardcoding a phone number vs having a contact list — one gives you flexibility, the other locks you in.
+DI separates object creation from object usage. When a class receives its dependencies through the constructor, I can pass real implementations in production and test doubles in tests. Without DI, classes create their own dependencies internally, and I can't substitute them.
 
 ```kotlin
 // Without DI — untestable
@@ -116,7 +114,7 @@ In the DI version, I inject `FakePaymentGateway` and `FakeLogger` in tests. I ve
 
 #### How do you test coroutines with TestDispatcher?
 
-The `kotlinx-coroutines-test` library provides `TestDispatcher` for controlling coroutine execution in tests. Plot twist — `runTest` doesn't actually wait real time. It uses `StandardTestDispatcher` by default and auto-advances virtual time.
+The `kotlinx-coroutines-test` library provides `TestDispatcher` for controlling coroutine execution in tests. `runTest` replaces `runBlocking` — it uses `StandardTestDispatcher` by default and auto-advances virtual time.
 
 ```kotlin
 class SearchViewModelTest {
@@ -138,7 +136,7 @@ class SearchViewModelTest {
 
 #### How do you test a ViewModel that uses SavedStateHandle?
 
-`SavedStateHandle` is injected by the framework, but in tests I just create one manually with initial values. Nothing fancy.
+`SavedStateHandle` is injected by the framework. In tests, I create one manually with initial values.
 
 ```kotlin
 @Test
@@ -155,11 +153,9 @@ fun `loads user from saved state`() = runTest {
 
 Hilt and the Navigation library populate `SavedStateHandle` from arguments, so I pass the expected key-value pairs in the constructor. If my ViewModel writes back to `SavedStateHandle` for process death survival, I read the values back from the same handle to verify they were saved.
 
-> **🧠 Think about it:** What happens if you forget to test the process death path? Your ViewModel might work perfectly on a fresh launch but lose user data when the system kills and restores the Activity.
-
 #### How do you test Flows?
 
-For testing Flow emissions, I use Turbine. It provides a `test {}` extension that collects items and lets me assert them one by one. Think of it like a tape recorder for your Flow — it captures every emission so you can replay and check them.
+For testing Flow emissions, I use Turbine. It provides a `test {}` extension that collects items and lets me assert them one by one.
 
 ```kotlin
 @Test
@@ -202,11 +198,11 @@ fun `login button disabled when fields are empty`() {
 }
 ```
 
-Now here's where it gets interesting — Compose testing works through the semantic tree, not the visual tree. `onNodeWithText`, `onNodeWithTag`, and `onNodeWithContentDescription` are the main finders. For custom semantics, I add `Modifier.testTag("tag")` or `Modifier.semantics { }` to composables.
+Compose testing works through the semantic tree, not the visual tree. `onNodeWithText`, `onNodeWithTag`, and `onNodeWithContentDescription` are the main finders. For custom semantics, I add `Modifier.testTag("tag")` or `Modifier.semantics { }` to composables.
 
 #### How does Robolectric work and when should you use it?
 
-Robolectric runs Android framework code on the JVM by replacing Android SDK classes with shadow implementations. It's like a stunt double for the Android framework — looks close enough to act the part, but it's not the real thing. I can test code that uses `Context`, `SharedPreferences`, `Resources`, and other framework APIs without a device or emulator.
+Robolectric runs Android framework code on the JVM by replacing Android SDK classes with shadow implementations. I can test code that uses `Context`, `SharedPreferences`, `Resources`, and other framework APIs without a device or emulator.
 
 I use Robolectric for integration tests that need Android framework classes but don't need full UI rendering. Testing a `BroadcastReceiver`, verifying `Intent` construction, or testing a `ContentProvider` are good use cases. For pixel-perfect UI testing, Espresso or Compose test rules are better.
 
@@ -222,7 +218,7 @@ For apps mixing Views and Compose, I can use both in the same test. `createAndro
 
 #### How do you structure tests for a Clean Architecture app?
 
-Each layer gets its own testing approach — and honestly, this is where Clean Architecture really pays off:
+Each layer has its own test strategy:
 
 - **Domain layer** (use cases) — pure unit tests. Use cases take a repository interface and return results. I inject fakes and assert outputs. No Android dependencies needed.
 - **Data layer** (repositories, data sources) — integration tests. For Room, I use `Room.inMemoryDatabaseBuilder()`. For network, MockWebServer serves fake JSON responses. I test that the repository correctly maps API responses to domain models.
@@ -231,11 +227,9 @@ Each layer gets its own testing approach — and honestly, this is where Clean A
 
 The domain layer should have the highest coverage because it contains business rules. If the domain logic is wrong, nothing else matters.
 
-> **🧠 Think about it:** If you had to choose only one layer to test thoroughly and skip the rest, which layer would give you the most confidence that your app works correctly?
-
 #### How do you handle flaky tests?
 
-Flaky tests are the worst — they erode trust in your entire test suite. They usually come from timing issues, shared state, or external dependencies. I fix them at the source instead of retrying:
+Flaky tests usually come from timing issues, shared state, or external dependencies. I fix them at the source instead of retrying:
 
 - **Timing** — use `advanceUntilIdle()` in coroutine tests, `waitUntil {}` in Compose tests, and `IdlingResource` in Espresso. Never use `Thread.sleep()`.
 - **Shared state** — each test should create its own test doubles and state. If tests share a singleton or database, they interfere with each other. I use `@Before` to set up fresh state.
@@ -246,7 +240,7 @@ Flaky tests are the worst — they erode trust in your entire test suite. They u
 
 Code coverage measures what percentage of code is executed during tests. Line coverage, branch coverage, and method coverage are the common metrics. JaCoCo is the standard tool for Android projects.
 
-But here's the thing — I don't aim for 100%. That leads to testing getters, setters, and trivial code that adds no value. I aim for high coverage on business logic (use cases, ViewModels, repositories) and lower coverage on UI and framework glue code. 70-80% on domain and presentation layers is a good target. The metric that matters more than the percentage is whether tests catch real bugs when code changes.
+I don't aim for 100% — it leads to testing getters, setters, and trivial code that adds no value. I aim for high coverage on business logic (use cases, ViewModels, repositories) and lower coverage on UI and framework glue code. 70-80% on domain and presentation layers is a good target. The metric that matters more than the percentage is whether tests catch real bugs when code changes.
 
 ### Common Follow-ups
 

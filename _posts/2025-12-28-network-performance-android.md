@@ -8,11 +8,7 @@ tags:
   - Kotlin
 ---
 
-Last year I spent three days debugging what I thought was a slow API. The backend team swore their p95 was under 80ms. Our Android app? Showing 1.2 seconds for the same endpoint. "No way," I thought. So I added a network interceptor, expecting to catch a serialization bottleneck or some comically bloated response payload.
-
-What I found surprised me. The actual HTTP request/response took 90ms. The remaining 1,100ms? Connection setup. DNS resolution, TLS handshake, TCP slow start. The request itself was fast. Everything *around* it was slow.
-
-Think of it like ordering coffee. You walk to the counter in 30 seconds, say "one latte" in 2 seconds, and wait 3 minutes for it to brew. If someone asks "why does getting coffee take so long?", the answer isn't "the order was complicated." The answer is everything else — the walking, the waiting, the queue. That's exactly what was happening with our network calls. The HTTP part was the quick "one latte." The connection setup was the 3-minute wait.
+Last year I spent three days debugging what I thought was a slow API. The backend team insisted their p95 was under 80ms. Our Android app was showing 1.2 seconds for the same endpoint. I added a network interceptor, expecting to find a serialization bottleneck or some bloated response payload. Instead, I found something I didn't expect — the actual HTTP request/response took 90ms. The remaining 1,100ms was connection setup. DNS resolution, TLS handshake, TCP slow start. The request itself was fast. Everything around it was slow.
 
 That experience changed how I think about network performance on Android. Most of the time, when someone says "our API calls are slow," the problem isn't bandwidth or payload size. **The problem is connection management.** How many connections are you opening? Are you reusing them? Are you multiplexing requests over a single connection or creating new TCP sockets for every call? Once I started looking at networking through that lens, I found that the biggest wins came from tuning things most developers never configure — the connection pool, the dispatcher, DNS caching, timeout strategy — not from compressing JSON payloads by a few kilobytes.
 
@@ -20,19 +16,13 @@ That experience changed how I think about network performance on Android. Most o
 
 HTTP/1.1 has a fundamental limitation: one request per connection at a time. If you need to make 6 API calls to load a screen, you need 6 TCP connections — each with its own DNS lookup, TLS handshake, and TCP slow start penalty. That's expensive, especially on mobile networks where latency is high and radio state transitions add 100-300ms of overhead.
 
-Imagine a toll booth on a highway. With HTTP/1.1, each car (request) needs its own lane (connection). Six cars? Six lanes. Each lane has its own toll booth operator doing the same setup — checking ID, collecting payment, raising the barrier. Now imagine a single wide lane where six cars can travel side by side. One toll booth operator, one setup, six cars through. That's HTTP/2 multiplexing.
-
-HTTP/2 solves the one-request-per-connection problem with **multiplexing** — multiple requests and responses flowing over a single TCP connection simultaneously, interleaved as binary frames. OkHttp supports HTTP/2 out of the box when the server supports it, and it negotiates the protocol during the TLS handshake via ALPN (Application-Layer Protocol Negotiation). You don't need to configure anything for this to work, but you need to understand what it means for your connection management strategy. With HTTP/2, the optimal number of connections to a single host is often just one. Opening more connections actually hurts because you lose the multiplexing benefit and you pay the setup cost multiple times.
+HTTP/2 solves this with **multiplexing** — multiple requests and responses flowing over a single TCP connection simultaneously, interleaved as binary frames. OkHttp supports HTTP/2 out of the box when the server supports it, and it negotiates the protocol during the TLS handshake via ALPN (Application-Layer Protocol Negotiation). You don't need to configure anything for this to work, but you need to understand what it means for your connection management strategy. With HTTP/2, the optimal number of connections to a single host is often just one. Opening more connections actually hurts because you lose the multiplexing benefit and you pay the setup cost multiple times.
 
 Here's the thing most people miss: OkHttp's `ConnectionPool` already handles this intelligently. When you make a request to a host that supports HTTP/2, OkHttp will reuse the existing connection and multiplex your new request onto it. But if you're creating multiple `OkHttpClient` instances — which I've seen in plenty of codebases — each one gets its own connection pool, and you lose all reuse. One shared `OkHttpClient` instance. That's the single most impactful thing you can do for network performance.
 
-> **💡 The "aha" moment:** With HTTP/2, more connections doesn't mean more speed. It means more wasted setup cost. One well-managed connection often beats six independent ones.
-
 ## Connection Pool Internals
 
-OkHttp's `ConnectionPool` defaults to keeping 5 idle connections alive for 5 minutes. These defaults are reasonable for most apps, but understanding what's happening underneath helps you tune them.
-
-Picture a parking lot at an airport. When a car (connection) finishes its trip (request), it doesn't leave the lot — it parks and waits. If another traveler (request) needs to go to the same destination (same host + port + TLS config), they grab a parked car instead of renting a new one. No paperwork, no insurance check, no waiting — just hop in and go. That's what the connection pool does. The next request to the same address can skip DNS, TCP, and TLS entirely by grabbing a pooled connection. For apps that make frequent requests to the same backend, this is the difference between 90ms and 800ms per call.
+OkHttp's `ConnectionPool` defaults to keeping 5 idle connections alive for 5 minutes. These defaults are reasonable for most apps, but understanding what's happening underneath helps you tune them. When a request completes, the connection isn't closed immediately — it's returned to the pool. The next request to the same address (scheme + host + port + TLS config) can skip DNS, TCP, and TLS entirely by grabbing a pooled connection. For apps that make frequent requests to the same backend, this is the difference between 90ms and 800ms per call.
 
 Tuning the pool depends on your traffic pattern. If your app talks to a single backend with bursty traffic — say, loading a dashboard with 8 parallel API calls — you might want a larger pool:
 
@@ -52,9 +42,7 @@ But here's the tradeoff: idle connections consume memory and can hold open socke
 
 ## Dispatcher Concurrency and Request Flow
 
-The `Dispatcher` is where OkHttp controls how many requests run simultaneously. By default, it allows 64 concurrent requests total and 5 concurrent requests per host.
-
-What surprised me when I read the OkHttp source is how the dispatcher interacts with HTTP/2. With HTTP/1.1, the per-host limit of 5 means at most 5 TCP connections to one server. With HTTP/2 multiplexing, those 5 "concurrent requests" all ride on the same connection — the dispatcher's per-host limit becomes a flow control mechanism rather than a connection limit. Same number, completely different meaning depending on the protocol. Weird, right?
+The `Dispatcher` is where OkHttp controls how many requests run simultaneously. By default, it allows 64 concurrent requests total and 5 concurrent requests per host. What surprised me when I read the OkHttp source is how the dispatcher interacts with HTTP/2. With HTTP/1.1, the per-host limit of 5 means at most 5 TCP connections to one server. With HTTP/2 multiplexing, those 5 "concurrent requests" all ride on the same connection — the dispatcher's per-host limit becomes a flow control mechanism rather than a connection limit.
 
 For something like an image gallery loading 20+ thumbnails simultaneously, you might want to increase the per-host limit:
 
@@ -69,15 +57,11 @@ val client = OkHttpClient.Builder()
     .build()
 ```
 
-Be careful with this though. I've seen apps set `maxRequestsPerHost` to 30 and wonder why their API responses got *slower*. Plot twist — the server was queuing requests internally because the app was opening more concurrent streams than the server's HTTP/2 `SETTINGS_MAX_CONCURRENT_STREAMS` allowed. OkHttp respects the server's setting, but your dispatcher can still queue more requests than necessary, creating backpressure that shows up as increased latency. More isn't always better.
+Be careful with this though. I've seen apps set `maxRequestsPerHost` to 30 and wonder why their API responses got slower — turns out the server was queuing requests internally because the app was opening more concurrent streams than the server's HTTP/2 `SETTINGS_MAX_CONCURRENT_STREAMS` allowed. OkHttp respects the server's setting, but your dispatcher can still queue more requests than necessary, creating backpressure that shows up as increased latency.
 
 ## Retry and Timeout Configuration
 
-OkHttp has `retryOnConnectionFailure` enabled by default, which is both a blessing and a trap. When it's on, OkHttp will silently retry a request if the connection fails during setup or if the server closes the connection while the request is in flight.
-
-Sounds reasonable, right? Until you realize it means POST requests can be retried — and if your server doesn't handle idempotency, you might create a duplicate order or send a payment twice. I learned this the hard way on a fintech project where a flaky proxy caused intermittent connection resets, and OkHttp was dutifully retrying mutations. The user didn't click "Pay" twice. OkHttp did.
-
-> **🔥 Real talk:** Silent retries on POST requests can charge a user's credit card twice. I've seen it happen. If you work on anything involving payments, check your retry configuration today. Not tomorrow. Today.
+OkHttp has `retryOnConnectionFailure` enabled by default, which is both a blessing and a trap. When it's on, OkHttp will silently retry a request if the connection fails during setup or if the server closes the connection while the request is in flight. This sounds reasonable until you realize it means POST requests can be retried — and if your server doesn't handle idempotency, you might create a duplicate order or send a payment twice. I learned this the hard way on a fintech project where a flaky proxy caused intermittent connection resets, and OkHttp was dutifully retrying mutations.
 
 For non-idempotent endpoints, you have two options. You can disable retries globally with `retryOnConnectionFailure(false)` on the client, or — what I prefer — create a separate client for mutation-heavy calls using `newBuilder()`, which shares the same connection pool and dispatcher but has its own retry policy. Timeouts are the other half of this equation. OkHttp offers three: `connectTimeout` (TCP + TLS handshake), `readTimeout` (waiting for response bytes), and `writeTimeout` (sending request bytes). The defaults are 10 seconds each, but the right values depend heavily on the endpoint:
 
@@ -103,13 +87,11 @@ val uploadClient = baseClient.newBuilder()
     .build()
 ```
 
-The key insight is that `newBuilder()` doesn't create a new connection pool or dispatcher — it inherits them from the parent. So you get per-use-case timeout and retry behavior without losing connection reuse. Think of it like renting cars from the same fleet — different insurance options for each driver, but they all come from the same garage. I use this pattern on every project now: one base client with sane defaults, and specialized variants for uploads, mutations, and long-polling endpoints.
+The key insight is that `newBuilder()` doesn't create a new connection pool or dispatcher — it inherits them from the parent. So you get per-use-case timeout and retry behavior without losing connection reuse. I use this pattern on every project now: one base client with sane defaults, and specialized variants for uploads, mutations, and long-polling endpoints.
 
 ## The Interceptor Chain — Application vs Network
 
 Understanding the interceptor chain is one of those things that separates "I use OkHttp" from "I understand OkHttp." There are two registration points: `addInterceptor()` for application interceptors and `addNetworkInterceptor()` for network interceptors. The ordering matters more than most people realize.
-
-Here's a way to think about it. Imagine you're sending a letter through a mail service. An application interceptor is like your assistant who reads your letter before handing it to the mail carrier. They see exactly what you wrote, and when the reply comes back (even if it bounced through three forwarding addresses), they hand you the final response. They touch the letter once. A network interceptor is like a postal inspector at the sorting facility — they see every hop, every redirect, every forwarded envelope. If your letter gets redirected twice, they inspect it three times.
 
 Application interceptors run first, before OkHttp's internal machinery. They see the original request exactly as your code built it, and they see the final response after all redirects and retries. They fire exactly once per `call.execute()` or `call.enqueue()`, regardless of how many redirects or retries happen underneath. Network interceptors sit between OkHttp's connection logic and the actual wire. They fire for every network request — so if a call follows two redirects, the network interceptor fires three times. They also have access to the `Connection` object, which means they can inspect the negotiated protocol, TLS version, and cipher suite.
 
@@ -149,15 +131,13 @@ val client = OkHttpClient.Builder()
     .build()
 ```
 
-The critical detail: always close the 401 response body before retrying. OkHttp enforces one active response per connection, and leaking response bodies is one of the most common causes of connection pool exhaustion. I've debugged production apps where the pool was "full" of connections held open by un-closed error responses. That's a fun one to track down at 2 AM.
+The critical detail: always close the 401 response body before retrying. OkHttp enforces one active response per connection, and leaking response bodies is one of the most common causes of connection pool exhaustion. I've debugged production apps where the pool was "full" of connections held open by un-closed error responses.
 
 ## Request Coalescing — Stop Making the Same Call Five Times
 
-This one took me embarrassingly long to figure out. Imagine a restaurant where five waiters walk up to the kitchen and each one says "one Caesar salad for table 7." The kitchen makes five identical salads. Four of them get thrown away. That's absurd, right? But that's exactly what happens in a lot of Android apps.
+This one took me embarrassingly long to figure out. In a Compose-based app, five different composables might all call `viewModel.loadUserProfile()` during initial composition. Without coalescing, that's five identical HTTP requests to `GET /user/profile` — all in flight simultaneously, all returning the same data. Multiply this across every screen and you're burning bandwidth, battery, and backend resources for no reason.
 
-In a Compose-based app, five different composables might all call `viewModel.loadUserProfile()` during initial composition. Without coalescing, that's five identical HTTP requests to `GET /user/profile` — all in flight simultaneously, all returning the same data. Multiply this across every screen and you're burning bandwidth, battery, and backend resources for no reason.
-
-The fix is deduplicating in-flight requests at the repository layer. The idea is simple: if a request for the same key is already in flight, new callers subscribe to the same result instead of launching a new request. One order to the kitchen, five waiters listening for the bell. A `ConcurrentHashMap` with `Deferred` makes this clean:
+The fix is deduplicating in-flight requests at the repository layer. The idea is simple: if a request for the same key is already in flight, new callers subscribe to the same result instead of launching a new request. A `MutableSharedFlow` with a `Mutex` makes this clean:
 
 ```kotlin
 class CoalescingRepository(
@@ -187,8 +167,6 @@ class CoalescingRepository(
 ```
 
 When the first composable calls `getUserProfile("123")`, it launches the request and stores the `Deferred`. The next four callers find the active `Deferred` and just `await()` it — one HTTP request, five subscribers. The `finally` block cleans up after completion so the next call after the result arrives makes a fresh request. In a dashboard screen I optimized with this pattern, network calls dropped from 23 to 8 on initial load. Same data, same UI, 65% fewer requests.
-
-> **⚡ Quick check:** If three composables on the same screen all call `repository.getUserProfile("abc")` within 50ms, how many actual HTTP requests hit your server with coalescing? How many without?
 
 ## Response Caching
 
@@ -232,9 +210,7 @@ For in-memory caching on top of disk caching, I typically build a simple LRU lay
 
 DNS resolution on Android goes through the system resolver by default, which means it's subject to the device's DNS configuration, ISP caching behavior, and sometimes carrier-injected delays. On mobile networks, DNS lookups can take 50-200ms, and they block connection setup entirely.
 
-You know when you call a restaurant and they put you on hold while they look up your reservation? That's DNS. Your app says "I need to talk to api.myapp.com" and the system goes, "Hang on, let me check the phone book." On Wi-Fi, that lookup is quick. On a spotty mobile connection going through a carrier's DNS server? 200ms of staring at the phone book.
-
-OkHttp lets you supply a custom `Dns` implementation. The simplest optimization is pre-resolving hosts and caching the results — basically writing down the phone number so you don't have to look it up every time:
+OkHttp lets you supply a custom `Dns` implementation. The simplest optimization is pre-resolving hosts and caching the results:
 
 ```kotlin
 class CachingDns(
@@ -266,8 +242,6 @@ I've been asked "should we switch from JSON to Protobuf?" on three different pro
 
 But here's the reframe: **for most Android apps, serialization speed is not the bottleneck.** Parsing a 10KB JSON response with Moshi takes about 2-5ms on a modern device. The same response in Protobuf parses in under 1ms. That 2-4ms difference is invisible to the user. Where Protobuf wins meaningfully is payload size — on metered mobile connections, sending 50% less data matters. And in high-throughput scenarios like chat apps or real-time feeds processing hundreds of messages per second, the serialization speed difference compounds.
 
-> **🧠 Think about it:** If your app makes 10 API calls per screen load and each saves 3ms with Protobuf, that's 30ms total. Your users can't perceive that. But if your chat app processes 200 messages per second, those same 3ms savings prevent the UI from stuttering. Same optimization, wildly different impact depending on context.
-
 My rule of thumb: if your API responses are under 50KB and you're making fewer than 20 requests per minute, Moshi with JSON is fine. If you're dealing with large payloads, high-frequency updates, or you're already using gRPC on the backend, Protobuf is worth the migration cost. Don't switch just because someone told you it's "faster" without quantifying what that means for your specific traffic.
 
 ## Putting It All Together
@@ -292,8 +266,6 @@ val mutationClient = baseClient.newBuilder()
     .readTimeout(15, TimeUnit.SECONDS)
     .build()
 ```
-
-None of these lines are exotic. Connection pool, cache, DNS optimization, interceptor ordering, protocol preference, timeouts — all standard OkHttp APIs. But I've reviewed dozens of Android codebases where none of this was configured. The defaults were doing all the work, and nobody had stopped to ask whether the defaults matched their traffic pattern.
 
 The key insight from all of this is simple: **measure before you optimize, and measure the right things.** Most network "performance" work I've seen focuses on payload size or serialization format. Those matter, but they're usually the smallest slice of the total request time. Connection reuse, DNS caching, interceptor ordering, request coalescing, and timeout strategy are where the real seconds hide. Put a timing interceptor in your debug builds, look at the numbers, and let the data tell you where to spend your time.
 

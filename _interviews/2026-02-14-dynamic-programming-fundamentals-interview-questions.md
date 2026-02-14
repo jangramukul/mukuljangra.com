@@ -10,11 +10,11 @@ description: "DP is one of the most tested topics in FAANG interviews. If a prob
 
 ## Dynamic Programming — Fundamentals
 
-Here's the thing about DP — it scares people, but it shouldn't. It's really just "don't solve the same problem twice." Think of it like a cook who preps all the ingredients before cooking instead of running to the store every time they need garlic. Once you see that pattern, DP clicks. And it comes up constantly in FAANG interviews, so getting comfortable with these core patterns gives you a serious edge.
+DP is one of the most tested topics in FAANG interviews. If a problem has overlapping subproblems and optimal substructure, it's likely a DP problem. Most candidates struggle here, so being comfortable with the core patterns gives you a strong edge.
 
 #### How do you solve the Climbing Stairs problem?
 
-To reach step n, you either came from step n-1 or n-2. So `dp[n] = dp[n-1] + dp[n-2]`. That's literally Fibonacci. It's like asking "how many ways can you walk up stairs taking 1 or 2 steps at a time?" Since each state only depends on the previous two, you can ditch the whole array and just keep two variables — O(1) space.
+To reach step n, you came from step n-1 or n-2. So `dp[n] = dp[n-1] + dp[n-2]`. This is essentially Fibonacci. Since each state only depends on the previous two, optimize space to O(1).
 
 ```kotlin
 fun climbStairs(n: Int): Int {
@@ -32,7 +32,7 @@ fun climbStairs(n: Int): Int {
 
 #### How do you solve the Coin Change problem?
 
-Imagine you're at a vending machine and you need to make exact change with the fewest coins possible. For each amount, you try every coin denomination and pick whichever gives you the minimum. `dp[amount] = min(dp[amount], dp[amount - coin] + 1)`.
+Find the minimum coins to make a given amount. For each amount, try every coin and take the minimum. `dp[amount] = min(dp[amount], dp[amount - coin] + 1)`.
 
 ```kotlin
 fun coinChange(coins: IntArray, amount: Int): Int {
@@ -49,21 +49,19 @@ fun coinChange(coins: IntArray, amount: Int): Int {
 }
 ```
 
-Time O(amount * coins), space O(amount). This is an unbounded knapsack variant — you can reuse coins as many times as you want.
-
-> **🧠 Think about it:** If you could only use each coin once, how would the iteration order change?
+Time O(amount * coins), space O(amount). This is an unbounded knapsack variant.
 
 #### What is dynamic programming and when do you use it?
 
-DP is really just smart recursion. You break a problem into smaller subproblems, solve each one once, and store the result so you never recompute it. Use it when you spot two things: overlapping subproblems (you keep solving the same thing over and over) and optimal substructure (the best answer to the big problem is built from best answers to smaller problems). It's like building with LEGO — the final structure is only as good as the individual pieces you snap together.
+DP is an optimization technique where you break a problem into smaller subproblems, solve each once, and store results. Use it when a problem has overlapping subproblems (same subproblem solved multiple times) and optimal substructure (optimal solution builds from optimal subproblems).
 
 #### What is the difference between memoization and tabulation?
 
-Memoization is top-down — you write recursion naturally and slap a cache on it. Tabulation is bottom-up — you fill a table iteratively starting from the smallest subproblems. Here's how I think about it: memoization is lazy (only computes what's needed), tabulation is eager (computes everything). Memoization is easier to write because it follows the recursive structure you already thought of. But tabulation avoids recursion overhead, won't blow your stack, and often lets you optimize space since you only need the previous row.
+Memoization is top-down — recursive with caching. Tabulation is bottom-up — iteratively fill a table from smallest subproblems. Memoization is easier to write. Tabulation avoids recursion overhead and stack limits, and often allows space optimization to keep only the previous row.
 
 #### How do you solve the House Robber problem?
 
-Picture this — you're a burglar on a street, but every house has an alarm that triggers if you rob two adjacent houses. At each house, you face a choice: rob this one plus whatever you got from two houses back, or skip it and keep what you had from one house back. `dp[i] = max(dp[i-1], dp[i-2] + nums[i])`. It's a classic "take or skip" pattern.
+Can't rob adjacent houses. At each house: rob this one plus best from two back, or skip and take best from one back. `dp[i] = max(dp[i-1], dp[i-2] + nums[i])`.
 
 ```kotlin
 fun rob(nums: IntArray): Int {
@@ -81,7 +79,7 @@ fun rob(nums: IntArray): Int {
 
 #### How do you find the Longest Increasing Subsequence (LIS)?
 
-For each element, you look back at every previous element. If something earlier is smaller, you can extend its subsequence by one. `dp[i] = max(dp[j] + 1)` for all j < i where `nums[j] < nums[i]`. Think of it like building the tallest tower of blocks where each block must be bigger than the one below it — for each new block, you check all existing towers to see which one you can extend.
+For each element, look at all previous elements. If a previous element is smaller, extend its subsequence. `dp[i] = max(dp[j] + 1)` for all j < i where `nums[j] < nums[i]`.
 
 ```kotlin
 fun lengthOfLIS(nums: IntArray): Int {
@@ -97,13 +95,11 @@ fun lengthOfLIS(nums: IntArray): Int {
 }
 ```
 
-Time O(n^2). There's an O(n log n) approach using binary search with patience sorting — worth knowing for follow-ups.
-
-> **🧠 Think about it:** Why does iterating the capacity in reverse matter for 0/1 Knapsack but not for Coin Change?
+Time O(n^2). There's an O(n log n) approach using binary search with patience sorting.
 
 #### How do you solve the 0/1 Knapsack problem?
 
-You've got items with weights and values, and a bag with limited capacity. Each item can only be used once. But wait — the sneaky part is the 1D optimization. You iterate capacity in reverse. Why? Because going forward would let you "pick up" the same item multiple times since `dp[w - weight]` would already be updated in the current round.
+Items with weights and values, knapsack with capacity. Each item used at most once. Iterate capacity in reverse for the 1D optimization — going forward would reuse items.
 
 ```kotlin
 fun knapsack(weights: IntArray, values: IntArray, capacity: Int): Int {
@@ -122,7 +118,7 @@ Time O(n * capacity), space O(capacity).
 
 #### How do you solve Edit Distance?
 
-This one is like autocorrect figuring out how many key presses it takes to fix a typo. You have three operations — insert, delete, replace — and you want the minimum to transform one string into another. If the characters match, no operation needed: `dp[i][j] = dp[i-1][j-1]`. Otherwise, try all three operations and take the cheapest one plus 1.
+Minimum operations (insert, delete, replace) to convert one string to another. If characters match, `dp[i][j] = dp[i-1][j-1]`. Otherwise, take min of insert, delete, replace plus 1.
 
 ```kotlin
 fun minDistance(word1: String, word2: String): Int {
@@ -144,11 +140,11 @@ fun minDistance(word1: String, word2: String): Int {
 }
 ```
 
-Time O(m*n), space O(m*n). Can optimize to O(n) space since each row only depends on the current and previous row.
+Time O(m*n), space O(m*n). Can optimize to O(n) space.
 
 #### How do you find the Longest Common Subsequence (LCS)?
 
-Compare two strings character by character. If they match, great — extend the subsequence from the diagonal (both strings contributed). If they don't match, take the better result from skipping a character in either string. It's like two friends comparing their Spotify playlists and finding the longest sequence of songs they both have in the same relative order.
+Compare two strings character by character. If they match, extend from diagonal. If not, take max of skipping one character from either string.
 
 ```kotlin
 fun longestCommonSubsequence(text1: String, text2: String): Int {
@@ -168,11 +164,11 @@ fun longestCommonSubsequence(text1: String, text2: String): Int {
 }
 ```
 
-Time O(m*n). LCS is a building block for many string DP problems. Fun fact — Git's diff algorithm is essentially LCS on lines.
+Time O(m*n). LCS is a building block for many string DP problems. Git's diff algorithm is essentially LCS on lines.
 
 #### How do you solve Unique Paths on a grid?
 
-You're at the top-left of a grid and need to reach the bottom-right, moving only right or down. The number of ways to reach any cell is just the sum of ways to reach the cell above it and the cell to its left: `dp[i][j] = dp[i-1][j] + dp[i][j-1]`. Since you only ever look at the current and previous row, a single 1D array does the job.
+Count ways from top-left to bottom-right, moving only right or down. `dp[i][j] = dp[i-1][j] + dp[i][j-1]`.
 
 ```kotlin
 fun uniquePaths(m: Int, n: Int): Int {
@@ -188,7 +184,7 @@ fun uniquePaths(m: Int, n: Int): Int {
 
 #### How do you solve the Word Break problem?
 
-Here's the idea: `dp[i]` is true if the substring `s[0..i-1]` can be split into valid dictionary words. For each position, look back at every earlier position — if that earlier spot was breakable and the substring between the two is a dictionary word, you're good. It's like checking if you can build a sentence entirely out of known words, one split at a time.
+`dp[i]` is true if `s[0..i-1]` can be segmented into dictionary words. For each position, check all previous positions.
 
 ```kotlin
 fun wordBreak(s: String, wordDict: List<String>): Boolean {
@@ -209,7 +205,7 @@ fun wordBreak(s: String, wordDict: List<String>): Boolean {
 
 #### How do you solve the Decode Ways problem?
 
-Each digit (1-9) maps to a letter, and two-digit combos (10-26) also map to letters. At each position, you can decode a single digit or a two-digit number. But here's the catch — '0' can't be decoded on its own, so you have to handle that carefully. This is another Fibonacci-shaped problem where each state depends on the previous two.
+Each position can be decoded as single digit (1-9) or two-digit (10-26). Handle '0' carefully — it can't be decoded alone.
 
 ```kotlin
 fun numDecodings(s: String): Int {
@@ -228,11 +224,9 @@ fun numDecodings(s: String): Int {
 }
 ```
 
-> **🧠 Think about it:** What happens to the decode count when you hit the string "30"? Why does that differ from "20"?
-
 #### How do you solve the Minimum Path Sum problem?
 
-Same grid setup as Unique Paths, but now each cell has a cost and you want the cheapest path from top-left to bottom-right. `dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])`. You can only come from above or from the left, so you pick whichever neighbor was cheaper and add the current cell's cost.
+Path from top-left to bottom-right with smallest sum. `dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])`.
 
 ```kotlin
 fun minPathSum(grid: Array<IntArray>): Int {
@@ -253,21 +247,21 @@ fun minPathSum(grid: Array<IntArray>): Int {
 
 #### How do you identify whether a problem is a DP problem?
 
-Here's the thing — there are clear signals to watch for:
+Look for these signals:
 - **"Count the number of ways"** — climbing stairs, unique paths, decode ways
 - **"Find the minimum/maximum"** — coin change, edit distance, knapsack
 - **"Can you reach / is it possible"** — word break, jump game
 - **Overlapping subproblems** — recursion tree shows repeated calls
 
-The process is always the same: start with brute-force recursion. If you see overlapping subproblems in the recursion tree, add memoization. Then convert to tabulation if you want to optimize space.
+Start with brute-force recursion. If it has overlapping subproblems, add memoization. Then convert to tabulation for space optimization.
 
 #### How do you convert recursive to bottom-up DP?
 
-First, identify the states — those are the parameters that change across recursive calls. Create a DP array with dimensions matching those states. Set your base cases (the leaves of your recursion tree). Then fill the table in an order where every dependency is already computed — usually smallest to largest. It's like building a house from the foundation up instead of from the roof down.
+Identify the states (parameters that change). Create a DP array matching those dimensions. Set base cases. Fill in order where every dependency is already computed — usually smallest to largest.
 
 #### How do you optimize 2D DP space?
 
-If each cell only depends on the current and previous row, you don't need the whole 2D grid. Use two 1D arrays (current row and previous row), or even a single array updated in the right direction. This drops space from O(m*n) to O(n). The tradeoff is real though — you lose the ability to trace back the actual solution, since you've thrown away the earlier rows.
+If each cell only depends on current and previous row, use two 1D arrays or a single array updated in the right order. Drops O(m*n) to O(n). The tradeoff: you lose the ability to trace back the solution.
 
 ### Common Follow-ups
 

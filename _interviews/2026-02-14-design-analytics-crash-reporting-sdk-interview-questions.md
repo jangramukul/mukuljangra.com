@@ -10,39 +10,23 @@ description: "SDK design questions test a different angle of system design — y
 
 ## Design an Analytics / Crash Reporting SDK
 
-SDK design flips the usual system design question on its head. You're not building an app — you're building a library that lives *inside someone else's app*. Think of it like being a guest in someone's house. You can't rearrange the furniture, you can't hog the bathroom, and you definitely can't burn down the kitchen. Everything you do has to be invisible to the end user and dead simple for the developer to integrate.
+SDK design is a different flavor of system design. You are building a library that lives inside someone else's app, so everything you do has to be invisible to the end user and easy for the developer to integrate.
 
 #### What are the core functional requirements for an analytics and crash reporting SDK?
 
-Four things, and they all need to work without the host app developer thinking about them too much:
-
-- **Event tracking** — let the host app log named events with key-value properties
-- **Crash capture** — automatically catch uncaught exceptions and ANRs, grab stack traces and device info, and persist them *before the process dies*
-- **Session management** — track when a user starts and stops using the app, and group all events within that window into a session
-- **Reliable delivery** — persist everything locally and upload it in batches, even if the network was down when the event happened
-
-Here's the thing — "reliable delivery" is where most of the complexity hides. The network is unreliable, processes get killed, and your SDK still has to get that data to the backend eventually.
+The SDK needs to do four things. First, event tracking — let the host app log named events with key-value properties. Second, crash capture — automatically catch uncaught exceptions and ANRs, collect stack traces and device info, and persist them before the process dies. Third, session management — track when a user starts using the app, when they stop, and group all events within that window into a session. Fourth, reliable delivery — persist everything locally and upload it to the backend in batches, even if the network was unavailable when the event happened.
 
 #### What are the key non-functional requirements?
 
-Minimal performance impact is king. The SDK is a tenant in someone else's app, so it cannot cause jank, inflate startup time, or drain battery. All heavy work — disk I/O, network, compression — must happen off the main thread. Battery efficiency means batching network calls instead of firing one request per event. Reliable delivery means no data loss on crashes, process death, or network failures — events survive in local storage until uploaded. The SDK should also be small in binary size and method count.
-
-> **🧠 Think about it:** If your SDK adds 200ms to app startup, and the host app has 10 million users, how many collective hours of waiting have you just created?
+Minimal performance impact is the most important one. The SDK runs inside the host app, so it cannot cause jank, increase startup time noticeably, or drain battery. All heavy work (disk I/O, network, compression) must happen off the main thread. Battery efficiency means batching network calls instead of sending events one by one. Reliable delivery means no data loss on crashes, process death, or network failures — events must survive in local storage until uploaded. The SDK should also be small in binary size and method count.
 
 #### Where does the SDK's responsibility end and the host app's begin?
 
-Think of the SDK like a postal service. It picks up the mail, stores it safely, and delivers it to the destination. But it doesn't decide *what* to write in the letter — that's the host app's job. The SDK provides `track()` and the host app decides when to call it. The SDK should never read contacts, location, or any sensitive data on its own. Consent and opt-in/opt-out decisions are driven by the host app through the SDK's API. The backend and dashboard are entirely separate systems — the SDK just sends data to an ingestion endpoint.
+The SDK owns event collection, local persistence, batching, uploading, crash capture, and session tracking. It does not own what events to track — that is the host app's decision. The SDK provides `track()` and the host app decides when to call it. The SDK should never read contacts, location, or any sensitive data on its own. Consent and opt-in/opt-out decisions are driven by the host app through the SDK's API. The backend and dashboard are separate systems — the SDK just sends data to an ingestion endpoint.
 
 #### What does the overall SDK architecture look like?
 
-Four layers, each with a clear job:
-
-- **Public API layer** — what the host app touches: `initialize()`, `track()`, `identify()`, `flush()`
-- **Event pipeline** — enriches raw events with session ID, timestamp, and device metadata, then writes them to local storage
-- **Storage layer** — uses SQLite (or Room) to persist events as rows
-- **Uploader layer** — reads pending events from storage, batches them, compresses the payload, and ships them to the backend
-
-A scheduler sits on top, coordinating when uploads happen based on thresholds, timers, and lifecycle events. It's like a factory assembly line — events come in one end, get processed, stored, and shipped out the other.
+The SDK has four layers. The public API layer is what the host app interacts with — `initialize()`, `track()`, `identify()`, `flush()`. Behind that sits the event pipeline, which enriches raw events with session ID, timestamp, and device metadata, then writes them to local storage. The storage layer uses SQLite (or Room) to persist events as rows. The uploader layer reads pending events from storage, batches them, compresses the payload, and sends them to the backend. A scheduler coordinates when uploads happen based on thresholds, timers, and lifecycle events.
 
 #### How would you design the public API?
 
@@ -75,26 +59,19 @@ object AnalyticsSDK {
 }
 ```
 
-The `track()` call should return instantly. It pushes the event to an in-memory queue that gets flushed to disk asynchronously. If `track()` blocks the main thread even for a few milliseconds, you've already failed.
+The `track()` call should return instantly. It pushes the event to an in-memory queue that gets flushed to disk asynchronously.
 
 #### What does the backend ingestion endpoint look like?
 
-The SDK sends a POST to something like `/v1/events` with a JSON body. The body has two parts: a `context` object with device metadata (model, OS version, app version, locale, SDK version, device ID) sent once per batch, and an `events` array with the individual events. Each event carries a name, properties map, timestamp, and session ID. Sending device metadata once per batch instead of per event reduces payload size significantly — it's like writing the return address once on a package instead of on every item inside it.
+The SDK sends a POST request to something like `/v1/events` with a JSON body. The body has two parts: a `context` object with device metadata (model, OS version, app version, locale, SDK version, device ID) sent once per batch, and an `events` array with the individual events. Each event has a name, properties map, timestamp, and session ID. Sending device metadata once per batch instead of per event reduces payload size significantly.
 
 #### What do the data models look like?
 
-Three core models. An `Event` holds the event name, properties map, timestamp, and session ID. A `CrashReport` holds the timestamp, thread name, full stack trace string, and device info snapshot. A `Session` holds a generated session ID, start timestamp, and last activity timestamp. Events and crash reports live in local storage until uploaded. Sessions are tracked in memory with the start time persisted in SharedPreferences so they survive process death.
+Three core models. An `Event` holds the event name, properties map, timestamp, and session ID. A `CrashReport` holds the timestamp, thread name, full stack trace string, and device info snapshot. A `Session` holds a generated session ID, start timestamp, and last activity timestamp. Events and crash reports are stored locally until uploaded. Sessions are tracked in memory with the start time persisted in SharedPreferences so they survive process death.
 
 #### How does the batching strategy work?
 
-Events go into a local queue. The SDK flushes when any of these triggers fire:
-
-- Queue hits a size threshold (e.g., 50 events)
-- A timer fires (e.g., every 30 seconds)
-- The app goes to background
-- The host app calls `flush()`
-
-Batching reduces network overhead — fewer TCP connections, fewer TLS handshakes — and saves battery. It's like waiting until you have a full load of laundry instead of running the machine for every sock. One request carrying 50 events is also way easier to retry than 50 individual requests. The upload payload is typically gzip-compressed JSON.
+Events go into a local queue. The SDK flushes the queue to the backend when any of these conditions is met: the queue reaches a size threshold (e.g., 50 events), a timer fires (e.g., every 30 seconds), the app goes to background, or the host app calls `flush()`. Batching reduces network overhead — fewer TCP connections, fewer TLS handshakes — and saves battery. One request carrying 50 events is also easier to retry than 50 individual requests. The upload payload is typically gzip-compressed JSON.
 
 #### How should initialization and configuration work?
 
@@ -113,11 +90,11 @@ val config = AnalyticsConfig.Builder()
 AnalyticsSDK.initialize(context, config)
 ```
 
-Validate configuration at init time. If the API key is empty or the endpoint is not a valid URL, throw in debug builds and fall back to defaults in release. Fail loud in development, fail graceful in production.
+Validate configuration at init time. If the API key is empty or the endpoint is not a valid URL, throw in debug builds and fall back to defaults in release.
 
 #### How would you capture crashes?
 
-Set a custom `Thread.UncaughtExceptionHandler`. When an uncaught exception hits, serialize the stack trace and device info, and write it to a plain file synchronously. Here's the thing — you cannot use coroutines or Room here. The process is about to die. You're writing your last words. Only synchronous file I/O is safe. Chain the previous handler so the system's default crash behavior (dialog, process termination) still works.
+Set a custom `Thread.UncaughtExceptionHandler`. When an uncaught exception hits, serialize the stack trace and device info, and write it to a plain file synchronously. You cannot use coroutines or Room here — the process is about to die, so only synchronous file I/O is safe. Chain the previous handler so the system's default crash behavior (dialog, process termination) still works.
 
 ```kotlin
 class CrashHandler(
@@ -137,13 +114,11 @@ class CrashHandler(
 }
 ```
 
-On the next app launch, check for crash files in the directory, upload them, and delete after confirmation. For ANR detection, run a watchdog thread that posts a no-op `Runnable` to the main thread's `Handler`. If it doesn't execute within 4 seconds, the main thread is blocked. Capture the main thread's stack trace at that point.
-
-> **🧠 Think about it:** Why do we chain the previous `UncaughtExceptionHandler` instead of just replacing it? What happens if the host app or another SDK also set one?
+On the next app launch, check for crash files in the directory, upload them, and delete after confirmation. For ANR detection, run a watchdog thread that posts a no-op `Runnable` to the main thread's `Handler`. If it does not execute within 4 seconds, the main thread is blocked. Capture the main thread's stack trace at that point.
 
 #### How does the ANR watchdog work internally?
 
-The watchdog runs on its own background thread in a loop. It posts a small runnable to the main thread handler, sleeps for the threshold (4 seconds), then checks if the runnable executed. If it didn't, the main thread is likely blocked, so the watchdog grabs the main thread's stack trace and reports it as an ANR. It's like sending someone a text and waiting — if they don't reply in 4 seconds, something's wrong.
+The watchdog runs on its own background thread in a loop. It posts a small runnable to the main thread handler, sleeps for the threshold (4 seconds), then checks if the runnable executed. If it did not, the main thread is likely blocked, so the watchdog grabs the main thread's stack trace and reports it as an ANR.
 
 ```kotlin
 class AnrWatchdog(private val threshold: Long = 4000L) : Thread("AnrWatchdog") {
@@ -165,7 +140,7 @@ class AnrWatchdog(private val threshold: Long = 4000L) : Thread("AnrWatchdog") {
 }
 ```
 
-Yeah, this trips up everyone — it can report false positives under heavy system load. But it works well enough for production. Firebase Crashlytics and Bugsnag use similar techniques.
+This approach is not perfect — it can report false positives under heavy system load. But it works well enough for production. Firebase Crashlytics and Bugsnag use similar techniques.
 
 #### How would you implement the event batching and flush logic?
 
@@ -201,17 +176,13 @@ interface EventDao {
 }
 ```
 
-Plot twist: some SDKs skip Room entirely and use raw SQLite to avoid pulling in the dependency. The tradeoff is more boilerplate but a smaller library size.
+Some SDKs use raw SQLite to avoid pulling in the Room dependency — the tradeoff is more boilerplate but smaller library size.
 
 #### How would you handle reliable delivery with retries?
 
-Use exponential backoff with jitter. After the first failure, wait 15-30 seconds (randomized). Double the base on each subsequent failure: 30s, 60s, 120s, capped at 5 minutes. Jitter prevents all devices from retrying at the same time after a server outage — imagine a million devices all hammering your endpoint the instant it comes back online.
+Use exponential backoff with jitter. After the first failure, wait 15-30 seconds (randomized). Double the base on each subsequent failure: 30s, 60s, 120s, capped at 5 minutes. Jitter prevents all devices from retrying at the same time after a server outage.
 
-- **Network failures** (no connectivity, timeouts) — schedule the retry through WorkManager with a network connectivity constraint. The system fires the worker when the network comes back
-- **Server errors** (5xx) — use the backoff strategy
-- **Client errors** (400, 413 payload too large) — split the batch in half and retry each half separately
-
-Give up after 10 attempts per batch and discard the events. Holding onto them indefinitely wastes storage on a device you don't own.
+For network-related failures (no connectivity, timeouts), schedule the retry through WorkManager with a network connectivity constraint. The system will fire the worker when the network comes back. For server errors (5xx), use the backoff strategy. For client errors (400, 413 payload too large), split the batch in half and retry each half separately. Give up after 10 attempts per batch and discard the events — holding onto them indefinitely wastes storage.
 
 #### How would you handle privacy and consent?
 
@@ -221,23 +192,21 @@ Never collect PII automatically. Use a randomly generated UUID stored in SharedP
 
 #### How would you minimize performance impact on the host app?
 
-All disk and network work runs on background threads. Use a dedicated single-thread dispatcher for database writes so the SDK doesn't compete with the host app's IO dispatcher. Lazy-initialize heavy components like the database and HTTP client — don't pay the cost at app startup unless the host app triggers it.
+All disk and network work runs on background threads. Use a dedicated single-thread dispatcher for database writes so the SDK does not compete with the host app's IO dispatcher. Lazy-initialize heavy components like the database and HTTP client — do not pay the cost at app startup unless the host app triggers it.
 
-For high-traffic apps, support event sampling. The SDK can be configured to only track a percentage of events (e.g., 10%) for non-critical analytics. Crash reports are always captured at 100%. Running the SDK in a separate process is another option — it isolates memory and CPU from the host app — but it adds complexity around IPC. Most production SDKs avoid the separate process approach and just keep things lightweight on background threads.
-
-> **🧠 Think about it:** Your SDK uses `Dispatchers.IO` for database writes. The host app also uses `Dispatchers.IO` heavily. What happens under load, and how would you prevent your SDK from starving the host app's coroutines?
+For high-traffic apps, support event sampling. The SDK can be configured to only track a percentage of events (e.g., 10%) for non-critical analytics. Crash reports are always captured at 100%. Running the SDK in a separate process is another option — it isolates memory and CPU usage from the host app — but it adds complexity around IPC. Most production SDKs avoid the separate process approach and just keep things lightweight on background threads.
 
 #### How does session tracking work?
 
-Use `ProcessLifecycleOwner` to detect foreground and background transitions. When the app comes to the foreground, check how long it's been since the last event. If the gap exceeds the session timeout (typically 30 minutes), start a new session with a fresh UUID. Otherwise, continue the existing session. Log session start and session end as special events.
+Use `ProcessLifecycleOwner` to detect foreground and background transitions. When the app comes to the foreground, check how long it has been since the last event. If the gap exceeds the session timeout (typically 30 minutes), start a new session with a fresh UUID. Otherwise, continue the existing session. Log session start and session end as special events.
 
 Store the current session ID and last activity timestamp in memory. Persist the session start time in SharedPreferences so it survives process death. When the app is killed and relaunched, compare the persisted timestamp against the current time to decide whether to resume or start fresh.
 
 #### How would you handle disk and memory limits?
 
-Without cleanup, the events database grows indefinitely on devices with poor connectivity. Set a cap — something like 10,000 events or 10 MB. When the limit is hit, delete the oldest events first. They're the least valuable for analytics. Run the cleanup check after every batch insert.
+Without cleanup, the events database grows indefinitely on devices with poor connectivity. Set a cap — something like 10,000 events or 10 MB. When the limit is hit, delete the oldest events first. They are the least valuable for analytics. Run the cleanup check after every batch insert.
 
-For crash reports, keep a maximum of 10 unsent files. If the app crashes repeatedly without uploading, the oldest crash files get dropped. Track how many events and crash reports are discarded so the backend can account for data loss. In memory, don't buffer more than a few hundred events in the queue — if the queue grows beyond that, start dropping or writing directly to disk.
+For crash reports, keep a maximum of 10 unsent files. If the app crashes repeatedly without uploading, the oldest crash files get dropped. Track how many events and crash reports are discarded so the backend can account for data loss. In memory, do not buffer more than a few hundred events in the queue — if the queue grows beyond that, start dropping or writing directly to disk.
 
 #### How would you test an analytics SDK?
 

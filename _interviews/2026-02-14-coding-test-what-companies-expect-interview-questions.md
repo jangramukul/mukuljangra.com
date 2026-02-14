@@ -10,13 +10,13 @@ description: "Most Android interview pipelines include a practical coding test �
 
 ## Coding Test — What Companies Expect
 
-Most Android interview pipelines include a coding test — either a take-home project or a live coding session. Here's the thing: knowing what evaluators actually look for matters just as much as knowing how to code. Think of it like cooking for a chef — you need to know what they're tasting for.
+Most Android interview pipelines include a coding test — either a take-home project or a live coding session. Knowing what evaluators look for matters as much as knowing how to code.
 
 #### What are the common coding test formats?
 
-Three main flavors. Timed take-home is the most common — I get a problem statement and 3-6 hours to build a solution. It's like a timed cooking challenge: here are your ingredients, show me what you've got. Untimed take-home gives a few days with no strict time limit, but evaluators still gauge effort by scope — so "unlimited time" doesn't mean "build Netflix." Live coding puts me on a shared screen with an interviewer where I build or modify something in real time while explaining my thought process.
+There are three main formats. Timed take-home is the most common — I get a problem statement and 3-6 hours to build a solution. Untimed take-home gives a few days with no strict time limit, but evaluators still gauge effort by scope. Live coding puts me on a shared screen with an interviewer — I build or modify something in real time while explaining my thought process.
 
-Some companies also do "fix and extend" — they hand me an existing codebase with bugs or missing features, and I need to fix issues, add a feature, and improve code quality. This one's actually closer to what real work looks like.
+Some companies also do "fix and extend" — they hand me an existing codebase with bugs or missing features, and I need to fix issues, add a feature, and improve code quality.
 
 #### What do evaluators look for in a submission?
 
@@ -28,21 +28,19 @@ Five things, roughly in this priority:
 - **Testing** — at least unit tests for repository and ViewModel
 - **Documentation** — a clear README explaining how to build, run, and navigate the project
 
-Here's what surprises people: a working app with poor architecture scores lower than a well-architected app missing a minor feature. Evaluators care about *how* you think, not just whether you shipped.
+A working app with poor architecture scores lower than a well-architected app missing a minor feature.
 
 #### What should a good README contain?
 
 A good README covers four things: how to build and run (including any API key setup), architecture decisions and why I made them, what I would improve with more time, and any assumptions I made about ambiguous requirements.
 
-I keep it to 200-400 words. Evaluators read dozens of submissions — imagine being the person who has to open 30 repos in one afternoon. A concise README that highlights my thinking beats a long one that restates the obvious.
+I keep it to 200-400 words. Evaluators read dozens of submissions, so a concise README that highlights my thinking beats a long one that restates the obvious.
 
 #### How important is Git history?
 
-Way more important than most candidates realize. Evaluators check commit history to understand how I work. It's like reading someone's recipe notes vs just seeing the final dish — commits tell the story of how I built it.
+More important than most candidates realize. Evaluators check commit history to understand how I work. A single "initial commit" with everything tells them nothing. Small, logical commits like "set up project structure", "add Retrofit API client", "implement weather repository with caching", "add unit tests for repository" show incremental, organized thinking.
 
-A single "initial commit" with everything tells them nothing. Small, logical commits like "set up project structure", "add Retrofit API client", "implement weather repository with caching", "add unit tests for repository" show incremental, organized thinking. I don't rewrite history to look perfect — that feels dishonest. But I commit at natural breakpoints instead of dumping everything at the end.
-
-> **🧠 Think about it:** If you were reviewing a candidate's repo, what would a single giant commit tell you about how they work? What would 10 well-named commits tell you?
+I don't rewrite history to look perfect — that feels dishonest. But I commit at natural breakpoints instead of dumping everything at the end.
 
 #### How should I structure a coding test project?
 
@@ -63,7 +61,7 @@ com.example.weatherapp/
 └── di/                // Hilt modules
 ```
 
-If the project is simple enough that use cases add nothing, I skip the domain layer and go straight from ViewModel to repository. Creating empty layers for a tiny app is like putting on a three-piece suit to walk to the mailbox — technically correct, but completely unnecessary.
+If the project is simple enough that use cases add nothing, I skip the domain layer and go straight from ViewModel to repository. Don't create empty layers just for show.
 
 #### Should I use Jetpack Compose or XML Views?
 
@@ -81,11 +79,9 @@ I don't mix both in the same project. That looks scattered, not versatile.
 - Ignoring edge cases — empty lists, no network, invalid input
 - Code that doesn't compile — I always do a clean build from a fresh checkout before submitting
 
-That last one is worth repeating. I clone the repo into a fresh directory, build it from scratch, and run it. If it doesn't compile on a clean machine, nothing else matters.
-
 #### How should I handle ambiguous requirements?
 
-I document my assumptions and move on. If the requirements say "build a weather app" but don't specify whether to show a 5-day forecast or just current weather, I pick one, build it well, and note my assumption in the README. Think of ambiguous requirements like a fill-in-the-blank test — the evaluator wants to see *how* I fill in the blanks, not that I froze up because the blanks existed.
+I document my assumptions and move on. If the requirements say "build a weather app" but don't specify whether to show a 5-day forecast or just current weather, I pick one, build it well, and note my assumption in the README.
 
 If the company allows questions, I ask two or three clarifying questions before starting — like what API to use, whether offline support is expected, and whether Compose or XML is preferred.
 
@@ -93,11 +89,11 @@ If the company allows questions, I ask two or three clarifying questions before 
 
 I split my time roughly into thirds. First third for setup, architecture, and API integration — get data flowing end to end. Second third for UI, error handling, and edge cases. Final third for testing, cleanup, and README.
 
-The biggest mistake is spending too long on UI polish or animations. A clean, functional app with proper architecture and tests scores better than a pixel-perfect app with no error handling. Nobody ever failed a coding test because the loading spinner wasn't fancy enough.
+The biggest mistake is spending too long on UI polish or animations. A clean, functional app with proper architecture and tests scores better than a pixel-perfect app with no error handling.
 
 #### What does good architecture look like for a small coding test app?
 
-A clean single-module MVVM setup with repository pattern. I don't need Clean Architecture with use cases for a 2-3 screen app. The key is clear dependency direction — ViewModel depends on Repository, Repository depends on API service and DAO, but nothing depends on the ViewModel. Dependencies flow one way, like water downhill.
+A clean single-module MVVM setup with repository pattern. I don't need Clean Architecture with use cases for a 2-3 screen app. The key is clear dependency direction — ViewModel depends on Repository, Repository depends on API service and DAO, but nothing depends on the ViewModel.
 
 ```kotlin
 class WeatherRepository(
@@ -122,11 +118,9 @@ class WeatherRepository(
 
 I use Hilt for DI — it takes 10 minutes to set up and shows I understand dependency management. Manual DI is fine too, but Hilt is expected at most companies.
 
-> **🧠 Think about it:** Why does the repository emit cached data *before* making the network call? What would the user experience look like if it waited for the network first?
-
 #### How should I implement error handling?
 
-I use a sealed interface for UI state that covers loading, success, and error. The ViewModel exposes this state and the UI renders accordingly. Think of it like a traffic light — your UI needs to know exactly which state it's in, and there's no ambiguity.
+I use a sealed interface for UI state that covers loading, success, and error. The ViewModel exposes this state and the UI renders accordingly.
 
 ```kotlin
 sealed interface WeatherUiState {
@@ -155,11 +149,11 @@ class WeatherViewModel(
 }
 ```
 
-I show all three states in the UI — a loading indicator, the actual content, and an error screen with a retry button. Missing any of these is like building a car without a dashboard — technically it drives, but nobody would trust it.
+I show all three states in the UI — a loading indicator, the actual content, and an error screen with a retry button. Missing any of these shows I haven't thought about real-world scenarios.
 
 #### What level of testing is expected?
 
-At minimum, I write unit tests for the repository and ViewModel. These are the layers with actual logic — they're where bugs live. I mock the API service and DAO, and verify the repository emits the correct states for success, error, and cache scenarios.
+At minimum, I write unit tests for the repository and ViewModel. These are the layers with actual logic. I mock the API service and DAO, and verify the repository emits the correct states for success, error, and cache scenarios.
 
 ```kotlin
 class WeatherRepositoryTest {
@@ -207,17 +201,15 @@ android {
 }
 ```
 
-I add a note in the README: "Add `WEATHER_API_KEY=your_key` to `local.properties`". Hardcoding keys directly in the Retrofit base URL is a red flag — it's like writing your house key code on your front door.
+I add a note in the README: "Add `WEATHER_API_KEY=your_key` to `local.properties`". Hardcoding keys directly in the Retrofit base URL is a red flag.
 
 #### How should I approach a live coding interview vs a take-home test?
 
 Live coding is about communication as much as coding. I think out loud — explain what I'm about to do before I do it. I start by restating the problem and asking clarifying questions. Then I sketch a high-level plan before writing code.
 
-For live coding, I prioritize getting something working end to end quickly, then iterate. I don't spend 20 minutes setting up perfect architecture — the interviewer wants to see me ship working code and improve it. If I get stuck, I say so and explain my debugging thought process. Silence is the enemy here.
+For live coding, I prioritize getting something working end to end quickly, then iterate. I don't spend 20 minutes setting up perfect architecture — the interviewer wants to see me ship working code and improve it. If I get stuck, I say so and explain my debugging thought process.
 
 For take-home tests, the opposite is true — architecture and quality matter more than speed. I take the time to structure things properly, write tests, and clean up before submitting.
-
-> **🧠 Think about it:** In a live coding session, would you rather see a candidate build something messy that works, or something beautifully architected that never runs? The interviewer feels the same way.
 
 #### What should I do if I can't finish the coding test in time?
 
@@ -232,7 +224,7 @@ I submit what I have and document what's missing. I add a section in the README 
   and 503 (service unavailable) responses
 ```
 
-A well-structured incomplete submission with clear documentation beats a rushed, messy complete one. It's like turning in an exam where you showed your work on every problem — even the ones you didn't finish.
+A well-structured incomplete submission with clear documentation beats a rushed, messy complete one.
 
 #### What differentiates a good submission from a great one?
 
@@ -245,13 +237,13 @@ A good submission has clean code, proper architecture, error handling, and tests
 - Edge case handling — no network, empty search results, slow API response
 - Configuration change survival — state isn't lost on rotation
 
-None of these are hard to implement, but most candidates skip them because they focus on features instead of quality. It's the difference between a house that's painted nicely and one that's actually built on a solid foundation.
+None of these are hard to implement, but most candidates skip them because they focus on features instead of quality.
 
 #### How do I decide what to include and what to skip when time is limited?
 
 I prioritize in this order: working core feature, proper architecture, error handling, at least one meaningful test, README. Everything else is bonus.
 
-I skip animations, custom theming, advanced UI polish, and nice-to-have features like pull-to-refresh or dark mode. These don't affect the architecture score. If I have time left after the essentials, I add one bonus feature that demonstrates depth — like offline caching or pagination — rather than three superficial extras. Depth beats breadth every time.
+I skip animations, custom theming, advanced UI polish, and nice-to-have features like pull-to-refresh or dark mode. These don't affect the architecture score. If I have time left after the essentials, I add one bonus feature that demonstrates depth — like offline caching or pagination — rather than three superficial extras.
 
 ### Common Follow-ups
 

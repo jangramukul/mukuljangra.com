@@ -10,15 +10,15 @@ description: "Compose fundamentals come up in almost every Android interview now
 
 ## Compose Fundamentals & Thinking in Compose
 
-If you're interviewing for an Android role right now, Compose is going to come up. Not "might" — *will*. This covers the declarative mental model, how the compiler and runtime secretly conspire behind your back, and why Compose thinks so differently from the old View system.
+Compose fundamentals come up in almost every Android interview now. This covers the declarative mental model, how the compiler and runtime work together, and what makes Compose different from the View system.
 
 #### What is Jetpack Compose?
 
-Jetpack Compose is Android's modern UI toolkit, and it flips the script on how you build screens. Instead of inflating XML and grabbing view references to mutate them, you write Kotlin functions that *describe* what the UI should look like for a given state. The framework takes it from there — figuring out what to render and how to update it. You declare, Compose delivers.
+Jetpack Compose is Android's modern toolkit for building UI. It's a declarative UI framework where you describe what your UI should look like for a given state, and the framework handles rendering and updates. Instead of XML layouts and imperative widget manipulation, you write UI entirely in Kotlin using composable functions.
 
 #### What is a @Composable function?
 
-It's the fundamental building block. You slap `@Composable` on a function, and suddenly the Compose compiler knows to process it differently. Here's the thing — a composable function doesn't return a View or any UI object. It *describes* UI by calling other composable functions, and the framework assembles the tree from those calls.
+It's the building block of Compose UI. Every Compose UI starts with a function annotated with `@Composable` so the compiler can understand and process it. A composable function doesn't return a View or any UI object. It describes the UI by calling other composable functions, and the framework builds the UI tree from those calls.
 
 ```kotlin
 @Composable
@@ -31,9 +31,9 @@ Composable functions must be fast, idempotent, and free of side effects because 
 
 #### What is the difference between declarative and imperative UI?
 
-Think of it like giving directions. Imperative UI (XML + Views) is turn-by-turn: "Take the first left, go 200 meters, turn right at the gas station." You call `setText()`, `setVisibility()`, `addView()` — telling the framework *how* to update each widget step by step. Declarative UI (Compose) is more like giving the destination: "Here's the address, you figure out the route." You describe *what* the screen should look like for a given state, and the framework handles the rest.
+In imperative UI (XML + Views), you create a view tree and mutate it by calling setters like `setText()`, `setVisibility()`, and `addView()`. You're telling the framework *how* to update each widget step by step. In declarative UI (Compose), you describe *what* the UI should look like for a given state, and the framework figures out how to update the screen.
 
-The practical win? Imperative UI forces you to manage widget state manually, which gets messy fast as your UI grows. Declarative UI eliminates that entire category of bugs because you never hold references to UI objects — you just re-describe the screen.
+The practical difference is that imperative UI forces you to manage widget state manually, which gets messy as UI grows. Declarative UI eliminates that category of bugs because you never hold references to UI objects — you just re-describe the screen.
 
 #### How does Compose differ from the XML View system?
 
@@ -45,39 +45,37 @@ The practical win? Imperative UI forces you to manage widget state manually, whi
 
 #### What does "composition over inheritance" mean in Compose?
 
-In the View system, if you wanted a clickable image with text, you'd either subclass ImageView or create a custom ViewGroup. This leads to deep inheritance hierarchies — like a family tree that nobody wants to maintain. Compose takes the opposite approach. You compose small, focused functions together. A clickable image with text is just `Row { Image(...); Text(...) }` wrapped in a `clickable` modifier. No class to subclass, no hierarchy to untangle.
+In the View system, if you wanted a clickable image with text, you'd either subclass ImageView or create a custom ViewGroup. This leads to deep inheritance hierarchies. Compose takes the opposite approach — you compose small, focused functions together. A clickable image with text is just `Row { Image(...); Text(...) }` wrapped in a `clickable` modifier. No class to subclass, no hierarchy to maintain.
 
 #### What is Composition in Compose?
 
-Composition is the tree structure that Compose builds from your composable function calls. Think of it like a blueprint. During initial composition, Compose executes your functions and records everything in a data structure called the slot table — parameters, structure, the works. This blueprint describes what's on screen. When state changes, Compose runs recomposition to update the blueprint. The Composition can only be created by initial composition and updated through recomposition — there's no other way in.
-
-> **🧠 Think about it:** If Compose re-runs your composable functions on every state change, what would happen if those functions had side effects like writing to a database or making a network call?
+Composition is the tree structure that Compose builds from your composable function calls. During initial composition, Compose executes your composable functions and records the UI tree in a data structure called the slot table. This tree describes what's on screen. When state changes, Compose runs recomposition — it re-executes the composable functions that read changed state and updates the tree. The Composition can only be created by initial composition and updated through recomposition.
 
 #### What is recomposition?
 
-Recomposition is Compose re-executing your composable functions when state changes. But here's where it gets clever — Compose doesn't blindly re-run everything. It tracks which `State` objects each composable reads, and when a value changes, it schedules recomposition *only* for the composables that read that state. Functions whose inputs haven't changed? Skipped entirely.
+Recomposition is the process of re-executing composable functions when state changes so the UI can render its new state. Compose tracks which `State` objects each composable reads, and when a state value changes, it schedules recomposition only for the composables that read that state. This is smart recomposition — Compose skips functions whose inputs haven't changed.
 
-Plot twist: recomposition is also optimistic. If state changes *again* while recomposition is in progress, Compose may cancel the current pass and restart with the new state. This is exactly why composable functions must not have side effects — a cancelled recomposition would leave those side effects in an inconsistent state.
+Recomposition is also optimistic. If state changes again while recomposition is in progress, Compose may cancel the current pass and restart with the new state. This is why composable functions must not have side effects — a cancelled recomposition would leave those side effects in an inconsistent state.
 
 #### What happens during initial composition vs recomposition?
 
-During initial composition, Compose executes every composable function in the tree for the first time. Each call is recorded in the slot table with its parameters, remembered values, and child composables. This builds the complete UI tree. Layout and drawing happen after composition completes.
+During initial composition, Compose executes every composable function in the tree for the first time. Each function call is recorded in the slot table with its parameters, remembered values, and child composables. This builds the complete UI tree. Layout and drawing happen after composition completes.
 
-During recomposition, Compose only re-executes functions that read state values that changed. It walks the slot table, compares current parameters with stored parameters, and skips functions whose inputs are unchanged. New composables are inserted, removed ones leave the tree, unchanged ones are kept as-is. After recomposition finishes, layout and drawing run only for the parts that actually changed.
+During recomposition, Compose only re-executes functions that read state values that changed. It walks the slot table, compares current parameters with stored parameters, and skips functions whose inputs are unchanged. New composables are inserted, removed ones leave the tree, unchanged ones are kept as-is. The slot table is updated in place. After recomposition finishes, layout and drawing run only for parts that actually changed.
 
 #### What are the three phases of Compose?
 
-Compose renders UI in three phases — and understanding which phase your state read triggers is the key to performance:
+Compose renders UI in three phases:
 
 - **Composition** — Compose runs your composable functions and builds the UI tree. It determines *what* to show on screen.
 - **Layout** — Compose measures and positions each element. It determines *where* to place them. This works in a single pass — each node measures its children, decides its own size, and places children relative to itself.
 - **Drawing** — Elements are drawn on the canvas. It determines *how* to render pixels.
 
-Here's the performance trick: state reads in different phases trigger different levels of work. If you read state only in the drawing phase (inside `drawBehind`, for example), Compose skips composition and layout entirely and only re-draws. Push state reads as late as possible.
+State reads in different phases trigger different levels of work. If you read state only in the drawing phase (inside `drawBehind`, for example), Compose skips composition and layout entirely and only re-draws. This is how you optimize performance — push state reads as late as possible.
 
 #### What is @Preview and how does it work?
 
-`@Preview` lets you see composable functions rendered in Android Studio without running on a device. You annotate a parameterless composable with `@Preview`, and Studio renders it right in the design panel. You can customize it with parameters like `showBackground`, `widthDp`, `heightDp`, `uiMode`, and `device`.
+`@Preview` lets you see composable functions rendered in Android Studio without running the app on a device. You annotate a parameterless composable function with `@Preview`, and Studio renders it in the design panel. You can customize it with parameters like `showBackground`, `widthDp`, `heightDp`, `uiMode`, and `device`.
 
 ```kotlin
 @Preview(showBackground = true, widthDp = 320)
@@ -94,17 +92,13 @@ fun ProfileCardPreview() {
 
 Previews run in a special Studio environment, not on a real device. They can't access runtime resources like network, database, or system services. Use fake data or preview-specific providers for dependencies.
 
-> **🧠 Think about it:** `mutableStateOf` creates observable state, and `remember` survives recomposition. What happens if you use one without the other?
-
 #### What is the difference between remember and mutableStateOf?
 
-Yeah, this trips up everyone. They solve different problems and are almost always used together.
+They solve different problems and are almost always used together. `mutableStateOf` creates an observable state holder — when its value changes, any composable that reads it gets scheduled for recomposition. But `mutableStateOf` by itself doesn't survive recomposition. If you write `val count = mutableStateOf(0)` without `remember`, every recomposition creates a fresh state holder and the previous value is lost.
 
-`mutableStateOf` creates an observable state holder — when its value changes, any composable that reads it gets scheduled for recomposition. But it doesn't survive recomposition on its own. Without `remember`, every recomposition creates a brand new state holder, and your previous value is gone. Poof.
+`remember` stores a value in the slot table so it survives recomposition. But `remember { 0 }` stores a plain value — changing it doesn't trigger recomposition because Compose doesn't know the value changed.
 
-`remember` stores a value in the slot table so it survives recomposition. But `remember { 0 }` stores a plain value — changing it doesn't trigger recomposition because Compose has no idea the value changed.
-
-The combination `remember { mutableStateOf(0) }` gives you both: a value that survives recomposition *and* triggers recomposition when changed. It's like getting a notebook that both remembers what you wrote *and* notifies everyone when you update it.
+The combination `remember { mutableStateOf(0) }` gives you both: a value that survives recomposition *and* triggers recomposition when changed.
 
 ```kotlin
 @Composable
@@ -123,45 +117,43 @@ fun ClickCounter() {
 
 #### How does remember work internally?
 
-`remember` stores a value in the Composition's slot table at the current position in the tree. During initial composition, it executes the calculation lambda and stores the result. On subsequent recompositions, it returns the stored value without re-executing the lambda. The key detail — `remember` is *positional*. The slot table tracks values by their position in the composable call hierarchy, not by variable name.
+`remember` stores a value in the Composition's slot table at the current position in the tree. During initial composition, it executes the calculation lambda and stores the result. On subsequent recompositions, it returns the stored value without re-executing the lambda. The key detail is that `remember` is positional — the slot table tracks values by their position in the composable call hierarchy, not by variable name.
 
-If you use `remember` inside a loop or conditional, each call site gets its own slot. If the structure of your composable tree changes (an `if` branch is added or removed), the slot table entries shift, and previously remembered values may get associated with different composables. This is why `key()` exists — it lets you provide a stable identity independent of position.
+If you use `remember` inside a loop or conditional, each call site gets its own slot. If the structure of your composable tree changes (an `if` branch is added or removed), the slot table entries shift, and previously remembered values may be associated with different composables. This is why `key()` exists — it lets you provide a stable identity independent of position.
 
 #### Why does Compose use functions instead of classes for UI components?
 
-Classes carry state and identity inherently — each instance has its own memory and lifecycle. It's like giving every UI element a backpack full of stuff it has to carry around. Functions are stateless by default, which aligns with the declarative principle of describing UI as a function of state. State is explicitly managed through `remember` and state hoisting, making it visible and controllable.
+Classes carry state and identity inherently — each instance has its own memory and lifecycle. This makes them harder to compose, reuse, and reason about in a declarative model. Functions are stateless by default, which aligns with the declarative principle of describing UI as a function of state. State is explicitly managed through `remember` and state hoisting, making it visible and controllable.
 
 Functions also compose more naturally. You call one function inside another — no inheritance, no constructor parameters to pass, no lifecycle to manage. The Compose compiler handles lifecycle and identity through positional memoization. This is fundamentally different from the View system, where `View` objects are long-lived stateful entities managed by the framework.
 
 #### What is the role of the Compose compiler plugin?
 
-Here's the thing — without the compiler plugin, `@Composable` is just a decoration that does absolutely nothing. The plugin is the real magic. It transforms `@Composable` functions at compile time, adding hidden parameters for managing the composition — a `Composer` object that tracks the slot table, group markers for positional memoization, and change tracking logic. The plugin is what makes recomposition, state tracking, and skipping possible.
+The Compose compiler plugin transforms `@Composable` functions at compile time. It adds hidden parameters for managing the composition — a `Composer` object that tracks the slot table, group markers for positional memoization, and change tracking logic. Without the plugin, `@Composable` is just an annotation that does nothing. The plugin is what makes recomposition, state tracking, and skipping possible.
 
 Since Compose 1.5.0, the compiler plugin moved to the Kotlin repository and its versioning is tied to the Kotlin compiler version, so you no longer need to match Compose compiler and Kotlin versions separately.
 
 #### What is the difference between Compose Runtime and Compose UI?
 
-The Compose Runtime is the engine under the hood — it handles the slot table, state tracking, recomposition scheduling, and the `@Composable` function execution model. It has zero concept of Android, views, or pixels. The Compose UI layer is built *on top* of the runtime and provides the actual UI components like `Text`, `Column`, `Modifier`, layout, drawing, and input handling.
+The Compose Runtime is the core engine — it handles the slot table, state tracking, recomposition scheduling, and the `@Composable` function execution model. It has no concept of Android, views, or pixels. The Compose UI layer is built *on top* of the runtime and provides the actual UI components like `Text`, `Column`, `Modifier`, layout, drawing, and input handling.
 
-This separation is why Compose is described as "a general-purpose tool for managing a tree of nodes of any type." The runtime can manage any tree structure, not just UI. You could build a Compose compiler target for any platform — the runtime genuinely doesn't care what the nodes are.
-
-> **🧠 Think about it:** If a composable receives a `List<String>` from another module, can Compose skip it during recomposition? Why or why not?
+This separation is why Compose is described as "a general-purpose tool for managing a tree of nodes of any type." The runtime can manage any tree structure, not just UI. You could build a Compose compiler target for any platform — the runtime doesn't care what the nodes are.
 
 #### How does Compose decide to skip a composable during recomposition?
 
 A composable is eligible for skipping when all its parameters are unchanged from the previous composition. Compose compares parameter values using `equals()` for stable types. A type is stable if Compose can determine at compile time that its `equals()` is reliable — primitives, `String`, lambda types, and classes annotated with `@Stable` or `@Immutable` qualify.
 
-Now here's where it gets interesting. If a parameter is an unstable type (a class with `var` properties, a `List` from a different module), Compose can't guarantee `equals()` is consistent, so it never skips that composable. With strong skipping mode (enabled by default since Compose compiler 2.0), unstable parameters are compared by instance equality (`===`) instead of being treated as always-changed, which makes skipping more aggressive.
+If a parameter is an unstable type (a class with `var` properties, a `List` from a different module), Compose can't guarantee `equals()` is consistent, so it never skips that composable. With strong skipping mode (enabled by default since Compose compiler 2.0), unstable parameters are compared by instance equality (`===`) instead of being treated as always-changed, which makes skipping more aggressive.
 
 #### What is positional memoization?
 
-Compose identifies each composable instance by its call site — the location in the source code where the function is called. The compiler plugin generates a unique key for each call site using the file path, line number, and column. During recomposition, Compose uses these keys to match composable instances from the previous composition to the current one. That's positional memoization — values are memoized based on their position in the call tree.
+Compose identifies each composable instance by its call site — the location in the source code where the function is called. The compiler plugin generates a unique key for each call site using the file path, line number, and column. During recomposition, Compose uses these keys to match composable instances from the previous composition to the current one. This is positional memoization — values are memoized based on their position in the call tree.
 
 When you call a composable inside a loop, all calls share the same call site. Compose falls back to using the execution index to distinguish them. This works fine for appending to the end of a list, but inserting or reordering items causes Compose to mismatch instances. The `key()` composable solves this by providing an explicit identity that overrides the positional key.
 
 #### What is the slot table?
 
-The slot table is where Compose keeps its receipts. It's the internal data structure that stores the state of the composition — parameters, remembered values, and structure of every composable in the tree. Think of it as a linear array that mirrors the composable call hierarchy. Each composable occupies a range of slots, and child composables are nested within their parent's range.
+The slot table is the internal data structure where Compose stores the state of the composition. It holds the parameters, remembered values, and structure of every composable in the tree. Think of it as a linear array that mirrors the composable call hierarchy. Each composable occupies a range of slots, and child composables are nested within their parent's range.
 
 During recomposition, Compose walks the slot table and compares current values with stored values to decide what changed. It's different from a virtual DOM — there's no tree diffing algorithm. Compose knows exactly which composables to re-execute because state tracking tells it which functions read changed state. The slot table is just where the results are stored and compared.
 

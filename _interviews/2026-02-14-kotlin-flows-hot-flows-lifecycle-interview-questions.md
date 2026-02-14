@@ -14,28 +14,26 @@ Hot flows are one of the most asked topics in Android interviews. This covers Sh
 
 #### What is the difference between a cold flow and a hot flow?
 
-Think of a cold flow like a vending machine — it only works when you put in a coin. Nothing happens until a collector subscribes, and each collector gets its own independent execution. Two collectors? The producer runs twice.
-
-A hot flow is more like a radio station. It broadcasts whether anyone is listening or not, and everyone tuned in hears the same thing. `flow {}` creates a cold flow. `SharedFlow` and `StateFlow` are hot.
+A cold flow doesn't start emitting until a collector subscribes. Each collector gets its own independent execution — two collectors means the producer runs twice. A hot flow is active regardless of collectors. It emits whether there are zero or ten collectors, and multiple collectors share the same stream. `flow {}` creates a cold flow. `SharedFlow` and `StateFlow` are hot.
 
 #### What is StateFlow and how does it differ from SharedFlow?
 
-StateFlow is opinionated. It always holds a current value, requires an initial value, and automatically applies `distinctUntilChanged` — so it won't emit the same value twice in a row. It has a fixed replay of 1 and built-in conflation. It's designed for one job: representing UI state.
+StateFlow always has a current value, requires an initial value, and uses `distinctUntilChanged` — it won't emit the same value twice in a row. It has a replay of 1 and built-in conflation. Designed for representing UI state.
 
-SharedFlow is the flexible one. You get to configure replay, buffer size, and overflow handling yourself. It doesn't need an initial value and doesn't filter duplicate emissions. Key differences:
+SharedFlow is more configurable. It supports custom replay, buffer size, and overflow handling. It doesn't require an initial value and doesn't filter duplicate emissions.
 
-- StateFlow always has a value you can read with `.value`
+Key differences:
+- StateFlow always has a value (`.value`)
 - StateFlow requires an initial value
 - StateFlow filters consecutive duplicates
 - SharedFlow is configurable for events and streams
 
 #### What are MutableSharedFlow and MutableStateFlow?
 
-Here's the pattern: you keep the mutable version private and expose the read-only type to the UI. `MutableSharedFlow` gives you `emit()` and `tryEmit()` for sending values. `MutableStateFlow` gives you a `value` property you can read and write directly.
+`MutableSharedFlow` exposes `emit()` and `tryEmit()` for sending values. `MutableStateFlow` exposes a `value` property for reading and writing state. Keep the mutable version private and expose the read-only type to the UI.
 
 ```kotlin
 class SearchViewModel : ViewModel() {
-    // Private mutable, public read-only — the standard pattern
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -50,21 +48,17 @@ class SearchViewModel : ViewModel() {
 
 #### When would you use SharedFlow instead of StateFlow?
 
-StateFlow is for state — UI state, loading status, selected item. SharedFlow is for events that should be processed once — navigation commands, snackbar messages, error toasts.
+Use StateFlow for state — UI state, loading status, selected item. Use SharedFlow for events that should be processed once — navigation commands, snackbar messages, error toasts.
 
-Here's the thing — StateFlow conflates values. If you emit two navigation events quickly, the second one might get lost because StateFlow sees "same type of event" and skips it. SharedFlow with `replay = 0` and `extraBufferCapacity = 1` handles one-shot events the way you actually want.
-
-> **🧠 Think about it:** If you used StateFlow to emit a "Show Error Toast" event, and the user triggered the same error twice in a row, what would happen the second time?
+StateFlow conflates values, so if you emit two navigation events quickly, the second might be lost. SharedFlow with `replay = 0` and `extraBufferCapacity = 1` handles one-shot events better.
 
 #### What does the replay parameter in SharedFlow do?
 
-`replay` controls how many previously emitted values a new collector gets when it shows up late to the party. With `replay = 0`, you only get values emitted after you subscribe — miss it, it's gone. With `replay = 1`, you immediately get the most recent value, like catching a rerun.
-
-Fun fact: StateFlow is basically a SharedFlow with `replay = 1` and `distinctUntilChanged` baked in.
+`replay` determines how many previously emitted values a new collector receives when it starts. With `replay = 0`, new collectors only get values emitted after subscribing. With `replay = 1`, they immediately get the most recent value. StateFlow is a SharedFlow with `replay = 1` and `distinctUntilChanged`.
 
 #### What is callbackFlow?
 
-`callbackFlow` is how you bridge the old callback world into the Flow world. It converts a multi-shot callback API into a cold Flow by creating a channel internally. You send values from callbacks using `trySend()`, and the `awaitClose` block is mandatory — that's where you clean up your callback registration.
+`callbackFlow` converts a multi-shot callback API into a cold Flow. It creates a channel internally and lets you send values from callbacks using `trySend()`. The `awaitClose` block is mandatory for cleanup.
 
 ```kotlin
 fun locationUpdates(client: FusedLocationProviderClient): Flow<Location> =
@@ -81,7 +75,7 @@ fun locationUpdates(client: FusedLocationProviderClient): Flow<Location> =
 
 #### What is channelFlow and how does it differ from callbackFlow?
 
-`channelFlow` lets you launch multiple coroutines that send values concurrently into the same flow. It's like having multiple workers feeding items onto the same conveyor belt. `callbackFlow` is specifically for wrapping callback-based APIs. Both use channels under the hood, but `callbackFlow` enforces `awaitClose` for resource cleanup.
+`channelFlow` runs in a `ProducerScope` where you can launch multiple coroutines that send values concurrently. `callbackFlow` is for wrapping callback-based APIs. Both use channels under the hood, but `callbackFlow` enforces `awaitClose` for resource cleanup.
 
 ```kotlin
 fun mergedResults(query: String): Flow<SearchResult> = channelFlow {
@@ -92,11 +86,11 @@ fun mergedResults(query: String): Flow<SearchResult> = channelFlow {
 
 #### What are the SharingStarted strategies?
 
-When you convert a cold flow to hot with `stateIn` or `shareIn`, you pick a strategy:
+When converting cold to hot with `stateIn` or `shareIn`:
 
 - **Eagerly** — Starts immediately, never stops. For data that should always be fresh.
-- **Lazily** — Starts on first subscriber, never stops. Defers the initial cost until someone actually needs it.
-- **WhileSubscribed(stopTimeoutMillis)** — Starts on first subscriber, stops after the last subscriber disappears (with a timeout). `WhileSubscribed(5_000)` is the go-to for ViewModels — it survives configuration changes but stops when the user navigates away.
+- **Lazily** — Starts on first subscriber, never stops. Defers initial cost.
+- **WhileSubscribed(stopTimeoutMillis)** — Starts on first subscriber, stops after last subscriber disappears (with timeout). `WhileSubscribed(5_000)` is the standard for ViewModels — survives configuration changes but stops when the user navigates away.
 
 ```kotlin
 val uiState: StateFlow<HomeUiState> = repository.observeItems()
@@ -110,13 +104,13 @@ val uiState: StateFlow<HomeUiState> = repository.observeItems()
 
 #### What is the difference between stateIn and shareIn?
 
-`stateIn` converts a cold flow to `StateFlow` — you get `distinctUntilChanged`, `.value` access, but you need to provide an initial value. `shareIn` converts to `SharedFlow` — no initial value required, configurable replay.
+`stateIn` converts a cold flow to `StateFlow`. Requires an initial value, gives `distinctUntilChanged` and `.value` access. `shareIn` converts to `SharedFlow`. No initial value required, supports configurable replay.
 
-Use `stateIn` when downstream needs the current value at any time, which is basically all UI state. Use `shareIn` for broadcasting events or when you need replay greater than 1.
+Use `stateIn` when downstream needs the current value at any time (UI state). Use `shareIn` for broadcasting events or replay greater than 1.
 
 #### How do you safely collect flows in an Activity or Fragment?
 
-You use `repeatOnLifecycle`. It starts collection when the lifecycle reaches the specified state and cancels when it drops below. It's like a light switch tied to the lifecycle — on when STARTED, off when STOPPED.
+Use `repeatOnLifecycle`. It starts collection when the lifecycle reaches the specified state and cancels when it drops below.
 
 ```kotlin
 class HomeFragment : Fragment() {
@@ -137,7 +131,7 @@ For multiple flows, launch separate coroutines inside `repeatOnLifecycle`.
 
 #### What is flowWithLifecycle?
 
-`flowWithLifecycle` is a Flow operator that only emits values when the lifecycle is at least in the specified state. Use it when you have a single flow — it reads cleaner as a chain. For multiple flows, `repeatOnLifecycle` with separate `launch` blocks is the way to go.
+`flowWithLifecycle` is a Flow operator that emits values only when the lifecycle is at least in the specified state. Use it for a single flow — it reads cleaner as a chain. For multiple flows, `repeatOnLifecycle` with separate `launch` blocks is better.
 
 ```kotlin
 viewLifecycleOwner.lifecycleScope.launch {
@@ -147,11 +141,9 @@ viewLifecycleOwner.lifecycleScope.launch {
 }
 ```
 
-> **🧠 Think about it:** If you used `lifecycleScope.launch` with a plain `collect` instead of `repeatOnLifecycle`, what would happen when the app goes to the background? Would the collector stop?
-
 #### What is collectAsStateWithLifecycle in Compose?
 
-This is the Compose equivalent of `repeatOnLifecycle`. It collects a flow into Compose `State` while respecting the lifecycle — collection stops when the lifecycle drops below the minimum active state.
+`collectAsStateWithLifecycle` is the Compose equivalent of `repeatOnLifecycle`. It collects a flow into Compose `State` while respecting the lifecycle. Collection stops when the lifecycle drops below the minimum active state.
 
 ```kotlin
 @Composable
@@ -165,27 +157,25 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 }
 ```
 
-Plot twist: don't use `collectAsState()` — it looks almost identical but it doesn't stop collection in the background. Your app keeps processing updates while sitting in the recents screen. `collectAsStateWithLifecycle` is the one you want.
+This is the recommended way to collect flows in Compose — don't use `collectAsState()` because it doesn't stop collection in the background.
 
 #### How does SharedFlow handle backpressure?
 
-SharedFlow handles backpressure through its buffer. The total buffer size is `replay + extraBufferCapacity`. When that buffer fills up, you have three options:
+SharedFlow handles backpressure through its buffer configuration. The total buffer is `replay + extraBufferCapacity`. When full:
 
-- **SUSPEND** (default) — `emit()` suspends until space opens up. Safe, but the emitter waits.
-- **DROP_OLDEST** — Drops the oldest value in the buffer. Emitter never suspends.
-- **DROP_LATEST** — Drops the new incoming value. Emitter never suspends.
+- **SUSPEND** (default) — `emit()` suspends until space is available.
+- **DROP_OLDEST** — Drops oldest value. Emitter never suspends.
+- **DROP_LATEST** — Drops the new value. Emitter never suspends.
 
-`tryEmit()` is the non-suspending alternative — it returns `false` if the buffer is full and overflow is `SUSPEND`. With `DROP_OLDEST` or `DROP_LATEST`, `tryEmit()` always succeeds.
+`tryEmit()` is the non-suspending alternative. It returns `false` if the buffer is full and overflow is `SUSPEND`. With `DROP_OLDEST` or `DROP_LATEST`, `tryEmit()` always succeeds.
 
 #### How does WhileSubscribed(5_000) survive configuration changes?
 
-Here's what actually happens during a configuration change: the Activity gets destroyed and recreated, but the ViewModel survives. The UI collector gets cancelled when the old Activity dies. Now, `WhileSubscribed(5_000)` doesn't panic — it waits 5 seconds before stopping upstream collection.
-
-A configuration change takes maybe 1-2 seconds. The new Activity resubscribes well before the timeout expires, so the upstream stays active and the new collector gets the current state immediately. With `WhileSubscribed(0)`, you'd stop and restart the upstream on every single rotation. That 5-second buffer is the whole trick.
+During a configuration change, the Activity is destroyed and recreated. The ViewModel survives, but the UI collector is cancelled. The 5-second timeout means `WhileSubscribed(5_000)` waits before stopping upstream collection. A configuration change takes under 1-2 seconds, so the new Activity resubscribes before the timeout. The upstream stays active and the new collector gets the current state immediately. With `WhileSubscribed(0)`, the upstream would stop and restart on every rotation.
 
 #### How do you handle one-shot events like navigation using flows?
 
-Use `SharedFlow` with `replay = 0` and `extraBufferCapacity = 1`. Each event gets delivered once and is gone — no replaying on resubscription. If you used StateFlow here, it would replay the last navigation event every time the screen rotates. That means navigating to the same screen again after a config change.
+Use `SharedFlow` with `replay = 0` and `extraBufferCapacity = 1`. Each event is delivered without replaying on resubscription. StateFlow would replay the last event on configuration changes.
 
 ```kotlin
 class CartViewModel : ViewModel() {
@@ -208,23 +198,21 @@ class CartViewModel : ViewModel() {
 
 #### What is the difference between conflate() and collectLatest?
 
-Both deal with slow collectors, but they solve it differently. `conflate()` drops intermediate values — when your collector finishes processing and looks up, it grabs the latest available value and skips everything in between. Think of it like checking your email after a meeting — you only read the latest one in each thread.
+Both handle slow collectors differently. `conflate()` drops intermediate values — the collector always gets the latest available when it finishes processing. `collectLatest {}` cancels the previous collector's work when a new value arrives and restarts.
 
-`collectLatest {}` is more aggressive. It cancels the previous collector's work when a new value arrives and restarts from scratch. Use `conflate()` when processing is non-cancellable like database writes. Use `collectLatest` when processing is cancellable and you only care about the most recent result, like a search triggering a network call.
-
-> **🧠 Think about it:** If you're building a search-as-you-type feature that makes network calls, which one would you pick — `conflate()` or `collectLatest`? What would happen to in-flight requests with each approach?
+Use `conflate()` when processing is non-cancellable (database writes). Use `collectLatest` when processing is cancellable and you only care about the most recent result (search triggering a network call).
 
 #### What converts a cold flow to hot when using stateIn inside a ViewModel?
 
-`stateIn` starts a coroutine in the provided scope that collects the upstream cold flow and emits values into the StateFlow. The cold flow runs once in this shared coroutine, no matter how many UI collectors subscribe downstream. Without `stateIn`, three collectors would trigger three separate executions of the cold flow — three database queries, three network calls, three times the work.
+`stateIn` starts a coroutine in the provided scope that collects the upstream cold flow and emits values to the StateFlow. The cold flow runs once in this shared coroutine, regardless of how many UI collectors subscribe. Without `stateIn`, three collectors would trigger three separate executions of the cold flow.
 
 #### What is the subscriptionCount property on SharedFlow?
 
-`subscriptionCount` is a `StateFlow<Int>` that tracks how many active collectors are currently subscribed. `SharingStarted.WhileSubscribed()` uses it internally to decide when to start and stop collection. You can also use it for custom logic — like pausing a sensor stream when no one is listening.
+`subscriptionCount` is a `StateFlow<Int>` that tracks active collectors. `SharingStarted.WhileSubscribed()` uses it internally to decide when to start and stop collection. You can use it for custom logic like pausing a sensor stream when no one is subscribed.
 
 #### Can you create a custom SharingStarted strategy?
 
-Yes. `SharingStarted` is an interface with a single function: `command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>`. You return `START` and `STOP` commands based on the subscription count. The built-in strategies — `Eagerly`, `Lazily`, `WhileSubscribed` — are just implementations of this interface. You could build your own that starts only when there are at least 2 subscribers, or one that keeps running for 30 seconds after the last subscriber leaves.
+Yes. `SharingStarted` is an interface with a `command(subscriptionCount: StateFlow<Int>): Flow<SharingCommand>` function. You return `START` and `STOP` commands based on subscription count. The built-in strategies are implementations of this interface.
 
 ### Common Follow-ups
 

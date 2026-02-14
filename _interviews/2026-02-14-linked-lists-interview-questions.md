@@ -14,27 +14,27 @@ Linked list problems are a staple in DSA interviews because they test pointer ma
 
 #### How do you reverse a singly linked list?
 
-Here's the thing — this is probably the single most important linked list pattern you'll ever learn. Think of it like flipping a chain of paper clips. You grab each clip, unhook it from the one in front, and hook it to the one behind. Three pointers do the job: `prev`, `current`, and `next`. Time O(n), space O(1).
+Iterate through the list, reversing each node's `next` pointer to point to the previous node. Three pointers: `prev`, `current`, and `next`. Time O(n), space O(1).
 
 ```kotlin
 fun reverseList(head: ListNode?): ListNode? {
     var prev: ListNode? = null
     var current = head
     while (current != null) {
-        val next = current.next   // save what's ahead
-        current.next = prev       // flip the link
-        prev = current            // move prev forward
-        current = next            // move current forward
+        val next = current.next
+        current.next = prev
+        prev = current
+        current = next
     }
     return prev
 }
 ```
 
-You'll see this come back as a building block in at least half the harder linked list problems. Get this one in your muscle memory.
+This is the most important linked list pattern. Many harder problems use it as a building block.
 
 #### How do you detect a cycle in a linked list?
 
-This uses Floyd's cycle detection — and I love the analogy here. Imagine two runners on a circular track. One runs twice as fast as the other. If the track has a loop, the fast runner will eventually lap the slow runner and they'll meet. If there's no loop (the track has an end), the fast runner just finishes first. That's exactly what we do with two pointers. Time O(n), space O(1).
+Use Floyd's cycle detection — slow pointer moves one step, fast pointer moves two steps. If there's a cycle, fast catches slow. If fast reaches null, no cycle. Time O(n), space O(1).
 
 ```kotlin
 fun hasCycle(head: ListNode?): Boolean {
@@ -51,7 +51,7 @@ fun hasCycle(head: ListNode?): Boolean {
 
 #### How do you merge two sorted linked lists?
 
-You compare the heads of both lists and always pick the smaller one — like merging two sorted stacks of exam papers by peeking at the top grade of each stack. A dummy node at the start saves you from writing special-case logic for the first element. Time O(n + m), space O(1).
+Compare heads of both lists and pick the smaller one. Use a dummy node to simplify building the result. Time O(n + m), space O(1).
 
 ```kotlin
 fun mergeTwoLists(l1: ListNode?, l2: ListNode?): ListNode? {
@@ -76,7 +76,7 @@ fun mergeTwoLists(l1: ListNode?, l2: ListNode?): ListNode? {
 
 #### How do you find the middle element of a linked list?
 
-Same slow/fast pointer trick. Move slow one step, fast two steps. When fast hits the end, slow is standing right at the middle. It's like having two friends walk the same path — one at double speed. When the fast one finishes, the slow one is exactly halfway. Time O(n), space O(1).
+Slow and fast pointer technique. Move slow one step and fast two steps. When fast reaches the end, slow is at the middle. Time O(n), space O(1).
 
 ```kotlin
 fun middleNode(head: ListNode?): ListNode? {
@@ -90,15 +90,13 @@ fun middleNode(head: ListNode?): ListNode? {
 }
 ```
 
-> **🧠 Think about it:** If the list has an even number of nodes, does the slow pointer land on the first middle node or the second? Try tracing it with a 4-node list.
-
 #### What is a linked list and how does it differ from an array?
 
-A linked list is a chain of nodes where each node holds a value and a pointer to the next one. Insertions and deletions at known positions are O(1) — you just rewire pointers, no shifting needed. The tradeoff? No random access. Getting to the i-th element means walking there node by node, which is O(n). Arrays are the opposite — O(1) index access, but O(n) to insert in the middle because everything has to shift over.
+A linked list is a sequence of nodes where each node holds a value and a pointer to the next node. Insertions and deletions at known positions are O(1) because you just rewire pointers. The tradeoff is no random access — reaching the i-th element requires O(n) traversal. Arrays give O(1) index access but O(n) insertions in the middle.
 
 #### How do you remove the nth node from the end of a linked list?
 
-The trick is creating a gap. You advance one pointer n steps ahead, then walk both pointers together until the leader reaches the end. At that point, the trailing pointer sits right before the node you want to remove. One pass, O(n) time, O(1) space. The dummy node handles the edge case where you're removing the head.
+Use two pointers with a gap of n. Advance the first pointer n steps ahead, then move both together until the first reaches the end. The second pointer is right before the node to remove. Time O(n), space O(1), single pass.
 
 ```kotlin
 fun removeNthFromEnd(head: ListNode?, n: Int): ListNode? {
@@ -118,7 +116,7 @@ fun removeNthFromEnd(head: ListNode?, n: Int): ListNode? {
 
 #### How do you find the starting node of a cycle in a linked list?
 
-This is where Floyd's algorithm gets really clever. First, detect the cycle the usual way — slow and fast pointers until they meet. Now here's the part that feels like magic: reset one pointer to the head and keep the other at the meeting point. Move both one step at a time. They meet at the exact node where the cycle begins. The math behind it works out because of how the distances relate, but the implementation is beautifully simple. Time O(n), space O(1).
+First detect the cycle using Floyd's algorithm. Once slow and fast meet, reset one pointer to head and keep the other at the meeting point. Move both one step at a time — they meet at the cycle start. Time O(n), space O(1).
 
 ```kotlin
 fun detectCycle(head: ListNode?): ListNode? {
@@ -142,7 +140,7 @@ fun detectCycle(head: ListNode?): ListNode? {
 
 #### How do you check if a linked list is a palindrome?
 
-This one combines two patterns you already know. Find the middle with slow/fast pointers, reverse the second half in-place, then walk both halves comparing values. If every pair matches, it's a palindrome. Time O(n), space O(1). The key insight is that you don't need extra memory — reversing half the list gives you a way to compare from both ends simultaneously.
+Find the middle using slow/fast pointers, reverse the second half, then compare both halves node by node. Time O(n), space O(1).
 
 ```kotlin
 fun isPalindrome(head: ListNode?): Boolean {
@@ -163,11 +161,9 @@ fun isPalindrome(head: ListNode?): Boolean {
 }
 ```
 
-> **🧠 Think about it:** After checking, the second half of the list is still reversed. In a real interview, would you restore it? What are the tradeoffs of leaving it reversed vs. reversing it back?
-
 #### How do you add two numbers represented as linked lists?
 
-Each list stores digits in reverse order — so `2 -> 4 -> 3` represents 342. You walk both lists together, adding digits plus a carry, just like you'd do long addition by hand on paper. Build the result as a new linked list. Time O(max(n, m)), space O(max(n, m)).
+Each list represents a number in reverse order. Traverse both, adding corresponding digits plus a carry. Time O(max(n, m)), space O(max(n, m)).
 
 ```kotlin
 fun addTwoNumbers(l1: ListNode?, l2: ListNode?): ListNode? {
@@ -190,7 +186,7 @@ fun addTwoNumbers(l1: ListNode?, l2: ListNode?): ListNode? {
 
 #### How do you find the intersection point of two linked lists?
 
-Plot twist — the elegant solution here doesn't require calculating lengths at all. Walk pointer A through list A and then through list B. Walk pointer B through list B and then through list A. Both pointers travel the same total distance, so they arrive at the intersection node at the exact same time. If there's no intersection, they both reach null together. Time O(n + m), space O(1).
+Walk pointer A through list A then list B, and pointer B through list B then list A. Both travel the same total distance and arrive at the intersection at the same time. Time O(n + m), space O(1).
 
 ```kotlin
 fun getIntersectionNode(headA: ListNode?, headB: ListNode?): ListNode? {
@@ -206,11 +202,11 @@ fun getIntersectionNode(headA: ListNode?, headB: ListNode?): ListNode? {
 
 #### What's the difference between singly and doubly linked lists?
 
-A singly linked list has one pointer per node — `next` — so you can only go forward. A doubly linked list adds a `prev` pointer, letting you traverse in both directions. That extra pointer makes deletion simpler (you don't need a reference to the previous node separately) but costs more memory per node. In practice, doubly linked lists are the backbone of structures like LRU Cache, where you need to quickly move and remove nodes from any position.
+A singly linked list has one pointer per node (`next`). You can only traverse forward. A doubly linked list has two pointers (`next` and `prev`), enabling traversal in both directions and simpler deletion. The cost is extra memory per node. Doubly linked lists are the backbone of structures like LRU Cache.
 
 #### Explain how an LRU Cache works using a doubly linked list and HashMap.
 
-Think of it like a VIP line at a club. The HashMap is the bouncer who knows exactly where everyone is standing. The doubly linked list is the line itself — most recently used person at the front, least recently used at the back. When someone shows up (`get`), you pull them to the front. When someone new arrives (`put`) and the line is full, the person at the very back gets kicked out. All operations are O(1) because the HashMap gives instant lookup and the doubly linked list gives instant reordering.
+HashMap gives O(1) key lookup. Doubly linked list maintains access order — most recently used at head, least recently used at tail. On `get`, move node to head. On `put`, insert at head, remove tail if over capacity. All operations are O(1).
 
 ```kotlin
 class LRUCache(private val capacity: Int) {
@@ -258,7 +254,7 @@ class LRUCache(private val capacity: Int) {
 
 #### How do you deep copy a linked list with random pointers?
 
-This one looks scary but the approach is straightforward once you see it. First pass — walk through the original list and create a clone of every node, storing the mapping (old node to new node) in a HashMap. Second pass — walk through again and wire up the `next` and `random` pointers using the map to find each clone. Time O(n), space O(n) for the map.
+First pass — create all new nodes and map old to new in a HashMap. Second pass — set `next` and `random` pointers using the map. Time O(n), space O(n).
 
 ```kotlin
 fun copyRandomList(head: NodeWithRandom?): NodeWithRandom? {
@@ -281,7 +277,7 @@ fun copyRandomList(head: NodeWithRandom?): NodeWithRandom? {
 
 #### How do you reverse nodes in k-group?
 
-You reverse every k consecutive nodes, but if fewer than k remain at the end, you leave them alone. First, check whether k nodes actually exist from the current position. If they do, reverse that chunk and recursively handle the rest. The recursive call connects the groups together.
+Reverse every k nodes. If fewer than k remain, leave them as-is. Check if k nodes exist, then reverse them and connect groups.
 
 ```kotlin
 fun reverseKGroup(head: ListNode?, k: Int): ListNode? {
@@ -304,11 +300,9 @@ fun reverseKGroup(head: ListNode?, k: Int): ListNode? {
 }
 ```
 
-> **🧠 Think about it:** This recursive solution uses O(n/k) stack space. How would you do it iteratively to get O(1) space? What would you need to track between groups?
-
 #### How do you sort a linked list in O(n log n) time?
 
-Merge sort is the natural fit here. With arrays you'd usually reach for quicksort, but linked lists don't have random access — so quicksort's partitioning gets awkward. Merge sort, on the other hand, works beautifully because splitting at the midpoint (slow/fast pointers) and merging two sorted lists are both things linked lists do well. Time O(n log n), space O(log n) for the recursion stack.
+Merge sort. Split at the midpoint using slow/fast pointers, recursively sort both halves, merge them. Time O(n log n), space O(log n) for the recursion stack.
 
 ```kotlin
 fun sortList(head: ListNode?): ListNode? {
