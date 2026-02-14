@@ -8,228 +8,368 @@ sequence: 68
 description: "File sync apps are a staple in system design interviews because they test how you handle background processing, conflict resolution, and large data..."
 ---
 
-## Design a File Sync App (Google Drive/Dropbox)
+## Design a File Sync App (Dropbox / Google Drive)
 
-File sync apps are a staple in system design interviews because they test how you handle background processing, conflict resolution, and large data transfers on mobile. The focus is on the client-side sync engine — how files move between local storage and the server reliably, even on flaky networks.
+File sync apps test your ability to design a client-side sync engine that moves files between local storage and the server reliably. The focus is on chunked transfers, conflict resolution, and offline handling.
 
-### Core Questions (Beginner to Intermediate)
+### Requirements & Scope
 
-#### Q1: What are the main client-side components of a file sync app?
+#### Q1: What core features should a file sync app support on the client side?
 
-The core components are a file browser UI (list/grid view with folders and files), a sync engine that keeps local and remote state in sync, an upload/download manager that handles file transfers, a local database (Room) that tracks file metadata and sync state, a background worker (WorkManager) that runs sync operations when the app is not in the foreground, and a conflict resolution system for when the same file is modified on multiple devices. On top of this, you need a notification system to report sync progress and errors, and a file provider for sharing files with other apps.
+The essential features are upload and download of files, automatic sync across devices, a file browser for navigating folders, and file sharing with other users. The user should be able to browse files even when offline, and any local changes should sync automatically when connectivity returns.
 
-#### Q2: How would you design chunked file uploads?
+Start by scoping the interview around single-user sync first. Multi-user sharing and collaboration add complexity and should come later. Mention them in requirements but don't try to design everything at once.
 
-Large files should not be uploaded as a single request — if the connection drops at 90%, you lose everything. Split the file into fixed-size chunks (e.g., 1-5 MB each). Upload each chunk individually with its chunk index and a server-assigned upload session ID. The server reassembles the chunks after receiving all of them.
+#### Q2: What are the key non-functional requirements?
+
+**Conflict resolution** is the biggest one. When the same file is edited on two devices before either syncs, the app needs a strategy to handle it without losing data. **Large file handling** matters because users will sync videos, design files, and archives that can be hundreds of megabytes. The app must not load entire files into memory. **Battery and bandwidth efficiency** is critical on mobile. Sync should respect battery state, prefer Wi-Fi over metered connections, and avoid redundant transfers by using delta sync when possible.
+
+Reliability is non-negotiable. If a transfer fails halfway, it must resume from where it stopped. The user should never lose data because of a network drop.
+
+#### Q3: What should we exclude from scope for this interview?
+
+Exclude real-time collaborative editing (that is a separate problem closer to Google Docs). Exclude server-side design — focus entirely on the Android client. Also exclude media previews, in-app document editing, and full-text search across files. These are real features but they don't test the core sync engine design that the interviewer is looking for.
+
+### High-Level Design
+
+#### Q4: How would you structure the client architecture?
+
+The architecture has three main layers. The **file manager** handles the UI — a file browser with folder navigation, sync status indicators, and upload/download controls. The **sync engine** is the core component that coordinates between local and remote state. It detects local changes, fetches remote changes, resolves conflicts, and queues transfers. The **local database** (Room) stores file metadata and sync state so the app can work offline.
+
+The sync engine sits between the UI and the network. It reads from and writes to the local database, which is the single source of truth. The UI observes the database through ViewModels. Incoming remote changes are written to the database first and then reflected in the UI. Outgoing local changes are queued in the database and picked up by the sync engine for upload.
+
+#### Q5: What API endpoints does the client need?
+
+The client needs three groups of endpoints. **Metadata endpoints** handle listing folder contents, creating folders, renaming, moving, and deleting files. **Transfer endpoints** handle uploading and downloading file content. **Sync endpoints** return a list of changes since the client's last sync cursor.
 
 ```kotlin
-suspend fun uploadFileInChunks(file: File, sessionId: String) {
-    val chunkSize = 2 * 1024 * 1024 // 2 MB
-    val totalChunks = (file.length() / chunkSize + 1).toInt()
-    val buffer = ByteArray(chunkSize)
+interface FileSyncApi {
+    @GET("/files/list")
+    suspend fun listFolder(
+        @Query("path") path: String,
+        @Query("cursor") cursor: String?
+    ): FolderListResponse
 
-    file.inputStream().use { stream ->
-        var chunkIndex = 0
-        var bytesRead: Int
-        while (stream.read(buffer).also { bytesRead = it } > 0) {
-            val chunk = buffer.copyOf(bytesRead)
-            api.uploadChunk(sessionId, chunkIndex, totalChunks, chunk)
-            updateProgress(chunkIndex, totalChunks)
-            chunkIndex++
-        }
-    }
+    @POST("/files/upload/session/start")
+    suspend fun startUploadSession(): UploadSession
+
+    @PUT("/files/upload/session/{sessionId}/chunk")
+    suspend fun uploadChunk(
+        @Path("sessionId") sessionId: String,
+        @Query("offset") offset: Long,
+        @Body chunk: RequestBody
+    ): ChunkResponse
+
+    @POST("/files/upload/session/{sessionId}/finish")
+    suspend fun finishUpload(
+        @Path("sessionId") sessionId: String,
+        @Body metadata: FileMetadata
+    ): FileEntry
+
+    @GET("/files/download/{fileId}")
+    @Streaming
+    suspend fun downloadFile(@Path("fileId") fileId: String): ResponseBody
+
+    @POST("/sync/changes")
+    suspend fun getChanges(@Body request: SyncRequest): SyncResponse
 }
 ```
 
-Store the last successfully uploaded chunk index locally so you can resume from where you left off after a failure. The server should support receiving chunks out of order and handle deduplication if the same chunk is sent twice.
+Uploads use a session-based chunked approach. The client starts a session, uploads chunks with byte offsets, and finishes the session with file metadata. The `@Streaming` annotation on downloads prevents OkHttp from buffering the entire response in memory.
 
-#### Q3: How would you implement resumable uploads and downloads?
+#### Q6: What data models does the client need?
 
-For uploads, track the upload session and the last completed chunk index in Room. On resume, query the server for how many chunks it has received and start from the next one. For downloads, use HTTP range requests — the `Range` header lets you request a specific byte range from the server. If a download stops at byte 5,000,000, resume with `Range: bytes=5000000-`. OkHttp supports this natively.
-
-```kotlin
-suspend fun resumeDownload(fileId: String, localFile: File) {
-    val downloadedBytes = localFile.length()
-    val request = Request.Builder()
-        .url("https://api.example.com/files/$fileId/content")
-        .header("Range", "bytes=$downloadedBytes-")
-        .build()
-
-    client.newCall(request).execute().use { response ->
-        localFile.appendingSink().buffer().use { sink ->
-            sink.writeAll(response.body!!.source())
-        }
-    }
-}
-```
-
-The server must return `206 Partial Content` with a `Content-Range` header for this to work. If the server returns `200` instead, the file has changed and you need to restart the download from scratch.
-
-#### Q4: How would you track sync state for each file?
-
-Maintain a local Room database with a `SyncMetadata` table that tracks each file's sync status. Each entry stores the file ID, local path, remote version (ETag or version number), sync state (`SYNCED`, `PENDING_UPLOAD`, `PENDING_DOWNLOAD`, `CONFLICTED`, `UPLOADING`, `DOWNLOADING`), and last modified timestamps (both local and remote).
+The client needs three core models. `FileMetadata` represents a file or folder in the local database. `SyncState` tracks the sync status of each file. `ChangeLogEntry` records operations that need to be synced to the server.
 
 ```kotlin
-@Entity(tableName = "sync_metadata")
-data class SyncMetadata(
+@Entity(tableName = "file_metadata")
+data class FileMetadata(
     @PrimaryKey val fileId: String,
-    val localPath: String?,
-    val remotePath: String,
+    val name: String,
+    val path: String,
+    val isFolder: Boolean,
+    val sizeBytes: Long,
     val localModifiedAt: Long,
     val remoteModifiedAt: Long,
-    val remoteVersion: String,
+    val remoteVersion: Long,
+    val checksum: String?,
     val syncState: SyncState,
-    val fileSize: Long,
-    val checksum: String?
+    val localPath: String?
 )
 
 enum class SyncState {
     SYNCED, PENDING_UPLOAD, PENDING_DOWNLOAD,
     UPLOADING, DOWNLOADING, CONFLICTED, ERROR
 }
+
+@Entity(tableName = "change_log")
+data class ChangeLogEntry(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val fileId: String,
+    val operation: ChangeOperation,
+    val timestamp: Long,
+    val dependsOn: Long? = null
+)
+
+enum class ChangeOperation {
+    CREATE, MODIFY, DELETE, RENAME, MOVE
+}
 ```
 
-When the user modifies a file locally, update its state to `PENDING_UPLOAD`. When the server notifies of a remote change, mark it as `PENDING_DOWNLOAD`. The sync engine processes pending items in priority order.
+The `SyncState` enum drives the UI. Each file shows a sync icon based on its current state. The change log acts as a queue — local operations are recorded here and processed by the sync engine in order.
 
-#### Q5: How would you use WorkManager for background sync?
+#### Q7: How does delta sync work with version vectors?
 
-WorkManager is the right tool for reliable background sync because it guarantees execution even if the app is killed or the device restarts. Schedule a periodic sync worker that runs every 15-30 minutes with network connectivity constraints. For immediate sync (user saves a file), enqueue a one-time work request.
+Instead of re-uploading entire files on every change, delta sync only transfers the parts that changed. The client keeps a sync cursor — a token from the server representing the last known state. On each sync cycle, the client sends the cursor and the server returns only the changes since that point.
+
+Each file has a `remoteVersion` that increments on every server-side modification. The client compares its local version against the remote version. If the remote version is higher and the local file has not been modified, it is a straightforward download. If both versions changed, it is a conflict. If only the local version changed, it is an upload.
+
+The sync cycle runs in three phases. First, pull remote changes and apply downloads. Second, push local changes as uploads. Third, update the sync cursor. This order minimizes conflicts because you see the latest remote state before pushing your changes.
+
+#### Q8: How should the local file storage be structured?
+
+Store synced files in the app's internal storage under a directory structure that mirrors the remote folder hierarchy. Use a flat naming scheme internally — store files by their `fileId` rather than their user-visible name to avoid path length limits and special character issues. The `FileMetadata` table maps each `fileId` to its display path and local file path.
 
 ```kotlin
-val syncWork = PeriodicWorkRequestBuilder<SyncWorker>(
-    15, TimeUnit.MINUTES
-).setConstraints(
-    Constraints.Builder()
+class LocalFileStorage(private val context: Context) {
+
+    private val syncRoot = File(context.filesDir, "sync_files")
+
+    fun getLocalFile(fileId: String): File {
+        return File(syncRoot, fileId)
+    }
+
+    fun hasLocalContent(fileId: String): Boolean {
+        return getLocalFile(fileId).exists()
+    }
+
+    fun availableSpaceBytes(): Long {
+        return syncRoot.usableSpace
+    }
+}
+```
+
+Keep a separate temp directory for in-progress downloads. When a download completes, move the temp file to its final location atomically. This prevents the user from opening a partially downloaded file.
+
+#### Q9: How would the sync engine coordinate everything?
+
+The sync engine runs a loop: detect local changes, pull remote changes, resolve conflicts, then process the transfer queue. It exposes a `sync()` function that can be called by WorkManager on a schedule or triggered manually by the user.
+
+```kotlin
+class SyncEngine(
+    private val api: FileSyncApi,
+    private val db: SyncDatabase,
+    private val storage: LocalFileStorage
+) {
+    suspend fun sync() {
+        val localChanges = db.changeLogDao().getPending()
+        val remoteChanges = api.getChanges(
+            SyncRequest(cursor = db.syncCursorDao().getCursor())
+        )
+
+        val conflicts = detectConflicts(localChanges, remoteChanges)
+        resolveConflicts(conflicts)
+
+        processDownloads(remoteChanges.entries)
+        processUploads(localChanges)
+
+        db.syncCursorDao().updateCursor(remoteChanges.newCursor)
+    }
+
+    private fun detectConflicts(
+        local: List<ChangeLogEntry>,
+        remote: SyncResponse
+    ): List<ConflictPair> {
+        val remoteFileIds = remote.entries.map { it.fileId }.toSet()
+        return local.filter { it.fileId in remoteFileIds }
+            .map { ConflictPair(it, remote.entries.first { r -> r.fileId == it.fileId }) }
+    }
+}
+```
+
+The engine processes operations in dependency order. Folder creates run before file uploads into those folders. Deletes run in reverse — files first, then empty folders.
+
+### Low-Level Design & Deep Dives
+
+#### Q10: How would you implement chunked uploads with resume on failure?
+
+Split files into fixed-size chunks (2-4 MB each). Start an upload session with the server, upload each chunk with its byte offset, and finish the session when all chunks are sent. Store the session ID and last completed offset in Room so the upload can resume after a crash or network failure.
+
+```kotlin
+suspend fun uploadFileChunked(file: File, metadata: FileMetadata) {
+    val chunkSize = 2 * 1024 * 1024L
+    val session = db.uploadSessionDao().getSession(metadata.fileId)
+        ?: api.startUploadSession().also {
+            db.uploadSessionDao().insert(UploadSessionEntity(metadata.fileId, it.sessionId, 0L))
+        }
+
+    var offset = session.completedOffset
+    RandomAccessFile(file, "r").use { raf ->
+        raf.seek(offset)
+        val buffer = ByteArray(chunkSize.toInt())
+        while (offset < file.length()) {
+            val bytesRead = raf.read(buffer)
+            val chunk = buffer.copyOf(bytesRead).toRequestBody()
+            api.uploadChunk(session.sessionId, offset, chunk)
+            offset += bytesRead
+            db.uploadSessionDao().updateOffset(metadata.fileId, offset)
+        }
+    }
+
+    api.finishUpload(session.sessionId, metadata)
+    db.uploadSessionDao().delete(metadata.fileId)
+}
+```
+
+On resume, the client reads the saved offset, seeks to that position in the file, and continues uploading. The server should handle duplicate chunks idempotently in case the client crashes right after uploading a chunk but before updating the local offset.
+
+#### Q11: How does chunked download with resume work?
+
+Use HTTP range requests. If a download stops at byte 5,000,000, resume with `Range: bytes=5000000-`. Write to a temp file during download and move it to the final location only on completion.
+
+```kotlin
+suspend fun downloadFileResumable(fileId: String) {
+    val tempFile = File(storage.tempDir, fileId)
+    val downloadedBytes = if (tempFile.exists()) tempFile.length() else 0L
+
+    val request = Request.Builder()
+        .url("${baseUrl}/files/download/$fileId")
+        .header("Range", "bytes=$downloadedBytes-")
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        if (response.code == 200) {
+            tempFile.delete() // file changed, restart
+        }
+        tempFile.appendingSink().buffer().use { sink ->
+            sink.writeAll(response.body!!.source())
+        }
+    }
+
+    tempFile.renameTo(storage.getLocalFile(fileId))
+}
+```
+
+If the server returns `200` instead of `206 Partial Content`, the file has changed since the partial download began. In that case, discard the partial file and restart from scratch. Always check available disk space before starting a download — failing halfway wastes bandwidth and battery.
+
+#### Q12: How would you handle conflict resolution?
+
+Conflicts occur when the same file is modified on two devices before either syncs. Detect them during the sync cycle by checking if a file has both local changes and a new remote version. There are three strategies, and the right one depends on the file type.
+
+**Last-write-wins** picks whichever modification has the later timestamp. Simple but can lose data. Use this only for non-critical files like app preferences or auto-generated thumbnails. **Keep both** saves the conflicting version as a separate file — `report (conflicted copy - Device A).docx`. This is what Dropbox does. No data loss, but the user has to merge manually. **User prompt** shows both versions with metadata (size, modified date, device name) and lets the user choose which to keep.
+
+```kotlin
+suspend fun resolveConflict(local: FileMetadata, remote: FileEntry) {
+    when (getResolutionStrategy(local)) {
+        Strategy.LAST_WRITE_WINS -> {
+            if (local.localModifiedAt > remote.modifiedAt) {
+                queueUpload(local)
+            } else {
+                queueDownload(remote)
+            }
+        }
+        Strategy.KEEP_BOTH -> {
+            val conflictName = "${local.name} (conflicted copy)"
+            renameLocalFile(local, conflictName)
+            queueDownload(remote)
+        }
+        Strategy.USER_PROMPT -> {
+            db.fileMetadataDao().updateState(local.fileId, SyncState.CONFLICTED)
+        }
+    }
+}
+```
+
+For binary files like images and PDFs, keep-both or user-prompt are the only reasonable options because you cannot merge them. For config files and small text files, last-write-wins is usually fine.
+
+#### Q13: How should background sync be scheduled?
+
+Use WorkManager for periodic sync because it guarantees execution even if the app is killed or the device restarts. Schedule a periodic worker every 15 minutes with network and battery constraints. For immediate sync when the user saves a file, enqueue a one-time expedited work request.
+
+```kotlin
+fun schedulePeriodicSync(context: Context) {
+    val constraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
         .setRequiresBatteryNotLow(true)
         .build()
-).build()
 
-WorkManager.getInstance(context)
-    .enqueueUniquePeriodicWork(
+    val syncWork = PeriodicWorkRequestBuilder<SyncWorker>(
+        15, TimeUnit.MINUTES
+    ).setConstraints(constraints).build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
         "periodic_sync",
         ExistingPeriodicWorkPolicy.KEEP,
         syncWork
     )
-```
-
-Use `ExistingPeriodicWorkPolicy.KEEP` to avoid restarting the timer if the work is already scheduled. For urgent uploads (user explicitly saves), use an expedited one-time worker.
-
-#### Q6: How would you display upload and download progress to the user?
-
-For foreground transfers, emit progress updates from the transfer function as a `Flow<TransferProgress>` and collect it in the ViewModel. Show a progress bar or percentage in the UI. For background transfers, post progress to a notification — create a foreground service notification with `setProgress()` that updates as chunks complete.
-
-Use WorkManager's `setProgress()` to report progress from a background worker. Observe it in the UI using `WorkManager.getWorkInfoByIdLiveData()` or the Flow equivalent. For multiple simultaneous transfers, maintain a list of active transfers with individual progress states. Show a summary notification ("Uploading 3 files — 67%") and individual progress in an expanded notification or a transfers screen.
-
-#### Q7: What is the difference between push-based and pull-based sync?
-
-Pull-based sync means the client periodically asks the server for changes ("What's new since my last sync?"). It is simpler to implement but introduces latency — changes only appear on the next poll interval. Push-based sync means the server notifies the client when something changes, typically through a WebSocket, Server-Sent Events, or push notification. It gives near-instant updates but requires maintaining a persistent connection.
-
-Most production file sync apps use a hybrid approach. A WebSocket or FCM push tells the client that changes exist, and the client then pulls the actual change list from the server. This gives the low latency of push with the reliability of pull — if the push is missed, the periodic pull catches it.
-
-#### Q8: How would you handle the file browser UI efficiently for large folders?
-
-Paginate the file list — don't load all 10,000 files in a folder at once. Use cursor-based pagination from the server and back it with a local Room database. Show the locally cached file list immediately on screen entry and refresh from the server in the background. Sort files by name, date, or size on the client side if the full folder is cached, or delegate sorting to the server if paginating.
-
-For the UI, use `LazyColumn` with sticky headers for folder groupings. Show file type icons, file size, and last modified date. Indicate sync status with a small icon overlay — a green checkmark for synced, a cloud with an arrow for pending download, and a spinning indicator for active transfer.
-
-### Deep Dive Questions (Advanced to Expert)
-
-#### Q9: How would you design the conflict resolution system?
-
-Conflicts happen when the same file is modified on two devices before either syncs. Detect conflicts by comparing versions — if the local version and remote version both changed since the last sync, it is a conflict. The three main resolution strategies are:
-
-- **Last-write-wins** — whichever modification has the later timestamp wins. Simple but can lose data. Use this for non-critical files like app preferences.
-- **Keep both** — save the conflicting version as a separate file (e.g., `report (conflicted copy).docx`). This is what Dropbox does. No data loss, but the user must manually merge.
-- **Manual resolution** — show the user both versions and let them choose. Best for important documents but requires UI work.
-
-For text files, you could offer a diff view showing both versions side by side. For binary files (images, PDFs), you can only show metadata (size, date) and let the user pick. Store conflicted files with their conflict metadata in Room and surface them in a "Conflicts" section in the UI.
-
-#### Q10: How would you implement file versioning on the client?
-
-Each file has a version number or ETag that increments on every modification. The server maintains the full version history. On the client, store the current version in `SyncMetadata`. When displaying a file's version history, fetch the list from the server — it returns version ID, timestamp, file size, and who modified it. Let the user preview or restore any previous version.
-
-For the restore flow, the user selects an old version, the client sends a restore request to the server, and the server creates a new version that is a copy of the old one. The client then downloads the restored content. Avoid storing multiple versions locally — it wastes device storage. Keep only the current version on disk and fetch historical versions on demand from the server.
-
-#### Q11: How would you optimize storage on the device?
-
-Not every file needs to be stored locally. Implement a "smart sync" or "online-only" mode where files show up in the file browser but their content is not downloaded until the user opens them. Store only the metadata locally and fetch the content on demand. Mark frequently accessed files as "available offline" so they are always kept on disk.
-
-For cache eviction, use an LRU strategy — when storage exceeds a threshold (configurable by the user, e.g., 2 GB), evict the least recently accessed files by deleting their local content and marking them as online-only. Keep the metadata so the file still appears in the browser. Track local storage usage and show it in settings. On low-storage devices, proactively suggest files to remove based on size and last access time.
-
-#### Q12: How would you handle sharing and permissions on the client?
-
-Sharing involves generating a shareable link or inviting specific users with permission levels (viewer, editor, owner). The client calls the server API to create a share, and the server returns a link or confirms the invitation. Display the current sharing state on the file detail screen — show who has access and their permission level.
-
-For permission enforcement, the server is the authority — the client does not enforce permissions locally. But the client should reflect permissions in the UI — hide the "Edit" button for view-only files, show a lock icon for restricted files, and disable upload for read-only shared folders. When the user tries to edit a view-only file, show a clear message rather than letting the operation fail silently on the server.
-
-#### Q13: How would you design offline access for selected files?
-
-Let the user mark files or folders as "Available Offline." When marked, the sync engine downloads the content immediately and keeps it up to date on every sync cycle. Store offline-pinned file IDs in the local database.
-
-The sync engine treats offline-pinned files with higher priority — download them first, and never evict them during cache cleanup. When the device is offline, the user can browse and open these files normally. Any edits made offline are queued as pending uploads. On reconnection, the sync engine processes the upload queue before regular sync to minimize the window for conflicts. Show a clear indicator in the UI for which files are available offline versus online-only.
-
-#### Q14: How would you handle large file downloads without blocking the UI?
-
-Run downloads in a `CoroutineScope` on `Dispatchers.IO`. For files larger than 50 MB, use a foreground service so the system does not kill the process. Stream the response body directly to a file on disk — do not buffer the entire response in memory.
-
-```kotlin
-class DownloadManager(private val client: OkHttpClient) {
-
-    fun downloadFile(url: String, destination: File): Flow<DownloadProgress> = flow {
-        val request = Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            val totalBytes = response.body!!.contentLength()
-            var downloadedBytes = 0L
-
-            destination.outputStream().use { output ->
-                val buffer = ByteArray(8192)
-                val source = response.body!!.byteStream()
-                var bytesRead: Int
-                while (source.read(buffer).also { bytesRead = it } != -1) {
-                    output.write(buffer, 0, bytesRead)
-                    downloadedBytes += bytesRead
-                    emit(DownloadProgress(downloadedBytes, totalBytes))
-                }
-            }
-        }
-    }.flowOn(Dispatchers.IO)
 }
 ```
 
-Cancel the download coroutine if the user navigates away or explicitly cancels. Store partial downloads so they can be resumed.
+For large file uploads (50 MB+), use a foreground service instead of WorkManager. The system is more likely to kill a WorkManager task than a foreground service with an active notification. Show upload progress in the notification and let the user cancel from there. Use `ExistingPeriodicWorkPolicy.KEEP` to avoid resetting the timer when the sync is already scheduled.
 
-#### Q15: How would you detect local file changes to trigger sync?
+#### Q14: How would you detect local file changes?
 
-On Android, there is no reliable file system watcher like `inotify` for app-scoped storage. Instead, use a checksum-based approach — on each sync cycle, compute the checksum (MD5 or SHA-256) of locally modified files and compare with the stored checksum. If they differ, the file changed and needs uploading.
+On Android, there is no reliable file system watcher for app-scoped storage. The practical approach depends on who modifies the files. For files your app manages directly, track modifications through your own write operations — whenever your app saves a file, update the `FileMetadata` entry and add a `ChangeLogEntry`. This is cheap and reliable.
 
-For files your app manages directly (not shared with other apps), track modifications through your own file operations — whenever your app writes to a file, update the `SyncMetadata` entry. This avoids expensive checksum computation. For shared folders accessed by multiple apps, poll the last modified timestamp of files and compare with the stored value. This is less reliable than checksums but much cheaper. Run the detection as part of the periodic WorkManager sync cycle, not continuously.
+For files modified by other apps (shared folders via `SAF`), poll the last modified timestamp on each sync cycle and compare it against the stored value. If the timestamp changed, compute a checksum to confirm the file actually changed (timestamps can update without content changes during file moves). Run this check as part of the periodic WorkManager sync, not continuously — continuous polling drains battery.
 
-#### Q16: How would you handle sync ordering and dependencies?
+#### Q15: How would you optimize bandwidth usage?
 
-Certain operations must happen in order. Creating a folder must complete before uploading files into it. Renaming a parent folder must propagate to child paths. Design the sync queue with operation dependencies — each sync operation can declare a dependency on another operation's completion.
+Three techniques matter most. First, **compression** — compress file content before uploading using gzip or zstd. This helps significantly for text-based files but adds CPU overhead. Skip compression for already-compressed formats like JPEG, PNG, and ZIP. Second, **Wi-Fi-only sync for large files** — check the network type before starting a transfer. For files above a configurable threshold (say 10 MB), only sync on Wi-Fi unless the user explicitly overrides. Third, **delta transfers** — instead of uploading the entire file when a small part changes, compute the diff and upload only the changed blocks. This requires the server to support block-level deduplication.
 
-Process the queue topologically — folder creates first, then file uploads within those folders. For deletes, reverse the order — delete files first, then empty folders. Use a priority system: user-initiated operations (manual save, explicit upload) get high priority, automatic sync operations get normal priority, and thumbnail generation gets low priority. If an operation fails, mark its dependents as blocked and retry the failed operation with exponential backoff.
+```kotlin
+fun shouldSyncNow(file: FileMetadata, networkType: NetworkType): Boolean {
+    if (networkType == NetworkType.UNMETERED) return true
+    if (file.sizeBytes < METERED_THRESHOLD) return true
+    return db.settingsDao().isMobileDataSyncEnabled()
+}
+```
 
-#### Q17: How would you architect the sync engine to be testable?
+Batch small metadata updates into a single request instead of making one API call per file rename or move. This reduces the number of network round trips and saves battery.
 
-Abstract the sync engine behind interfaces. Create a `RemoteFileSource` interface (wraps API calls), a `LocalFileSource` interface (wraps file system operations), and a `SyncMetadataStore` interface (wraps Room). The sync engine depends only on these interfaces, making it testable with fakes.
+#### Q16: How should offline editing work?
 
-Write fakes that simulate server responses, file system states, and conflict scenarios. Test the full sync cycle — local change detected, upload initiated, version updated, metadata synced. Test conflict detection by setting up divergent versions in the fake remote and local sources. Test resume by simulating a network failure mid-upload and verifying that the retry starts from the correct chunk. Test offline queue ordering by queuing multiple operations and verifying they execute in dependency order.
+When the device is offline, the user can still browse and open any file that has local content. Edits are saved to the local file and a `ChangeLogEntry` is recorded with the operation type and timestamp. The sync engine detects connectivity changes through a `ConnectivityManager` callback and processes the pending queue when the network returns.
 
-#### Q18: How would you handle sync for files larger than available device memory?
+The key challenge is conflict potential. The longer the device stays offline, the higher the chance that someone else modifies the same file remotely. To reduce this risk, process uploads before downloads on reconnection — push local changes first, then pull remote changes. If a conflict is detected, fall back to the conflict resolution strategy for that file type. Show a badge on the app icon or a notification to tell the user how many files are pending sync.
 
-Stream-based processing is essential. Never load the entire file into memory. For uploads, read the file in chunks and upload each chunk as a stream. For downloads, write directly to disk as bytes arrive. For checksum computation, use a streaming hash — read the file in 8 KB buffers and feed each buffer to the `MessageDigest` incrementally.
+#### Q17: How should files be encrypted at rest and in transit?
 
-For very large files (1 GB+), show a clear progress indicator with estimated time remaining. Calculate the estimate from the transfer rate of the last few chunks. Allow the user to cancel and resume later. If the device runs low on storage during download, detect it early (check available space before starting) and warn the user rather than failing halfway through.
+In transit, all API calls go over HTTPS with TLS 1.3 and certificate pinning. Use OkHttp's `CertificatePinner` to pin the server's public key. This prevents man-in-the-middle attacks even on compromised Wi-Fi networks.
+
+At rest, encrypt sensitive files on the device using Android's `EncryptedFile` from the Jetpack Security library. It uses AES-256-GCM under the hood with keys stored in the Android Keystore. Not every file needs encryption — let the user mark sensitive folders, and only encrypt those. Full-disk encryption at the app level is expensive and usually unnecessary since Android already provides file-based encryption at the OS level.
+
+#### Q18: How would you implement selective sync?
+
+Selective sync lets the user choose which folders sync to the device. Files in unselected folders appear in the browser with an "online-only" badge but have no local content. When the user opens an online-only file, the client downloads it on demand and caches it temporarily.
+
+Store the sync preference per folder in Room. The sync engine skips unselected folders during the periodic sync cycle but still fetches their metadata so the file browser stays up to date. For cache eviction, use an LRU strategy — when local storage exceeds a configurable limit, evict the least recently accessed files that are not in a selected folder. Never evict files in folders the user explicitly chose to sync offline.
+
+#### Q19: How would you handle very large files without running out of memory?
+
+Never load the entire file into memory. For uploads, read the file in chunks using `RandomAccessFile` or `InputStream` and upload each chunk as a stream. For downloads, write directly to disk as bytes arrive using OkHttp's `@Streaming` annotation. For checksum computation, use a streaming hash.
+
+```kotlin
+fun computeChecksum(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    val buffer = ByteArray(8192)
+    file.inputStream().use { stream ->
+        var bytesRead: Int
+        while (stream.read(buffer).also { bytesRead = it } != -1) {
+            digest.update(buffer, 0, bytesRead)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+```
+
+For files over 1 GB, always check available disk space before starting the download. Show a progress indicator with estimated time remaining, calculated from the transfer rate of the last few chunks. Let the user pause and resume at any time. If the device runs low on storage mid-download, pause the transfer and notify the user rather than crashing or corrupting the file.
 
 ### Common Follow-ups
 
 - How would you handle sync when the user renames or moves a file?
-- What happens if the server is down for an extended period — how does the client handle queued operations?
-- How would you implement selective sync where only certain folders are synced to the device?
-- How would you handle file type previews (PDF, images, documents) without downloading the full file?
+- What happens if the server is down for an extended period — how does the client handle a growing queue?
 - How would you design the sharing UI for inviting users and managing permissions?
-- How would you test the sync engine with various network conditions (slow, intermittent, offline)?
-- How would you handle quota limits — what happens when the user runs out of cloud storage?
-- How would you support file search across both local and remote files?
+- How would you test the sync engine under various network conditions (slow, intermittent, offline)?
+- How would you handle quota limits when the user runs out of cloud storage?
+- How would you support search across both local and remote files?

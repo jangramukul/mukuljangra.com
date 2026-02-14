@@ -10,191 +10,112 @@ description: "Offline-first is a core mobile system design topic. Users expect a
 
 ## Design an Offline-First Application
 
-Offline-first is a core mobile system design topic. Users expect apps to work in subways, elevators, and areas with flaky connectivity. The interviewer wants to see how you think about local-first data, sync strategies, conflict resolution, and graceful degradation.
+Offline-first means the app works without a network as its default mode. This is one of the most practical system design topics because every mobile app deals with flaky connectivity.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: What does "offline-first" mean, and how is it different from "offline-capable"?
+#### Q1: What does "offline-first" actually mean? How is it different from just caching?
 
-Offline-capable means the app can handle being offline gracefully — it shows cached data and queues actions. Offline-first means the app is designed to work without a network connection as the primary mode. The local database is the source of truth, not the server. Every read comes from the local DB, every write goes to the local DB first, and sync with the server happens in the background when a connection is available.
+There are levels to offline support. A basic cache means you show stale data when the network is gone — read-only, no writes. Offline-capable means you handle disconnection gracefully, maybe queue a few actions. Offline-first means the local database is the source of truth. Every read hits the local DB. Every write goes to the local DB first. The network is just a sync mechanism that runs in the background.
 
-The architecture difference is fundamental. In an online-first app, the network call is the primary path and the cache is a fallback. In an offline-first app, the local database is the primary path and the network is a sync mechanism.
+The architecture is fundamentally different. In an online-first app, the network call is the primary path and the cache is a fallback. In an offline-first app, the local DB is the primary path and the server is where data eventually converges.
 
-#### Q2: Why would you use the local database as the single source of truth instead of the server?
+#### Q2: What are the functional requirements for an offline-first app?
 
-Three reasons. First, it makes the UI responsive — reads from Room take microseconds, network calls take hundreds of milliseconds. Second, it makes the app work without a connection — the user can browse, create, and edit data regardless of network state. Third, it simplifies the data flow — the UI observes one source (Room via Flow), and the repository handles syncing Room with the server separately. This eliminates the complexity of merging local and remote data at the UI layer.
+The user should be able to perform full CRUD while offline — create, read, update, and delete data without any network connection. All changes are persisted locally and queued for sync. When the device reconnects, the app pushes pending local changes to the server and pulls remote changes. The user shouldn't need to trigger sync manually.
 
-#### Q3: What is optimistic UI and why does it matter for offline-first apps?
+The app also needs to handle conflicts — what happens when the same record was modified both locally and on the server while offline.
 
-Optimistic UI means applying changes to the UI immediately without waiting for server confirmation. When the user creates a note, edits a task, or marks something as complete, the local database is updated right away and the UI reflects the change instantly. The sync with the server happens in the background.
+#### Q3: What non-functional requirements matter most?
 
-If the server rejects the change (validation error, conflict), you revert the local state and notify the user. The vast majority of writes succeed, so the user gets a fast, responsive experience. The alternative — showing a loading spinner on every action until the server responds — feels sluggish, especially on slow connections.
+- **Data integrity** — local changes must never be silently lost. If a sync fails, the data stays in the queue until it succeeds.
+- **Conflict resolution** — the system needs a defined strategy for handling diverged data. This can't be an afterthought.
+- **Battery efficiency** — background sync should respect Doze mode and battery optimization. Aggressive polling kills battery.
+- **Storage** — not everything can live on-device. The app needs a strategy for what to sync and what to evict.
+- **Consistency** — the UI should always reflect the local DB state, and sync should be invisible unless something fails.
 
-#### Q4: How do you detect network state on Android?
+### High-Level Design
 
-Use `ConnectivityManager` with a `NetworkCallback` to observe network availability reactively. Register the callback and get notified when the network becomes available or is lost.
+#### Q4: How would you architect an offline-first app at a high level?
+
+The local database (Room) is the single source of truth. The UI layer observes the local DB via Flow. A sync engine sits between the local DB and the remote API. It has two jobs — push local changes to the server, and pull remote changes into the local DB. A pending operations queue stores all local writes. A WorkManager job triggers sync whenever the network is available.
+
+The data flow is: UI writes to local DB, local DB notifies UI via Flow, sync engine pushes to server in the background. For reads, it's: UI reads from local DB, sync engine pulls remote changes into local DB, UI gets notified automatically.
+
+#### Q5: Why use the local database as the source of truth instead of the server?
+
+Reads from Room take microseconds. Network calls take hundreds of milliseconds at best. With the local DB as source of truth, the UI is always responsive regardless of network state. The user can browse, create, and edit data in a subway with zero connectivity.
+
+It also simplifies the data flow. The UI observes one source — Room via Flow. The repository handles syncing Room with the server separately. You don't need to merge local and remote data at the UI layer.
+
+#### Q6: How would you design the data model with sync metadata?
+
+Every entity needs sync metadata alongside its business fields. Add a `version` or `updatedAt` timestamp for conflict detection, a `syncStatus` flag to track whether the record is synced, pending, or failed, and a `lastSyncedVersion` to know the state at the time of the last successful sync.
 
 ```kotlin
-class NetworkMonitor(context: Context) {
-    private val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-    val isOnline: StateFlow<Boolean> = callbackFlow {
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) { trySend(true) }
-            override fun onLost(network: Network) { trySend(false) }
-        }
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-        connectivityManager.registerNetworkCallback(request, callback)
-
-        val active = connectivityManager.activeNetwork
-        val capabilities = connectivityManager.getNetworkCapabilities(active)
-        trySend(capabilities?.hasCapability(
-            NetworkCapabilities.NET_CAPABILITY_INTERNET
-        ) == true)
-
-        awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
-    }.stateIn(CoroutineScope(Dispatchers.Default), SharingStarted.Eagerly, false)
-}
+@Entity(tableName = "notes")
+data class NoteEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val body: String,
+    val updatedAt: Long,
+    val version: Int,
+    val syncStatus: String, // "SYNCED", "PENDING", "FAILED"
+    val lastSyncedVersion: Int
+)
 ```
 
-An important gotcha: `NET_CAPABILITY_INTERNET` means the network has internet connectivity, but it doesn't guarantee the server is reachable. You can be connected to Wi-Fi where the router has no upstream connection. A robust offline-first app should also handle failed network requests gracefully, not just rely on the connectivity state.
+The `syncStatus` flag lets the UI show sync state per item. The `version` and `lastSyncedVersion` together tell you if there are local changes, remote changes, or a conflict during sync.
 
-#### Q5: What are the main sync strategies for offline-first apps?
+#### Q7: How would you design the pending operations queue?
 
-There are three approaches.
-
-- **Pull-based sync** — the client periodically fetches the latest data from the server. Simple to implement. The client requests everything newer than its last sync timestamp. Works well for read-heavy apps.
-- **Push-based sync** — the server notifies the client when data changes using push notifications, WebSocket, or SSE. The client then fetches the changed data. Lower latency, but requires server infrastructure for change tracking.
-- **Bidirectional sync** — both client and server can create and modify data independently. Changes from both sides are merged during sync. This is the most complex because you need conflict resolution.
-
-Most offline-first apps use bidirectional sync because users create and modify data locally while the server also receives changes from other devices or users.
-
-#### Q6: How do you queue offline actions for later sync?
-
-Create a pending operations table in Room. When the user performs an action while offline (or even online — for consistency), insert a record describing the operation — the type (create, update, delete), the entity ID, the payload, and a timestamp. When the network is available, process the queue in order.
+Create a separate Room entity that records every local write as an operation. Each entry stores the operation type (create, update, delete), the entity type, the entity ID, the serialized payload, a timestamp, and a retry count. Process the queue in FIFO order to maintain causality — a create must sync before an update to the same entity.
 
 ```kotlin
 @Entity(tableName = "pending_operations")
 data class PendingOperation(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val operationType: String, // "CREATE", "UPDATE", "DELETE"
-    val entityType: String,    // "note", "task"
+    val operationType: String,
+    val entityType: String,
     val entityId: String,
-    val payload: String,       // JSON of the changed data
+    val payload: String,
     val createdAt: Long = System.currentTimeMillis(),
     val retryCount: Int = 0
 )
-
-@Dao
-interface PendingOperationDao {
-    @Query("SELECT * FROM pending_operations ORDER BY createdAt ASC")
-    suspend fun getPendingOperations(): List<PendingOperation>
-
-    @Insert
-    suspend fun insert(operation: PendingOperation)
-
-    @Delete
-    suspend fun delete(operation: PendingOperation)
-}
 ```
 
-Process operations in FIFO order to maintain causality — a create must sync before an update to the same entity. If an operation fails, increment the retry count and apply exponential backoff.
+Every user action — even when online — goes through this queue. This keeps the data flow consistent regardless of network state.
 
-#### Q7: How do you use WorkManager for background sync?
+#### Q8: How would you design the API for delta sync?
 
-WorkManager is the right tool for deferred, guaranteed background work. Schedule a sync worker that runs when the network is available. WorkManager respects Doze mode, app standby, and battery optimization, and it guarantees execution even if the app is killed.
+Full sync downloads everything on every cycle, which wastes bandwidth. Delta sync only transfers what changed. The server accepts a `syncToken` (or `since` timestamp) and returns only records created, updated, or deleted after that point, along with a new sync token.
 
-```kotlin
-class SyncWorker(
-    context: Context,
-    params: WorkerParameters,
-    private val syncEngine: SyncEngine
-) : CoroutineWorker(context, params) {
+The client stores the last sync token locally. On each sync cycle, it sends the token and receives only the delta. It applies the delta to Room — insert new records, update modified ones, soft-delete removed ones. If the token is too old and the server has purged its change log, fall back to a full sync. The server response should include a flag like `fullSyncRequired: true` for this case.
 
-    override suspend fun doWork(): Result {
-        return try {
-            syncEngine.syncPendingOperations()
-            syncEngine.pullLatestChanges()
-            Result.success()
-        } catch (e: Exception) {
-            if (runAttemptCount < 3) Result.retry()
-            else Result.failure()
-        }
-    }
-}
+#### Q9: How do you detect conflicts during sync?
 
-// Schedule sync when network is available
-fun scheduleSyncWork(workManager: WorkManager) {
-    val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-        .setConstraints(
-            Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-        )
-        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-        .build()
-    workManager.enqueueUniqueWork("sync", ExistingWorkPolicy.REPLACE, syncRequest)
-}
-```
+Compare the local version with the server version relative to the last synced version. If only the local version is ahead of `lastSyncedVersion`, push local changes. If only the server version is ahead, accept the server data. If both are ahead, you have a conflict.
 
-Enqueue sync work whenever the user makes a local change. `ExistingWorkPolicy.REPLACE` ensures only one sync worker runs at a time. WorkManager chains the retries with exponential backoff automatically when you return `Result.retry()`.
+For timestamp-based detection, the logic is similar — compare `localUpdatedAt` and `serverUpdatedAt` against `lastSyncedAt`. The version-based approach is more reliable because timestamps depend on device clocks, which can drift. Server-assigned version numbers are monotonic and don't have the clock skew problem.
 
-### Deep Dive Questions (Advanced → Expert)
+### Low-Level Design & Deep Dives
 
-#### Q8: What are the main conflict resolution strategies, and when would you use each?
+#### Q10: What are the main conflict resolution strategies?
 
-Conflicts happen when the same data is modified on both the client and server (or on two different clients) before a sync. The three main strategies are:
+- **Last-write-wins (LWW)** — the change with the latest timestamp or highest version wins. Simple, but can silently discard a user's work. Good for low-conflict data like user settings or status flags.
+- **Server-wins** — always accept the server version. The client re-fetches and overwrites local data. Simple, but the user loses their local changes.
+- **Field-level merge** — if the client changed the title and the server changed the body, merge both. Requires tracking which fields changed, not just whether the record changed. Reduces false conflicts significantly.
+- **CRDTs (Conflict-free Replicated Data Types)** — data structures designed to merge automatically without conflicts. Counters, sets, and text sequences can all be modeled as CRDTs. Complex to implement but eliminates conflict resolution entirely for supported types.
+- **Manual resolution** — show both versions to the user and let them choose. Safest for high-value data like documents or financial records.
 
-- **Last-write-wins (LWW)** — the change with the latest timestamp wins. Simple and deterministic, but can silently discard a user's work. Works well for low-conflict data like user settings or status updates.
-- **Merge** — combine both changes automatically. If the client changed the title and the server changed the description, merge both. This requires field-level tracking of changes, not just record-level. Works well for structured data with independent fields.
-- **Manual resolution** — show both versions to the user and let them decide. This is the safest but interrupts the user experience. Use it for high-value data where silent data loss is unacceptable — like document editing or financial records.
+Most apps use LWW for most entities and merge or manual resolution for a few critical ones.
 
-In practice, most apps use LWW for most entities and merge or manual resolution for a few critical ones.
+#### Q11: How would you implement field-level merge?
 
-#### Q9: How do you implement last-write-wins conflict resolution?
-
-Every record gets an `updatedAt` timestamp. When syncing, the client sends its local changes with timestamps. The server compares timestamps — if the server's version is newer, the client's change is rejected (or the server version overwrites it). If the client's version is newer, the server accepts it.
+Track which fields changed since the last sync using per-field dirty flags. During sync, if the client changed the title and the server changed the body, take the client's title and the server's body — no conflict. If both changed the same field, fall back to LWW or manual resolution for just that field.
 
 ```kotlin
-class SyncEngine(
-    private val api: SyncApi,
-    private val noteDao: NoteDao
-) {
-    suspend fun syncNote(localNote: NoteEntity) {
-        val serverNote = api.getNote(localNote.id)
-
-        if (serverNote == null) {
-            // New local note — push to server
-            api.createNote(localNote.toRequest())
-        } else if (localNote.updatedAt > serverNote.updatedAt) {
-            // Local is newer — push to server
-            api.updateNote(localNote.id, localNote.toRequest())
-        } else if (serverNote.updatedAt > localNote.updatedAt) {
-            // Server is newer — update local
-            noteDao.update(serverNote.toEntity())
-        }
-        // Equal timestamps — already in sync
-    }
-}
-```
-
-The main weakness of LWW is clock skew. Device clocks can be wrong, and comparing timestamps across different devices is unreliable. Using server-assigned timestamps (where the server stamps the `updatedAt` on every write) is more reliable than client timestamps. Some systems use logical clocks or version vectors instead.
-
-#### Q10: How do you handle data versioning for sync?
-
-Instead of relying on timestamps alone, assign a monotonically increasing version number to each record. Every time a record is modified (locally or on the server), the version increments. During sync, compare versions — if the server's version is higher, accept the server's data. If the local version is higher, push to the server. If both are higher than the last known sync point, there's a conflict.
-
-You can also track the "last synced version" — the version of each record at the time of the last successful sync. If the local version is ahead of the last synced version, the record has local changes. If the server version is ahead of the last synced version, the record has remote changes. If both are ahead, conflict.
-
-#### Q11: How would you implement field-level merge for conflict resolution?
-
-Track which fields changed since the last sync, not just whether the record changed. Store a `changedFields` set or use a per-field dirty flag. During sync, if the client changed the title and the server changed the description, merge both changes — no conflict. If both changed the same field, fall back to LWW or manual resolution for that specific field.
-
-```kotlin
-data class NoteSync(
+data class NoteSyncState(
     val id: String,
     val title: String,
     val body: String,
@@ -203,8 +124,8 @@ data class NoteSync(
     val version: Int
 )
 
-fun mergeNote(local: NoteSync, server: NoteSync): NoteSync {
-    return NoteSync(
+fun mergeNote(local: NoteSyncState, server: NoteSyncState): NoteSyncState {
+    return NoteSyncState(
         id = local.id,
         title = if (local.titleDirty && !server.titleDirty) local.title
                 else server.title,
@@ -215,93 +136,108 @@ fun mergeNote(local: NoteSync, server: NoteSync): NoteSync {
 }
 ```
 
-Field-level merge significantly reduces visible conflicts. In a note-taking app, it's common for one device to change the title and another to change the body — without field-level tracking, this is a false conflict.
+This approach reduces visible conflicts dramatically. In a note-taking app, one device changing the title and another changing the body is common — without field-level tracking, that's a false conflict.
 
-#### Q12: How do you handle the "create then delete" edge case during sync?
+#### Q12: How do you compact the pending operations queue before syncing?
 
-The user creates an item offline, then deletes it before the sync happens. The pending operations queue has both a CREATE and a DELETE for the same entity. If you process them in order, you create the item on the server and immediately delete it — a wasted round trip.
+Before processing the queue, scan for multiple operations on the same entity and collapse them. CREATE followed by DELETE cancels out — remove both. CREATE followed by UPDATE becomes a single CREATE with the latest data. UPDATE followed by DELETE becomes just DELETE. Multiple UPDATEs collapse into one UPDATE with the final state.
 
-The solution is to compact the pending operations queue before syncing. Scan for operations on the same entity and collapse them. CREATE + DELETE cancels out (remove both). CREATE + UPDATE becomes a single CREATE with the latest data. UPDATE + DELETE becomes just DELETE. This optimization reduces sync traffic and avoids unnecessary server-side churn.
+This reduces network traffic and avoids unnecessary server-side churn. Without compaction, creating and deleting a note offline would result in a create request followed by a delete request — two wasted round trips.
 
-#### Q13: How do you implement exponential backoff with jitter for sync retries?
+#### Q13: How do you use WorkManager for background sync?
 
-When a sync fails, don't retry immediately — the server might be overloaded. Exponential backoff increases the delay between retries: 1s, 2s, 4s, 8s, up to a max. Jitter adds randomness to prevent all clients from retrying at the same moment (thundering herd problem).
+WorkManager is the right tool because it guarantees execution even if the app is killed. It respects Doze mode and battery optimization. Schedule a one-time sync worker with a network constraint — it only runs when connectivity is available.
 
 ```kotlin
-fun calculateBackoffDelay(attempt: Int, maxDelay: Long = 60_000L): Long {
-    val exponentialDelay = (1000L * (1 shl attempt.coerceAtMost(6)))
-        .coerceAtMost(maxDelay)
-    val jitter = (0..exponentialDelay / 2).random()
-    return exponentialDelay + jitter
-}
+class SyncWorker(
+    context: Context,
+    params: WorkerParameters,
+    private val syncEngine: SyncEngine
+) : CoroutineWorker(context, params) {
 
-suspend fun syncWithRetry(maxAttempts: Int = 5, syncAction: suspend () -> Unit) {
-    var attempt = 0
-    while (attempt < maxAttempts) {
-        try {
-            syncAction()
-            return
-        } catch (e: IOException) {
-            attempt++
-            if (attempt < maxAttempts) {
-                delay(calculateBackoffDelay(attempt))
-            }
+    override suspend fun doWork(): Result {
+        return try {
+            syncEngine.pushPendingOperations()
+            syncEngine.pullRemoteChanges()
+            Result.success()
+        } catch (e: Exception) {
+            if (runAttemptCount < 3) Result.retry()
+            else Result.failure()
         }
     }
 }
+
+fun scheduleSyncWork(workManager: WorkManager) {
+    val request = OneTimeWorkRequestBuilder<SyncWorker>()
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+        )
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+        .build()
+    workManager.enqueueUniqueWork("sync", ExistingWorkPolicy.REPLACE, request)
+}
 ```
 
-WorkManager handles backoff automatically when you return `Result.retry()` with `setBackoffCriteria()`. But for in-app sync operations (not WorkManager), implement backoff manually.
+Enqueue sync work whenever the user makes a local change. `ExistingWorkPolicy.REPLACE` ensures only one sync worker is queued at a time. WorkManager handles retry with exponential backoff automatically when you return `Result.retry()`.
 
-#### Q14: How do you handle schema changes in an offline-first app?
+#### Q14: How do you monitor network state and trigger sync on reconnect?
 
-Schema changes are harder in offline-first apps because the user might have unsynced data in the old schema when the app updates. Room migrations handle the local database schema change, but you also need to handle the API contract change. If the server adds a new required field, old clients that sync without that field will fail.
+Use `ConnectivityManager` with a `NetworkCallback` to observe connectivity changes reactively. When the network comes back, enqueue a sync WorkManager job.
 
-The approach is API versioning. The client sends its API version with every sync request. The server accepts the old format and applies defaults for missing fields. For breaking changes, support both old and new formats for a transition period. On the client side, the Room migration transforms existing data to the new schema, and the sync engine includes the new fields going forward.
+```kotlin
+class NetworkMonitor(context: Context) {
+    private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE)
+        as ConnectivityManager
 
-#### Q15: How do you indicate sync status to the user?
+    val isOnline: StateFlow<Boolean> = callbackFlow {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { trySend(true) }
+            override fun onLost(network: Network) { trySend(false) }
+        }
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm.registerNetworkCallback(request, callback)
+        awaitClose { cm.unregisterNetworkCallback(callback) }
+    }.stateIn(CoroutineScope(Dispatchers.Default), SharingStarted.Eagerly, false)
+}
+```
 
-Show sync state at the item level — each item can be in one of these states: synced (checkmark or no indicator), pending sync (subtle icon or muted color), syncing (progress indicator), or sync failed (error icon with retry option). Don't show a global sync spinner — it's too vague.
+One gotcha — `NET_CAPABILITY_INTERNET` doesn't guarantee the server is reachable. You can be connected to Wi-Fi where the router has no upstream connection. A robust app should handle failed network requests gracefully rather than trusting the connectivity flag alone.
 
-For the overall app, a subtle status indicator in the toolbar or bottom bar works well — "All changes saved" or "Waiting for connection" or "Syncing 3 items." Keep it unobtrusive. The user shouldn't have to think about sync unless something fails. The key principle is that the app should feel like it works locally, with sync being an invisible background process.
+#### Q15: How do you handle schema migrations when users have unsynced data?
 
-#### Q16: How do you handle large data sets that can't all be stored locally?
+This is harder than regular migrations because the user might have pending operations in the old schema when the app updates. Room migrations handle the local DB schema change, but the API contract also changes. If the server adds a new required field, old clients syncing without it will fail.
 
-Not everything needs to be offline. Define a "sync scope" — what data is critical for offline access. For a task app, sync all tasks assigned to the current user. For a document app, sync only recently accessed documents and let users manually pin specific ones for offline access.
+Use API versioning. The client sends its API version with every sync request. The server accepts the old format and applies defaults for missing fields. For breaking changes, support both formats during a transition period. On the client side, the Room migration transforms existing data and pending operations to the new schema.
 
-Use a tiered approach. Full sync for essential data (user profile, active tasks, current project). On-demand caching for everything else — fetch it when requested, cache it in Room, evict it based on an LRU policy. Background sync for medium-priority data when on Wi-Fi and charging. The sync scope should be configurable based on device storage — a device with 16GB free syncs more aggressively than one with 500MB free.
+#### Q16: How do you implement optimistic UI with rollback?
 
-#### Q17: How do you implement delta sync instead of full sync?
+Apply changes to the local DB immediately and let the UI update via Flow. The user sees the result instantly. In the background, the sync engine pushes the change to the server. If the server rejects it (validation error, conflict, permission denied), revert the local state and show an error.
 
-Full sync downloads everything on every sync cycle, which is wasteful. Delta sync only transfers what changed since the last sync. The server needs to support this — typically by accepting a `since` parameter (timestamp or sync token) and returning only records created, updated, or deleted after that point.
+The rollback needs to be clean. Before applying the optimistic change, snapshot the current state of the record. If the server rejects the change, restore the snapshot and notify the user. For lists, this means the item might briefly appear, then disappear — use animations to make this feel intentional rather than buggy. The vast majority of writes succeed, so the user gets a fast experience.
 
-On the client, store the last sync token. On each sync, send the token and receive only the delta. Apply the delta to the local database — insert new records, update modified ones, and delete removed ones. The server returns a new sync token that the client stores for the next cycle. If the token is too old (server purged the change log), fall back to a full sync.
+#### Q17: How do you test offline scenarios?
 
-#### Q18: How would you handle sync for collaborative data where multiple users edit the same item?
+Test at three levels. Unit test the sync engine — mock the API and DAO, verify conflict resolution, queue compaction, and retry logic. Integration test the full sync flow — use an in-memory Room database and MockWebServer to simulate conflicts, network failures, and partial syncs.
 
-Collaborative editing is the hardest sync problem. Each user has a local copy that can diverge. The simplest approach for non-real-time collaboration is optimistic locking — each record has a version number. When syncing, if the server's version is higher than your base version, your change conflicts with another user's change.
+For E2E, simulate offline by toggling airplane mode or using network conditioning tools. The critical scenarios to test: create items offline then sync, edit the same item on two devices, kill the app during sync and verify no data corruption, and the first sync after a long offline period with many pending operations. Flaky conditions (high latency, packet loss) matter as much as full offline.
 
-For real-time collaboration (like Google Docs), you need operational transformation (OT) or conflict-free replicated data types (CRDTs). These are complex and typically implemented by the backend, with the mobile client applying operations from a real-time stream. For most mobile apps, optimistic locking with LWW or manual conflict resolution is sufficient. True real-time collaboration is a specialized problem.
+#### Q18: How do you handle large file sync like images or documents?
 
-#### Q19: How do you test an offline-first app?
+Large files need chunked uploads. Split the file into fixed-size chunks (e.g., 1MB), upload each chunk separately, and have the server reassemble them. If a chunk fails, retry only that chunk — not the entire file. Track upload progress per chunk in Room so the app can resume after a crash or network loss.
 
-Test at multiple levels. Unit test the sync engine — mock the API and database, verify that conflicts are resolved correctly, queue compaction works, and retry logic behaves as expected. Integration test the full sync flow — use an in-memory Room database and a mock server (MockWebServer) to simulate sync scenarios like conflicts, network failures, and partial syncs.
-
-For manual and automated E2E testing, simulate offline by toggling airplane mode or using network conditioning tools. Test these scenarios specifically: creating items offline then syncing, editing the same item on two devices, app killed during sync (verify data isn't corrupted), and the first sync after a long offline period. Flaky network conditions (high latency, packet loss) are as important to test as full offline.
-
-#### Q20: How do you prevent data loss during sync failures?
-
-Never delete local data before the server confirms it received the data. The sync flow should be: send local changes to server, wait for server acknowledgment, then mark local changes as synced. If the app crashes between sending and receiving acknowledgment, the next sync will try again — the server should handle duplicate operations idempotently.
-
-For critical data (financial transactions, medical records), use idempotency keys. Generate a UUID for each operation on the client. The server checks if it's already processed that UUID and returns success without re-applying. This makes retries safe. Also, keep a local audit log of all sync operations for debugging — what was sent, what was received, when, and whether it succeeded.
+For downloads, use the same chunked approach with Range headers. Store the file locally with a reference in the Room entity. The file and its metadata should sync independently — metadata first, file on demand or when on Wi-Fi. This avoids burning mobile data on large files the user hasn't opened yet.
 
 ### Common Follow-ups
 
-- How would you migrate an existing online-first app to offline-first?
+- How would you migrate an existing online-first app to offline-first incrementally?
 - What's the difference between CRDTs and operational transformation?
-- How do you handle authentication token expiry during offline periods?
-- How would you implement offline support for file attachments (images, documents)?
-- What's the battery impact of background sync, and how do you minimize it?
+- How do you handle authentication token expiry during long offline periods?
 - How do you handle soft deletes vs hard deletes in a synced database?
 - How would you design the sync protocol for a multi-device app (phone, tablet, web)?
-- What happens when the user's local database is corrupted — how do you recover?
+- How do you secure sensitive data stored in the local database?
+- What happens when the local database is corrupted — how do you recover?
+- How do you minimize the battery impact of background sync?

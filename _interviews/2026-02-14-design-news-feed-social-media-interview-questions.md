@@ -10,204 +10,55 @@ description: "Feed-based screens are one of the most common system design questi
 
 ## Design a News Feed / Social Media Feed
 
-Feed-based screens are one of the most common system design questions in mobile interviews. Every social app — Instagram, Twitter, LinkedIn — has a feed, and the interviewer wants to see how you think about pagination, caching, offline behavior, and performance at scale.
+Every social app has a feed — Instagram, Twitter, LinkedIn. This is a step-by-step walkthrough of how to design one from the mobile side, starting from requirements and building up to the hard optimization problems.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: How would you approach designing a social media feed from a mobile perspective? What's the high-level architecture?
+#### Q1: What are the core features of a social media feed?
 
-Start by clarifying requirements — is this a chronological feed or ranked? How many posts does the user see per session? Is offline access needed? Then lay out the layers: a UI layer (RecyclerView or LazyColumn) that observes a ViewModel, a repository that coordinates between a local database (Room) and a remote API (Retrofit/OkHttp), and a caching layer that sits in between. The local database acts as the single source of truth — the UI always reads from Room, and the repository syncs Room with the server in the background.
+The feed displays a scrollable list of posts from people the user follows, ordered by relevance or time. Core features include infinite scroll with pagination, the ability to like and comment on posts, support for multiple media types (text, images, video, polls), and pull-to-refresh for new content. Most feeds also support stories at the top — ephemeral content that disappears after 24 hours.
 
-#### Q2: What is the difference between offset-based and cursor-based pagination?
+Beyond the basics, you need a way to handle mixed content types in the same list. A single feed can contain text-only posts, image carousels, videos, polls, and shared links. Each renders differently, but they all scroll in one unified stream.
 
-Offset-based pagination uses a page number or offset (`?page=2&limit=20`). It's simple but breaks when items are inserted or deleted — you can skip posts or see duplicates because the offset shifts. Cursor-based pagination uses an opaque cursor (usually the ID or timestamp of the last fetched item) to request the next batch (`?after=abc123&limit=20`). The cursor points to a stable position in the dataset, so insertions and deletions don't cause skipped or duplicated items.
+#### Q2: What are the non-functional requirements?
 
-For a social media feed, cursor-based pagination is the standard approach because feed content changes frequently.
+Three things matter most. First, performance on low-end devices — the feed must scroll at 60fps even on budget phones with limited RAM. Second, offline support — the user should see cached posts when there's no network, and actions like likes should queue for later sync. Third, fast initial load — the feed should show content within 1-2 seconds of opening the app, which means showing cached data immediately while refreshing in the background.
 
-#### Q3: What is keyset pagination and how is it different from cursor pagination?
+Real-time updates are important but not at the cost of battery. You don't need a persistent WebSocket draining the battery. A combination of pull-to-refresh and lightweight push notifications for new content works better for most feeds.
 
-Keyset pagination is a specific type of cursor pagination where the cursor is a combination of sort columns. Instead of an opaque token, you pass the last item's sort values — like `?created_before=2024-01-15T10:30:00Z&id_lt=5432`. The server uses a `WHERE created_at < ? OR (created_at = ? AND id < ?)` query, which is indexed and fast.
+#### Q3: What's in scope and what's out of scope for this design?
 
-The advantage over opaque cursors is that keyset pagination is stateless on the server — there's no need to store cursor state. The tradeoff is that it only works for deterministic sort orders. If your feed is ranked by a changing algorithm, opaque cursors that encode the feed state work better.
+In scope: the feed screen itself — rendering posts, pagination, caching, offline behavior, like/comment interactions, and media loading. Out of scope: the backend ranking algorithm (assume the server returns a ranked feed), the post creation flow, user profile screens, and the stories feature (it's a separate component that sits above the feed).
 
-#### Q4: How do you implement infinite scroll on Android?
+Keep the scope tight. The interviewer wants depth on the feed screen, not a shallow pass over the entire app.
 
-Attach a scroll listener to RecyclerView or use LazyColumn's scroll state. When the user scrolls near the bottom (typically within 5-10 items of the end), trigger a load of the next page. The ViewModel manages pagination state — current cursor, whether more pages exist, and loading state.
+### High-Level Design
 
-```kotlin
-@Composable
-fun FeedScreen(viewModel: FeedViewModel) {
-    val feedState by viewModel.feedState.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
+#### Q4: What does the client architecture look like?
 
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val totalItems = listState.layoutInfo.totalItemsCount
-            lastVisible >= totalItems - 5
-        }
-        .distinctUntilChanged()
-        .filter { it }
-        .collect { viewModel.loadNextPage() }
-    }
+The architecture follows a layered approach. The UI layer (LazyColumn or RecyclerView) observes a ViewModel. The ViewModel holds feed state and delegates data operations to a repository. The repository coordinates between a remote API (Retrofit) and a local database (Room). Room is the single source of truth — the UI always reads from Room, never directly from the API.
 
-    LazyColumn(state = listState) {
-        items(feedState.posts) { post -> FeedPostItem(post) }
-        if (feedState.isLoadingMore) {
-            item { LoadingIndicator() }
-        }
-    }
-}
-```
+The data flow is unidirectional. The UI triggers an action (load more, refresh, like), the ViewModel calls the repository, the repository updates Room, and Room emits the updated data through a Flow that the UI observes. This makes the feed predictable and testable.
 
-The key detail is `distinctUntilChanged()` and the threshold of 5 items — it prevents repeated triggers and gives the network call time to complete before the user reaches the actual end.
+#### Q5: How do you design the API for feed pagination?
 
-#### Q5: How do you implement pull-to-refresh?
-
-Pull-to-refresh reloads the feed from the top. On the client, it fetches page 1 again (or uses a "newer than" cursor) and replaces the cached data. In Compose, use `PullToRefreshBox`. In the View system, use `SwipeRefreshLayout`.
-
-The important detail is what happens to the scroll position. If the user pulled to refresh, they expect to see new content at the top. Clear the existing list and insert new items, or prepend new items and scroll to position 0. If you're using Room as the source of truth, the approach is to delete stale data and insert the fresh page, and the Flow from Room automatically updates the UI.
-
-#### Q6: What caching strategy would you use for a feed?
-
-A two-layer cache works well — an in-memory cache for instant access and a disk cache (Room database) for persistence across app restarts. The in-memory cache is the ViewModel or a repository-scoped map that holds the current feed state. The disk cache is Room, where each feed item is stored with its cursor position and timestamp.
-
-On app launch, show cached data from Room immediately (so the user sees something fast), then fetch fresh data from the server in the background. When fresh data arrives, update Room, and the UI updates automatically through Flow observation. This is the stale-while-revalidate pattern.
-
-#### Q7: What is stale-while-revalidate, and how do you implement it on mobile?
-
-Stale-while-revalidate means showing cached (potentially stale) data immediately while fetching fresh data in the background. The user sees content instantly instead of staring at a loading spinner. When the fresh data arrives, the UI updates seamlessly.
+Use cursor-based pagination. The server returns a page of posts along with a cursor pointing to the next page. The client sends that cursor back to get the next batch.
 
 ```kotlin
-class FeedRepository(
-    private val feedApi: FeedApi,
-    private val feedDao: FeedDao
-) {
-    fun getFeed(): Flow<List<FeedPost>> {
-        return feedDao.observeFeed() // Emit cached data immediately
-            .onStart { refreshFeed() } // Trigger network refresh
-    }
-
-    private suspend fun refreshFeed() {
-        try {
-            val freshPosts = feedApi.getFeed(limit = 20)
-            feedDao.clearAndInsert(freshPosts.toEntities())
-        } catch (e: IOException) {
-            // Silently fail — cached data is already showing
-        }
-    }
-}
+// Request: GET /feed?cursor=abc123&limit=20
+// Response:
+data class FeedResponse(
+    val posts: List<FeedPostDto>,
+    val nextCursor: String?,
+    val hasMore: Boolean
+)
 ```
 
-The tradeoff is that the user might see outdated content for a moment. For time-sensitive feeds (breaking news), you might show a subtle banner — "New posts available" — instead of silently swapping content.
+Offset-based pagination (`?page=2&limit=20`) breaks when items are inserted or deleted between requests — you get duplicates or skip posts because the offset shifts. Cursor-based pagination points to a stable position in the dataset, so it handles feed mutations gracefully. The cursor is typically an opaque token encoding the last item's timestamp and ID.
 
-#### Q8: How would you handle image loading in a feed?
+#### Q6: How do you model a feed item that supports multiple content types?
 
-Use a library like Coil or Glide. These handle memory caching, disk caching, request deduplication, lifecycle awareness, and image transformations. For a feed specifically, a few things matter. Preload images for the next few items before they scroll into view. Use appropriately sized images — request thumbnails for the list, full-size only on detail screens. Set fixed dimensions on image views to avoid layout jumps when images load.
-
-In Compose with Coil, `AsyncImage` handles most of this. For prefetching, enqueue image requests for items that are about to become visible based on the scroll position.
-
-### Deep Dive Questions (Advanced → Expert)
-
-#### Q9: How would you implement optimistic updates for a like button?
-
-Optimistic updates mean updating the UI immediately without waiting for the server response. When the user taps like, flip the state in the local database and update the UI right away. Send the API request in the background. If the request fails, revert the local state.
-
-```kotlin
-class LikeRepository(
-    private val feedApi: FeedApi,
-    private val feedDao: FeedDao
-) {
-    suspend fun toggleLike(postId: String, currentlyLiked: Boolean) {
-        val newLiked = !currentlyLiked
-        // Update locally first — UI reflects this immediately
-        feedDao.updateLikeStatus(postId, newLiked)
-
-        try {
-            if (newLiked) feedApi.likePost(postId)
-            else feedApi.unlikePost(postId)
-        } catch (e: Exception) {
-            // Revert on failure
-            feedDao.updateLikeStatus(postId, currentlyLiked)
-        }
-    }
-}
-```
-
-This pattern creates a responsive experience — the like button responds in under 16ms instead of waiting 200-500ms for a network round trip. The revert case is rare on a stable connection, so the occasional flicker on failure is an acceptable tradeoff for the perceived speed.
-
-#### Q10: How would you design the feed to work offline?
-
-Make Room the single source of truth. The UI only observes Room, never directly consumes API responses. On launch, Room emits the cached feed instantly. When the network is available, the repository fetches fresh data and upserts it into Room. When offline, the user sees the last cached feed and can still interact with cached content.
-
-For actions like likes or comments made offline, queue them in a pending actions table. When the network comes back, replay those actions using WorkManager. The pending state is reflected in the UI — show the like as applied locally but mark it as pending sync. `ConnectivityManager.NetworkCallback` detects network changes to trigger the sync.
-
-#### Q11: How do you handle data freshness in a feed? When do you consider cached data too stale?
-
-Define a staleness threshold based on the feed type. For a social media feed, data older than 5-10 minutes might be considered stale. Store a `lastFetchedAt` timestamp alongside the cached data. On app launch, if the cache is within the threshold, show it and refresh in the background. If it's beyond the threshold, show it but also show a loading indicator that fresh data is coming.
-
-For feeds where recency is critical (news, stock prices), reduce the threshold or skip the cache entirely. For feeds that don't change often (saved posts, bookmarks), the threshold can be hours or even days. The staleness threshold should also factor in whether the feed screen was backgrounded or cold-started — a backgrounded feed might only need a delta refresh.
-
-#### Q12: How would you implement feed prefetching?
-
-Prefetching loads the next page of data before the user scrolls to the end. When the user is within N items of the bottom (where N is your prefetch distance, typically 5-10), trigger the next page load. You can also prefetch images for upcoming items using Coil's `ImageLoader.enqueue()`.
-
-A more advanced approach prefetches based on scroll velocity. If the user is scrolling fast, increase the prefetch distance. If they're slowly reading, reduce it to save bandwidth. The tradeoff is battery and data consumption — aggressive prefetching on cellular networks wastes the user's data plan. Check `ConnectivityManager` for network type and adjust prefetch behavior accordingly.
-
-#### Q13: How would you handle feed ranking or sorting on the client side?
-
-Client-side ranking is limited because the server has signals the client doesn't — social graph data, engagement metrics across all users, content quality scores. But the client can do lightweight reranking. For example, boosting posts from users the current user interacts with frequently (based on local interaction history), or deprioritizing posts the user has already seen.
-
-Store interaction signals locally — which users' posts the user taps on, how long they dwell on each post. Use these signals to adjust the order of items within a page. The server still controls the primary ranking, but the client applies a local adjustment layer. Keep this simple — a weighted score based on 2-3 signals. Complex ML models belong on the server.
-
-#### Q14: How do you handle feed consistency when the user switches between tabs or navigates back?
-
-The ViewModel survives configuration changes and tab switches, so the in-memory feed state persists. When the user navigates back to the feed, check the staleness threshold. If the data is still fresh, show it immediately with no loading state. If it's stale, show the cached data and refresh in the background.
-
-The harder problem is positional consistency. When the user leaves and comes back, they should return to the same scroll position. In Compose, `LazyListState` handles this if the list key is stable. In RecyclerView, save the `LayoutManager` state in `onSaveInstanceState()`. If fresh data arrives while the user is away and items shift, use `DiffUtil` or Compose's key-based diffing to update content without resetting the scroll position.
-
-#### Q15: How do you prevent the feed from growing unbounded in the local database?
-
-Without cleanup, the feed table grows as the user scrolls through hundreds of pages. Set a maximum cache size — for example, keep only the latest 200 posts in Room. When inserting new posts, delete anything beyond the limit. You can also use an LRU strategy — keep posts that were recently viewed and evict the oldest unseen ones.
-
-```kotlin
-@Dao
-interface FeedDao {
-    @Transaction
-    suspend fun insertAndTrim(posts: List<FeedPostEntity>, maxSize: Int = 200) {
-        insertAll(posts)
-        trimOldPosts(maxSize)
-    }
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(posts: List<FeedPostEntity>)
-
-    @Query("""
-        DELETE FROM feed_posts WHERE id NOT IN (
-            SELECT id FROM feed_posts ORDER BY cached_at DESC LIMIT :maxSize
-        )
-    """)
-    suspend fun trimOldPosts(maxSize: Int)
-}
-```
-
-The trim operation runs inside a transaction with the insert so the database stays consistent. Choose the max size based on typical user behavior — 200 posts covers most sessions without using excessive disk space.
-
-#### Q16: How would you handle multiple feed types (home, trending, following) in the same app?
-
-Each feed type gets its own cursor, its own pagination state, and its own cache key in Room. Add a `feedType` column to the feed table so all feeds can share the same table structure but be queried independently. Each tab's ViewModel manages its own `FeedPaginator` instance with an independent cursor.
-
-For the repository, parameterize the feed type in every operation — `getFeed(type: FeedType)`, `refreshFeed(type: FeedType)`. Cache invalidation should also be per-feed — refreshing the "trending" feed shouldn't clear the "following" feed cache. The staleness thresholds might differ too — trending content changes rapidly, while a following feed is more stable.
-
-#### Q17: How do you handle rate limiting and error states in a feed?
-
-For rate limiting, respect HTTP 429 responses by backing off. Parse the `Retry-After` header if present. Implement exponential backoff — first retry after 1 second, then 2, then 4, with jitter to avoid thundering herd. Cap the max delay at 30-60 seconds.
-
-For errors, distinguish between network errors (no connectivity — show cached data with an offline banner), server errors (5xx — show cached data with a retry button), and empty states (no posts — show a meaningful empty state, not a blank screen). The ViewModel should expose a sealed class that represents all possible states — `Loading`, `Success`, `Error(cachedData, errorType)` — so the UI can handle each case.
-
-#### Q18: How do you design the data model for a feed post that supports multiple content types (text, image, video, poll, link preview)?
-
-Use a sealed class or a type discriminator pattern. Each post has common fields (id, author, timestamp, like count) and type-specific fields. In Room, you can model this with a single table using nullable type-specific columns, or with a base table plus type-specific detail tables joined via a relationship.
+Use a sealed class to represent polymorphic content. Every post shares common fields — id, author, timestamp, like count — but the content varies by type.
 
 ```kotlin
 data class FeedPost(
@@ -221,33 +72,192 @@ data class FeedPost(
 
 sealed class FeedContent {
     data class Text(val body: String) : FeedContent()
-    data class Image(val body: String, val imageUrls: List<String>) : FeedContent()
-    data class Video(val body: String, val videoUrl: String, val thumbnailUrl: String) : FeedContent()
+    data class Image(val body: String, val urls: List<String>) : FeedContent()
+    data class Video(val body: String, val videoUrl: String, val thumbnail: String) : FeedContent()
     data class Poll(val question: String, val options: List<PollOption>) : FeedContent()
 }
 ```
 
-The single table approach with nullable columns is simpler and avoids joins. The polymorphic table approach is cleaner but adds query complexity. For most feed designs, the single table with a type discriminator column and a JSON blob for type-specific data works well.
+In Room, the simplest approach is a single table with a `type` discriminator column and a JSON column for type-specific data (using a TypeConverter). This avoids joins and keeps queries simple. The polymorphic table approach (base table + type-specific tables) is cleaner relationally but adds query complexity that's rarely worth it for a feed.
 
-#### Q19: How would you measure and optimize feed scroll performance?
+#### Q7: What caching strategy works best for a feed?
 
-Track frame rendering time using `FrameMetrics` API or Macrobenchmark. A smooth scroll means every frame renders within 16ms (60fps) or 8ms (120fps). Common bottlenecks in feed scroll performance are image decoding on the main thread (use async loading with Coil), complex view hierarchies (flatten layouts, use Compose), overdraw (use Layout Inspector to find overlapping backgrounds), and unnecessary recompositions in Compose (use stable keys, avoid unstable lambda captures).
+Room acts as the source of truth. On app launch, Room emits cached posts immediately through a Flow — the user sees content within milliseconds. Meanwhile, the repository fetches fresh data from the API in the background. When fresh data arrives, it's upserted into Room, and the Flow automatically pushes the update to the UI. This is the stale-while-revalidate pattern.
 
-For Compose specifically, mark data classes as `@Stable` or `@Immutable`, use `key` in `LazyColumn` items so Compose can skip unchanged items, and avoid passing lambdas that capture changing state. Profile with Compose compiler metrics to find functions that aren't skippable.
+```kotlin
+class FeedRepository(
+    private val api: FeedApi,
+    private val dao: FeedDao
+) {
+    fun observeFeed(): Flow<List<FeedPost>> {
+        return dao.observeAll()
+            .onStart { refreshFromNetwork() }
+    }
 
-#### Q20: How would you design a real-time feed update system? Should new posts appear automatically?
+    private suspend fun refreshFromNetwork() {
+        try {
+            val response = api.getFeed(limit = 20)
+            dao.clearAndInsert(response.posts.toEntities())
+        } catch (e: IOException) {
+            // Cached data is already showing — fail silently
+        }
+    }
+}
+```
 
-There are two approaches — push and pull. Push uses a WebSocket or SSE connection to receive new post notifications in real time. Pull periodically polls the server for new posts (every 30-60 seconds). Push gives instant updates but requires a persistent connection that drains battery. Pull is simpler but has inherent latency.
+The tradeoff is the user might see slightly outdated content for a moment. For most social feeds, this is perfectly fine. For time-sensitive content, show a "New posts available" banner instead of silently swapping items under the user's eyes.
 
-For most social feeds, a hybrid works best. Use pull-to-refresh as the primary mechanism. Show a "New posts available" banner when new content is detected (via push notification or background poll) and let the user choose to load them. Auto-inserting posts while the user is reading is disorienting — it shifts the content they're looking at. Instagram and Twitter both use the banner approach for this reason.
+#### Q8: How do you handle image loading in the feed?
+
+Use Coil or Glide. These libraries handle memory caching, disk caching, request deduplication, and lifecycle-aware cancellation out of the box. For a feed, three details matter. First, request thumbnail-sized images for the list — don't download full-resolution photos. Second, set fixed dimensions on image containers so the layout doesn't jump when images load. Third, prefetch images for the next few off-screen items based on scroll position using `ImageLoader.enqueue()`.
+
+In Compose, `AsyncImage` with a `placeholder` and `crossfade` handles the common case. The real optimization is on the server side — serving multiple resolutions and letting the client pick the right size based on the view's dimensions and the device's screen density.
+
+#### Q9: How do you handle pull-to-refresh and real-time updates?
+
+Pull-to-refresh fetches the first page again and replaces the cached feed. In Compose, wrap the list with `PullToRefreshBox`. The repository clears stale data, inserts the fresh page into Room, and the Flow updates the UI. The user expects to see new content at the top, so scroll to position 0 after the refresh completes.
+
+For real-time updates, a hybrid approach works best. Use FCM push notifications to detect when new content is available, then show a "New posts" banner at the top of the feed. When the user taps it, fetch and prepend the new posts. Don't auto-insert posts while the user is scrolling — it shifts the content they're reading and feels disorienting. Instagram and Twitter both use this banner pattern.
+
+### Low-Level Design & Deep Dives
+
+#### Q10: How do you optimize RecyclerView or LazyColumn performance for a feed?
+
+For RecyclerView, the big wins are stable IDs (`setHasStableIds(true)`), `DiffUtil` for efficient updates, and view holder recycling across multiple view types. Avoid inflating complex nested layouts — flatten the hierarchy. Use `RecycledViewPool` if you have nested RecyclerViews (like a horizontal image carousel inside a feed item).
+
+For LazyColumn, use stable keys on every item so Compose can skip recomposition for unchanged posts. Mark your data classes as `@Immutable` or `@Stable`. Avoid passing unstable lambdas — extract click handlers to the ViewModel level.
+
+```kotlin
+LazyColumn(state = listState) {
+    items(
+        items = posts,
+        key = { it.id }
+    ) { post ->
+        FeedPostCard(
+            post = post,
+            onLikeClick = { viewModel.toggleLike(post.id) }
+        )
+    }
+}
+```
+
+Profile with the Compose compiler metrics to find composables that aren't skippable. A single non-skippable item in a list of 100 posts means 100 unnecessary recompositions on every state change.
+
+#### Q11: How does prefetching work for both data and images?
+
+Data prefetching triggers the next page load before the user reaches the end. Monitor the scroll position and fire the request when the user is within 5-10 items of the bottom. The ViewModel tracks the current cursor and whether a request is already in flight to avoid duplicate calls.
+
+```kotlin
+LaunchedEffect(listState) {
+    snapshotFlow {
+        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        val total = listState.layoutInfo.totalItemsCount
+        lastVisible >= total - 5
+    }
+    .distinctUntilChanged()
+    .filter { it }
+    .collect { viewModel.loadNextPage() }
+}
+```
+
+For image prefetching, enqueue Coil requests for items just beyond the visible area. A more advanced approach adjusts the prefetch distance based on scroll velocity — fast flings get a larger window, slow browsing gets a smaller one. On metered connections, reduce or disable image prefetching to save the user's data.
+
+#### Q12: How do you implement optimistic UI for the like button?
+
+Update Room immediately when the user taps like. The Flow emits the updated state and the UI reflects it in under 16ms. Then fire the API request in the background. If it fails, revert the local state.
+
+```kotlin
+class LikeRepository(
+    private val api: FeedApi,
+    private val dao: FeedDao
+) {
+    suspend fun toggleLike(postId: String, currentlyLiked: Boolean) {
+        val newState = !currentlyLiked
+        dao.updateLikeStatus(postId, newState)
+        try {
+            if (newState) api.likePost(postId) else api.unlikePost(postId)
+        } catch (e: Exception) {
+            dao.updateLikeStatus(postId, currentlyLiked)
+        }
+    }
+}
+```
+
+The revert case is rare on a stable connection, so the occasional flicker on failure is an acceptable tradeoff for perceived responsiveness. Apply the same pattern to bookmark, follow, and other toggle actions. For comments, optimistic UI is trickier because the server assigns the comment ID — show the comment locally with a temporary ID and replace it when the server responds.
+
+#### Q13: How would you handle video autoplay in the feed?
+
+Track which item is most visible on screen using the scroll state. When a video post becomes more than 50% visible, start playback. When it scrolls out of view, pause it. Only one video should play at a time.
+
+Use ExoPlayer with a shared player instance — creating a new ExoPlayer per video item is expensive. The feed maintains a single player reference and binds it to whichever video item is currently in the viewport. When the user scrolls to a new video, detach the player from the old item and attach it to the new one.
+
+Mute by default — autoplay with sound is hostile UX. Preload the first few seconds of upcoming videos so playback starts instantly when they scroll into view. On cellular networks, consider lowering the video resolution or disabling autoplay entirely and showing a tap-to-play overlay instead.
+
+#### Q14: How do you handle multiple view types in a feed?
+
+Each content type gets its own view holder (RecyclerView) or composable (Compose). The adapter inspects the `FeedContent` sealed class to determine the item type. In RecyclerView, override `getItemViewType()` and create the corresponding view holder in `onCreateViewHolder()`. In Compose, use a `when` block inside the `items` lambda.
+
+```kotlin
+@Composable
+fun FeedItem(post: FeedPost) {
+    Column {
+        AuthorHeader(post.author, post.createdAt)
+        when (val content = post.content) {
+            is FeedContent.Text -> TextPostBody(content)
+            is FeedContent.Image -> ImageCarousel(content)
+            is FeedContent.Video -> VideoPlayer(content)
+            is FeedContent.Poll -> PollCard(content)
+        }
+        ActionBar(post.likeCount, post.isLiked)
+    }
+}
+```
+
+The shared parts — author header, action bar — are the same across all types. Only the content body changes. This keeps the code manageable and avoids duplicating the common layout logic across every post type.
+
+#### Q15: How do you handle offline caching with TTL?
+
+Store a `cachedAt` timestamp with every feed item in Room. On app launch, check the age of the cached data. If it's within the TTL (5-10 minutes for a social feed), show it and refresh in the background. If it's beyond the TTL, still show it — stale content is better than a blank screen — but also show a loading indicator to signal that fresh data is coming.
+
+For cache cleanup, run a periodic trim. Keep the latest 200-300 posts in Room and delete anything older. This prevents the database from growing unbounded as the user scrolls through hundreds of pages across sessions.
+
+```kotlin
+@Query("""
+    DELETE FROM feed_posts WHERE id NOT IN (
+        SELECT id FROM feed_posts ORDER BY cached_at DESC LIMIT :maxSize
+    )
+""")
+suspend fun trimOldPosts(maxSize: Int)
+```
+
+The TTL should vary by context. A "Following" feed can have a longer TTL because it changes less often. A "Trending" feed needs a shorter TTL because the content is time-sensitive.
+
+#### Q16: How do you track analytics events in a feed?
+
+Track two categories of events — impressions and interactions. An impression fires when a post becomes visible for a minimum duration (typically 1 second, to filter out fast scrolls). An interaction fires on like, comment, share, or tap to expand.
+
+For impressions, use the scroll state to determine which items are on screen and start a timer. If the item is still visible after the threshold, log the impression. Batch events locally and flush them periodically (every 30 seconds or on app background) to reduce network calls. Store unsent events in Room so they survive process death.
+
+Each event should carry the post ID, position in feed, content type, timestamp, and session ID. This data feeds the backend ranking algorithm — posts with higher engagement rates get surfaced more. On the client side, keep the analytics layer decoupled from the feed logic. An `AnalyticsTracker` interface injected into the ViewModel keeps the feed code clean and testable.
+
+#### Q17: How do you deep link to a specific post in the feed?
+
+A deep link like `myapp://feed/post/abc123` should open the post detail screen directly. Parse the URI in your navigation graph or deep link handler, extract the post ID, and navigate to the detail screen. The detail screen fetches the post by ID — first from Room (instant if cached), then from the API if needed.
+
+The harder case is scrolling to a specific post within the feed. If the post is already loaded in the feed list, use `LazyListState.animateScrollToItem()` with the item's index. If it's not loaded (the user hasn't scrolled that far), you have two options — load the feed from that post's position using a cursor, or open the post in a standalone detail screen instead. The standalone screen is simpler and more reliable.
+
+#### Q18: How do you make the feed accessible?
+
+Every post needs a meaningful content description. Images need `contentDescription` that describes what's in the photo, not just "image." The like button should announce its state — "Like, double tap to like" or "Liked, double tap to unlike." Interactive elements need minimum touch targets of 48dp.
+
+For screen readers, group related elements. The author name, timestamp, post body, and action buttons should form a logical reading order. In Compose, use `semantics` with `mergeDescendants` to group the author header, and keep action buttons as separate focusable elements. Support dynamic text sizing — the feed layout should handle font scale up to 200% without breaking.
 
 ### Common Follow-ups
 
-- How would you handle deep linking to a specific post in the feed?
 - What happens when the same post appears in multiple feeds — do you deduplicate in the database?
 - How would you implement a "save for later" feature that works offline?
 - How do you handle feed pagination when posts are deleted between page loads?
 - What metrics would you track to measure feed health (load time, scroll FPS, error rate)?
 - How would you A/B test different feed ranking algorithms on the client?
-- How do you handle video autoplay in the feed without killing battery?
 - What's the difference between a fan-out-on-write and fan-out-on-read feed architecture?
+- How do you handle feed consistency when the user switches between tabs or navigates back?

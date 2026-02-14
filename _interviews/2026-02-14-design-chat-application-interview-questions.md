@@ -10,36 +10,59 @@ description: "Chat applications are a favorite in mobile system design interview
 
 ## Design a Chat Application
 
-Chat applications are a favorite in mobile system design interviews because they combine real-time communication, offline support, local persistence, and complex synchronization — all core mobile engineering challenges.
+Chat apps combine real-time communication, offline support, and local persistence — all core mobile engineering challenges rolled into one design problem.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: What are the core features of a chat application from the mobile client perspective?
+#### Q1: What are the core features you would include in a chat application?
 
 The essential features are:
-- **1:1 and group messaging** — Send and receive text messages in real time
-- **Message persistence** — Messages stored locally so the user can read them offline
-- **Push notifications** — Notify the user of new messages when the app is in the background
-- **Read receipts** — Show when a message was delivered and read
-- **Typing indicators** — Show when the other person is typing
-- **Media messages** — Send and receive images, videos, and files
-- **Offline support** — Queue outgoing messages while offline and send them when connectivity returns
+- **1:1 and group messaging** — send and receive text messages in real time
+- **Media messages** — images, videos, and files
+- **Read receipts** — show when a message was delivered and read
+- **Push notifications** — alert the user when the app is in the background
+- **Offline support** — queue outgoing messages while offline and deliver them when connectivity returns
 
 Start with 1:1 text messaging and expand from there. Interviewers prefer depth over breadth.
 
-#### Q2: How would you design the high-level client architecture for a chat app?
+#### Q2: What are the key non-functional requirements for a chat app?
+
+- **Real-time delivery** — messages should arrive within a few hundred milliseconds under normal network conditions
+- **Offline-first** — the app must be fully usable without a network connection. Messages are stored locally, and the user can read previous conversations and compose new messages that get queued
+- **Reliability** — every message must eventually reach the server. At-least-once delivery with deduplication
+- **Scale** — the data model and sync logic should handle conversations with thousands of messages and a user with hundreds of conversations without performance issues on the client side
+
+#### Q3: What's in scope and what's out of scope for a mobile system design interview?
+
+**In scope** — client architecture, data model, real-time connection strategy, offline queue, local database, sync logic, push notifications, message ordering, and retry mechanism.
+
+**Out of scope** — server-side message routing and fan-out, infrastructure scaling (Kafka, sharding), signaling for voice/video calls, and payment or commerce features. Mention these briefly if the interviewer asks, but don't spend time designing them.
+
+### High-Level Design
+
+#### Q4: How would you layer the client architecture for a chat app?
 
 The architecture follows the standard layered approach with a few chat-specific components:
 
-- **UI layer** — Chat list screen, conversation screen, media viewer. Observes state from ViewModels
-- **Domain layer** — Use cases for sending messages, syncing conversations, managing read receipts
-- **Data layer** — Repository coordinating between a local Room database (source of truth), a WebSocket connection for real-time messaging, and REST APIs for history and media
-- **Sync engine** — Background component that handles message delivery, retry logic, and conflict resolution
-- **Connection manager** — Manages the WebSocket lifecycle, reconnection with backoff, and connection state
+- **UI layer** — chat list screen, conversation screen, media viewer. Observes state from ViewModels
+- **Domain layer** — use cases for sending messages, syncing conversations, managing read receipts
+- **Data layer** — repository coordinating between a local Room database (source of truth), a WebSocket connection for real-time messaging, and REST APIs for history and media
+- **Sync engine** — background component that handles message delivery, retry logic, and conflict resolution
+- **Connection manager** — manages the WebSocket lifecycle, reconnection with backoff, and connection state
 
-The Room database is the single source of truth. The UI observes the database, and incoming messages from the WebSocket are written to the database first and then displayed. Outgoing messages are also written to the database first with a `pending` status and then sent over the network.
+The Room database is the single source of truth. The UI observes the database, and incoming messages from the WebSocket are written to the database first and then displayed. Outgoing messages are also written to the database first with a `PENDING` status and then sent over the network.
 
-#### Q3: What data model would you use for messages?
+#### Q5: Why WebSocket over long polling or SSE for real-time messaging?
+
+**WebSocket** is a full-duplex, persistent TCP connection. After an HTTP handshake upgrade, both client and server can send messages at any time with minimal overhead (2-byte frame header). This is the standard choice for chat apps because messaging is bidirectional.
+
+**Long polling** works by the client sending an HTTP request, and the server holding the connection open until it has new data or a timeout occurs. When the server responds, the client immediately sends another request. It works through all proxies and firewalls but has a small latency gap between each response-request cycle.
+
+**SSE (Server-Sent Events)** is a one-way channel from server to client over HTTP. The server pushes events, but the client can't send data back over the same connection. Not suitable for chat because you need to send messages too.
+
+For a chat app, WebSocket is the right choice. OkHttp has built-in WebSocket support, so the client side is straightforward. Long polling is a reasonable fallback when WebSocket connections are blocked by network proxies.
+
+#### Q6: What data model would you use for messages?
 
 A message needs enough metadata to be ordered, displayed, and synced correctly.
 
@@ -52,15 +75,15 @@ A message needs enough metadata to be ordered, displayed, and synced correctly.
     ]
 )
 data class MessageEntity(
-    @PrimaryKey val id: String,               // Server-assigned ID
-    val clientMessageId: String,              // Client-generated UUID
+    @PrimaryKey val id: String,
+    val clientMessageId: String,
     val conversationId: String,
     val senderId: String,
     val content: String,
-    val type: MessageType,                    // TEXT, IMAGE, VIDEO, FILE
-    val timestamp: Long,                      // Server timestamp
-    val localTimestamp: Long,                 // Client timestamp (for ordering before server confirms)
-    val status: MessageStatus,                // PENDING, SENT, DELIVERED, READ, FAILED
+    val type: MessageType,
+    val timestamp: Long,
+    val localTimestamp: Long,
+    val status: MessageStatus,
     val mediaUrl: String? = null,
     val mediaLocalPath: String? = null
 )
@@ -71,60 +94,32 @@ enum class MessageType { TEXT, IMAGE, VIDEO, FILE }
 
 The `clientMessageId` is a UUID generated by the client when the message is created. This handles deduplication — if the network drops after the server receives the message but before the client gets the acknowledgment, the client retries with the same `clientMessageId` and the server ignores the duplicate. The `id` field is the server-assigned ID that arrives with the acknowledgment.
 
-#### Q4: What is the difference between WebSocket, long polling, and Server-Sent Events (SSE) for real-time messaging?
+#### Q7: What does the API design look like for conversations and messages?
 
-**WebSocket** is a full-duplex, persistent TCP connection. After an HTTP handshake upgrade, both client and server can send messages at any time with minimal overhead (2-byte frame header). This is the standard choice for chat apps because messaging is bidirectional.
+Two main API surfaces — REST for CRUD operations and history, WebSocket for real-time events.
 
-**Long polling** works by the client sending an HTTP request, and the server holding the connection open until it has new data or a timeout occurs. When the server responds, the client immediately sends another request. It works through all proxies and firewalls but has a small latency gap between each response-request cycle.
+**REST endpoints:**
+- `GET /conversations` — fetch the user's conversation list with last message preview
+- `GET /conversations/{id}/messages?after={timestamp}&cursor={cursor}` — paginated message history for syncing after offline
+- `POST /conversations` — create a new conversation (1:1 or group)
+- `POST /media/upload` — upload media files, returns a URL
 
-**SSE (Server-Sent Events)** is a one-way channel from server to client over HTTP. The server pushes events, but the client can't send data back over the same connection. Not suitable for chat because you need to send messages too.
+**WebSocket events (bidirectional):**
+- Client sends: `message.send`, `typing.start`, `typing.stop`, `receipt.read`
+- Server sends: `message.new`, `message.ack`, `typing.update`, `receipt.update`, `presence.update`
 
-For a chat app, WebSocket is the right choice. OkHttp has built-in WebSocket support, so the client side is straightforward. Long polling is a reasonable fallback when WebSocket connections are blocked by network proxies.
+Every WebSocket message includes a `clientMessageId` so the client can correlate acknowledgments with pending messages. The REST API handles bulk operations and history, while the WebSocket handles real-time flow.
 
-#### Q5: How do you handle the WebSocket connection lifecycle?
+#### Q8: How do push notifications work for a chat app?
 
-The WebSocket connection should be active when the app is in the foreground and the user is in a chat screen. Managing the connection involves:
+When the app is in the background, the server sends a push notification through FCM. The notification payload should be a data message (not a notification message) so your app has full control over how it's displayed.
 
-- **Connect** when the app comes to the foreground or the user opens a chat
-- **Disconnect** when the app goes to the background (rely on push notifications instead)
-- **Reconnect** on failure with exponential backoff — start at 1 second, double each attempt, cap at 30 seconds
-- **Heartbeat** — Send a ping every 15-30 seconds to keep the connection alive and detect stale connections
+- **Data message** — always delivered to your `FirebaseMessagingService`, even when the app is in the background. You control the notification UI completely
+- **Notification message** — the system handles display when the app is backgrounded. You lose control over grouping, actions, and formatting
 
-```kotlin
-class ChatConnectionManager(
-    private val okHttpClient: OkHttpClient
-) {
-    private var webSocket: WebSocket? = null
-    private var retryCount = 0
+When the user taps the notification, deep link to the specific conversation. Use notification channels and message grouping so multiple messages from the same conversation stack neatly instead of flooding the notification shade. If the WebSocket is connected and the app is in the foreground, the server should skip sending a push notification for that message since the client already received it over the socket.
 
-    fun connect() {
-        val request = Request.Builder()
-            .url("wss://chat.example.com/ws")
-            .build()
-
-        webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
-            override fun onMessage(ws: WebSocket, text: String) {
-                retryCount = 0
-                handleIncomingMessage(text)
-            }
-
-            override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                scheduleReconnect()
-            }
-        })
-    }
-
-    private fun scheduleReconnect() {
-        val delay = minOf(1000L * (1 shl retryCount), 30_000L)
-        retryCount++
-        // Schedule reconnect after delay
-    }
-}
-```
-
-Don't keep the WebSocket open when the app is in the background — it holds a wake lock and drains battery. Use FCM push notifications to wake the app for new messages when it's backgrounded.
-
-#### Q6: How do you send messages while offline?
+#### Q9: How does the offline message queue work?
 
 Write the message to the local database with a `PENDING` status immediately. This gives the user instant feedback — they see their message in the conversation right away. Queue the message for delivery and attempt to send it when the network is available.
 
@@ -147,58 +142,20 @@ class SendMessageUseCase(
             status = MessageStatus.PENDING
         )
 
-        // Write to local DB immediately
         messageDao.insert(message)
 
-        // Try to send over WebSocket
         if (networkMonitor.isOnline.value && chatSocket.isConnected) {
             chatSocket.sendMessage(message)
         }
-        // If offline, message stays PENDING and gets retried later
     }
 }
 ```
 
-When the network returns, the sync engine queries all `PENDING` messages and sends them in order. Once the server acknowledges receipt, update the status to `SENT`.
+When the network returns, the sync engine queries all `PENDING` messages and sends them in order. Once the server acknowledges receipt, update the status to `SENT`. If the user is offline for a long time, they might have dozens of queued messages — send them sequentially to preserve ordering.
 
-#### Q7: How do push notifications work for a chat app?
+### Low-Level Design & Deep Dives
 
-When the app is in the background, the server sends a push notification through FCM to alert the user of a new message. The notification payload should be a data message (not a notification message) so your app has full control over how it's displayed.
-
-- **Data message** — Always delivered to your `FirebaseMessagingService`, even when the app is in the background. You control the notification UI completely
-- **Notification message** — The system handles display when the app is backgrounded. You lose control over grouping, actions, and formatting
-
-When the user taps the notification, deep link to the specific conversation. Use notification channels and message grouping so multiple messages from the same conversation stack neatly instead of flooding the notification shade.
-
-If the WebSocket is connected and the app is in the foreground, the server should skip sending a push notification for that message since the client already received it over the socket.
-
-#### Q8: How do you implement read receipts?
-
-Track three states per message: **sent**, **delivered**, and **read**.
-
-- **Sent** — The server received the message. The client gets an ACK over WebSocket
-- **Delivered** — The recipient's device received the message. The recipient's client sends a delivery confirmation to the server
-- **Read** — The recipient viewed the message. When the conversation screen is visible and the user scrolls past a message, send a read receipt
-
-```kotlin
-class ReadReceiptManager(
-    private val chatSocket: ChatConnectionManager,
-    private val messageDao: MessageDao
-) {
-    fun markAsRead(conversationId: String, lastReadMessageId: String) {
-        // Send read receipt to server
-        chatSocket.sendReadReceipt(conversationId, lastReadMessageId)
-        // Update local DB
-        messageDao.markMessagesAsRead(conversationId, lastReadMessageId)
-    }
-}
-```
-
-Batch read receipts — don't send one for every message. When the user scrolls through 20 unread messages, send a single receipt with the ID of the last message they saw. The server marks all messages up to that ID as read.
-
-### Deep Dive Questions (Advanced → Expert)
-
-#### Q9: How do you handle message ordering? What problems can arise?
+#### Q10: How do you handle message ordering? What problems can arise?
 
 Message ordering is trickier than it seems. You can't rely on client timestamps because clocks are unreliable — two users' phones might differ by minutes. You can't rely solely on server timestamps because network latency means messages arrive at the server in a different order than they were sent.
 
@@ -214,22 +171,20 @@ interface MessageDao {
         SELECT * FROM messages 
         WHERE conversationId = :conversationId 
         ORDER BY 
-            CASE WHEN status = 'PENDING' THEN localTimestamp ELSE timestamp END ASC
+            CASE WHEN status = 'PENDING' THEN localTimestamp 
+            ELSE timestamp END ASC
     """)
-    fun getMessagesForConversation(conversationId: String): Flow<List<MessageEntity>>
+    fun getMessagesForConversation(
+        conversationId: String
+    ): Flow<List<MessageEntity>>
 }
 ```
 
 For 1:1 chats, server timestamps with sequence numbers work well. For distributed systems with multiple servers, you might need vector clocks or Lamport timestamps, but that's beyond what most mobile interviews expect.
 
-#### Q10: How do you sync message history when the app opens after being offline?
+#### Q11: How do you sync message history after the app has been offline?
 
-When the app opens, it needs to catch up on messages received while it was offline. The standard approach is to track the last known message ID or timestamp and request everything after it.
-
-- The client stores the `lastSyncTimestamp` for each conversation
-- On app launch, it calls a REST endpoint: `GET /conversations/{id}/messages?after={lastSyncTimestamp}`
-- The response contains all messages the client missed, paginated if necessary
-- Write them to the local database, which triggers UI updates through Flow
+When the app opens, it needs to catch up on messages received while it was offline. The client stores the `lastSyncTimestamp` for each conversation and requests everything after it.
 
 ```kotlin
 class MessageSyncManager(
@@ -237,7 +192,8 @@ class MessageSyncManager(
     private val messageDao: MessageDao
 ) {
     suspend fun syncConversation(conversationId: String) {
-        val lastTimestamp = messageDao.getLastMessageTimestamp(conversationId) ?: 0
+        val lastTimestamp = messageDao
+            .getLastMessageTimestamp(conversationId) ?: 0
 
         var cursor: String? = null
         do {
@@ -253,16 +209,15 @@ class MessageSyncManager(
 }
 ```
 
-This sync happens in the background after connecting the WebSocket. The WebSocket handles real-time messages going forward, and the REST sync fills in the gap for messages missed while offline. Use cursor-based pagination for the sync to handle large gaps efficiently.
+This sync happens in the background after connecting the WebSocket. The WebSocket handles real-time messages going forward, and the REST sync fills in the gap for messages missed while offline. Use cursor-based pagination to handle large gaps efficiently.
 
-#### Q11: How do you implement typing indicators?
+#### Q12: How do you implement typing indicators?
 
-Typing indicators show when the other person is typing. The client detects text input changes and sends a "typing" event over the WebSocket. The receiving client shows "typing..." under the contact name and hides it after a timeout.
+The client detects text input changes and sends a "typing" event over the WebSocket. The receiving client shows "typing..." and hides it after a timeout.
 
-Key design decisions:
-- **Debounce** — Don't send a typing event on every keystroke. Debounce to once every 2-3 seconds while the user is actively typing
-- **Timeout** — The receiver hides the typing indicator after 5 seconds if no new typing event arrives. This handles cases where the user stops typing without sending
-- **Stop event** — Optionally send a "stopped typing" event when the input field becomes empty or the user sends the message
+- **Debounce** — don't send a typing event on every keystroke. Debounce to once every 2-3 seconds while the user is actively typing
+- **Timeout** — the receiver hides the typing indicator after 5 seconds if no new typing event arrives
+- **Stop event** — send a "stopped typing" event when the input field becomes empty or the user sends the message
 
 ```kotlin
 class TypingIndicatorManager(
@@ -274,18 +229,16 @@ class TypingIndicatorManager(
     fun onTextChanged(conversationId: String, text: String) {
         if (text.isEmpty()) {
             typingJob?.cancel()
-            chatSocket.sendTypingEvent(conversationId, isTyping = false)
+            chatSocket.sendTypingEvent(conversationId, false)
             return
         }
-
         if (typingJob?.isActive != true) {
-            chatSocket.sendTypingEvent(conversationId, isTyping = true)
+            chatSocket.sendTypingEvent(conversationId, true)
         }
-
         typingJob?.cancel()
         typingJob = scope.launch {
             delay(3000)
-            chatSocket.sendTypingEvent(conversationId, isTyping = false)
+            chatSocket.sendTypingEvent(conversationId, false)
         }
     }
 }
@@ -293,7 +246,7 @@ class TypingIndicatorManager(
 
 Typing indicators are low-priority — don't persist them to the database or queue them for offline delivery. They're fire-and-forget over the WebSocket.
 
-#### Q12: How do you handle media messages (images, videos, files)?
+#### Q13: How do you handle media messages like images and videos?
 
 Media messages have a different flow than text messages because the file needs to be uploaded separately from the message metadata.
 
@@ -310,8 +263,8 @@ class MediaMessageSender(
     private val chatSocket: ChatConnectionManager
 ) {
     suspend fun sendImage(conversationId: String, imageUri: Uri) {
-        val compressed = compressImage(imageUri, maxWidth = 1920, quality = 80)
-        val thumbnail = createThumbnail(compressed, size = 200)
+        val compressed = compressImage(imageUri, 1920, 80)
+        val thumbnail = createThumbnail(compressed, 200)
 
         val message = MessageEntity(
             clientMessageId = UUID.randomUUID().toString(),
@@ -323,22 +276,21 @@ class MediaMessageSender(
         messageDao.insert(message)
 
         val mediaUrl = fileUploader.upload(compressed)
-        val thumbnailUrl = fileUploader.upload(thumbnail)
-
-        messageDao.updateMediaUrl(message.clientMessageId, mediaUrl, thumbnailUrl)
-        chatSocket.sendMediaMessage(message.clientMessageId, mediaUrl, thumbnailUrl)
+        val thumbUrl = fileUploader.upload(thumbnail)
+        messageDao.updateMediaUrl(message.clientMessageId, mediaUrl, thumbUrl)
+        chatSocket.sendMediaMessage(message.clientMessageId, mediaUrl, thumbUrl)
     }
 }
 ```
 
 For large files like videos, use chunked upload with resume support so the upload survives network interruptions. Use WorkManager for background uploads to survive process death.
 
-#### Q13: How do you handle message retry and delivery guarantees?
+#### Q14: How do you handle retry logic and delivery guarantees?
 
 Chat apps need at-least-once delivery — every message must eventually reach the server. The retry mechanism handles transient failures.
 
 - When a message fails to send, mark it as `FAILED` and schedule a retry
-- Use exponential backoff: 1s → 2s → 4s → 8s → 16s, capped at 60 seconds
+- Use exponential backoff: 1s, 2s, 4s, 8s, 16s — capped at 60 seconds
 - After a configurable number of retries (e.g., 10), stop retrying and show a "failed to send" indicator with a manual retry button
 - On network reconnection, retry all `PENDING` and `FAILED` messages in order
 
@@ -349,25 +301,25 @@ class MessageRetryManager(
 ) {
     suspend fun retryPendingMessages() {
         val pending = messageDao.getPendingMessages()
-
         for (message in pending) {
             var retryCount = 0
             var success = false
-
             while (!success && retryCount < 10) {
                 try {
                     chatSocket.sendMessage(message)
-                    messageDao.updateStatus(message.clientMessageId, MessageStatus.SENT)
+                    messageDao.updateStatus(
+                        message.clientMessageId, MessageStatus.SENT
+                    )
                     success = true
                 } catch (e: IOException) {
                     retryCount++
-                    val delay = minOf(1000L * (1 shl retryCount), 60_000L)
-                    delay(delay)
+                    delay(minOf(1000L * (1 shl retryCount), 60_000L))
                 }
             }
-
             if (!success) {
-                messageDao.updateStatus(message.clientMessageId, MessageStatus.FAILED)
+                messageDao.updateStatus(
+                    message.clientMessageId, MessageStatus.FAILED
+                )
             }
         }
     }
@@ -376,7 +328,7 @@ class MessageRetryManager(
 
 Deduplication on the server side is critical. The server uses `clientMessageId` to detect duplicates — if it receives the same `clientMessageId` twice, it ignores the second one and returns the original response.
 
-#### Q14: How do you structure the local database for a chat app?
+#### Q15: How do you structure the local Room database schema?
 
 The database needs three main entities: conversations, messages, and users. Design the schema around your query patterns.
 
@@ -384,12 +336,12 @@ The database needs three main entities: conversations, messages, and users. Desi
 @Entity(tableName = "conversations")
 data class ConversationEntity(
     @PrimaryKey val id: String,
-    val title: String?,                   // null for 1:1 chats
+    val title: String?,
     val lastMessageContent: String?,
     val lastMessageTimestamp: Long,
     val unreadCount: Int,
     val isGroup: Boolean,
-    val participantIds: String            // comma-separated or JSON
+    val participantIds: String
 )
 
 @Dao
@@ -400,34 +352,72 @@ interface ConversationDao {
     """)
     fun observeConversations(): Flow<List<ConversationEntity>>
 
-    @Query("UPDATE conversations SET unreadCount = 0 WHERE id = :conversationId")
+    @Query("""
+        UPDATE conversations SET unreadCount = 0 
+        WHERE id = :conversationId
+    """)
     suspend fun clearUnreadCount(conversationId: String)
 }
 ```
 
-Denormalize the `lastMessageContent` and `lastMessageTimestamp` into the conversation entity. This avoids a JOIN query every time the conversation list loads. Update these fields whenever a new message arrives in that conversation.
+Denormalize the `lastMessageContent` and `lastMessageTimestamp` into the conversation entity. This avoids a JOIN query every time the conversation list loads. Update these fields whenever a new message arrives in that conversation. Index the `messages` table on `(conversationId, timestamp)` since the most common query is fetching messages for a conversation in chronological order.
 
-Index the `messages` table on `(conversationId, timestamp)` since the most common query is fetching messages for a conversation in chronological order. For search, you'd add a full-text search (FTS) virtual table over the `content` column.
+#### Q16: How do you manage the WebSocket connection lifecycle?
 
-#### Q15: How does end-to-end encryption work at a high level in a chat app?
+The WebSocket connection should be active when the app is in the foreground. Managing it involves connecting when the app comes to the foreground, disconnecting when it goes to the background, reconnecting on failure with exponential backoff, and sending periodic heartbeats to detect stale connections.
+
+```kotlin
+class ChatConnectionManager(
+    private val okHttpClient: OkHttpClient
+) {
+    private var webSocket: WebSocket? = null
+    private var retryCount = 0
+
+    fun connect() {
+        val request = Request.Builder()
+            .url("wss://chat.example.com/ws")
+            .build()
+
+        webSocket = okHttpClient.newWebSocket(
+            request,
+            object : WebSocketListener() {
+                override fun onMessage(ws: WebSocket, text: String) {
+                    retryCount = 0
+                    handleIncomingMessage(text)
+                }
+                override fun onFailure(
+                    ws: WebSocket, t: Throwable, response: Response?
+                ) {
+                    scheduleReconnect()
+                }
+            }
+        )
+    }
+
+    private fun scheduleReconnect() {
+        val delay = minOf(1000L * (1 shl retryCount), 30_000L)
+        retryCount++
+        // Schedule reconnect after delay
+    }
+}
+```
+
+Don't keep the WebSocket open when the app is in the background — it holds a wake lock and drains battery. Use FCM push notifications to wake the app for new messages when it's backgrounded.
+
+#### Q17: How does end-to-end encryption work at a high level?
 
 End-to-end encryption means the server can't read message content. Only the sender and recipient have the decryption keys.
 
-The basic flow:
-- Each user generates a public/private key pair. The public key is uploaded to the server. The private key stays on the device (stored in Android KeyStore)
+- Each user generates a public/private key pair. The public key is uploaded to the server. The private key stays on the device, stored in Android KeyStore
 - When User A sends a message to User B, the client encrypts the message using User B's public key
 - The server receives and stores the encrypted blob. It can route the message but can't read it
 - User B's client decrypts the message using their private key
 
-In practice, apps like Signal use the Signal Protocol which adds forward secrecy through ratcheting key exchanges — each message uses a different encryption key derived from a chain. If one key is compromised, previous and future messages remain secure.
+In practice, apps like Signal use the Signal Protocol which adds forward secrecy through ratcheting key exchanges — each message uses a different encryption key derived from a chain. If one key is compromised, previous and future messages remain secure. For a mobile interview, explaining the public/private key concept and mentioning the Signal Protocol is sufficient depth. Focus on how it affects the client architecture: the encryption/decryption layer sits between the message sending logic and the network layer, and key management uses Android KeyStore.
 
-For a mobile interview, explaining the public/private key concept and mentioning the Signal Protocol shows sufficient depth. You don't need to implement the cryptographic details — focus on how it affects the client architecture: the encryption/decryption layer sits between the message sending logic and the network layer, and key management uses Android KeyStore for secure storage.
+#### Q18: How do you make the chat list screen performant?
 
-#### Q16: How do you handle the chat list screen efficiently?
-
-The chat list shows all conversations sorted by the most recent message. This screen needs to update in real-time as new messages arrive.
-
-The ViewModel observes a Room Flow that returns conversations ordered by `lastMessageTimestamp DESC`. When a new message arrives (via WebSocket), the repository updates the conversation's `lastMessageContent`, `lastMessageTimestamp`, and `unreadCount`. Room's Flow automatically triggers a UI update.
+The chat list shows all conversations sorted by the most recent message. The ViewModel observes a Room Flow that returns conversations ordered by `lastMessageTimestamp DESC`. When a new message arrives via WebSocket, the repository updates the conversation's `lastMessageContent`, `lastMessageTimestamp`, and `unreadCount`. Room's Flow automatically triggers a UI update.
 
 For performance with hundreds of conversations:
 - Use `DiffUtil` with RecyclerView (or `key` in LazyColumn) to only update the items that changed
@@ -436,16 +426,14 @@ For performance with hundreds of conversations:
 
 The unread count badge should be reactive — decrement it when the user opens a conversation and reads messages. This is a local database update, not a network call.
 
-#### Q17: How would you implement message search?
+#### Q19: How would you implement message search?
 
 Full-text search across all messages requires a different approach than standard SQL queries. Room supports FTS (Full-Text Search) through virtual tables.
 
 ```kotlin
 @Fts4(contentEntity = MessageEntity::class)
 @Entity(tableName = "messages_fts")
-data class MessageFts(
-    val content: String
-)
+data class MessageFts(val content: String)
 
 @Dao
 interface SearchDao {
@@ -460,19 +448,39 @@ interface SearchDao {
 }
 ```
 
-FTS tables create an inverted index over the content column, making text search fast even with millions of messages. The tradeoff is increased database size — the FTS index can be 50-100% of the original data size. For most chat apps, this is acceptable because message text is relatively small.
+FTS tables create an inverted index over the content column, making text search fast even with millions of messages. The tradeoff is increased database size — the FTS index can be 50-100% of the original data size. For most chat apps, this is acceptable because message text is relatively small. Show search results grouped by conversation so the user can jump to the relevant context.
 
-Show search results grouped by conversation so the user can jump to the relevant conversation and see the message in context.
+#### Q20: How do you implement read receipts?
 
-#### Q18: How do you handle group messaging differently from 1:1 chats?
+Track three states per message: **sent**, **delivered**, and **read**.
+
+- **Sent** — the server received the message. The client gets an ACK over WebSocket
+- **Delivered** — the recipient's device received the message. The recipient's client sends a delivery confirmation to the server
+- **Read** — the recipient viewed the message. When the conversation screen is visible and the user scrolls past a message, send a read receipt
+
+```kotlin
+class ReadReceiptManager(
+    private val chatSocket: ChatConnectionManager,
+    private val messageDao: MessageDao
+) {
+    fun markAsRead(conversationId: String, lastReadMessageId: String) {
+        chatSocket.sendReadReceipt(conversationId, lastReadMessageId)
+        messageDao.markMessagesAsRead(conversationId, lastReadMessageId)
+    }
+}
+```
+
+Batch read receipts — don't send one for every message. When the user scrolls through 20 unread messages, send a single receipt with the ID of the last message they saw. The server marks all messages up to that ID as read.
+
+#### Q21: How does group messaging differ from 1:1 chats?
 
 Group messaging adds complexity in several areas:
 
-- **Delivery receipts** — In 1:1, a message is delivered when the other person receives it. In a group, delivery and read status are per-participant. Show "delivered to all" or "read by 5 of 8" instead of individual indicators
-- **Typing indicators** — Multiple people can type simultaneously. Show "Alice and Bob are typing..." or "3 people are typing..."
-- **Message fan-out** — The server handles distributing the message to all group members. The client sends the message once
-- **Member management** — Adding/removing members, admin roles, group name and photo changes are all events that show in the chat timeline as system messages
-- **Sync complexity** — When a user is added to an existing group, decide how much history they can see (all, last 30 days, none)
+- **Delivery receipts** — in 1:1, a message is delivered when the other person receives it. In a group, delivery and read status are per-participant. Show "delivered to all" or "read by 5 of 8" instead of individual indicators
+- **Typing indicators** — multiple people can type simultaneously. Show "Alice and Bob are typing..." or "3 people are typing..."
+- **Message fan-out** — the server handles distributing the message to all group members. The client sends the message once
+- **Member management** — adding/removing members, admin roles, group name and photo changes are all events that show in the chat timeline as system messages
+- **Sync complexity** — when a user is added to an existing group, decide how much history they can see (all, last 30 days, none)
 
 The data model stays mostly the same — the `conversationId` just maps to a group instead of a pair of users. The `ConversationEntity` has an `isGroup` flag and stores participant IDs.
 

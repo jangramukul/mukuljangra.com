@@ -10,340 +10,260 @@ description: "Designing a location sharing or maps app tests your understanding 
 
 ## Design a Location Sharing / Maps App
 
-Location sharing and maps apps come up in system design interviews because they involve real-time data, battery management, map rendering, and privacy — all areas where Android has unique constraints. Interviewers want to see how you balance accuracy with battery life and handle real-time updates efficiently.
+Location sharing apps combine real-time communication, battery-constrained location tracking, map rendering, and privacy into one problem. This walkthrough designs the app step by step, from requirements to deep dives.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: What are the core components of a location sharing app?
+#### Q1: What are the core functional requirements for a location sharing app?
 
-A location sharing app needs: a location provider to get the device's GPS coordinates, a real-time communication layer (WebSocket or SSE) to share location with others, a map view to render locations, local storage for offline support, and a permission system for foreground and background location access.
+Start by listing what the user can do:
 
-The data flow is: **Get location → Send to server → Server broadcasts to connected users → Recipients render on map**. Each step has design decisions around accuracy, frequency, battery, and privacy.
+- Share live location with friends for a set duration
+- View friends' locations on a map in real-time
+- Search for places and get directions
+- Set up geofences to get notified when a friend arrives at or leaves a location
 
-#### Q2: How does FusedLocationProvider work and why use it?
+Keep the scope tight. A 45-minute interview can't cover everything. Tell the interviewer you'll focus on real-time location sharing and map rendering, and treat navigation and geofencing as extensions.
 
-`FusedLocationProviderClient` is Google's recommended way to get location on Android. It combines GPS, Wi-Fi, cellular, and sensor data to provide the best location with minimal battery impact. It's "fused" because it intelligently switches between sources — using GPS outdoors for accuracy and Wi-Fi/cell indoors where GPS is weak.
+#### Q2: What are the non-functional requirements?
 
-```kotlin
-class LocationTracker(context: Context) {
-    private val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+Three things matter most:
 
-    fun startTracking(intervalMs: Long = 5000L) {
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
-            .setMinUpdateDistanceMeters(10f)
-            .setWaitForAccurateLocation(true)
-            .build()
+- **Battery efficiency** — Location tracking can drain a full battery in 4-6 hours if you use GPS every second. The app must adapt accuracy and frequency based on context
+- **Accuracy** — Navigation needs precise GPS. Showing a friend's general area needs much less. Over-requesting accuracy wastes battery for no user benefit
+- **Privacy** — Location is sensitive data. Users need full control over who sees their location, for how long, and at what precision. The system must enforce expiry server-side, not just client-side
 
-        fusedClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
-    }
+Other considerations are offline support (cached map tiles, last-known locations), low-latency updates (sub-second for navigation, a few seconds for sharing), and handling Android's background restrictions.
 
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            val location = result.lastLocation ?: return
-            onNewLocation(location.latitude, location.longitude, location.accuracy)
-        }
-    }
-}
-```
+#### Q3: How would you scope the design for a 45-minute interview?
 
-The `Priority` parameter controls the tradeoff between accuracy and battery. `PRIORITY_HIGH_ACCURACY` uses GPS and drains battery faster. `PRIORITY_BALANCED_POWER_ACCURACY` uses Wi-Fi and cell (accurate to about 100m). `PRIORITY_LOW_POWER` uses cell only (accurate to about 1-10 km). Choose based on your use case — a navigation app needs high accuracy, a weather app needs low power.
+Focus on the client-side architecture. Tell the interviewer you'll cover:
 
-#### Q3: How would you send location updates in real-time?
+- How the client gets and sends location updates efficiently
+- Real-time sharing using WebSocket or push
+- Map rendering with markers and clustering
+- Battery strategy across different modes (foreground, background, navigation)
 
-Use WebSockets for bidirectional real-time communication. The client opens a persistent connection to the server and sends location updates. The server broadcasts these updates to all users who are subscribed to that person's location.
+Explicitly defer backend scaling, multi-platform sync, and social features like groups. If the interviewer wants to go deeper on any area, they'll tell you.
+
+### High-Level Design
+
+#### Q4: What does the client architecture look like?
+
+Use a standard layered architecture with location-specific components:
+
+- **UI layer** — Map view (Google Maps SDK or Mapbox), friend markers, search bar, sharing controls. Observes state from ViewModels
+- **Domain layer** — Use cases for starting/stopping sharing sessions, managing friends list, computing ETAs
+- **Data layer** — LocationRepository wraps FusedLocationProvider. SharingRepository manages WebSocket connections. PlacesRepository handles search and caching
+- **Location service** — A foreground service that keeps location tracking alive when the app is in the background
+
+The data flows in one direction. The location provider pushes updates to the repository, the repository sends them to the server via WebSocket, and incoming friend updates flow through the repository to the ViewModel to the map.
+
+#### Q5: How does real-time location sharing work?
+
+Use WebSockets for bidirectional real-time communication. The client opens a persistent connection and sends its own location updates. The server broadcasts those updates to everyone subscribed to that user's location.
 
 ```kotlin
 class LocationSharingClient(private val webSocket: WebSocket) {
 
     fun sendLocation(lat: Double, lng: Double, accuracy: Float) {
-        val payload = """{"lat":$lat,"lng":$lng,"accuracy":$accuracy,"ts":${System.currentTimeMillis()}}"""
+        val payload = """{"lat":$lat,"lng":$lng,"acc":$accuracy,"ts":${System.currentTimeMillis()}}"""
         webSocket.send(payload)
     }
 
-    fun subscribeToUser(userId: String) {
-        webSocket.send("""{"action":"subscribe","userId":"$userId"}""")
+    fun subscribeToFriend(friendId: String) {
+        webSocket.send("""{"action":"subscribe","userId":"$friendId"}""")
     }
 }
 ```
 
-WebSocket is preferred over polling because it sends data only when there's a change, and the connection stays open so there's no repeated handshake overhead. For apps where updates are less frequent (every 30 seconds+), Server-Sent Events (SSE) work too — they're simpler (HTTP-based, one-directional) but only support server-to-client messages.
+WebSocket is better than polling because it only sends data when there's a change, and the connection stays open so there's no repeated handshake. For background updates when the WebSocket drops, fall back to FCM push messages. FCM is less real-time (slight delay) but works reliably even when the app is killed.
 
-#### Q4: What location permissions does Android require?
+#### Q6: What APIs does the client need?
 
-Android has three levels of location permission:
+Three main API groups:
 
-- **ACCESS_COARSE_LOCATION** — Approximate location (Wi-Fi/cell, ~100m accuracy). Good enough for weather, local news
-- **ACCESS_FINE_LOCATION** — Precise GPS location. Required for navigation, ride-sharing, location sharing
-- **ACCESS_BACKGROUND_LOCATION** — Allows location access when the app is not visible. Requires separate permission request on Android 10+
+- **Location updates** — `POST /location` to send the user's current position. `GET /location/{userId}` for on-demand fetch. Real-time updates go through WebSocket, not REST
+- **Friends and sharing** — `POST /sharing/start` with a friend list and duration to begin a session. `DELETE /sharing/{sessionId}` to stop. `GET /friends` to list friends and their sharing status
+- **Places** — `GET /places/search?q=coffee&lat=X&lng=Y` for nearby search. `GET /directions?origin=X,Y&destination=A,B` for routing
+
+Keep the location update payload minimal — latitude, longitude, accuracy, and timestamp. These updates happen frequently, so every extra byte adds up. Use Protocol Buffers instead of JSON if update frequency is very high.
+
+#### Q7: What are the key data models?
 
 ```kotlin
-// Request foreground location
-val permissions = arrayOf(
-    Manifest.permission.ACCESS_FINE_LOCATION,
-    Manifest.permission.ACCESS_COARSE_LOCATION
+data class Location(
+    val userId: String,
+    val latitude: Double,
+    val longitude: Double,
+    val accuracy: Float,
+    val timestamp: Long,
+    val source: LocationSource // GPS, NETWORK, FUSED
 )
-requestPermissionLauncher.launch(permissions)
 
-// Background location must be requested separately AFTER foreground is granted
-// Android 11+ requires directing user to Settings for background location
-if (shouldRequestBackground) {
-    requestPermissionLauncher.launch(
-        arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-    )
+data class SharedSession(
+    val id: String,
+    val ownerId: String,
+    val sharedWith: List<String>,
+    val startTime: Long,
+    val durationMs: Long,
+    val isActive: Boolean
+) {
+    val expiresAt: Long get() = startTime + durationMs
 }
+
+data class Place(
+    val id: String,
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val category: String
+)
 ```
 
-On Android 12+, the user can grant "approximate" instead of "precise" location even when you request fine location. Your app must handle both cases. Background location requires justification during Play Store review — Google rejects apps that request it without a clear user-facing reason.
+`SharedSession` is the central model for the sharing feature. It tracks who is sharing with whom and when it expires. The server must enforce expiry independently — if the client crashes, the session still stops.
 
-#### Q5: How would you render user locations on a map?
+#### Q8: How do you integrate a map SDK?
 
-Use Google Maps SDK or Mapbox to render a map view. Add markers for each user's location and update them as new location data arrives. For smooth UX, animate marker movement instead of jumping.
+Use Google Maps SDK or Mapbox. Add markers for each friend's location and animate them as updates arrive. Without animation, markers teleport every few seconds and it looks broken.
 
 ```kotlin
-class MapLocationRenderer(private val googleMap: GoogleMap) {
+class FriendMapRenderer(private val map: GoogleMap) {
     private val markers = mutableMapOf<String, Marker>()
 
-    fun updateUserLocation(userId: String, lat: Double, lng: Double) {
-        val position = LatLng(lat, lng)
-        val marker = markers[userId]
-
-        if (marker != null) {
-            animateMarker(marker, position)
+    fun updateFriend(userId: String, lat: Double, lng: Double) {
+        val target = LatLng(lat, lng)
+        val existing = markers[userId]
+        if (existing != null) {
+            ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 800
+                val start = existing.position
+                addUpdateListener { anim ->
+                    val f = anim.animatedFraction
+                    existing.position = LatLng(
+                        start.latitude + (target.latitude - start.latitude) * f,
+                        start.longitude + (target.longitude - start.longitude) * f
+                    )
+                }
+            }.start()
         } else {
-            markers[userId] = googleMap.addMarker(
-                MarkerOptions()
-                    .position(position)
-                    .title(userId)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_user_pin))
+            markers[userId] = map.addMarker(
+                MarkerOptions().position(target).title(userId)
             )!!
         }
     }
-
-    private fun animateMarker(marker: Marker, target: LatLng) {
-        val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 1000
-            val start = marker.position
-            addUpdateListener {
-                val fraction = it.animatedFraction
-                val lat = start.latitude + (target.latitude - start.latitude) * fraction
-                val lng = start.longitude + (target.longitude - start.longitude) * fraction
-                marker.position = LatLng(lat, lng)
-            }
-        }
-        animator.start()
-    }
 }
 ```
 
-Animating markers between old and new positions gives a smooth tracking feel. Without animation, markers teleport every few seconds which looks jarring. For the current user's location, use the built-in blue dot (`googleMap.isMyLocationEnabled = true`) instead of a custom marker.
+For the current user's location, use the built-in blue dot (`map.isMyLocationEnabled = true`) instead of a custom marker. It handles bearing, accuracy circle, and smooth movement out of the box.
 
-#### Q6: What is marker clustering and when do you need it?
+#### Q9: How does the location provider strategy work?
 
-When you have hundreds or thousands of markers close together (like showing all users in a city), rendering each one individually destroys performance and makes the map unreadable. Marker clustering groups nearby markers into a single cluster marker that shows the count.
-
-The Google Maps Utils library provides `ClusterManager` that handles this. As the user zooms in, clusters break apart into individual markers. As they zoom out, markers merge into clusters. The clustering algorithm (typically grid-based or distance-based) runs on every camera change.
-
-The key decision is the cluster distance threshold — how close markers need to be to cluster together. Too aggressive and you lose detail, too conservative and the map is still cluttered. A common approach is using a grid of fixed pixel size (e.g., 100x100 dp) and grouping all markers within the same grid cell.
-
-#### Q7: How would you draw routes between locations?
-
-Use the Directions API to get the route between two points, then draw it as a polyline on the map. The API returns a list of coordinates (encoded polyline) that follows the road network.
+`FusedLocationProviderClient` combines GPS, Wi-Fi, cellular, and sensors to give the best location with the least battery cost. It switches sources automatically — GPS outdoors, Wi-Fi/cell indoors. You control the tradeoff through the `Priority` parameter.
 
 ```kotlin
-class RouteRenderer(private val googleMap: GoogleMap) {
-    private var routePolyline: Polyline? = null
+class LocationProvider(context: Context) {
+    private val client = LocationServices.getFusedLocationProviderClient(context)
 
-    fun drawRoute(points: List<LatLng>) {
-        routePolyline?.remove()
-        routePolyline = googleMap.addPolyline(
-            PolylineOptions()
-                .addAll(points)
-                .width(12f)
-                .color(Color.BLUE)
-                .geodesic(true)
-                .jointType(JointType.ROUND)
-                .startCap(RoundCap())
-                .endCap(RoundCap())
-        )
-    }
-
-    fun decodePolyline(encoded: String): List<LatLng> {
-        val points = mutableListOf<LatLng>()
-        var index = 0
-        var lat = 0; var lng = 0
-        while (index < encoded.length) {
-            // Google's polyline encoding algorithm
-            var result = 0; var shift = 0; var b: Int
-            do { b = encoded[index++].code - 63; result = result or ((b and 0x1F) shl shift); shift += 5 } while (b >= 0x20)
-            lat += if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            result = 0; shift = 0
-            do { b = encoded[index++].code - 63; result = result or ((b and 0x1F) shl shift); shift += 5 } while (b >= 0x20)
-            lng += if (result and 1 != 0) (result shr 1).inv() else result shr 1
-            points.add(LatLng(lat / 1E5, lng / 1E5))
-        }
-        return points
-    }
-}
-```
-
-For live navigation, update the polyline as the user moves — remove the portion of the route they've already traveled. Use `geodesic(true)` for long-distance routes so the line follows the earth's curvature.
-
-#### Q8: What is geofencing and how would you implement it?
-
-Geofencing lets you define virtual boundaries around geographic areas and trigger actions when the user enters or exits them. Android's GeofencingClient handles this with minimal battery impact because it uses low-power location sources.
-
-```kotlin
-class GeofenceManager(private val context: Context) {
-    private val geofencingClient = LocationServices.getGeofencingClient(context)
-
-    fun addGeofence(id: String, lat: Double, lng: Double, radiusMeters: Float) {
-        val geofence = Geofence.Builder()
-            .setRequestId(id)
-            .setCircularRegion(lat, lng, radiusMeters)
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
-            .setExpirationDuration(Geofence.NEVER_EXPIRE)
+    fun startUpdates(priority: Int, intervalMs: Long) {
+        val request = LocationRequest.Builder(priority, intervalMs)
+            .setMinUpdateDistanceMeters(10f)
             .build()
+        client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+    }
 
-        val request = GeofencingRequest.Builder()
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-            .addGeofence(geofence)
-            .build()
-
-        geofencingClient.addGeofences(request, geofencePendingIntent)
+    private val callback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            result.lastLocation?.let { onLocationUpdate(it) }
+        }
     }
 }
 ```
 
-The system limits you to 100 active geofences per app. For apps that need more (like a nearby-places app with thousands of locations), register geofences only for the nearest locations and update them as the user moves. Geofence accuracy is about 100-200 meters — don't rely on it for precise triggers like entering a room.
+`PRIORITY_HIGH_ACCURACY` uses GPS — accurate to 1-3 meters but drains battery fast. `PRIORITY_BALANCED_POWER_ACCURACY` uses Wi-Fi and cell — accurate to about 100 meters with much less drain. `PRIORITY_LOW_POWER` uses cell only — 1-10 km accuracy but almost no battery impact. The app should switch between these based on what the user is doing.
 
-### Deep Dive Questions (Advanced → Expert)
+### Low-Level Design & Deep Dives
 
-#### Q9: How would you design battery-efficient location strategies?
+#### Q10: How do you track location without killing the battery?
 
-Battery is the biggest constraint in location apps. A GPS fix every second drains a full battery in 4-6 hours. The strategy is to use the least accurate source that meets your needs and reduce update frequency when possible.
-
-- **Active navigation** — High accuracy, 1-2 second interval. User expects battery drain
-- **Location sharing (active)** — Balanced power, 5-10 second interval. Good enough for showing movement on a map
-- **Location sharing (background)** — Low power, 30-60 second interval. Save battery when the user isn't looking at the app
-- **Geofencing** — Passive. The system handles location monitoring with minimal drain
+This is the most important design decision in a location app. The strategy is simple: use the lowest accuracy that works for each situation, and update as infrequently as possible.
 
 ```kotlin
-fun getLocationRequest(mode: TrackingMode): LocationRequest {
+fun buildLocationRequest(mode: TrackingMode): LocationRequest {
     return when (mode) {
         TrackingMode.NAVIGATION -> LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY, 1000
         ).setMinUpdateDistanceMeters(5f).build()
 
-        TrackingMode.SHARING_ACTIVE -> LocationRequest.Builder(
+        TrackingMode.ACTIVE_SHARING -> LocationRequest.Builder(
             Priority.PRIORITY_BALANCED_POWER_ACCURACY, 5000
         ).setMinUpdateDistanceMeters(10f).build()
 
-        TrackingMode.SHARING_BACKGROUND -> LocationRequest.Builder(
+        TrackingMode.BACKGROUND_SHARING -> LocationRequest.Builder(
             Priority.PRIORITY_LOW_POWER, 30000
-        ).setMinUpdateDistanceMeters(50f).build()
+        ).setMinUpdateDistanceMeters(50f)
+        .setMaxUpdateDelayMillis(120000).build()
     }
 }
 ```
 
-Use `setMinUpdateDistanceMeters()` to skip updates when the user hasn't moved. If the user is stationary for 5 minutes, switch to passive mode and only wake up on significant location changes. Batch location updates with `setMaxUpdateDelayMillis()` to let the system batch multiple updates and wake the CPU less frequently.
+Three techniques make a big difference. First, `setMinUpdateDistanceMeters()` skips updates when the user hasn't moved — no point sending the same coordinates repeatedly. Second, `setMaxUpdateDelayMillis()` lets the system batch multiple updates and wake the CPU once instead of many times. Third, use activity recognition to detect when the user is stationary and switch to passive mode automatically. If they haven't moved in 5 minutes, there's no reason to keep the GPS active.
 
-#### Q10: How would you implement location sharing with expiry?
+#### Q11: How do you implement geofencing?
 
-Allow users to share their location for a limited time (30 minutes, 1 hour, 8 hours). After the expiry, stop sending location updates and remove the shared session.
+Android's `GeofencingClient` monitors virtual boundaries with minimal battery impact. It uses low-power location sources internally, so you don't pay the GPS cost.
 
 ```kotlin
-data class SharingSession(
-    val id: String,
-    val userId: String,
-    val sharedWith: List<String>,
-    val startTime: Long,
-    val durationMs: Long
-) {
-    val expiresAt: Long get() = startTime + durationMs
-    val isExpired: Boolean get() = System.currentTimeMillis() > expiresAt
-}
+class GeofenceManager(context: Context) {
+    private val client = LocationServices.getGeofencingClient(context)
 
-class LocationSharingManager {
-    private val activeSessions = ConcurrentHashMap<String, SharingSession>()
+    fun addFence(id: String, lat: Double, lng: Double, radius: Float) {
+        val fence = Geofence.Builder()
+            .setRequestId(id)
+            .setCircularRegion(lat, lng, radius)
+            .setTransitionTypes(
+                Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT
+            )
+            .setExpirationDuration(Geofence.NEVER_EXPIRE)
+            .build()
 
-    fun startSharing(sharedWith: List<String>, durationMs: Long): String {
-        val session = SharingSession(
-            id = UUID.randomUUID().toString(),
-            userId = currentUserId,
-            sharedWith = sharedWith,
-            startTime = System.currentTimeMillis(),
-            durationMs = durationMs
-        )
-        activeSessions[session.id] = session
-        scheduleExpiry(session)
-        return session.id
-    }
+        val request = GeofencingRequest.Builder()
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .addGeofence(fence)
+            .build()
 
-    private fun scheduleExpiry(session: SharingSession) {
-        scope.launch {
-            delay(session.durationMs)
-            stopSharing(session.id)
-        }
+        client.addGeofences(request, pendingIntent)
     }
 }
 ```
 
-Persist the session on the server so it expires even if the app is killed. The server should stop broadcasting a user's location after expiry regardless of whether the client sends a stop signal. For the UI, show a countdown timer so the sharer knows when sharing ends.
+The system caps you at 100 active geofences per app. If you need to monitor more locations (say a nearby-places feature with thousands of POIs), register only the closest ones and re-register as the user moves. Geofence accuracy is about 100-200 meters, so don't rely on it for precise triggers like entering a specific room.
 
-#### Q11: How would you handle group location tracking?
+#### Q12: How do you handle map rendering performance?
 
-Group tracking (like "Find My Friends") means multiple users sharing locations with each other simultaneously. Each user subscribes to a group channel and both sends and receives location updates.
+Maps load tiles on-demand as the user pans and zooms. Only the visible tiles are fetched — typically 12-20 tiles on screen at once. The key to smooth scrolling is a three-level cache: memory LRU for decoded bitmaps, disk cache for raw tile data, and network as the fallback. Pre-fetch tiles just outside the visible area so they're ready when the user scrolls.
 
-Use a pub/sub model. Each group has a channel on the server. When a user joins a group, they subscribe to that channel and start publishing their location. The server broadcasts each update to all other group members.
+When showing many friends or points of interest on the map, use marker clustering. Without it, hundreds of overlapping markers destroy rendering performance and make the map unreadable. Google Maps Utils provides `ClusterManager` — it groups nearby markers into a single cluster icon that shows the count. As the user zooms in, clusters break apart into individual markers.
 
-On the client side, maintain a map of `userId → Location` and update markers as updates arrive. Handle stale data — if a user's location hasn't updated in 5 minutes, show their marker as gray or faded to indicate it might be outdated. When a user goes offline, notify the group so others know the location is no longer live.
+Modern map SDKs use vector tiles instead of raster images. Vector tiles are 5-10x smaller than raster tiles, support smooth rotation and tilting, and allow dynamic styling (like dark mode). The tradeoff is higher GPU usage on the client for rendering.
 
-The main scaling concern is fan-out. A group of 10 users where each sends updates every 5 seconds means 10 incoming messages and 9 outgoing broadcasts per update — 90 messages every 5 seconds per group. For large groups, increase the update interval or send updates only when the user has moved significantly.
+#### Q13: How do you support offline maps?
 
-#### Q12: How would you handle offline maps?
+Offline maps mean pre-downloading tiles for a specific area. The user selects a region, the app calculates which tiles cover it at each zoom level, downloads them, and stores them locally in SQLite. When offline, the map SDK checks the local store before hitting the network.
 
-Offline maps require pre-downloading map tiles for a specific area. Map tiles are 256x256 pixel images organized by zoom level, column, and row. A city-sized area at zoom levels 10-16 can be 50-200 MB of tiles.
+A city-sized area at zoom levels 10-16 is roughly 50-200 MB depending on detail. The main tradeoff is storage. High zoom levels produce exponentially more tiles. Limit the maximum offline zoom level and let the user choose which areas to download. Mapbox has a built-in offline API for defining downloadable regions. Google Maps SDK supports it through `TileOverlay` and `TileProvider`.
 
-The download flow:
-- User selects a region on the map (bounding box)
-- Calculate which tiles cover that region at each zoom level
-- Download all tiles and store them in a local database (SQLite is common for tile storage)
-- When rendering offline, the map SDK checks the local tile store before fetching from the network
+Cache last-known friend locations locally too. When the user opens the app offline, they see where friends were last reported instead of an empty map.
 
-Google Maps SDK supports offline areas through the `TileOverlay` and `TileProvider` APIs, or through the built-in offline download feature. Mapbox has a more flexible offline API that lets you define regions and style packs. The tradeoff is storage — high zoom levels produce many tiles. Limit the maximum zoom level for offline areas to keep download sizes reasonable.
+#### Q14: How does background location work on modern Android?
 
-#### Q13: How do you handle map tile rendering efficiently?
-
-Maps render tiles on-demand as the user pans and zooms. Only the visible tiles are loaded — typically 12-20 tiles visible at once on a phone screen. As the user scrolls, new tiles are fetched and old tiles are evicted from memory.
-
-Use a three-level cache: **memory (LRU)** → **disk** → **network**. Memory cache stores decoded bitmaps for instant rendering. Disk cache stores raw tile data to avoid re-downloading. Pre-fetch tiles at the edges of the visible area so they're ready when the user scrolls.
-
-For vector maps (used by Google Maps and Mapbox), the server sends vector data instead of raster images. The client renders the vectors on-device using OpenGL. This uses less bandwidth (vector tiles are 5-10x smaller than raster tiles), supports smooth rotation and tilting, and allows dynamic styling. The tradeoff is higher CPU/GPU usage on the client.
-
-#### Q14: What privacy considerations matter for a location sharing app?
-
-Location is among the most sensitive data types. Privacy concerns include:
-
-- **Minimum accuracy** — Don't share precise GPS coordinates when approximate location is sufficient. For a "share my city" feature, round to the nearest neighborhood
-- **Data retention** — Don't store location history forever. Delete location data after it's no longer needed for the sharing session. Define a retention period (e.g., 24 hours after session ends)
-- **Sharing visibility** — Users must see exactly who can see their location and have a one-tap way to stop sharing
-- **Background tracking transparency** — If tracking in the background, show an ongoing notification. Android requires this for foreground services anyway
-- **Server-side encryption** — Encrypt location data in transit (TLS) and at rest. Location history is a high-value target for attackers
-
-On Android, the system shows a notification badge whenever an app accesses location in the background. Starting from Android 12, approximate vs precise location is a user choice — your app must handle both gracefully. Google Play rejects apps that collect background location without a clear, user-visible feature that requires it.
-
-#### Q15: How would you handle real-time location updates with background restrictions?
-
-Android aggressively restricts background work. On Android 8+, background location updates are throttled to a few per hour unless you use a foreground service. On Android 10+, background location needs a separate permission.
-
-For continuous location sharing, use a foreground service with a persistent notification. This tells the system the user is aware of the location tracking.
+Android aggressively restricts background location. On Android 8+, background updates are throttled to a few per hour unless you use a foreground service. On Android 10+, background location requires a separate permission (`ACCESS_BACKGROUND_LOCATION`). On Android 14+, you must declare `android:foregroundServiceType="location"` in the manifest.
 
 ```kotlin
-class LocationForegroundService : Service() {
+class LocationSharingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification("Sharing your location")
-        startForeground(NOTIFICATION_ID, notification)
+        startForeground(NOTIFICATION_ID, createNotification("Sharing location"))
         startLocationUpdates()
         return START_STICKY
     }
@@ -352,31 +272,97 @@ class LocationForegroundService : Service() {
         val request = LocationRequest.Builder(
             Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10000
         ).build()
-
-        fusedClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
+        fusedClient.requestLocationUpdates(request, callback, Looper.getMainLooper())
     }
 }
 ```
 
-`START_STICKY` tells the system to restart the service if it's killed due to memory pressure. On Android 14+, foreground services require a type declaration in the manifest — use `android:foregroundServiceType="location"`. Without the foreground service, the system throttles background location updates to roughly 4 per hour, which is useless for real-time sharing.
+`START_STICKY` restarts the service if the system kills it for memory. The persistent notification is non-negotiable — Android requires it for foreground services, and it's good UX because the user always knows tracking is active. Without a foreground service, the system throttles updates to roughly 4 per hour, which makes real-time sharing useless.
 
-#### Q16: How would you design the server architecture for location sharing?
+#### Q15: How do you implement privacy controls for location sharing?
 
-The server needs to handle high-frequency writes (location updates from many users) and real-time fan-out (broadcasting to subscribers). A typical architecture uses:
+Users need full control over three things: who sees their location, for how long, and at what precision.
 
-- **WebSocket gateway** — Maintains persistent connections with clients. Routes incoming location updates to the processing layer and outgoing updates to subscribers
-- **Redis Pub/Sub** — For real-time fan-out. When a user sends a location update, publish it to a channel. All servers subscribed to that channel forward it to connected clients
-- **Location storage** — Use a time-series database or Redis with TTL for current locations. No need to persist historical data unless the feature requires it
-- **Geo-indexing** — If the app has a "people nearby" feature, use Redis GEO commands or PostGIS for spatial queries
+```kotlin
+class SharingManager {
+    private val sessions = ConcurrentHashMap<String, SharedSession>()
 
-The client sends a compact payload — just latitude, longitude, accuracy, and timestamp. Keep payloads small because location updates are frequent. Use binary protocols (Protocol Buffers) instead of JSON for further compression if update frequency is high.
+    fun startSharing(friends: List<String>, durationMs: Long): String {
+        val session = SharedSession(
+            id = UUID.randomUUID().toString(),
+            ownerId = currentUserId,
+            sharedWith = friends,
+            startTime = System.currentTimeMillis(),
+            durationMs = durationMs,
+            isActive = true
+        )
+        sessions[session.id] = session
+        scheduleExpiry(session)
+        return session.id
+    }
+
+    private fun scheduleExpiry(session: SharedSession) {
+        scope.launch {
+            delay(session.durationMs)
+            stopSharing(session.id)
+        }
+    }
+}
+```
+
+Expiry must be enforced server-side. If the client crashes or loses connectivity, the server stops broadcasting after the time limit regardless. For precision control, let users share approximate location (rounded to nearest neighborhood) instead of exact GPS coordinates when they don't need precision.
+
+On Android 12+, the user can grant approximate instead of precise location at the system level. Your app must handle both gracefully. Google Play rejects apps that request background location without a clear user-facing reason, so document the justification during review.
+
+#### Q16: How do you handle real-time updates at scale?
+
+The server uses WebSocket connections with Redis Pub/Sub for fan-out. When user A sends a location update, the server publishes it to a Redis channel. All server instances subscribed to that channel forward the update to connected clients who are watching user A.
+
+The scaling concern is fan-out. A group of 10 users sharing with each other, each sending updates every 5 seconds, produces 90 outgoing messages every 5 seconds (10 updates, each broadcast to 9 others). For large groups, increase the update interval or use delta updates — only send a new position when the user has moved more than a threshold distance.
+
+On the client side, maintain a map of `userId` to `Location` and update markers as updates arrive. If a friend's location hasn't updated in 5 minutes, fade their marker to indicate the data might be stale. When a friend goes offline, show their last-known position with a timestamp.
+
+#### Q17: How do you filter noisy location data?
+
+Raw GPS readings jump around, especially in urban areas with signal reflection off buildings. A Kalman filter smooths these jumps by combining the predicted position (based on speed and direction) with the measured GPS position, weighted by confidence.
+
+The simpler approach is to filter by accuracy. Drop any reading with accuracy worse than a threshold (say 50 meters for navigation, 200 meters for sharing). Also drop readings that imply impossible movement — if two consecutive readings 1 second apart are 500 meters away, one of them is wrong. Calculate the implied speed and discard readings that exceed a reasonable maximum (like 200 km/h for driving).
+
+For display, interpolate between accepted readings rather than showing raw points. This gives a smooth path on the map even when updates arrive at irregular intervals.
+
+#### Q18: How do you test location features?
+
+Testing location on Android has three levels:
+
+- **Unit tests** — Mock `FusedLocationProviderClient` and `LocationCallback`. Feed fake location data into your repository and verify the downstream behavior (correct updates emitted, battery mode switching, expiry logic)
+- **Emulator testing** — Android Emulator lets you set mock locations through the extended controls panel. You can also feed a GPX or KML route file to simulate movement along a path
+- **On-device mock** — Enable "Allow mock locations" in developer settings and use `setMockMode()` / `setMockLocation()` on the fused client to inject test locations from within the app
+
+```kotlin
+class FakeLocationSource : LocationCallback() {
+    private val locations = mutableListOf<Location>()
+
+    fun emitLocation(lat: Double, lng: Double, accuracy: Float) {
+        val location = Location("test").apply {
+            latitude = lat
+            longitude = lng
+            this.accuracy = accuracy
+            time = System.currentTimeMillis()
+        }
+        locations.add(location)
+        onLocationUpdate(location)
+    }
+}
+```
+
+Test edge cases that are hard to reproduce naturally: GPS signal loss, switching between GPS and network, location permission revoked mid-session, and rapid location changes. Automate these with mock location providers in your integration tests.
 
 ### Common Follow-ups
 
 - How would you implement "share my ETA" where others see your estimated arrival time?
-- How would you handle spoofed/fake locations?
-- How would you implement location history playback (replay a trip)?
-- What happens when both GPS and network location are available — how do you choose?
-- How would you implement a "notify me when they arrive" feature using geofencing?
-- How would you handle map rendering in Jetpack Compose?
-- How would you test location-dependent features without a real GPS signal?
+- How would you detect and reject spoofed or fake locations?
+- How would you implement location history playback to replay a trip on the map?
+- How would you draw and update a navigation route as the user drives?
+- How would you implement "notify me when they arrive" using geofencing?
+- How would you handle map rendering in Jetpack Compose using AndroidView?
+- How would you design the nearby-places search feature with caching?

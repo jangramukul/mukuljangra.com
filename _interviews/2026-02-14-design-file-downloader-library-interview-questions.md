@@ -10,19 +10,37 @@ description: "Designing a file downloader library tests your understanding of HT
 
 ## Design a File Downloader Library
 
-File downloader design comes up in system design rounds because it combines networking, background processing, disk management, and state handling into one problem. It tests whether you can handle real-world concerns like pause/resume, progress tracking, and reliability across process restarts.
+This is a classic mobile system design problem. It touches networking, concurrency, disk I/O, background processing, and state management all in one question.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: What are the core responsibilities of a file downloader library?
+#### Q1: What are the core functional requirements for a file downloader library?
 
-A file downloader manages downloading files from a URL to local storage. It handles HTTP connections, writes data to disk in chunks, tracks progress, supports pause/resume, manages concurrent downloads with a queue, handles retries on failure, and shows progress through notifications. It also needs to survive process death — if the user switches apps, the download should continue.
+The library needs to download files from a URL to local storage, support pause and resume, track progress, and handle multiple concurrent downloads with a queue. Users should be able to enqueue a download, get a handle back to control it (pause, resume, cancel), and observe its progress. The downloads must survive app backgrounding — if the user switches apps, the download keeps going.
 
-The basic pipeline is: **Request → Queue → Allocate disk space → HTTP GET → Stream to disk → Progress callbacks → Completion/retry**.
+#### Q2: What are the non-functional requirements?
 
-#### Q2: How would you design the public API?
+- Downloads must continue in the background even when the app is not visible
+- Battery efficiency — don't keep the CPU awake unnecessarily or poll the network
+- Storage management — check disk space before starting, clean up partial files on cancellation
+- Reliability — retry on transient failures, resume after network loss, persist state across process death
+- Configurable concurrency — limit parallel downloads to avoid saturating bandwidth and disk I/O
 
-Keep it simple for common use and flexible for advanced configuration. A request builder pattern works well.
+#### Q3: What would you keep out of scope for an initial design?
+
+For a first version, skip multi-segment parallel downloads (splitting one file across multiple connections), download speed throttling, and authentication. Also skip chunked transfer encoding handling and redirect chains. These are real concerns but they add complexity without changing the core architecture. Focus on single-connection downloads with pause/resume, a task queue, and progress reporting.
+
+### High-Level Design
+
+#### Q4: What are the main components in the architecture?
+
+Three core components. **DownloadManager** is the public-facing entry point — it accepts requests, returns download IDs, and exposes pause/resume/cancel/observe APIs. **TaskQueue** manages ordering and concurrency — it holds pending tasks in a priority queue and limits how many run at once. **StorageManager** handles disk space checks, file allocation, and buffered writes.
+
+Supporting these: a **Room database** persists download state so everything survives process death, a **NetworkMonitor** watches connectivity changes, and a **NotificationManager** shows progress to the user. The DownloadManager coordinates all of them.
+
+#### Q5: How would you design the public API?
+
+Keep it simple for common use. A builder pattern for requests, a download ID for control, and a Flow for observation.
 
 ```kotlin
 val downloadId = FileDownloader.enqueue(
@@ -30,16 +48,13 @@ val downloadId = FileDownloader.enqueue(
         .setDestination("/storage/downloads/file.zip")
         .setTitle("App Update")
         .setPriority(Priority.HIGH)
-        .setNotificationEnabled(true)
         .build()
 )
 
-// Control
 FileDownloader.pause(downloadId)
 FileDownloader.resume(downloadId)
 FileDownloader.cancel(downloadId)
 
-// Observe progress
 FileDownloader.observe(downloadId).collect { status ->
     when (status) {
         is Status.Downloading -> updateProgress(status.progress)
@@ -49,336 +64,15 @@ FileDownloader.observe(downloadId).collect { status ->
 }
 ```
 
-Return a `downloadId` on enqueue so the caller can control and observe the download later. Use a sealed class for download status so the caller handles every state explicitly.
+Return a `downloadId` on enqueue so the caller can control and observe the download later. Use a sealed class for status so the compiler forces the caller to handle every state.
 
-#### Q3: How do you download a file in chunks?
+#### Q6: What does the data model look like for a download task?
 
-Read the HTTP response body as a stream and write it to disk in fixed-size chunks (typically 8 KB or 16 KB). Never load the entire file into memory — a 500 MB file would crash the app.
-
-```kotlin
-suspend fun downloadFile(url: String, destination: File) {
-    val response = httpClient.get(url)
-    val contentLength = response.header("Content-Length")?.toLong() ?: -1L
-    val inputStream = response.body?.byteStream() ?: return
-    val outputStream = FileOutputStream(destination)
-
-    val buffer = ByteArray(8192) // 8 KB chunks
-    var bytesDownloaded = 0L
-
-    inputStream.use { input ->
-        outputStream.use { output ->
-            var bytesRead: Int
-            while (input.read(buffer).also { bytesRead = it } != -1) {
-                output.write(buffer, 0, bytesRead)
-                bytesDownloaded += bytesRead
-                emitProgress(bytesDownloaded, contentLength)
-            }
-        }
-    }
-}
-```
-
-The `Content-Length` header tells you the total file size for progress calculation. Some servers don't send it (chunked transfer encoding), in which case you show indeterminate progress. Flush the output stream periodically to avoid data loss if the process is killed.
-
-#### Q4: How does pause/resume work with HTTP Range headers?
-
-When the user pauses a download, save the number of bytes already downloaded. To resume, send an HTTP request with a `Range` header that tells the server to start from where you left off. The server responds with 206 (Partial Content) and sends only the remaining bytes.
-
-```kotlin
-suspend fun resumeDownload(url: String, destination: File, bytesDownloaded: Long) {
-    val request = Request.Builder()
-        .url(url)
-        .header("Range", "bytes=$bytesDownloaded-")
-        .build()
-
-    val response = httpClient.newCall(request).await()
-
-    if (response.code == 206) {
-        // Append to existing file
-        val outputStream = FileOutputStream(destination, true) // append mode
-        writeToStream(response.body!!.byteStream(), outputStream, bytesDownloaded)
-    } else if (response.code == 200) {
-        // Server doesn't support Range — restart from beginning
-        val outputStream = FileOutputStream(destination) // overwrite
-        writeToStream(response.body!!.byteStream(), outputStream, 0L)
-    }
-}
-```
-
-Not all servers support Range requests. Check the response for the `Accept-Ranges: bytes` header to know if resume is supported. If the server returns 200 instead of 206, it doesn't support partial content and you have to restart from scratch. Store the downloaded byte count in a database so it survives process death.
-
-#### Q5: How would you track and report download progress?
-
-Emit progress updates as you write each chunk. Use a `Flow` or callback to deliver progress to the UI. Throttle the updates — emitting on every 8 KB chunk would flood the UI with thousands of updates per second for a fast download.
-
-```kotlin
-class DownloadTask(private val downloadId: String) {
-    private val _progress = MutableStateFlow(DownloadProgress(0, 0))
-    val progress: StateFlow<DownloadProgress> = _progress
-
-    private var lastEmitTime = 0L
-
-    suspend fun download(url: String, destination: File) {
-        // ... read chunks ...
-        bytesDownloaded += bytesRead
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastEmitTime > 200) { // emit at most every 200ms
-            _progress.value = DownloadProgress(bytesDownloaded, totalBytes)
-            lastEmitTime = now
-        }
-    }
-}
-```
-
-200ms throttling gives smooth UI updates without wasting CPU on unnecessary emissions. For notification progress, update even less frequently — every 1-2 seconds is enough. Calculate download speed by tracking bytes downloaded over time intervals.
-
-#### Q6: How do you check disk space before downloading?
-
-Before starting a download, verify that the target storage has enough free space. The `Content-Length` header tells you the file size. Compare it against available space with a buffer (at least 10% extra to avoid filling the disk completely).
-
-```kotlin
-fun hasEnoughSpace(destination: File, contentLength: Long): Boolean {
-    val stat = StatFs(destination.parentFile?.path ?: return false)
-    val availableBytes = stat.availableBytes
-    val requiredBytes = contentLength + (contentLength / 10) // 10% buffer
-    return availableBytes > requiredBytes
-}
-```
-
-If there's not enough space, fail early with a clear error instead of downloading halfway and then failing on a disk-full write. On Android 11+, scoped storage limits where you can write — use `MediaStore` for shared downloads or the app's internal storage for private files.
-
-#### Q7: How would you handle download prioritization?
-
-Not all downloads are equal. A user-initiated download should start immediately, while a prefetch download can wait. Use a priority queue where higher-priority downloads are dequeued first.
-
-```kotlin
-enum class Priority { LOW, NORMAL, HIGH, IMMEDIATE }
-
-class DownloadQueue {
-    private val queue = PriorityBlockingQueue<DownloadTask>(
-        11,
-        compareByDescending { it.priority }
-    )
-    private val activeDownloads = AtomicInteger(0)
-    private val maxConcurrent = 3
-
-    fun enqueue(task: DownloadTask) {
-        queue.add(task)
-        processNext()
-    }
-
-    private fun processNext() {
-        while (activeDownloads.get() < maxConcurrent) {
-            val task = queue.poll() ?: break
-            activeDownloads.incrementAndGet()
-            scope.launch {
-                task.execute()
-                activeDownloads.decrementAndGet()
-                processNext()
-            }
-        }
-    }
-}
-```
-
-Limit concurrent downloads to 3-4 to avoid overwhelming the network and disk I/O. When a high-priority download arrives and all slots are full, either pause the lowest-priority active download or wait for a slot to open. Android's `DownloadManager` limits to a system-defined number of concurrent downloads (usually 5).
-
-#### Q8: How would you show download progress in a notification?
-
-Use a foreground service with a notification that shows the download progress. This is required on Android 8+ for long-running background work. The notification must show a progress bar, the file name, and download speed.
-
-```kotlin
-class DownloadService : Service() {
-
-    private fun createProgressNotification(
-        title: String,
-        progress: Int,
-        speed: String
-    ): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title)
-            .setContentText("$speed - $progress%")
-            .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, progress, false)
-            .setOngoing(true)
-            .addAction(R.drawable.ic_pause, "Pause", pausePendingIntent)
-            .addAction(R.drawable.ic_cancel, "Cancel", cancelPendingIntent)
-            .build()
-    }
-}
-```
-
-Update the notification at most once per second — more frequent updates cause notification flicker and waste battery. When the download completes, replace the progress notification with a completion notification that opens the file on tap. Group multiple download notifications to avoid spamming the notification shade.
-
-### Deep Dive Questions (Advanced → Expert)
-
-#### Q9: Should you use WorkManager or a Foreground Service for downloads?
-
-It depends on the download duration and user expectation.
-
-**Foreground Service** is right for user-initiated downloads that should complete soon (downloading a file the user explicitly requested). The user sees a notification with progress and expects it to finish. The system won't kill a foreground service, so the download runs uninterrupted.
-
-**WorkManager** is better for deferred or background downloads (syncing offline content, prefetching files). WorkManager survives process death, handles constraints (network type, battery level), and retries automatically. But WorkManager tasks are subject to system scheduling — they might not start immediately and can be deferred by Doze mode.
-
-For most download managers, use a foreground service for active downloads and WorkManager for retrying failed downloads when connectivity is restored. Android 12+ requires the `FOREGROUND_SERVICE` permission and Android 14+ requires `FOREGROUND_SERVICE_DATA_SYNC` type.
-
-#### Q10: How would you implement retry with exponential backoff?
-
-When a download fails due to a network error, don't retry immediately — the network might still be down. Use exponential backoff: wait 1 second, then 2, then 4, then 8, capped at 5 minutes. Add jitter to prevent all failed downloads from retrying simultaneously.
-
-```kotlin
-class RetryPolicy(
-    private val maxRetries: Int = 5,
-    private val baseDelayMs: Long = 1000
-) {
-    private var retryCount = 0
-
-    fun shouldRetry(error: Throwable): Boolean {
-        if (retryCount >= maxRetries) return false
-        return error is IOException || error is SocketTimeoutException
-    }
-
-    suspend fun waitForRetry() {
-        val delay = baseDelayMs * (1L shl retryCount.coerceAtMost(5))
-        val jitter = Random.nextLong(0, delay / 4)
-        delay(delay + jitter)
-        retryCount++
-    }
-
-    fun reset() { retryCount = 0 }
-}
-```
-
-Only retry on transient errors — network failures, timeouts, 503 responses. Don't retry on 404 (file not found) or 401 (unauthorized). If the download was partially complete and the server supports Range headers, resume from where it stopped instead of restarting.
-
-#### Q11: How would you verify file integrity after download?
-
-Use checksum verification to confirm the downloaded file matches what the server intended. The server provides a checksum (MD5, SHA-256) either in a response header, a separate API endpoint, or alongside the download link. After the download completes, compute the checksum of the local file and compare.
-
-```kotlin
-suspend fun verifyChecksum(
-    file: File,
-    expectedHash: String,
-    algorithm: String = "SHA-256"
-): Boolean = withContext(Dispatchers.IO) {
-    val digest = MessageDigest.getInstance(algorithm)
-    val buffer = ByteArray(8192)
-
-    file.inputStream().use { input ->
-        var bytesRead: Int
-        while (input.read(buffer).also { bytesRead = it } != -1) {
-            digest.update(buffer, 0, bytesRead)
-        }
-    }
-
-    val hash = digest.digest().joinToString("") { "%02x".format(it) }
-    hash.equals(expectedHash, ignoreCase = true)
-}
-```
-
-If verification fails, delete the corrupted file and re-download. For large files, consider using chunked checksums where each chunk has its own hash — this way you only re-download the corrupted chunk, not the entire file. APK downloads and OTA updates always use checksum verification for security.
-
-#### Q12: How would you handle large file downloads (1 GB+)?
-
-Large files need special handling to avoid memory issues and provide a good experience:
-
-- **Stream to disk** — Never buffer the entire file in memory. Read and write in 8-16 KB chunks
-- **Chunked downloads** — Split the file into segments (e.g., 10 MB each) and download them in parallel using Range headers. This can increase throughput on fast connections. Merge the chunks after all complete
-- **Pre-allocate disk space** — Call `RandomAccessFile.setLength(totalSize)` before downloading. This ensures you don't run out of space halfway through and helps the filesystem allocate contiguous blocks
-- **Progress persistence** — Save the downloaded byte count to a database every few seconds, not just in memory. If the process is killed, you know exactly where to resume
-- **Network type awareness** — For cellular connections, warn the user about data usage before downloading files over a configurable threshold (e.g., 50 MB)
-
-```kotlin
-// Pre-allocate disk space
-fun preallocateFile(destination: File, size: Long) {
-    RandomAccessFile(destination, "rw").use { raf ->
-        raf.setLength(size)
-    }
-}
-```
-
-Android's `DownloadManager` handles many of these concerns internally — for simple use cases, it's worth using instead of building a custom solution.
-
-#### Q13: How would you handle concurrent downloads with a download manager?
-
-A download manager needs to limit concurrent downloads while keeping a queue of pending requests. Use a coroutine-based approach with a `Semaphore` to limit parallelism.
-
-```kotlin
-class DownloadManager(
-    private val maxConcurrent: Int = 3,
-    private val scope: CoroutineScope
-) {
-    private val semaphore = Semaphore(maxConcurrent)
-    private val activeDownloads = ConcurrentHashMap<String, Job>()
-    private val downloadDao: DownloadDao // persists download state
-
-    fun enqueue(request: DownloadRequest): String {
-        val id = UUID.randomUUID().toString()
-        downloadDao.insert(DownloadEntity(id, request.url, Status.QUEUED))
-
-        val job = scope.launch {
-            semaphore.acquire()
-            try {
-                downloadDao.updateStatus(id, Status.DOWNLOADING)
-                executeDownload(id, request)
-                downloadDao.updateStatus(id, Status.COMPLETED)
-            } catch (e: CancellationException) {
-                downloadDao.updateStatus(id, Status.PAUSED)
-            } catch (e: Exception) {
-                downloadDao.updateStatus(id, Status.FAILED)
-            } finally {
-                semaphore.release()
-            }
-        }
-        activeDownloads[id] = job
-        return id
-    }
-}
-```
-
-Persist download state (URL, destination, bytes downloaded, status) in a Room database. On app restart, query for incomplete downloads and re-enqueue them. The semaphore ensures only `maxConcurrent` downloads run simultaneously — others wait in the coroutine queue.
-
-#### Q14: How would you handle downloads across network changes?
-
-Network changes (Wi-Fi to cellular, connectivity loss) are common during long downloads. Use `ConnectivityManager.NetworkCallback` to detect network state changes and react appropriately.
-
-When connectivity is lost, pause the download and save progress. When connectivity returns, check if the server supports Range headers and resume. If the user switched from Wi-Fi to cellular, check the download policy — some downloads should only proceed on Wi-Fi (especially large files).
-
-```kotlin
-class NetworkMonitor(context: Context) {
-    private val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
-
-    val networkState = callbackFlow {
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                trySend(NetworkState.Connected)
-            }
-            override fun onLost(network: Network) {
-                trySend(NetworkState.Disconnected)
-            }
-            override fun onCapabilitiesChanged(
-                network: Network,
-                capabilities: NetworkCapabilities
-            ) {
-                val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                trySend(if (isWifi) NetworkState.Wifi else NetworkState.Cellular)
-            }
-        }
-        connectivityManager.registerDefaultNetworkCallback(callback)
-        awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
-    }
-}
-```
-
-For WorkManager-based downloads, set network constraints directly — `NetworkType.CONNECTED` or `NetworkType.UNMETERED` (Wi-Fi only). WorkManager handles the scheduling automatically.
-
-#### Q15: How would you design the persistence layer for download state?
-
-Every download's state must survive process death. Use Room to store download metadata: ID, URL, destination path, total bytes, downloaded bytes, status (queued, downloading, paused, completed, failed), priority, created timestamp, and retry count.
+Each download is represented as a `DownloadTask` entity persisted in Room. It holds everything needed to resume a download from scratch after process death.
 
 ```kotlin
 @Entity(tableName = "downloads")
-data class DownloadEntity(
+data class DownloadTask(
     @PrimaryKey val id: String,
     val url: String,
     val destination: String,
@@ -390,69 +84,247 @@ data class DownloadEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val etag: String? = null
 )
-
-@Dao
-interface DownloadDao {
-    @Query("SELECT * FROM downloads WHERE status IN ('QUEUED', 'DOWNLOADING') ORDER BY priority DESC")
-    fun getPendingDownloads(): List<DownloadEntity>
-
-    @Query("UPDATE downloads SET downloadedBytes = :bytes WHERE id = :id")
-    suspend fun updateProgress(id: String, bytes: Long)
-
-    @Query("UPDATE downloads SET status = :status WHERE id = :id")
-    suspend fun updateStatus(id: String, status: String)
-}
 ```
 
-Save the ETag from the initial response. When resuming, send `If-Range: <etag>` along with the Range header. If the file changed on the server (ETag mismatch), the server returns the full file instead of a partial response. Update progress in the database periodically (every 500 KB or every 2 seconds), not on every chunk — excessive writes slow down the download.
+The `etag` field stores the server's ETag from the initial response. When resuming, you send `If-Range: <etag>` alongside the Range header. If the file changed on the server since you started, the server returns the full file instead of a partial response, and you restart.
 
-#### Q16: How would you design a multi-segment parallel download?
+#### Q7: How do HTTP Range requests enable resume?
 
-Split a large file into segments and download each segment in parallel using Range headers. This saturates the network bandwidth better because a single HTTP connection might be throttled by the server.
+When the user pauses, you save the byte count already written to disk. To resume, send a `Range: bytes=<downloaded>-` header. The server responds with 206 (Partial Content) and sends only the remaining bytes. You open the file in append mode and keep writing from where you left off.
+
+Not all servers support this. Check the `Accept-Ranges: bytes` header on the initial response. If the server returns 200 instead of 206 on a ranged request, it doesn't support partial content and you restart from scratch.
+
+#### Q8: What states can a download be in, and how do transitions work?
+
+A download moves through five states: **Queued**, **Downloading**, **Paused**, **Completed**, and **Failed**.
+
+- Queued to Downloading — when the task queue picks it up and a concurrency slot is available
+- Downloading to Paused — user calls pause, or network is lost
+- Downloading to Completed — all bytes written and verified
+- Downloading to Failed — non-retryable error or max retries exceeded
+- Paused to Queued — user calls resume, task re-enters the queue
+- Failed to Queued — user retries, or automatic retry kicks in
+
+Every state transition gets persisted to Room immediately. On app restart, query for tasks in Queued or Downloading state and re-enqueue them.
+
+#### Q9: How does notification integration work?
+
+Use a foreground service to keep the process alive during downloads. The notification shows file name, progress bar, download speed, and pause/cancel actions.
 
 ```kotlin
-class SegmentedDownloader(
-    private val segmentCount: Int = 4
-) {
-    suspend fun download(url: String, destination: File, totalSize: Long) {
-        val segmentSize = totalSize / segmentCount
+class DownloadService : Service() {
+    private fun buildProgressNotification(
+        title: String, progress: Int, speed: String
+    ): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText("$speed - $progress%")
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(100, progress, false)
+            .setOngoing(true)
+            .addAction(R.drawable.ic_pause, "Pause", pauseIntent)
+            .addAction(R.drawable.ic_cancel, "Cancel", cancelIntent)
+            .build()
+    }
+}
+```
 
-        val jobs = (0 until segmentCount).map { index ->
-            val start = index * segmentSize
-            val end = if (index == segmentCount - 1) totalSize - 1 else start + segmentSize - 1
-            scope.async(Dispatchers.IO) {
-                downloadSegment(url, destination, start, end, index)
+Update the notification at most once per second. More frequent updates cause flicker and waste battery. When the download completes, replace the ongoing notification with a non-ongoing one that opens the file on tap. Group multiple download notifications to avoid spamming the shade.
+
+### Low-Level Design & Deep Dives
+
+#### Q10: Walk through the pause/resume implementation in detail.
+
+On pause, cancel the coroutine doing the download. The coroutine's finally block flushes any buffered bytes and updates the database with the exact byte count. On resume, read the persisted byte count, send a Range request, and append to the existing file.
+
+```kotlin
+suspend fun resumeDownload(task: DownloadTask) {
+    val request = Request.Builder()
+        .url(task.url)
+        .header("Range", "bytes=${task.downloadedBytes}-")
+        .build()
+
+    val response = httpClient.newCall(request).await()
+
+    if (response.code == 206) {
+        val output = FileOutputStream(File(task.destination), true)
+        streamToFile(response.body!!.byteStream(), output, task.downloadedBytes)
+    } else if (response.code == 200) {
+        val output = FileOutputStream(File(task.destination))
+        streamToFile(response.body!!.byteStream(), output, 0L)
+    }
+}
+```
+
+If you stored an ETag, include `If-Range: <etag>` in the request. This tells the server to only honor the Range if the file hasn't changed. If it has changed, the server sends the whole file with a 200, and you overwrite.
+
+#### Q11: How do you manage concurrent downloads?
+
+Use a coroutine `Semaphore` to cap parallelism. Each download acquires a permit before starting and releases it when done, paused, or failed. Pending downloads suspend on `semaphore.acquire()` until a slot opens.
+
+```kotlin
+class DownloadExecutor(
+    private val maxConcurrent: Int = 3,
+    private val scope: CoroutineScope
+) {
+    private val semaphore = Semaphore(maxConcurrent)
+    private val jobs = ConcurrentHashMap<String, Job>()
+
+    fun execute(task: DownloadTask) {
+        val job = scope.launch {
+            semaphore.acquire()
+            try {
+                performDownload(task)
+            } finally {
+                semaphore.release()
             }
         }
-        jobs.awaitAll()
+        jobs[task.id] = job
     }
 
-    private suspend fun downloadSegment(
-        url: String, destination: File,
-        start: Long, end: Long, index: Int
-    ) {
-        val request = Request.Builder()
-            .url(url)
-            .header("Range", "bytes=$start-$end")
-            .build()
+    fun pause(id: String) { jobs[id]?.cancel() }
+}
+```
 
-        val response = httpClient.newCall(request).await()
-        RandomAccessFile(destination, "rw").use { raf ->
-            raf.seek(start)
-            response.body!!.byteStream().copyTo(raf)
+Three to four concurrent downloads is a good default. More than that and you start thrashing the disk and splitting bandwidth too thin. The semaphore approach is cleaner than managing a thread pool manually because coroutines handle the suspension transparently.
+
+#### Q12: How do you implement progress tracking without flooding the UI?
+
+Emit progress on every chunk write, but throttle what reaches the UI. A `StateFlow` with a time gate works well — emit at most every 200ms.
+
+```kotlin
+class ProgressTracker(private val taskId: String) {
+    private val _progress = MutableStateFlow(Progress(0, 0))
+    val progress: StateFlow<Progress> = _progress
+    private var lastEmitTime = 0L
+
+    fun onBytesWritten(downloaded: Long, total: Long) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastEmitTime > 200) {
+            _progress.value = Progress(downloaded, total)
+            lastEmitTime = now
         }
     }
 }
 ```
 
-Pre-allocate the destination file to the full size, then each segment writes to its own offset using `RandomAccessFile.seek()`. Track each segment's progress independently. If one segment fails, retry just that segment. This approach works well for CDN-served files where each connection gets consistent bandwidth. The tradeoff is complexity — you need to track per-segment state for pause/resume.
+200ms gives smooth progress bar animation without wasting CPU. For notifications, throttle even more — once per second is enough. Calculate speed by dividing bytes written in the last interval by the interval duration.
+
+#### Q13: How should background downloads work on Android?
+
+Use a foreground service for active downloads the user triggered. The system won't kill a foreground service, so the download runs uninterrupted. Android 12+ requires `FOREGROUND_SERVICE` permission and Android 14+ requires `FOREGROUND_SERVICE_DATA_SYNC` type.
+
+For retrying failed downloads or deferred sync, use WorkManager. It survives process death, respects Doze mode, and lets you set constraints like `NetworkType.UNMETERED` (Wi-Fi only). The right pattern is a foreground service for active downloads with WorkManager as the fallback for recovery and background syncing.
+
+#### Q14: What disk I/O strategy should you use?
+
+Stream the HTTP response body and write in 8 KB chunks. Never load the whole file into memory. For large files, pre-allocate disk space before downloading so you fail early if there isn't enough room.
+
+```kotlin
+suspend fun streamToFile(
+    input: InputStream, output: OutputStream, startBytes: Long
+) {
+    val buffer = ByteArray(8192)
+    var downloaded = startBytes
+    input.use { src ->
+        output.buffered().use { dst ->
+            var bytesRead: Int
+            while (src.read(buffer).also { bytesRead = it } != -1) {
+                dst.write(buffer, 0, bytesRead)
+                downloaded += bytesRead
+                progressTracker.onBytesWritten(downloaded, totalBytes)
+            }
+        }
+    }
+}
+```
+
+Wrapping the output in `BufferedOutputStream` reduces the number of system calls. The default 8 KB buffer means you're doing one system write per 8 KB instead of potentially many smaller ones. Flush periodically (every few hundred KB) so that data isn't lost if the process is killed, but don't flush on every chunk — that kills throughput.
+
+#### Q15: How do you verify file integrity after download?
+
+Compute a checksum of the downloaded file and compare it to what the server provides. The server might include a hash in a response header, a separate endpoint, or alongside the download link.
+
+```kotlin
+suspend fun verifyChecksum(
+    file: File, expectedHash: String, algorithm: String = "SHA-256"
+): Boolean = withContext(Dispatchers.IO) {
+    val digest = MessageDigest.getInstance(algorithm)
+    val buffer = ByteArray(8192)
+    file.inputStream().use { input ->
+        var bytesRead: Int
+        while (input.read(buffer).also { bytesRead = it } != -1) {
+            digest.update(buffer, 0, bytesRead)
+        }
+    }
+    val hash = digest.digest().joinToString("") { "%02x".format(it) }
+    hash.equals(expectedHash, ignoreCase = true)
+}
+```
+
+If verification fails, delete the file and re-download. For APK downloads and OTA updates, checksum verification is mandatory for security. SHA-256 is the standard choice — MD5 is fast but has known collision vulnerabilities.
+
+#### Q16: How do you handle retry on network failure?
+
+Use exponential backoff with jitter. Wait 1 second after the first failure, then 2, 4, 8, capped at a few minutes. Jitter prevents all failed downloads from retrying at the same instant.
+
+```kotlin
+class RetryPolicy(
+    private val maxRetries: Int = 5,
+    private val baseDelayMs: Long = 1000
+) {
+    private var attempts = 0
+
+    fun shouldRetry(error: Throwable): Boolean {
+        if (attempts >= maxRetries) return false
+        return error is IOException || error is SocketTimeoutException
+    }
+
+    suspend fun backoff() {
+        val delay = baseDelayMs * (1L shl attempts.coerceAtMost(5))
+        val jitter = Random.nextLong(0, delay / 4)
+        delay(delay + jitter)
+        attempts++
+    }
+}
+```
+
+Only retry on transient errors — network timeouts, connection resets, 503 responses. Don't retry on 404 or 401. If the download was partially done and the server supports Range, resume from the last persisted byte offset instead of restarting.
+
+#### Q17: How does the priority queue work?
+
+Use a `PriorityBlockingQueue` ordered by priority descending. When a slot opens, the highest-priority pending task gets picked up. If a user-initiated (HIGH) download arrives and all slots are full, you can optionally pause the lowest-priority active download to make room.
+
+```kotlin
+enum class Priority { LOW, NORMAL, HIGH, IMMEDIATE }
+
+class TaskQueue {
+    private val pending = PriorityBlockingQueue<DownloadTask>(
+        11, compareByDescending { it.priority }
+    )
+
+    fun add(task: DownloadTask) {
+        pending.offer(task)
+        drainQueue()
+    }
+
+    fun next(): DownloadTask? = pending.poll()
+}
+```
+
+IMMEDIATE priority should bypass the queue entirely and start right away, even if it means exceeding the concurrency limit briefly. This is for critical downloads like security patches.
+
+#### Q18: How would you test a file downloader library?
+
+Unit test the components in isolation. Mock the HTTP client to return controlled responses — partial content (206), full content (200), errors (503), and missing Range support. Use a fake file system or temp directory for disk operations. Test the state machine transitions: enqueue goes to Queued, start goes to Downloading, network loss goes to Failed or Paused depending on policy.
+
+Integration test the full flow: enqueue a download against a local test server, verify the file lands on disk, pause and resume it, verify the Range header is sent and the file is complete. Test process death by persisting state, killing the test, restarting, and checking that downloads resume from the right offset. For concurrency, enqueue more downloads than the max concurrent limit and verify that excess tasks wait in the queue.
 
 ### Common Follow-ups
 
-- How would you handle download deduplication if the same URL is requested twice?
-- What happens if the server doesn't support Range requests? How do you handle resume?
-- How would you implement download speed limiting to avoid consuming all bandwidth?
+- How would you deduplicate if the same URL is requested twice?
+- How do you handle network type changes — pausing cellular downloads when Wi-Fi policy is set?
+- How would you implement download speed limiting?
 - How would you handle authentication for protected file downloads?
 - How does Android's built-in DownloadManager compare to building your own?
-- How would you handle downloading a file that requires following redirects?
-- How would you test a download library? What would you mock?
+- How would you split a single large file across multiple connections for faster throughput?

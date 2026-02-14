@@ -10,60 +10,116 @@ description: "Mobile system design interviews focus on client-side architecture,
 
 ## Mobile System Design Fundamentals
 
-Mobile system design interviews focus on client-side architecture, not backend scaling. Interviewers want to see how you think about constraints like battery, bandwidth, offline support, and low-end devices while designing a clean, maintainable mobile architecture.
+Mobile system design interviews focus on client-side architecture, not backend scaling. The questions below walk through the process step by step — the same way you'd work through a real interview. Learn the process here, then apply it to any specific design problem.
 
-### Core Questions (Beginner → Intermediate)
+### How to Approach a Mobile System Design Interview
 
-#### Q1: What is the general template for approaching a mobile system design interview?
+Every mobile system design interview follows the same three-step flow: gather requirements, sketch the high-level design, then go deep into specific areas. The questions below are structured in that order. If you internalize this process, you can apply it to any problem — a chat app, a news feed, a file sync client, anything.
 
-Follow this structure:
+### Step 1 — Requirements & Information Gathering
 
-- **Clarify requirements** — Ask about features, scale, platform, and non-functional requirements (offline, accessibility, low-end devices). Separate must-haves from nice-to-haves
-- **High-level architecture** — Draw the major client-side components: UI layer, domain layer, data layer, and how they connect to the backend
-- **Data model** — Define the entities, their relationships, and how they're stored locally vs fetched from the server
-- **API design** — Define the endpoints your client needs, request/response shapes, pagination strategy, and error responses
-- **Client architecture** — Break down the internal modules: ViewModels, repositories, local database, caching, sync logic
-- **Deep dives** — Pick 2-3 areas the interviewer cares about and go deep: caching strategy, offline support, performance, threading
+#### Q1: What's the first thing you should do when given a mobile system design problem?
 
-Spend about 5 minutes on requirements, then divide the remaining time across architecture and deep dives. Don't jump into deep dives before establishing the high-level picture.
+Ask questions. Don't start drawing architecture diagrams. Spend the first 5 minutes clarifying what you're actually building. The interviewer gives you a vague prompt on purpose — "design a photo sharing app" — and they want to see you narrow it down.
 
-#### Q2: What are the key differences between mobile system design and backend system design?
+Split your questions into two buckets: functional requirements (what does the app do?) and non-functional requirements (how does it behave under constraints?). Write them down visibly so the interviewer can see your thought process.
 
-Backend system design focuses on horizontal scaling, load balancing, database sharding, and handling millions of requests per second. Mobile system design focuses on a single device with constrained resources.
+#### Q2: How do you identify functional requirements for a mobile system design?
 
-The key concerns on mobile are:
-- **Battery** — Background work drains battery. You batch network requests, use WorkManager for deferrable tasks, and avoid polling when push notifications work
-- **Bandwidth** — Users may be on slow or metered networks. You compress payloads, use pagination, cache aggressively, and support offline access
-- **Memory** — A phone has 2-8 GB of RAM shared across all apps. Your app gets killed if it uses too much
-- **Storage** — Disk space is limited. You evict caches and let the user control download sizes
-- **Lifecycle** — Activities and Fragments are destroyed and recreated constantly. Your architecture must survive configuration changes and process death
+Functional requirements define the features. Ask about what the user can do on each screen, what data they see, and what actions trigger server communication. For a photo sharing app, functional requirements might be: browse a feed, post a photo with caption, like and comment, follow users, search.
 
-#### Q3: How do you gather and clarify requirements in a mobile system design interview?
+Keep it to 3-5 core features. If the interviewer says "design Instagram," you're not building all of Instagram. Pick the features that matter for the discussion — usually a feed, content creation, and one social interaction. Explicitly list what's out of scope so the interviewer knows you're being deliberate about it.
 
-Ask questions in two categories — functional and non-functional.
+#### Q3: How do you identify non-functional requirements?
 
-Functional requirements define what the app does:
-- What are the core features? What can the user do?
-- What data does the user see on each screen?
-- Are there real-time updates or is polling acceptable?
-- What user interactions need server communication?
+Non-functional requirements are the constraints that shape your architecture. These are the questions that separate mobile system design from backend system design:
 
-Non-functional requirements define how the app behaves under constraints:
-- Does it need to work offline? Fully or partially?
-- What's the target audience? Global users on slow networks? Power users on flagship phones?
-- Does it need accessibility support (TalkBack, font scaling)?
+- Does the app need to work offline? Read-only or read-write?
+- What's the target audience? Global users on 3G, or power users on flagship devices?
+- Are there real-time requirements (live updates, typing indicators)?
 - What's the expected app size budget?
-- Are there security requirements (encryption, certificate pinning)?
+- Does it need accessibility support?
+- Are there security requirements like encryption at rest or certificate pinning?
 
-Always clarify scope — interviewers intentionally give vague requirements to see how you narrow them down.
+These constraints drive every architecture decision that follows. Offline support means you need a local database. Low-end device support means you need to be careful about memory and image sizes. Real-time updates mean WebSockets or SSE instead of polling.
 
-#### Q4: How do you structure the high-level architecture of a mobile app?
+#### Q4: How do you define scope and resource constraints?
+
+After listing requirements, draw a line between must-haves and nice-to-haves. The interviewer doesn't expect a complete production app in 45 minutes. Be explicit: "I'll focus on the feed and posting flow, and keep search and notifications out of scope."
+
+For resources, clarify what backend support exists. Can you assume a REST API? Do you control the API contract or is it fixed? Is there a push notification service like FCM? Is there a CDN for images? These assumptions change your client-side design significantly. If you don't control the backend, you might need more local aggregation and caching to work around suboptimal APIs.
+
+### Step 2 — High-Level Design
+
+#### Q5: How do you structure the high-level architecture of a mobile app?
 
 The standard layered architecture has three layers:
 
-- **UI layer** — Activities, Fragments, or Composables. Observes state from ViewModels and renders UI. No business logic here
-- **Domain layer** (optional) — Use cases or interactors that contain business logic. This layer is pure Kotlin with no Android dependencies
-- **Data layer** — Repositories that abstract data sources. Each repository coordinates between remote (API) and local (Room, DataStore) sources
+- **UI layer** — Activities, Fragments, or Composables. Observes state from ViewModels and renders it. No business logic here
+- **Domain layer** (optional) — Use cases that contain business logic. Pure Kotlin, no Android dependencies
+- **Data layer** — Repositories that coordinate between remote (API) and local (Room, DataStore) data sources
+
+The data layer is where most of the interesting system design decisions live. Each repository owns a specific domain — `ArticleRepository`, `UserRepository` — and the ViewModel doesn't know or care whether data came from the network or the local database.
+
+#### Q6: How do you decide on client-server communication?
+
+Most mobile apps use REST over HTTPS for standard CRUD operations. That's the default unless you have a reason to pick something else.
+
+Use WebSocket or SSE when you need real-time updates pushed from the server — chat messages, live scores, collaborative editing. Use GraphQL when the client needs flexible queries across multiple entity types and you want to avoid over-fetching. Use gRPC with Protocol Buffers for high-frequency, low-latency communication where payload size matters.
+
+For push notifications (new message alerts, background data sync triggers), FCM is the standard on Android. It's far more battery-efficient than polling the server every 30 seconds. Use push to notify the client that something changed, then let the client pull the actual data.
+
+#### Q7: How do you design the API contract from the mobile client's perspective?
+
+Think screen-first. Each screen should ideally be populated by one API call. If a screen needs data from multiple domain objects, the server should aggregate it rather than forcing the client into multiple round trips.
+
+- **Pagination** — Use cursor-based pagination, not offset-based. Cursors are stable when new items are inserted or deleted. Return `nextCursor` and `hasMore` in every paginated response
+- **Partial responses** — List endpoints return lightweight objects. Detail endpoints return the full entity. Don't send a 50-field object when the list only shows title and thumbnail
+- **Error format** — Use structured error codes the client can act on. A 400 for "invalid email" and "duplicate username" need different UI messages
+
+```kotlin
+@Serializable
+data class PaginatedResponse<T>(
+    val items: List<T>,
+    val nextCursor: String?,
+    val hasMore: Boolean
+)
+```
+
+If you don't control the backend, say so. Explain the ideal API and how you'd work around a suboptimal one with local aggregation and mapping.
+
+#### Q8: How do you design the data model?
+
+Start with the entities visible on the screen and work backward. Identify core entities (User, Article, Message, Order) and their relationships. Decide what gets stored locally vs fetched on demand — frequently accessed data goes in Room, large media stays on the server until explicitly requested.
+
+Keep network DTOs separate from database entities. Map between them in the repository. This decouples your local schema from the API contract so either side can evolve independently.
+
+```kotlin
+@Serializable
+data class ArticleResponse(
+    val id: String,
+    val title: String,
+    val authorName: String,
+    val content: String,
+    val createdAt: Long
+)
+
+@Entity(tableName = "articles")
+data class ArticleEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val authorName: String,
+    val content: String,
+    val createdAt: Long,
+    val lastFetchedAt: Long
+)
+```
+
+The `lastFetchedAt` field is local-only — it tracks cache freshness so you know when to refresh from the network.
+
+#### Q9: What is the single source of truth pattern and why does it matter?
+
+Single source of truth means the local database is the only place the UI reads data from. The network layer writes to the database, and the UI observes the database through Flow. The UI never directly consumes API responses.
 
 ```kotlin
 class ArticleRepository(
@@ -82,115 +138,56 @@ class ArticleRepository(
 }
 ```
 
-The database is the single source of truth. The UI observes the database through Flow, and the repository updates the database when fresh data arrives from the network. This pattern naturally supports offline — the UI always has data to show.
+This gives you offline support for free — the database always has the last known data. It gives you UI consistency — all screens showing the same entity see the same version. And it simplifies state management because you're not manually merging network responses with cached data. Without this pattern, you get stale data bugs where one screen shows the old version and another shows the updated version.
 
-#### Q5: How do you think about non-functional requirements like offline support?
+#### Q10: How do you address non-functional requirements in the high-level design?
 
-Offline support means the app provides a useful experience without network connectivity. There are levels to it:
+After laying out the architecture, walk through each non-functional requirement and show how your design handles it.
 
-- **Read-only offline** — Cache previously fetched data in Room or DataStore. The user can browse but can't create or modify anything. This is the minimum for most apps
-- **Offline queue** — Let the user perform write operations (post a comment, like a photo) while offline. Queue the operations locally and sync when the network returns
-- **Full offline-first** — The local database is the primary data store. All reads and writes go through it. A sync engine handles bidirectional sync with the server, including conflict resolution
+- **Offline support** — The single source of truth pattern handles read-only offline. For write operations while offline, queue them in a pending actions table and replay with WorkManager when connectivity returns
+- **Battery** — Batch network requests, use FCM push instead of polling, defer non-urgent work with WorkManager constraints (charging, Wi-Fi). Respect Doze mode
+- **Bandwidth** — Cursor-based pagination, gzip compression on the HTTP client, request images at the device's actual resolution, delta sync using timestamps to fetch only changes
+- **Low-end devices** — Downsample images, limit concurrent coroutines, disable heavy animations on low-RAM devices via `ActivityManager.isLowRamDevice()`
 
-For most interview scenarios, read-only offline with an offline queue for critical write operations is the right answer. Full offline-first (like Notion or Google Docs) adds significant complexity around conflict resolution and is only worth it when the product requires it.
+Don't go deep here — just show that your architecture accounts for these constraints. The deep dives come next.
 
-#### Q6: What is the single source of truth pattern and why does it matter?
+### Step 3 — Low-Level Design & Deep Dives
 
-Single source of truth means the local database is the only place the UI reads data from. The network layer writes to the database, and the UI observes the database. This gives you:
+#### Q11: How do you choose an architecture pattern (MVVM, MVI) and set up dependency injection?
 
-- Offline support for free — the database always has the last known data
-- Consistent UI — all screens showing the same entity see the same version
-- Simpler state management — no need to merge network responses with cached data manually
+MVVM with unidirectional data flow is the standard for Android. The ViewModel holds UI state as a `StateFlow`, the UI observes it, and user actions flow back to the ViewModel as events. MVI is a stricter version where all events are modeled as a sealed class and state transitions happen through a reducer — better for complex screens with many interacting states.
 
-Without this pattern, you end up with stale data bugs where one screen shows the old version and another shows the updated version because they fetched at different times.
+For dependency injection, Hilt is the standard for production apps. It generates code at compile time, so there's no runtime reflection cost. Define modules for your data layer (API clients, DAOs, repositories) and let Hilt inject them into ViewModels and use cases. In a system design interview, mentioning Hilt briefly is enough — the interviewer cares more about what you inject than how.
 
-#### Q7: How do you handle bandwidth constraints on mobile?
+#### Q12: How do you design caching in detail?
 
-Bandwidth is limited and often metered. Several strategies help:
+Use a two-level cache — memory and disk. Memory cache (an `LruCache` or repository-scoped map) gives instant access but dies with the process. Disk cache (Room) survives restarts. The repository coordinates both: check memory first, then disk, then network. Write network results to both levels on the way back.
 
-- **Pagination** — Don't load everything at once. Use cursor-based pagination for feeds and lists
-- **Compression** — Enable gzip on the HTTP client. Use compact serialization formats like Protocol Buffers instead of JSON for high-traffic endpoints
-- **Image optimization** — Request images at the exact resolution the device needs, not full-size originals. Use WebP format
-- **Delta sync** — Instead of fetching the full dataset every time, only fetch what changed since the last sync. Use timestamps or version numbers
-- **Batch requests** — Combine multiple small requests into a single batched request to reduce HTTP overhead
-- **Prefetching** — Load data the user is likely to need next while they're on Wi-Fi, but be conservative on cellular
+Cache invalidation is the hard part. Three strategies:
 
-#### Q8: How does battery consumption factor into mobile system design?
+- **TTL** — Expire entries after a fixed duration. Simple but blunt — you might serve stale data or evict data that's still valid
+- **Version-based** — Tag data with a version. When the server reports a newer version, invalidate the local copy
+- **Event-based** — Invalidate specific entries when a relevant write happens. If the user posts a new article, invalidate the article list cache
 
-Every network request, GPS read, and background task costs battery. The system design should minimize unnecessary work.
+Stale-while-revalidate combines caching with freshness. Show cached data immediately, fetch fresh data in the background, update the UI when it arrives. The user sees content within milliseconds instead of waiting for a network round trip.
 
-- **Batch network requests** — Instead of sending analytics events one by one, batch them and send every 30 seconds or when the user backgrounds the app
-- **Use push over poll** — FCM push notifications are far more battery-efficient than polling the server every 30 seconds
-- **Respect Doze mode** — Starting from Android 6, the system defers background work when the device is idle. WorkManager handles this automatically
-- **Avoid wake locks** — Keeping the CPU awake drains battery fast. Only hold wake locks for truly critical work
-- **Location batching** — If you need location updates, use `FusedLocationProviderClient` with batched delivery instead of continuous GPS polling
+#### Q13: How do you design offline support?
 
-The key principle is to defer non-urgent work and batch what you can. WorkManager with appropriate constraints (charging, Wi-Fi) is the standard tool for this.
+There are three levels:
 
-### Deep Dive Questions (Advanced → Expert)
+- **Read-only offline** — Cache previously fetched data in Room. The user can browse but can't create or modify anything. This is the minimum for most apps
+- **Offline queue** — Let the user perform write operations while offline. Queue them locally with metadata (timestamp, operation type, entity ID) and replay when connectivity returns
+- **Full offline-first** — The local database is the primary data store. A sync engine handles bidirectional sync with conflict resolution (last-write-wins, server-wins, or field-level merge)
 
-#### Q9: How do you design the data model for a mobile system design problem?
+For most interview problems, read-only offline with an offline queue for critical writes is the right answer. Full offline-first adds significant complexity around conflict resolution and is only worth it when the product demands it — apps like Notion or Google Docs.
 
-Start with the entities visible on the screen and work backward.
+#### Q14: How do you handle threading and concurrency?
 
-- Identify the core entities (User, Message, Article, Order) and their relationships
-- Decide what's stored locally vs fetched on demand. Frequently accessed data goes in Room. Large media files stay on the server until explicitly downloaded
-- Design your Room entities with proper indices for query patterns. If you're querying messages by conversation ID, index that column
-- Keep network DTOs separate from database entities. Map between them in the repository. This decouples your local schema from the API contract
+All UI work happens on the main thread. Everything else runs on background threads using Kotlin coroutines.
 
-```kotlin
-// Network DTO
-@Serializable
-data class ArticleResponse(
-    val id: String,
-    val title: String,
-    val authorName: String,
-    val content: String,
-    val createdAt: Long
-)
-
-// Room entity
-@Entity(tableName = "articles")
-data class ArticleEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val authorName: String,
-    val content: String,
-    val createdAt: Long,
-    val lastFetchedAt: Long // local-only field for cache freshness
-)
-```
-
-The `lastFetchedAt` field is a local-only timestamp that lets you decide when to refresh from the network. This is a common pattern for stale-while-revalidate caching.
-
-#### Q10: How do you design the API contract between the mobile client and the server?
-
-Think from the client's perspective — what data does each screen need, and how many round trips does that take?
-
-- **Screen-driven endpoints** — Ideally, one API call populates one screen. If a screen needs data from multiple domain objects, the server should aggregate it rather than forcing the client to make multiple calls
-- **Pagination** — Use cursor-based pagination (not offset-based) for feeds. Cursors are stable even when new items are inserted. Return `nextCursor` and `hasMore` in the response
-- **Partial responses** — If an entity is large, support field selection so the list endpoint returns lightweight objects and the detail endpoint returns the full object
-- **Error responses** — Define a consistent error format with error codes the client can act on, not just HTTP status codes. A 400 for "invalid email" and "duplicate username" need different UI messages
-
-```kotlin
-// Response wrapper
-@Serializable
-data class PaginatedResponse<T>(
-    val items: List<T>,
-    val nextCursor: String?,
-    val hasMore: Boolean
-)
-```
-
-If you don't control the backend, acknowledge that in the interview. Explain what the ideal API looks like and how you'd work around a suboptimal one (local aggregation, caching, extra mapping).
-
-#### Q11: How do you handle threading and concurrency in mobile system design?
-
-All UI work happens on the main thread. Network, database, and heavy computation run on background threads. Kotlin coroutines with structured concurrency is the standard approach.
-
-- **Dispatchers.Main** — UI updates, state emission, light processing
-- **Dispatchers.IO** — Network calls, database queries, file I/O. Backed by a pool of 64 threads
-- **Dispatchers.Default** — CPU-intensive work like JSON parsing, image processing, sorting large lists. Backed by a pool sized to CPU cores
+- **Dispatchers.Main** — UI updates, state emission
+- **Dispatchers.IO** — Network calls, database queries, file I/O. Pool of 64 threads
+- **Dispatchers.Default** — CPU-heavy work like JSON parsing or sorting large lists. Pool sized to CPU cores
 
 ```kotlin
 class SearchRepository(
@@ -207,157 +204,76 @@ class SearchRepository(
 }
 ```
 
-Avoid creating raw threads or using `Executors` directly. Coroutine scopes tied to lifecycle (`viewModelScope`, `lifecycleScope`) handle cancellation automatically. If a user navigates away, in-flight requests get cancelled instead of leaking.
+Use coroutine scopes tied to lifecycle — `viewModelScope` and `lifecycleScope` — so in-flight requests get cancelled automatically when the user navigates away. Avoid raw threads and `Executors`.
 
-#### Q12: How do you approach designing for low-end devices?
+#### Q15: How do you implement pagination on the client?
 
-Low-end devices have less RAM, slower CPUs, and often run older Android versions. Design decisions matter more here.
-
-- **Reduce memory pressure** — Downsample images, use `RecyclerView` with view recycling, avoid loading entire datasets into memory
-- **Limit concurrent work** — Use fewer coroutines running in parallel. A flagship phone handles 20 parallel image loads fine, but a low-end device chokes
-- **Avoid heavy animations** — Reduce or disable animations on devices with low RAM. Check `ActivityManager.isLowRamDevice()`
-- **Smaller payloads** — Request lower-resolution images and fewer items per page
-- **Lazy initialization** — Don't initialize everything at app startup. Load modules on demand
-
-The interviewer wants to see that you think about the full range of devices, not just the Pixel you develop on. Mention concrete techniques and when you'd apply them.
-
-#### Q13: How do you approach app size optimization?
-
-App size directly impacts install conversion rates. Every 6 MB increase in app size reduces installs by roughly 1% in emerging markets.
-
-- **Android App Bundle** — Deliver only the resources for the user's device (density, ABI, language). This alone can reduce download size by 20-30%
-- **R8/ProGuard** — Shrink unused code and resources. Enable `minifyEnabled` and `shrinkResources` in release builds
-- **Vector drawables** — Replace PNG/JPEG icons with vector drawables. A vector icon is typically 200 bytes vs 5-20 KB for a bitmap at multiple densities
-- **WebP format** — Use WebP instead of PNG for photos. WebP is 25-35% smaller with similar quality
-- **Dynamic feature modules** — Ship rarely used features as on-demand modules that download only when needed
-- **Dependency audit** — Review your dependency tree. A single unused library can add hundreds of KB. Use the APK Analyzer to find what's taking space
+Use cursor-based pagination. The server returns a page of items plus a `nextCursor`. The client stores the cursor and passes it back when requesting the next page. Trigger the next page load when the user scrolls within 5-10 items of the end.
 
 ```kotlin
-// build.gradle.kts
-android {
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+@Composable
+fun FeedScreen(viewModel: FeedViewModel) {
+    val state by viewModel.feedState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisible >= listState.layoutInfo.totalItemsCount - 5
         }
-    }
-    bundle {
-        language { enableSplit = true }
-        density { enableSplit = true }
-        abi { enableSplit = true }
-    }
-}
-```
-
-#### Q14: What is stale-while-revalidate and how do you implement it on mobile?
-
-Stale-while-revalidate means the app shows cached (potentially stale) data immediately while fetching fresh data in the background. Once the fresh data arrives, the UI updates. This gives the user instant perceived performance — no loading spinners for previously visited screens.
-
-```kotlin
-fun getArticles(): Flow<List<Article>> = flow {
-    // Emit cached data immediately
-    val cached = dao.getArticles()
-    if (cached.isNotEmpty()) {
-        emit(cached)
+        .distinctUntilChanged()
+        .filter { it }
+        .collect { viewModel.loadNextPage() }
     }
 
-    // Fetch fresh data in the background
-    try {
-        val fresh = api.fetchArticles()
-        dao.replaceAll(fresh)
-        emit(dao.getArticles())
-    } catch (e: IOException) {
-        // Network failed — cached data is still showing
-        if (cached.isEmpty()) throw e
+    LazyColumn(state = listState) {
+        items(state.posts, key = { it.id }) { post -> FeedPostItem(post) }
+        if (state.isLoadingMore) { item { LoadingIndicator() } }
     }
 }
 ```
 
-The user sees content within milliseconds instead of waiting for a network round trip. The tradeoff is that users briefly see stale data. For most apps this is acceptable — a news article that's 2 minutes old is fine. For a stock trading app, it's not. Choose the freshness strategy based on how time-sensitive the data is.
+The `distinctUntilChanged()` prevents repeated triggers. Using `key` in `items()` lets Compose skip recomposition for unchanged items and preserves scroll position across data updates.
 
-#### Q15: How do you handle data synchronization between the client and server?
+#### Q16: How do you approach performance in a system design answer?
 
-Sync strategies depend on whether data flows one way or both ways.
+Call out specific performance concerns for the problem at hand. For a feed, it's scroll performance — every frame must render within 16ms for 60fps. For a chat app, it's message delivery latency. For a map app, it's location update frequency.
 
-- **Pull-based sync** — The client periodically fetches updates from the server. Simple but not real-time. Use timestamps or version numbers to fetch only changes: `GET /articles?updatedAfter=2025-01-01T00:00:00Z`
-- **Push-based sync** — The server notifies the client when data changes via push notifications or WebSocket. More efficient but requires server-side infrastructure
-- **Bidirectional sync** — Both client and server can modify data independently. Requires conflict resolution
+General strategies that apply to most designs:
 
-For write operations while offline, queue them locally with metadata (timestamp, operation type, entity ID) and replay them when connectivity returns. Handle conflicts with a strategy:
-- **Last-write-wins** — Simplest. Whoever wrote last overwrites the other. Works when data isn't collaboratively edited
-- **Server-wins** — The server's version always takes priority. Good for admin-controlled data
-- **Merge** — Combine both changes field by field. Complex but necessary for collaborative editing
+- **Image optimization** — Request images at the device's resolution, not full-size originals. Use WebP. Prefetch images for items about to scroll into view
+- **Lazy loading** — Don't initialize everything at startup. Load modules and heavy resources on demand
+- **Memory management** — Downsample bitmaps, use view recycling, limit concurrent work on low-end devices
+- **App size** — Use Android App Bundles for density/ABI/language splits. Enable R8 shrinking. Audit dependencies. Every 6 MB increase in app size reduces installs by roughly 1% in emerging markets
 
-Most interview scenarios need pull-based sync with an offline write queue. Mention bidirectional sync to show depth, but don't over-engineer the solution.
+#### Q17: How do you handle accessibility and localization?
 
-#### Q16: How would you design the caching strategy for a mobile app?
+Accessibility should be part of every system design answer, not an afterthought.
 
-Use a two-level cache — memory and disk.
+- **Content descriptions** — Every meaningful image and icon needs a description for screen readers. Decorative elements get marked as not important for accessibility
+- **Touch targets** — Minimum 48dp x 48dp for interactive elements
+- **Font scaling** — Use `sp` for text. Layouts should reflow at large font sizes, not clip
+- **Color contrast** — Minimum 4.5:1 contrast ratio. Don't rely on color alone to convey meaning
 
-- **Memory cache** — Fast access, lost on process death. Use `LruCache` or a simple `HashMap` with size limits. Good for data the user is actively viewing (current screen's data, recently loaded images)
-- **Disk cache** — Survives process death and app restarts. Use Room for structured data and `DiskLruCache` for binary data like images. Good for anything the user has seen before
+For localization, externalize all strings to `strings.xml` and support RTL layouts. If the app targets global users, plan for text expansion — German and French strings are typically 30% longer than English. Use ICU `MessageFormat` for plurals and gendered text instead of string concatenation.
 
-The repository coordinates both levels:
-1. Check memory cache first — if hit, return immediately
-2. Check disk cache (Room) — if hit, return and optionally refresh from network
-3. Fetch from network — write to both disk and memory cache, then return
+#### Q18: How do you address security concerns?
 
-Cache invalidation is the hard part. Strategies include:
-- **TTL (time-to-live)** — Expire entries after a fixed duration. Simple but can serve stale data or evict still-valid data
-- **Version-based** — Tag cached data with a version number. When the server reports a newer version, invalidate
-- **Event-based** — Invalidate specific entries when a relevant write operation happens (e.g., invalidate the article cache when the user posts a new article)
+Security comes up when your app handles sensitive data — auth tokens, payments, personal information.
 
-#### Q17: What is optimistic UI and when would you use it?
+- **Token storage** — Store auth tokens in `EncryptedSharedPreferences`, not plain SharedPreferences. Never put tokens in a database without encryption
+- **Certificate pinning** — Pin your server's certificate in OkHttp to prevent MITM attacks on compromised networks. Use backup pins for certificate rotation
+- **Network security** — Enforce HTTPS everywhere via Network Security Config. Disable cleartext traffic in production builds
+- **Data at rest** — Encrypt sensitive Room databases using SQLCipher. Use Android Keystore for cryptographic key management
 
-Optimistic UI means updating the UI immediately as if the operation succeeded, without waiting for the server response. If the server later rejects the operation, you roll back the UI to the previous state.
-
-The classic example is a like button. Instead of showing a spinner while waiting for the server, you toggle the heart immediately and increment the count. In the background, you send the request. If it fails, you revert.
-
-```kotlin
-class LikeRepository(
-    private val api: ArticleApi,
-    private val dao: ArticleDao
-) {
-    suspend fun toggleLike(articleId: String) {
-        // Optimistic update — flip locally first
-        dao.toggleLike(articleId)
-
-        try {
-            api.toggleLike(articleId)
-        } catch (e: IOException) {
-            // Revert on failure
-            dao.toggleLike(articleId)
-        }
-    }
-}
-```
-
-Optimistic UI works well for low-risk, easily reversible actions — likes, bookmarks, read status. It doesn't work for irreversible actions like payments or deleting data. The tradeoff is complexity: you need rollback logic, and the user might briefly see incorrect state if the server rejects the change.
-
-#### Q18: How do you design for accessibility in a mobile system design?
-
-Accessibility isn't a nice-to-have — it's a requirement for production apps and interviewers notice when you mention it.
-
-- **Content descriptions** — Every meaningful image and icon needs a description for screen readers. Decorative elements should be marked as not important for accessibility
-- **Touch targets** — Minimum 48dp x 48dp for interactive elements. Small buttons are unusable for users with motor impairments
-- **Font scaling** — Use `sp` units for text and test with large font sizes enabled. Layouts should reflow instead of clipping
-- **Color contrast** — Text must have at least 4.5:1 contrast ratio against its background. Don't rely on color alone to convey meaning
-- **Focus order** — Screen reader traversal should follow a logical reading order, not the layout tree order
-
-In Compose, use `semantics` modifiers to provide accessibility information. In the View system, set `contentDescription` and use `importantForAccessibility`.
-
-Mentioning accessibility in a system design interview shows maturity. It takes 30 seconds to say "I'd ensure all interactive elements have content descriptions and meet the 48dp touch target minimum" and it makes a strong impression.
+In a system design interview, you don't need to go deep on security. Mentioning token storage and certificate pinning takes 15 seconds and shows you think about it.
 
 ### Common Follow-ups
 
 - How would you handle versioning of your API contract when the app has multiple versions in the wild?
-- What's the difference between cursor-based and offset-based pagination? Why prefer cursors for mobile?
 - How do you decide between Room and DataStore for local storage?
-- How would you monitor the health of your app in production (crash rate, ANR rate, network errors)?
+- How would you monitor app health in production (crash rate, ANR rate, network errors)?
 - How do you handle deep links into specific screens while maintaining proper back stack behavior?
 - What's your approach to feature flags and A/B testing on mobile?
-- How do you handle schema migrations in Room when your data model changes?
+- How do you handle Room schema migrations when the data model changes?
+- What is optimistic UI and when would you use it?

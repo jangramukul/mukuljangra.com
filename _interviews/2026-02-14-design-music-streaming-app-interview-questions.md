@@ -8,21 +8,45 @@ sequence: 76
 description: "Designing a music streaming app like Spotify tests your understanding of audio playback, background services, media sessions, offline caching, and playback queue management."
 ---
 
-## Design a Music Streaming App
+## Design a Music Streaming App (Spotify)
 
-Music streaming is a rich system design topic because it covers audio playback, background processing, media session integration, offline support, and queue management. Interviewers want to see how you handle continuous playback across app states and integrate with the Android media ecosystem.
+Music streaming combines audio playback, background services, media session integration, offline support, and queue management. This is a step-by-step walkthrough of how you'd design a Spotify-like app on Android.
 
-### Core Questions (Beginner → Intermediate)
+### Requirements & Scope
 
-#### Q1: What are the core components of a music streaming app?
+#### Q1: What are the core features of a music streaming app?
 
-A music streaming app needs: an audio player (ExoPlayer/Media3), a background service to keep playback alive when the app is minimized, a media session for system integration (lock screen controls, Bluetooth, headset buttons), a playback queue to manage track order, a caching layer for streaming and offline playback, and a UI layer for browsing, searching, and controlling playback.
+The essential features are browse and search (discover music by artist, album, genre, or keyword), audio playback (stream tracks with play/pause/seek/skip), playlists (create, edit, reorder, share), and offline mode (download tracks for playback without network). Beyond that, the app needs background playback so music continues when the user leaves the app, a playback queue with shuffle and repeat, and media controls on the lock screen, notification, and Bluetooth devices.
 
-The playback pipeline is: **User selects track → Queue updated → Player loads audio URL → Streaming/buffering → Audio output → Media session notifies system → Notification updated**.
+#### Q2: What are the key non-functional requirements?
 
-#### Q2: MediaPlayer vs ExoPlayer — which would you use?
+Three things matter most for a music streaming app:
 
-ExoPlayer (now part of AndroidX Media3) is the right choice. `MediaPlayer` is the old framework API — it has limited format support, poor error handling, and no adaptive streaming. ExoPlayer supports DASH, HLS, and SmoothStreaming for adaptive bitrate, handles DRM, supports gapless playback, and is actively maintained by Google.
+- **Gapless playback** — No silence gap between consecutive tracks. Live albums and mix albums sound broken without this.
+- **Background playback** — Music must keep playing across app switches, lock screen, and even after the user clears the recent apps list. This requires a foreground service.
+- **Battery efficiency** — Audio playback is a long-running operation. The app should not wake the CPU unnecessarily, should buffer smartly, and should avoid excessive network polling. Audio-only streaming uses far less bandwidth than video, but careless implementation still drains the battery.
+
+Latency matters less than in video — users tolerate 2-3 seconds of initial buffering when they tap a song.
+
+#### Q3: How would you scope this for a 45-minute interview?
+
+Focus on the playback path end-to-end: user taps a song, the app builds a queue, starts a foreground service, streams audio through ExoPlayer, shows controls in the notification and lock screen, and handles interruptions like phone calls. Then go deep on one or two areas — offline downloads, gapless playback, or queue management. Skip social features, lyrics, and recommendation algorithms unless the interviewer asks.
+
+### High-Level Design
+
+#### Q4: How would you structure the client architecture?
+
+The architecture has three layers:
+
+- **UI layer** — Screens for home/browse, search, library/playlists, now-playing, and queue. Built with Compose, observing state from ViewModels.
+- **Playback engine** — ExoPlayer wrapped in a foreground service with a MediaSession. This is the core of the app. It handles streaming, buffering, gapless transitions, and audio focus.
+- **Data layer** — Repository pattern with Retrofit for the catalog API, Room for cached metadata and playlist data, and ExoPlayer's cache for streamed audio bytes.
+
+The playback engine runs in a `MediaSessionService`, separate from the UI lifecycle. The UI connects to it through a `MediaController`. This separation means playback survives activity destruction, configuration changes, and even the app being removed from recents.
+
+#### Q5: Why use Media3/ExoPlayer for audio playback?
+
+`MediaPlayer` is the old framework API — limited format support, poor error handling, no adaptive streaming. ExoPlayer (now part of AndroidX Media3) supports DASH, HLS, and progressive streams, handles DRM, supports gapless playback natively, and is actively maintained by Google.
 
 ```kotlin
 class AudioPlayer(context: Context) {
@@ -41,11 +65,55 @@ class AudioPlayer(context: Context) {
 }
 ```
 
-ExoPlayer handles buffering, format detection, and codec selection internally. It also supports playlists natively — you can set multiple `MediaItem`s and it handles transitions between tracks. Media3 is the evolution of ExoPlayer with better API design and Jetpack integration.
+ExoPlayer handles buffering, format detection, and codec selection internally. It also supports playlists natively — set multiple `MediaItem`s and it handles transitions between tracks. Media3 wraps ExoPlayer with better API design and Jetpack integration.
 
-#### Q3: How do you keep music playing when the app is in the background?
+#### Q6: What APIs does the app need from the backend?
 
-Use a foreground service with a persistent notification. Without a service, Android kills the app's process shortly after the user leaves, and playback stops. The foreground service tells the system this is an active user-facing task.
+Three main API groups:
+
+- **Catalog API** — Search, browse by genre/artist/album, get track metadata (title, artist, album, duration, artwork URL). This is read-heavy and highly cacheable.
+- **Playlist API** — CRUD operations for user playlists. Create, add/remove tracks, reorder, delete. Playlists sync across devices, so the API needs conflict handling.
+- **Stream API** — Returns the audio stream URL for a given track ID. The URL is typically a signed, time-limited CDN link. The client passes quality preference (low, normal, high) and the server returns the appropriate bitrate stream.
+
+The catalog and playlist APIs use standard REST. The stream API returns a URL that ExoPlayer fetches directly — the app never downloads the audio bytes through its own networking layer.
+
+#### Q7: What are the core data models?
+
+The key entities are Track, Playlist, and PlaybackQueue.
+
+```kotlin
+data class Track(
+    val id: String,
+    val title: String,
+    val artist: String,
+    val albumId: String,
+    val durationMs: Long,
+    val artworkUrl: String,
+    val streamUrl: String
+)
+
+data class Playlist(
+    val id: String,
+    val name: String,
+    val ownerId: String,
+    val trackIds: List<String>,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+data class PlaybackQueue(
+    val tracks: List<Track>,
+    val currentIndex: Int,
+    val shuffleEnabled: Boolean,
+    val repeatMode: RepeatMode // OFF, ONE, ALL
+)
+```
+
+Track metadata is cached in Room for offline access and fast loading. The `streamUrl` is short-lived — the app fetches a fresh URL from the stream API when the user actually plays the track. Playlists are stored locally and synced with the server.
+
+#### Q8: How do you keep music playing in the background?
+
+Use a foreground service with a persistent notification. Without a service, Android kills the process shortly after the user leaves, and playback stops. Media3's `MediaSessionService` handles the foreground service lifecycle automatically — it starts as foreground when playback begins and stops when playback ends.
 
 ```kotlin
 class PlaybackService : MediaSessionService() {
@@ -58,9 +126,9 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player).build()
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession {
-        return mediaSession
-    }
+    override fun onGetSession(
+        controllerInfo: MediaSession.ControllerInfo
+    ): MediaSession = mediaSession
 
     override fun onDestroy() {
         player.release()
@@ -70,11 +138,138 @@ class PlaybackService : MediaSessionService() {
 }
 ```
 
-Media3's `MediaSessionService` handles the foreground service lifecycle automatically — it starts as a foreground service when playback begins and stops when playback ends. It also creates the notification with playback controls. On Android 14+, declare `android:foregroundServiceType="mediaPlayback"` in the manifest.
+On Android 14+, declare `android:foregroundServiceType="mediaPlayback"` in the manifest. The `MediaSessionService` also creates the notification with playback controls automatically. The UI binds to this service through a `MediaController` and disconnects freely without affecting playback.
 
-#### Q4: What is a MediaSession and why does it matter?
+#### Q9: How does audio focus work in a music app?
 
-`MediaSession` is the bridge between your player and the Android system. It tells the system what's currently playing, what controls are available, and the playback state. Without it, lock screen controls don't work, Bluetooth headset buttons do nothing, and Google Assistant can't control playback.
+Audio focus is how Android coordinates audio between apps. When your app starts playing, it requests focus. If another app (navigation, phone call) needs audio, your app must respond — pause for a phone call, lower volume for a navigation prompt.
+
+```kotlin
+class AudioFocusHandler(context: Context) {
+    private val audioManager = context.getSystemService(AudioManager::class.java)
+
+    private val focusRequest = AudioFocusRequest
+        .Builder(AudioManager.AUDIOFOCUS_GAIN)
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+        )
+        .setOnAudioFocusChangeListener { change ->
+            when (change) {
+                AudioManager.AUDIOFOCUS_LOSS -> player.pause()
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player.pause()
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+                    player.setVolume(0.2f)
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    player.setVolume(1.0f)
+                    player.play()
+                }
+            }
+        }
+        .build()
+}
+```
+
+`AUDIOFOCUS_LOSS` means another app took focus permanently — pause. `AUDIOFOCUS_LOSS_TRANSIENT` means temporary loss like a phone call — pause and resume when focus returns. `AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK` means lower volume instead of pausing, useful for navigation prompts over music. ExoPlayer handles this automatically if you call `setHandleAudioFocus(true)` on the player.
+
+### Low-Level Design & Deep Dives
+
+#### Q10: How would you implement gapless and crossfade playback?
+
+Gapless playback means no silence gap between consecutive tracks. This matters for live albums, classical music, and DJ mixes where tracks flow into each other. ExoPlayer supports it natively when you use a playlist of `MediaItem`s — it pre-buffers the next track and trims encoder delay/padding using the LAME header in MP3 files.
+
+```kotlin
+// Gapless — just load tracks as a playlist
+val items = playlist.map { MediaItem.fromUri(it.streamUrl) }
+player.setMediaItems(items)
+player.prepare()
+player.play()
+```
+
+Crossfade is different — the current track fades out while the next fades in, overlapping by a configurable duration (Spotify offers 1-12 seconds). This requires more work because ExoPlayer doesn't support crossfade out of the box. One approach is to use two player instances — one fading out, one fading in — and mix their output. You'd start the second player N seconds before the current track ends, ramp down the first player's volume while ramping up the second, then release the first player when the fade completes. True gapless is simpler and is what ExoPlayer does by default.
+
+#### Q11: How would you handle offline downloads?
+
+Offline downloads let users save tracks for playback without network. Use WorkManager to schedule downloads — it handles network constraints, retry logic, and survives app restarts. Store downloaded audio in the app's internal storage or encrypted external storage.
+
+```kotlin
+class DownloadTrackWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val trackId = inputData.getString("trackId") ?: return Result.failure()
+        val streamUrl = api.getStreamUrl(trackId)
+        val file = File(applicationContext.filesDir, "offline/$trackId.enc")
+
+        httpClient.downloadTo(streamUrl, file)
+        trackDao.markDownloaded(trackId, file.absolutePath)
+        return Result.success()
+    }
+}
+
+// Schedule a playlist download
+fun downloadPlaylist(playlist: Playlist) {
+    playlist.trackIds.forEach { trackId ->
+        val request = OneTimeWorkRequestBuilder<DownloadTrackWorker>()
+            .setInputData(workDataOf("trackId" to trackId))
+            .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
+            .build()
+        WorkManager.getInstance(context).enqueue(request)
+    }
+}
+```
+
+When playing a track, check if it's downloaded first. If yes, play from local storage. If not and there's no network, skip to the next downloaded track. For DRM content, the downloaded files should be encrypted — only the app can decrypt and play them. Track download state in Room so the UI can show progress and filter for offline-available content.
+
+#### Q12: How would you design the playback queue?
+
+The queue holds the list of tracks to play. It needs to support shuffle, repeat, add-next, add-to-end, remove, and reorder. The key challenge is shuffle — when the user enables it, the current track stays playing and the rest get shuffled. When they disable it, the queue returns to the original order at the current track's position.
+
+```kotlin
+class PlaybackQueue {
+    private val originalOrder = mutableListOf<Track>()
+    private val shuffledOrder = mutableListOf<Track>()
+    private var currentIndex = 0
+    private var shuffleEnabled = false
+    private var repeatMode = RepeatMode.OFF
+
+    private val activeQueue: List<Track>
+        get() = if (shuffleEnabled) shuffledOrder else originalOrder
+
+    fun next(): Track? {
+        if (repeatMode == RepeatMode.ONE) return activeQueue[currentIndex]
+        currentIndex++
+        if (currentIndex >= activeQueue.size) {
+            if (repeatMode == RepeatMode.ALL) currentIndex = 0
+            else return null
+        }
+        return activeQueue.getOrNull(currentIndex)
+    }
+
+    fun toggleShuffle() {
+        val current = activeQueue[currentIndex]
+        shuffleEnabled = !shuffleEnabled
+        if (shuffleEnabled) {
+            shuffledOrder.clear()
+            shuffledOrder.addAll(originalOrder.shuffled())
+            shuffledOrder.remove(current)
+            shuffledOrder.add(0, current)
+        }
+        currentIndex = if (shuffleEnabled) 0
+            else originalOrder.indexOf(current)
+    }
+}
+```
+
+"Play next" inserts a track right after `currentIndex`. "Add to queue" appends to the end. Both operations need to update `shuffledOrder` and `originalOrder` consistently. Persist the queue to SharedPreferences or Room so it survives process death — save the track IDs, current index, shuffle state, and repeat mode.
+
+#### Q13: How do MediaSession and media controls work together?
+
+`MediaSession` is the bridge between your player and the Android system. It publishes what's playing (title, artist, album art, duration) and the playback state (playing, paused, position). The system uses this to show controls on the lock screen, notification, Bluetooth devices, Wear OS, Android Auto, and Google Assistant.
 
 ```kotlin
 val mediaSession = MediaSession.Builder(context, player)
@@ -84,121 +279,96 @@ val mediaSession = MediaSession.Builder(context, player)
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>
         ): ListenableFuture<List<MediaItem>> {
-            // Resolve search queries or media IDs to playable URIs
-            val resolved = mediaItems.map { resolveMediaItem(it) }
+            val resolved = mediaItems.map { resolveToStreamUrl(it) }
             return Futures.immediateFuture(resolved)
         }
     })
     .build()
 ```
 
-The session publishes metadata (track title, artist, album art, duration) and playback state (playing, paused, position) to the system. Any client can connect — the notification, lock screen, Wear OS, Android Auto, Bluetooth AVRCP, Google Assistant. Media3's `MediaSession` automatically syncs with the `ExoPlayer` state, so you don't manually update the session on every state change.
+Media3's `MediaSession` syncs with ExoPlayer state automatically — you don't manually update the session on every play/pause/skip. The `MediaSessionService` creates the notification from the session. Any client can connect through a `MediaController`: the notification, lock screen, a car display via Bluetooth AVRCP, or Google Assistant. The `onAddMediaItems` callback is where you resolve a search query or media ID into a playable stream URL.
 
-#### Q5: How would you handle audio focus?
+#### Q14: How would you handle audio streaming and buffering?
 
-Audio focus is Android's way of coordinating audio between apps. When your music app starts playing, it requests audio focus. If another app (like a navigation app) needs to play audio, it requests focus too. Your app should respond by pausing or lowering volume ("ducking").
-
-```kotlin
-class AudioFocusManager(context: Context) {
-    private val audioManager = context.getSystemService(AudioManager::class.java)
-
-    private val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-        )
-        .setOnAudioFocusChangeListener { focusChange ->
-            when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS -> player.pause() // another app took focus permanently
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player.pause() // temporary loss (phone call)
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> player.setVolume(0.2f) // lower volume
-                AudioManager.AUDIOFOCUS_GAIN -> { player.setVolume(1.0f); player.play() }
-            }
-        }
-        .build()
-
-    fun requestFocus(): Boolean {
-        return audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-    }
-}
-```
-
-Request focus with `AUDIOFOCUS_GAIN` for music playback. If another app has focus, your request might be denied — don't play audio in that case. When you receive `AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK`, reduce volume instead of pausing (useful for navigation prompts over music). ExoPlayer with Media3 handles audio focus automatically if you enable it with `setHandleAudioFocus(true)`.
-
-#### Q6: How would you design the playback queue?
-
-The queue is the list of tracks the user will hear next. It supports adding, removing, reordering, shuffle, and repeat modes. The queue must survive configuration changes and persist across sessions.
+ExoPlayer manages buffering through its `LoadControl`. It downloads audio data ahead of the playback position and keeps a configurable amount in memory. The four key parameters are: minimum buffer before playback starts, maximum buffer to hold, buffer needed to resume after a rebuffer, and buffer for seek operations.
 
 ```kotlin
-class PlaybackQueue {
-    private val originalOrder = mutableListOf<Track>()
-    private val shuffledOrder = mutableListOf<Track>()
-    private var currentIndex = 0
-    private var shuffleEnabled = false
-    private var repeatMode = RepeatMode.OFF // OFF, ONE, ALL
-
-    private val activeQueue: List<Track>
-        get() = if (shuffleEnabled) shuffledOrder else originalOrder
-
-    fun currentTrack(): Track? = activeQueue.getOrNull(currentIndex)
-
-    fun next(): Track? {
-        if (repeatMode == RepeatMode.ONE) return currentTrack()
-        currentIndex++
-        if (currentIndex >= activeQueue.size) {
-            if (repeatMode == RepeatMode.ALL) currentIndex = 0
-            else return null
-        }
-        return currentTrack()
-    }
-
-    fun toggleShuffle() {
-        shuffleEnabled = !shuffleEnabled
-        if (shuffleEnabled) {
-            shuffledOrder.clear()
-            shuffledOrder.addAll(originalOrder.shuffled())
-            // Move current track to front of shuffled order
-            val current = currentTrack()
-            if (current != null) {
-                shuffledOrder.remove(current)
-                shuffledOrder.add(0, current)
-                currentIndex = 0
-            }
-        }
-    }
-}
-```
-
-When shuffle is enabled, keep the current song playing and shuffle the rest. When shuffle is disabled, return to the original order at the current track's original position. Spotify does this — toggling shuffle doesn't interrupt the current song.
-
-#### Q7: How does the media notification work?
-
-The notification shows the current track info, album art, and playback controls (play/pause, next, previous). Media3's `MediaSessionService` creates this automatically. The notification uses `MediaStyle` which gives it the compact, familiar look.
-
-```kotlin
-// Media3 handles this automatically, but you can customize:
-val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-    .setContentTitle(track.title)
-    .setContentText(track.artist)
-    .setLargeIcon(albumArtBitmap)
-    .setSmallIcon(R.drawable.ic_music_note)
-    .setStyle(
-        MediaStyleNotificationHelper.MediaStyle(mediaSession)
-            .setShowActionsInCompactView(0, 1, 2)
+val player = ExoPlayer.Builder(context)
+    .setLoadControl(
+        DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                15_000,  // min buffer before playback starts
+                50_000,  // max buffer to hold in memory
+                2_500,   // buffer to resume after rebuffer
+                5_000    // buffer around keyframes for seek
+            )
+            .build()
     )
-    .addAction(R.drawable.ic_previous, "Previous", previousPendingIntent)
-    .addAction(playPauseIcon, "Play/Pause", playPausePendingIntent)
-    .addAction(R.drawable.ic_next, "Next", nextPendingIntent)
     .build()
 ```
 
-With Media3, you rarely build the notification manually — the `MediaSessionService` creates it from the player state and media metadata. You can customize it by providing a `MediaNotification.Provider`. The notification actions trigger callbacks through the `MediaSession`, which routes them to the player.
+A 50-second max buffer is reasonable for music — audio files are small compared to video, so this uses minimal memory. ExoPlayer also pre-buffers the next track in a playlist ("next-window loading") when the current buffer is full enough, which is how gapless transitions work. For adaptive bitrate, the server provides the track at multiple quality levels (96, 160, 320 kbps) via HLS or DASH. ExoPlayer's `AdaptiveTrackSelection` picks the best quality the network can sustain. In practice, most music apps let the user choose a quality setting and request that bitrate directly.
 
-#### Q8: How would you handle Bluetooth and headset events?
+#### Q15: How would you design the caching strategy?
 
-When the user connects Bluetooth headphones, presses a headset button, or unplugs wired headphones, your app should respond. Android sends `ACTION_AUDIO_BECOMING_NOISY` when headphones are disconnected — you must pause playback to avoid blasting audio through the speaker unexpectedly.
+Cache recently streamed audio to avoid re-downloading when the user replays a track. ExoPlayer's `CacheDataSource` wraps the network source with a disk cache.
+
+```kotlin
+class AudioCacheManager(context: Context) {
+    private val cache = SimpleCache(
+        File(context.cacheDir, "audio_cache"),
+        LeastRecentlyUsedCacheEvictor(500 * 1024 * 1024),
+        StandaloneDatabaseProvider(context)
+    )
+
+    fun buildDataSourceFactory(): DataSource.Factory {
+        return CacheDataSource.Factory()
+            .setCache(cache)
+            .setUpstreamDataSourceFactory(DefaultHttpDataSource.Factory())
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+    }
+}
+
+val player = ExoPlayer.Builder(context)
+    .setMediaSourceFactory(
+        DefaultMediaSourceFactory(cacheManager.buildDataSourceFactory())
+    )
+    .build()
+```
+
+The `LeastRecentlyUsedCacheEvictor` evicts the oldest cached tracks when the cache exceeds 500 MB. This is separate from explicit downloads — cached tracks get evicted when space is needed, downloaded tracks stay until the user removes them. 500 MB stores roughly 100-150 songs at 320 kbps. For predictive prefetch, you could cache the first 30 seconds of the next few tracks in the queue so playback starts instantly even before ExoPlayer's built-in pre-buffering kicks in.
+
+#### Q16: How would you implement an equalizer and audio effects?
+
+Android provides `Equalizer`, `BassBoost`, `Virtualizer`, and `LoudnessEnhancer` through the `android.media.audiofx` package. These attach to an audio session ID, which ExoPlayer exposes.
+
+```kotlin
+class AudioEffectsManager(player: ExoPlayer) {
+    private val sessionId = player.audioSessionId
+
+    private val equalizer = Equalizer(0, sessionId).apply {
+        enabled = true
+    }
+
+    fun setPreset(presetIndex: Short) {
+        equalizer.usePreset(presetIndex)
+    }
+
+    fun setBandLevel(band: Short, level: Short) {
+        equalizer.setBandLevel(band, level)
+    }
+
+    fun release() {
+        equalizer.release()
+    }
+}
+```
+
+The `Equalizer` has a fixed number of bands (typically 5), each with a frequency center and a gain range. You can use built-in presets (Rock, Pop, Jazz) or let the user adjust bands manually. Save the user's EQ settings per profile in SharedPreferences and reapply them when the player is created. The audio effects only work when the player has an active audio session — create them after `player.prepare()` and release them when the player is released.
+
+#### Q17: How would you handle Bluetooth, Cast, and car integration?
+
+When the user connects Bluetooth headphones, unplugs wired headphones, or connects to a car, the app must respond correctly. Android sends `ACTION_AUDIO_BECOMING_NOISY` when headphones disconnect — you must pause playback to avoid blasting through the speaker.
 
 ```kotlin
 class NoisyReceiver(private val player: ExoPlayer) : BroadcastReceiver() {
@@ -210,280 +380,37 @@ class NoisyReceiver(private val player: ExoPlayer) : BroadcastReceiver() {
 }
 ```
 
-For headset button presses (play/pause, skip), `MediaSession` handles this automatically. The system routes media button events to the active media session. Media3 connects the session to the player, so pressing the headset play button calls `player.play()` without extra code. For Bluetooth metadata (showing track info on car displays), the `MediaSession` publishes it through AVRCP automatically.
+For Bluetooth headset buttons (play/pause, skip), `MediaSession` handles it automatically — the system routes media button events to the active session. For Bluetooth car displays, the `MediaSession` publishes track metadata through AVRCP automatically. For Android Auto, `MediaSessionService` already provides the integration — Auto connects as a `MediaController` and displays the queue and controls. For Cast (Chromecast), you'd add `CastPlayer` from the Cast SDK — it implements the same `Player` interface as ExoPlayer, so you can swap the active player and the rest of the app (session, notification, UI) works unchanged.
 
-### Deep Dive Questions (Advanced → Expert)
+#### Q18: How would you handle search and recommendation on the client?
 
-#### Q9: How does streaming vs downloading differ in implementation?
-
-Streaming and downloading use the same HTTP mechanism — both fetch audio data over the network. The difference is in intent and caching strategy.
-
-**Streaming** fetches data on-demand. ExoPlayer manages a buffer (typically 30-60 seconds ahead) and requests more data as the buffer drains. If the network is slow, the buffer empties and playback stalls. Cached stream data is temporary and can be evicted.
-
-**Downloading** fetches the entire file ahead of time and saves it permanently. The user explicitly requests a download for offline listening. Downloaded files bypass the network layer entirely during playback.
+Search needs to be fast and handle partial input. Show local results instantly from cached metadata while the network request is in flight. Debounce the search input by 300ms to avoid flooding the API with keystrokes.
 
 ```kotlin
-// Streaming — ExoPlayer handles buffering internally
-val streamItem = MediaItem.fromUri("https://cdn.example.com/track.mp3")
-player.setMediaItem(streamItem)
+class SearchViewModel(
+    private val musicRepository: MusicRepository
+) : ViewModel() {
 
-// Download — use Media3's DownloadService
-val downloadRequest = DownloadRequest.Builder("track-123", Uri.parse(url)).build()
-DownloadService.sendAddDownload(context, MyDownloadService::class.java, downloadRequest, false)
+    private val _query = MutableStateFlow("")
 
-// Play downloaded content
-val offlineItem = MediaItem.Builder()
-    .setUri(downloadedFilePath)
-    .build()
-player.setMediaItem(offlineItem)
-```
-
-For offline mode, check if a track is downloaded before trying to stream. If downloaded, play from local storage. If not and there's no network, show an error or skip to the next downloaded track in the queue.
-
-#### Q10: How would you implement adaptive bitrate for audio?
-
-Adaptive bitrate adjusts audio quality based on network conditions. The server provides the same track at multiple quality levels (e.g., 96 kbps, 160 kbps, 320 kbps). The client picks the best quality it can sustain without buffering.
-
-ExoPlayer supports this through HLS or DASH manifests. The manifest lists all available quality levels, and ExoPlayer's `AdaptiveTrackSelection` switches between them based on measured bandwidth.
-
-```kotlin
-val player = ExoPlayer.Builder(context)
-    .setTrackSelector(
-        DefaultTrackSelector(context).apply {
-            setParameters(
-                buildUponParameters()
-                    .setMaxAudioBitrate(320_000) // cap at 320 kbps
-                    .setForceLowestBitrate(false)
-            )
+    val results: StateFlow<SearchResult> = _query
+        .debounce(300)
+        .filter { it.length >= 2 }
+        .flatMapLatest { query ->
+            musicRepository.search(query)
         }
-    )
-    .build()
-```
-
-For audio, the switching is less noticeable than video because audio files are small and buffer faster. The practical approach is simpler — let the user choose a quality setting (low, normal, high) and request that bitrate from the server. Save bandwidth settings separately for Wi-Fi and cellular. Spotify uses this approach: "Automatic" quality for cellular and "Very High" for Wi-Fi.
-
-#### Q11: How would you design the audio caching strategy?
-
-Cache recently streamed audio to avoid re-downloading when the user replays a track. Use ExoPlayer's `CacheDataSource` which wraps the network data source with a disk cache.
-
-```kotlin
-class CacheManager(context: Context) {
-    private val cacheDir = File(context.cacheDir, "audio_cache")
-    private val cache = SimpleCache(
-        cacheDir,
-        LeastRecentlyUsedCacheEvictor(500 * 1024 * 1024), // 500 MB
-        StandaloneDatabaseProvider(context)
-    )
-
-    fun buildCacheDataSourceFactory(): DataSource.Factory {
-        val httpFactory = DefaultHttpDataSource.Factory()
-        return CacheDataSource.Factory()
-            .setCache(cache)
-            .setUpstreamDataSourceFactory(httpFactory)
-            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-    }
-}
-
-// Use it when building the player
-val player = ExoPlayer.Builder(context)
-    .setMediaSourceFactory(
-        DefaultMediaSourceFactory(cacheManager.buildCacheDataSourceFactory())
-    )
-    .build()
-```
-
-The `LeastRecentlyUsedCacheEvictor` automatically removes the oldest cached tracks when the cache exceeds 500 MB. This is separate from explicit downloads — cached tracks are evicted when space is needed, while downloaded tracks are kept until the user removes them. A good cache size depends on the app — 500 MB stores roughly 100-150 songs at 320 kbps.
-
-#### Q12: How would you implement gapless playback?
-
-Gapless playback means transitioning between tracks without a gap or click of silence. This matters for live albums, classical music, and mix albums where tracks are designed to flow into each other.
-
-ExoPlayer supports gapless playback natively when using a playlist of `MediaItem`s. It pre-buffers the next track and crossfades at the boundary. For MP3 files, ExoPlayer reads the LAME header which contains encoder delay and padding info — it trims the silence at the start and end of each track.
-
-```kotlin
-// Set up gapless playback with a playlist
-val tracks = playlist.map { MediaItem.fromUri(it.url) }
-player.setMediaItems(tracks)
-player.prepare()
-player.play()
-
-// ExoPlayer handles gapless transitions automatically
-// For crossfade between tracks:
-player.setMediaItem(nextTrack)
-// Use a custom RenderersFactory with a crossfading AudioSink for crossfade support
-```
-
-For crossfade (where the current track fades out while the next fades in), you need more work. One approach is to run two player instances — one fading out, one fading in — and mix their audio. Spotify offers adjustable crossfade duration (1-12 seconds). True gapless without crossfade is simpler and what ExoPlayer does by default with playlists.
-
-#### Q13: How would you sync lyrics with audio playback?
-
-Timed lyrics (like Spotify's "Behind the Lyrics" or Apple Music's synced lyrics) require timestamp-aligned text. Each lyric line has a start and end time, and the UI highlights the current line as the song plays.
-
-```kotlin
-data class LyricLine(
-    val startMs: Long,
-    val endMs: Long,
-    val text: String
-)
-
-class LyricSync(private val player: ExoPlayer) {
-    private var lyrics: List<LyricLine> = emptyList()
-    private val _currentLine = MutableStateFlow<LyricLine?>(null)
-    val currentLine: StateFlow<LyricLine?> = _currentLine
-
-    fun loadLyrics(lines: List<LyricLine>) {
-        lyrics = lines.sortedBy { it.startMs }
-    }
-
-    fun startSync() {
-        scope.launch {
-            while (true) {
-                val position = player.currentPosition
-                val line = lyrics.firstOrNull { position in it.startMs..it.endMs }
-                if (line != _currentLine.value) {
-                    _currentLine.value = line
-                }
-                delay(100) // check every 100ms
-            }
-        }
-    }
+        .stateIn(viewModelScope, SharingStarted.Lazily, SearchResult.Empty)
 }
 ```
 
-Polling the player position every 100ms is the common approach. Binary search on the sorted lyrics list is more efficient than linear search for songs with many lines. The lyrics data typically comes from the server in LRC format (a standard for timed lyrics) or a custom JSON format. Handle seek events — when the user seeks to a new position, immediately jump to the correct lyric line.
-
-#### Q14: How would you handle search and playlist management?
-
-Search needs to be fast and handle partial matches. On the client side, implement local search over downloaded/cached content and delegate full catalog search to the server.
-
-```kotlin
-class MusicRepository(
-    private val api: MusicApi,
-    private val localDao: TrackDao
-) {
-    fun search(query: String): Flow<SearchResult> = flow {
-        // Emit local results immediately
-        val localResults = localDao.search("%$query%")
-        emit(SearchResult(local = localResults, remote = emptyList()))
-
-        // Then fetch remote results
-        try {
-            val remoteResults = api.search(query)
-            emit(SearchResult(local = localResults, remote = remoteResults))
-        } catch (e: IOException) {
-            // Offline — local results only
-        }
-    }
-
-    suspend fun createPlaylist(name: String, trackIds: List<String>) {
-        val playlist = Playlist(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            trackIds = trackIds,
-            createdAt = System.currentTimeMillis()
-        )
-        localDao.insertPlaylist(playlist)
-        api.syncPlaylist(playlist)
-    }
-}
-```
-
-Show local results instantly while the network request is in flight. For playlists, save locally first (optimistic update) and sync to the server in the background. If the sync fails, retry with WorkManager. Handle merge conflicts — if the user modifies the same playlist on two devices, the server needs a conflict resolution strategy (last-write-wins is simplest).
-
-#### Q15: How would you design the offline mode?
-
-Offline mode lets users play downloaded tracks without a network connection. The app needs to detect network state, show only available (downloaded) content when offline, and queue downloads for selected playlists or albums.
-
-```kotlin
-class OfflineManager(
-    private val downloadManager: DownloadManager,
-    private val trackDao: TrackDao
-) {
-    fun downloadPlaylist(playlist: Playlist) {
-        playlist.tracks.forEach { track ->
-            val request = DownloadRequest.Builder(track.id, Uri.parse(track.url))
-                .setData(track.title.toByteArray()) // metadata for notifications
-                .build()
-            downloadManager.addDownload(request)
-            trackDao.markDownloading(track.id)
-        }
-    }
-
-    fun getOfflineTracks(): Flow<List<Track>> {
-        return trackDao.getDownloadedTracks()
-    }
-
-    fun isTrackAvailableOffline(trackId: String): Boolean {
-        return downloadManager.getDownload(trackId)?.state == Download.STATE_COMPLETED
-    }
-}
-```
-
-Use Media3's `DownloadService` and `DownloadManager` for reliable downloads. They handle pause/resume, network constraints, and progress tracking. Store download state in the database so the UI can show download progress and filter for offline-available content. When offline, hide the search tab (or limit to local search) and gray out non-downloaded content in playlists.
-
-#### Q16: How would you handle playback state restoration?
-
-When the user kills and reopens the app, playback should resume from where they left off. Save the current state: queue contents, current track index, playback position, shuffle mode, and repeat mode.
-
-```kotlin
-class PlaybackStateStore(private val prefs: SharedPreferences) {
-
-    fun saveState(player: ExoPlayer, queue: PlaybackQueue) {
-        prefs.edit {
-            putString("queue", Json.encodeToString(queue.tracks))
-            putInt("currentIndex", player.currentMediaItemIndex)
-            putLong("position", player.currentPosition)
-            putBoolean("shuffle", queue.shuffleEnabled)
-            putInt("repeatMode", player.repeatMode)
-        }
-    }
-
-    fun restoreState(player: ExoPlayer, queue: PlaybackQueue) {
-        val tracks = prefs.getString("queue", null)?.let {
-            Json.decodeFromString<List<Track>>(it)
-        } ?: return
-
-        queue.setTracks(tracks)
-        player.setMediaItems(tracks.map { it.toMediaItem() })
-        player.seekTo(
-            prefs.getInt("currentIndex", 0),
-            prefs.getLong("position", 0)
-        )
-        player.repeatMode = prefs.getInt("repeatMode", Player.REPEAT_MODE_OFF)
-        player.prepare() // don't auto-play — wait for user action
-    }
-}
-```
-
-Save state periodically (every 5 seconds) and on pause/stop. Don't auto-play on restore — the user might have closed the app intentionally. Just show the last state in the UI and let them tap play. For playlists, save the playlist ID and position rather than the full track list so you pick up any changes made on other devices.
-
-#### Q17: How would you implement background pre-buffering of the next track?
-
-Pre-buffering loads the next track's audio data while the current track is still playing, so the transition is instant. ExoPlayer does this automatically with its playlist implementation — it starts pre-loading the next `MediaItem` a configurable amount of time before the current track ends.
-
-```kotlin
-val player = ExoPlayer.Builder(context)
-    .setLoadControl(
-        DefaultLoadControl.Builder()
-            .setBufferDurationsMs(
-                15_000,  // min buffer before playback starts
-                50_000,  // max buffer to hold in memory
-                2_500,   // buffer for playback after rebuffer
-                5_000    // buffer around current position for seek
-            )
-            .build()
-    )
-    .build()
-```
-
-The `LoadControl` determines how aggressively ExoPlayer buffers. A 50-second max buffer means ExoPlayer holds up to 50 seconds of audio data in memory per track. For the "next track" pre-buffer, ExoPlayer uses `next-window` loading — it begins buffering the next playlist item when the current buffer is sufficiently full. You don't need to manage this manually. The tradeoff is memory and data usage — buffering too aggressively wastes bandwidth if the user skips tracks frequently.
+The repository emits local matches first (tracks, artists, albums cached in Room), then appends server results when they arrive. For recommendations, the server does the heavy lifting — collaborative filtering, listening history analysis, genre graphs. The client's job is to fetch and display personalized playlists (like Discover Weekly) and show "similar tracks" or "fans also like" sections on artist pages. Cache recommendation results aggressively since they only update daily or weekly.
 
 ### Common Follow-ups
 
-- How would you implement a social feature like shared listening sessions?
-- How would you handle DRM-protected content?
-- How would you design the "Discover Weekly" recommendation engine on the client side?
-- What happens if the audio file format changes mid-stream (HLS adaptive)?
-- How would you implement equalizer and audio effects?
-- How would you handle playback in Android Auto and Wear OS?
-- How would you measure and optimize audio latency for live streaming?
+- How would you implement shared listening sessions (listen along with friends)?
+- How would you handle DRM-protected content and license management?
+- How would you design playback state restoration after process death?
+- How would you support Android Auto and Wear OS playback?
+- How would you sync lyrics with audio playback?
+- How would you measure and optimize battery usage during long playback sessions?
+- How would you handle playback across multiple audio output devices?
