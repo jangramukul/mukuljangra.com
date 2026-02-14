@@ -8,7 +8,12 @@ tags:
   - Architecture
 ---
 
-1. **Prefer Constructor Injection Over Field Injection**
+I've worked on Android projects where dependency injection was an afterthought — classes creating their own dependencies inline, singletons scattered everywhere, and test suites that required a running emulator because nothing could be faked. The codebase wasn't small either. It had over 200 classes, and changing one network client meant touching 15 files. That experience taught me that DI isn't about frameworks or annotations. It's about making your code honest about what it needs and giving you control over how those needs are fulfilled.
+
+Over time, I've developed strong opinions about how DI should work in Android apps. Some of these came from debugging production issues at 2 AM, others from watching teams struggle with patterns that looked clean in tutorials but fell apart at scale. What follows is everything I wish someone had told me before I made these mistakes myself.
+
+## Constructor Injection Over Field Injection
+
 Constructor injection is the default choice for dependency injection, and field injection should be the exception, not the rule. When dependencies are passed through the constructor, the class declares upfront exactly what it needs to function. You can read the constructor signature and immediately understand the class's collaborators. With field injection, dependencies are invisible until you scan the class body for `@Inject lateinit var` annotations.
 
 There's a deeper reason beyond readability. Constructor-injected dependencies are available from the moment the object is created. Field-injected dependencies are set after construction, which means there's a window where the object exists but isn't fully initialized. If any code runs during construction that touches a field-injected dependency, you get an `UninitializedPropertyAccessException` — and these are notoriously hard to reproduce because they depend on initialization ordering.
@@ -40,7 +45,8 @@ class OrderProcessor(
 
 The tradeoff is that Android's Activity and Fragment classes don't support constructor injection because the system instantiates them. For these entry points, field injection through `@AndroidEntryPoint` in Hilt is the practical choice. But that's where it should stop — everything behind those entry points (ViewModels, repositories, use cases, data sources) should use constructor injection exclusively.
 
-2. **Scope Your Dependencies Correctly**
+## Scoping Dependencies Correctly
+
 The most common DI mistake I see isn't about how dependencies are injected — it's about how long they live. A database instance scoped to an Activity gets destroyed and recreated on every rotation. A user session scoped as a singleton leaks memory and state across different users. Getting scopes right is the difference between an app that works and an app that works correctly.
 
 The mental model is straightforward: a dependency's scope should match the lifetime of the thing that needs it. Singletons for app-lifetime objects (database, HTTP client, analytics). Activity-scoped for things tied to a user session or feature flow. ViewModel-scoped for things tied to a screen's data lifecycle.
@@ -74,7 +80,8 @@ object FeatureModule {
 
 Here's the thing most developers miss: over-scoping is just as bad as under-scoping. Making everything a `@Singleton` feels safe — "it's created once, no waste." But singletons hold state for the entire process lifetime. If your `UserSessionManager` is a singleton and the user logs out and logs in as a different user, that singleton still holds the previous user's state unless you manually reset it. I've seen this cause real data leakage bugs in production — user A sees user B's cached data because the repository singleton wasn't cleared between sessions.
 
-3. **Don't Use Service Locator Pattern as Dependency Injection**
+## Service Locator Is Not Dependency Injection
+
 Service locator and dependency injection solve the same problem — decoupling a class from the concrete creation of its dependencies. But they solve it in fundamentally different ways, and the difference matters for testability and maintainability.
 
 With DI, dependencies are pushed into a class from the outside. The class doesn't know where they come from. With a service locator, the class pulls dependencies from a registry. It knows about the locator and actively reaches into it. This creates a hidden dependency on the locator itself and makes it impossible to know what a class needs without reading its implementation.
@@ -104,7 +111,8 @@ class ShippingCalculator(
 
 Testing the service locator version requires setting up the global registry before every test and tearing it down after. Testing the DI version requires passing fake implementations through the constructor — two lines of setup. The service locator version also makes it easy to add dependencies without anyone noticing — just add another `ServiceLocator.get()` call. With constructor injection, every new dependency is visible in the class signature, making code reviews more effective at catching SRP violations.
 
-4. **Use Interfaces for Dependencies You Need to Swap**
+## Using Interfaces for Swappable Dependencies
+
 Not every dependency needs an interface. A `String` utility class that formats dates doesn't need a `DateFormatter` interface. But any dependency that talks to the outside world — network, database, file system, sensors — should be hidden behind an interface. This isn't about following SOLID for its own sake. It's about having a seam where you can insert fakes during testing and swap implementations without changing consumers.
 
 ```kotlin
@@ -148,7 +156,8 @@ class FakeLocationProvider(
 
 The tradeoff is that interfaces add indirection. For simple classes that you'll never swap or fake, the interface is ceremony without benefit. My rule of thumb: if the class does I/O, crosses a process boundary, or has behavior that's inconvenient in tests (like timers, GPS, or analytics), give it an interface. If it's pure logic operating on in-memory data, skip the interface and test it directly.
 
-5. **Too Many Dependencies Is a Design Smell**
+## Too Many Dependencies Is a Design Smell
+
 If your class constructor has 8 parameters, the problem isn't dependency injection — it's that your class is doing too much. A class with 8 dependencies has 8 reasons to change, which violates the Single Responsibility Principle. DI frameworks make it effortless to add dependencies, which masks the design problem.
 
 I use a rough threshold: if a class has more than 5 injected dependencies, it needs to be decomposed. Usually the fix is to group related dependencies into a new class that handles a specific concern. A `CheckoutViewModel` with dependencies on payment, inventory, shipping, notifications, analytics, user preferences, and discount calculation probably needs a `CheckoutOrchestrator` use case that coordinates some of those concerns.
@@ -176,7 +185,8 @@ class CheckoutViewModel(
 
 The `ProcessCheckoutUseCase` now owns the coordination between payment, inventory, shipping, and notifications. The ViewModel is reduced to its actual job: managing UI state and delegating to use cases. This also makes testing dramatically simpler — you mock 3 dependencies instead of 8.
 
-6. **Understand When to Choose Hilt, Koin, or Manual DI**
+## Choosing Between Hilt, Koin, and Manual DI
+
 The Android DI landscape has three main options, and each makes different tradeoffs. Hilt is Google's recommended framework — compile-time code generation, strong integration with Android components, and catch-at-compile errors. Koin is a lightweight service locator (yes, technically a service locator, not true DI) with runtime resolution and a simpler API. Manual DI means you write your own factories and wire dependencies by hand.
 
 Hilt catches dependency graph errors at compile time. If you forget to provide a binding, your app won't build. Koin catches them at runtime — your app builds fine but crashes when it tries to resolve a missing dependency. In a large team with multiple modules, compile-time safety prevents entire categories of bugs that would otherwise reach QA or production. For a small project or a prototype, Koin's simplicity and zero annotation processing overhead can be the right tradeoff.
@@ -185,7 +195,8 @@ Manual DI sounds extreme, but it's what Google's architecture samples used befor
 
 Here's what I've seen work well in practice: Hilt for production apps with multiple developers and modules. Koin for side projects, prototypes, and KMP targets where Hilt's Android-specific code generation doesn't work. Manual DI for tiny apps and for understanding how DI actually works before adopting a framework.
 
-7. **Organize Modules by Feature, Not by Layer**
+## Organizing Modules by Feature
+
 Most Hilt tutorials show a single `AppModule` or separate modules by layer — `NetworkModule`, `DatabaseModule`, `RepositoryModule`. This works for small apps, but it creates god-modules that every feature depends on, makes it hard to find where something is provided, and prevents effective modularization.
 
 Organizing DI modules by feature means each feature has its own module that provides everything it needs. The `search` feature has a `SearchModule`, the `checkout` feature has a `CheckoutModule`. Shared infrastructure (HTTP client, database) stays in a common module, but feature-specific bindings live with the feature.
@@ -228,7 +239,8 @@ object SearchModule {
 
 When you later extract the search feature into its own Gradle module, the `SearchModule` moves with it cleanly. If everything was in a monolithic `AppModule`, you'd need to untangle which bindings belong to which feature — a refactoring nightmare that discourages modularization. The tradeoff is more module files, but each one is small, focused, and obvious about what it provides.
 
-8. **Don't Inject ViewModels Into Other ViewModels**
+## Why ViewModels Should Never Depend on Other ViewModels
+
 This sounds like a non-issue, but I've seen it attempted. A `CartViewModel` wants data from `UserViewModel`, so a developer tries to inject one ViewModel into the other. This breaks the ViewModel lifecycle contract — ViewModels are scoped to their owner (Activity or Fragment), and injecting one into another creates ambiguous ownership, lifecycle mismatches, and circular dependency risks.
 
 The right pattern is to have ViewModels share data through a repository or use case that both depend on. If `CartViewModel` needs the current user, it gets it from `UserRepository`, not from `UserViewModel`. The repository is the shared state owner; ViewModels are independent consumers of that state.
@@ -256,7 +268,8 @@ class CartViewModel(
 
 If two ViewModels truly need to communicate events (not shared data), use a shared Flow scoped to the Activity or a navigation-level scope. But in most cases, the need for ViewModel-to-ViewModel communication signals that the data layer is missing an abstraction.
 
-9. **Use Qualifiers to Distinguish Same-Type Dependencies**
+## Qualifiers for Same-Type Dependencies
+
 When your DI graph has multiple instances of the same type — two `OkHttpClient` instances (one with auth, one without), two `CoroutineDispatcher` instances (IO vs Default), or two `String` URLs (base URL vs CDN URL) — the framework can't tell them apart by type alone. This is where qualifiers solve the ambiguity.
 
 ```kotlin
