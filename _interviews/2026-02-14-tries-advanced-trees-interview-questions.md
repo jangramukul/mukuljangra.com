@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 5
+level: mid
+sequence: 42
 ---
 
 ## Tries & Advanced Trees — What Interviewers Really Ask

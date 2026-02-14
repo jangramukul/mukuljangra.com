@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 3
+level: mid
+sequence: 38
 ---
 
 ## Dependency Injection — Hilt, Dagger & Koin — What Interviewers Really Ask

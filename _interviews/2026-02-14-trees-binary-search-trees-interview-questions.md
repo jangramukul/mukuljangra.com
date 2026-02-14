@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 4
+level: junior
+sequence: 19
 ---
 
 ## Trees & Binary Search Trees

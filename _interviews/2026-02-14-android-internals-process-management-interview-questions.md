@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Technical Round]
 order: 11
+level: mid
+sequence: 27
 ---
 
 ## Android Internals & Process Management

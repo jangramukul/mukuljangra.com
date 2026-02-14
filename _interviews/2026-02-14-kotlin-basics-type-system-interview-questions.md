@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Kotlin Round]
 order: 1
+level: junior
+sequence: 9
 ---
 
 ## Kotlin Basics & Type System

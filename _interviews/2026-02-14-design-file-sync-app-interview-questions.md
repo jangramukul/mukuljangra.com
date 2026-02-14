@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 9
+level: senior
+sequence: 68
 ---
 
 ## Design a File Sync App (Google Drive/Dropbox)

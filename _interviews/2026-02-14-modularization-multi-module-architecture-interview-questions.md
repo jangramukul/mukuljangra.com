@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 4
+level: senior
+sequence: 55
 ---
 
 ## Modularization & Multi-Module Architecture — What Interviewers Really Ask

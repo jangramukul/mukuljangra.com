@@ -4,6 +4,8 @@ date: 2026-02-13
 layout: interview
 tags: [Technical Round]
 order: 10
+level: mid
+sequence: 26
 ---
 
 ## Gradle, Build System & CI/CD

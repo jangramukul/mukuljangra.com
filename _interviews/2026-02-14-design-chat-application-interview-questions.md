@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 3
+level: senior
+sequence: 62
 ---
 
 ## Design a Chat Application

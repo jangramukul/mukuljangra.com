@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Kotlin Round]
 order: 9
+level: junior
+sequence: 11
 ---
 
 ## Collections, Sequences & Functional Patterns

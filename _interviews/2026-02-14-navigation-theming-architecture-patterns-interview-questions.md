@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Jetpack Compose Round]
 order: 6
+level: senior
+sequence: 52
 ---
 
 ## Navigation, Theming & Architecture Patterns

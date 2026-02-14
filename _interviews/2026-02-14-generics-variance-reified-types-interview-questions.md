@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Kotlin Round]
 order: 3
+level: mid
+sequence: 29
 ---
 
 ## Generics, Variance & Reified Types

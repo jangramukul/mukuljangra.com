@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 8
+level: senior
+sequence: 57
 ---
 
 ## State Management Deep Dive

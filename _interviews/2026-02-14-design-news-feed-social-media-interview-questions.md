@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 4
+level: senior
+sequence: 63
 ---
 
 ## Design a News Feed / Social Media Feed

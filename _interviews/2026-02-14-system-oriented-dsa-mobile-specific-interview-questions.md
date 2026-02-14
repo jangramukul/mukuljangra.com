@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 13
+level: senior
+sequence: 61
 ---
 
 ## System-Oriented DSA (Mobile-Specific)

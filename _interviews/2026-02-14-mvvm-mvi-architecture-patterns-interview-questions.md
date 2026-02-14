@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 1
+level: junior
+sequence: 15
 ---
 
 ## MVVM, MVI & Architecture Patterns — What Interviewers Really Ask

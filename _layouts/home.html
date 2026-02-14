@@ -799,12 +799,61 @@
         color: #6b7280;
       }
 
-      /* Interview chips & list */
-      .interview-chips {
+      /* Interview level chips */
+      .interview-level-chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 24px;
+        gap: 10px;
+        margin-bottom: 28px;
+      }
+
+      .level-chip {
+        padding: 8px 20px;
+        border-radius: 9999px;
+        font-size: 0.85em;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        user-select: none;
+        border: 1.5px solid transparent;
+        letter-spacing: 0.3px;
+      }
+
+      .level-chip-junior {
+        background: rgba(52, 211, 153, 0.12);
+        color: #6ee7b7;
+        border-color: rgba(52, 211, 153, 0.25);
+      }
+      .level-chip-junior:hover, .level-chip-junior.active {
+        background: rgba(52, 211, 153, 0.25);
+        border-color: rgba(52, 211, 153, 0.6);
+        color: #34d399;
+        box-shadow: 0 0 16px rgba(52, 211, 153, 0.15);
+      }
+
+      .level-chip-mid {
+        background: rgba(96, 165, 250, 0.12);
+        color: #93c5fd;
+        border-color: rgba(96, 165, 250, 0.25);
+      }
+      .level-chip-mid:hover, .level-chip-mid.active {
+        background: rgba(96, 165, 250, 0.25);
+        border-color: rgba(96, 165, 250, 0.6);
+        color: #60a5fa;
+        box-shadow: 0 0 16px rgba(96, 165, 250, 0.15);
+      }
+
+      .level-chip-senior {
+        background: rgba(167, 139, 250, 0.12);
+        color: #c4b5fd;
+        border-color: rgba(167, 139, 250, 0.25);
+      }
+      .level-chip-senior:hover, .level-chip-senior.active {
+        background: rgba(167, 139, 250, 0.25);
+        border-color: rgba(167, 139, 250, 0.6);
+        color: #a78bfa;
+        box-shadow: 0 0 16px rgba(167, 139, 250, 0.15);
       }
 
       .interviews-list {
@@ -1359,23 +1408,20 @@
 
         <!-- Interview Prep tab -->
         <div class="tab-content" id="tab-interviews">
-          <div class="interview-chips">
-            <div class="category-chip interview-chip active" data-itag="all">All</div>
-            <div class="category-chip interview-chip" data-itag="Technical_Round">Technical Round</div>
-            <div class="category-chip interview-chip" data-itag="Behavioural_Round">Behavioural Round</div>
-            <div class="category-chip interview-chip" data-itag="Coding_Test">Coding Test</div>
-            <div class="category-chip interview-chip" data-itag="System_Design">System Design</div>
-            <div class="category-chip interview-chip" data-itag="DSA">DSA</div>
+          <div class="interview-level-chips">
+            <div class="level-chip level-chip-junior" data-level="junior">Junior Level</div>
+            <div class="level-chip level-chip-mid" data-level="mid">Mid Level</div>
+            <div class="level-chip level-chip-senior active" data-level="senior">Senior Level</div>
           </div>
-          {% assign interviews = site.interviews | sort: 'order' %}
+          {% assign interviews = site.interviews | sort: 'sequence' %}
           {% if interviews.size > 0 %}
           <div class="interviews-list">
           {% for interview in interviews %}
-          <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-tags="{{ interview.tags | join: '|' }}">
+          <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-level="{{ interview.level }}" data-seq="{{ interview.sequence }}" data-tags="{{ interview.tags | join: '|' }}">
             <article class="list-post">
               <div class="list-post-icon interview-number">
                 <span class="day-label">Day</span>
-                <span class="day-num">{% assign o = interview.order | modulo: 100 %}{% assign t = interview.order | modulo: 10 %}{% if o == 11 or o == 12 or o == 13 %}{{ interview.order }}th{% elsif t == 1 %}{{ interview.order }}st{% elsif t == 2 %}{{ interview.order }}nd{% elsif t == 3 %}{{ interview.order }}rd{% else %}{{ interview.order }}th{% endif %}</span>
+                <span class="day-num">{{ interview.sequence }}</span>
               </div>
               <div class="list-post-content">
                 <h2>{{ interview.title }}</h2>
@@ -1543,27 +1589,35 @@
           });
         });
 
-        // Interview chip filtering
-        const iChips = document.querySelectorAll('.interview-chip');
+        // Interview level chip filtering
+        const levelChips = document.querySelectorAll('.level-chip');
         const iPosts = document.querySelectorAll('#tab-interviews .interview-post-link');
+        const LEVEL_HIERARCHY = { junior: ['junior'], mid: ['junior', 'mid'], senior: ['junior', 'mid', 'senior'] };
 
-        iChips.forEach(chip => {
+        function filterByLevel(level) {
+          const allowed = LEVEL_HIERARCHY[level];
+          let dayNum = 1;
+          iPosts.forEach(post => {
+            const postLevel = post.dataset.level;
+            if (allowed.includes(postLevel)) {
+              post.classList.remove('hidden');
+              post.querySelector('.day-num').textContent = dayNum++;
+            } else {
+              post.classList.add('hidden');
+            }
+          });
+        }
+
+        levelChips.forEach(chip => {
           chip.addEventListener('click', function() {
-            const tag = this.dataset.itag;
-            iChips.forEach(c => c.classList.remove('active'));
+            levelChips.forEach(c => c.classList.remove('active'));
             this.classList.add('active');
-
-            iPosts.forEach(post => {
-              if (tag === 'all') {
-                post.classList.remove('hidden');
-              } else {
-                const postTags = post.dataset.tags.split('|');
-                const normalizedTag = tag.replace(/_/g, ' ');
-                post.classList.toggle('hidden', !postTags.includes(normalizedTag));
-              }
-            });
+            filterByLevel(this.dataset.level);
           });
         });
+
+        // Default: show all (senior)
+        filterByLevel('senior');
 
         // Restore state from URL
         const urlParams = new URLSearchParams(window.location.search);

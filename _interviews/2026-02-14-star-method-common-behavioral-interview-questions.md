@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 1
+level: junior
+sequence: 21
 ---
 
 ## STAR Method & Common Behavioral Questions

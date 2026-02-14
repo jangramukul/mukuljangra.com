@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Jetpack Compose Round]
 order: 1
+level: junior
+sequence: 13
 ---
 
 ## Compose Fundamentals & Thinking in Compose

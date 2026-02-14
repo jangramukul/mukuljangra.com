@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Jetpack Compose Round]
 order: 8
+level: senior
+sequence: 54
 ---
 
 ## Testing & Accessibility in Compose

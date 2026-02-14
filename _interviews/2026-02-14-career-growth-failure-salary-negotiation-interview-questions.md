@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 4
+level: senior
+sequence: 70
 ---
 
 ## Career Growth, Failure & Salary Negotiation

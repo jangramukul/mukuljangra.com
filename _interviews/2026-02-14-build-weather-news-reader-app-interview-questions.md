@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 2
+level: junior
+sequence: 24
 ---
 
 ## Build a Weather / News Reader App

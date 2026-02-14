@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Behavioral Round]
 order: 2
+level: mid
+sequence: 47
 ---
 
 ## Leadership, Ownership & Technical Decision-Making

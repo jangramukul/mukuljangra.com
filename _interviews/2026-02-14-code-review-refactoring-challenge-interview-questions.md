@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 5
+level: senior
+sequence: 72
 ---
 
 ## Code Review & Refactoring Challenge

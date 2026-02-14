@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Coding Test]
 order: 3
+level: mid
+sequence: 48
 ---
 
 ## Build a Movie / Product Listing with Detail Screen

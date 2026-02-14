@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 7
+level: senior
+sequence: 66
 ---
 
 ## Design a Ride-Sharing App (Uber/Lyft)

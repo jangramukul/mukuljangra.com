@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 2
+level: mid
+sequence: 37
 ---
 
 ## Clean Architecture & SOLID Principles — What Interviewers Really Ask

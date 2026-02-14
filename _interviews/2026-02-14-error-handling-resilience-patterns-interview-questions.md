@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Architecture Round]
 order: 7
+level: senior
+sequence: 56
 ---
 
 ## Error Handling & Resilience Patterns

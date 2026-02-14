@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Kotlin Round]
 order: 8
+level: mid
+sequence: 33
 ---
 
 ## Kotlin Under the Hood

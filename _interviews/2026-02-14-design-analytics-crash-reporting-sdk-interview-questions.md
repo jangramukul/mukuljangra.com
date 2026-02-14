@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 10
+level: senior
+sequence: 69
 ---
 
 ## Design an Analytics / Crash Reporting SDK

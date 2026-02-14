@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Jetpack Compose Round]
 order: 4
+level: mid
+sequence: 35
 ---
 
 ## Side Effects & Lifecycle in Compose

@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 2
+level: mid
+sequence: 46
 ---
 
 ## Design an Image Loading Library
@@ -296,7 +298,7 @@ class ImageLoader(context: Context) : ComponentCallbacks2 {
         context.applicationContext.registerComponentCallbacks(this)
     }
 
-    override fun onTrimMemory(level: Int) {
+    override fun onTrimMemory(level: mid) {
         when {
             level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> memoryCache.clear()
             level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> memoryCache.clear()

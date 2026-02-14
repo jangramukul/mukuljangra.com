@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Technical Round]
 order: 13
+level: senior
+sequence: 49
 ---
 
 ## App Links, Deep Links & Navigation

@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [System Design Round]
 order: 5
+level: senior
+sequence: 64
 ---
 
 ## Design an Offline-First Application

@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 3
+level: junior
+sequence: 18
 ---
 
 ## Stacks & Queues

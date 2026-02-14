@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [Technical Round]
 order: 14
+level: senior
+sequence: 50
 ---
 
 ## Sensors, Camera & Hardware APIs

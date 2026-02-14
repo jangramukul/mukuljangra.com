@@ -4,6 +4,8 @@ date: 2026-02-13
 layout: interview
 tags: [Technical Round]
 order: 5
+level: junior
+sequence: 5
 ---
 
 ## Storage & Data Persistence

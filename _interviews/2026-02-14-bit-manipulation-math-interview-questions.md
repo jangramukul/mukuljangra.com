@@ -4,6 +4,8 @@ date: 2026-02-14
 layout: interview
 tags: [DSA Round]
 order: 12
+level: senior
+sequence: 60
 ---
 
 ## Bit Manipulation & Math
