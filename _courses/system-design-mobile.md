@@ -13,6 +13,17 @@ tags:
   - System Design
   - Architecture
   - Android
+what_you_learn:
+  - "Design offline-first architectures with single source of truth"
+  - "Implement multi-layer caching — memory, disk, and network"
+  - "Build scalable pagination with Paging 3 and RemoteMediator"
+  - "Handle data sync, conflict resolution, and write queues"
+  - "Modularize Android projects by feature and layer"
+  - "Design real-world systems — chat apps, feeds, e-commerce"
+prerequisites:
+  - "Kotlin and coroutines proficiency"
+  - "Android architecture experience (MVVM, Repository)"
+  - "Room and Retrofit familiarity"
 ---
 
 ## Module 1: Thinking in Systems

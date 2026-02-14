@@ -13,6 +13,18 @@ tags:
   - Jetpack Compose
   - UI
   - Android
+what_you_learn:
+  - "Think declaratively and build UIs with composable functions"
+  - "Manage state with remember, State, and ViewModel integration"
+  - "Handle side effects with LaunchedEffect, DisposableEffect, and rememberUpdatedState"
+  - "Build custom layouts, modifiers, and advanced theming systems"
+  - "Create smooth animations with animate*AsState, AnimatedVisibility, and transitions"
+  - "Optimize Compose performance — recomposition, stability, and lazy layouts"
+  - "Test Compose UIs with ComposeTestRule"
+prerequisites:
+  - "Kotlin fundamentals"
+  - "Basic Android development"
+  - "XML layouts experience (helpful, not required)"
 ---
 
 ## Module 1: Thinking in Compose

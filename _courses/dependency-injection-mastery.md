@@ -14,6 +14,17 @@ tags:
   - Hilt
   - Dagger
   - Architecture
+what_you_learn:
+  - "Understand why DI matters for testable, modular code"
+  - "Set up Hilt with @Module, @Provides, @Binds, and @Inject"
+  - "Scope dependencies correctly — Singleton, ViewModel, Activity"
+  - "Integrate Hilt with ViewModel, Navigation Compose, and WorkManager"
+  - "Structure DI in multi-module Android projects"
+  - "Replace dependencies in tests with @UninstallModules"
+prerequisites:
+  - "Kotlin fundamentals"
+  - "Android architecture basics (MVVM)"
+  - "Basic understanding of interfaces and abstraction"
 ---
 
 ## Module 1: Why Dependency Injection

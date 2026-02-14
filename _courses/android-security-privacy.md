@@ -13,6 +13,16 @@ tags:
   - Security
   - Privacy
   - Android
+what_you_learn:
+  - "Use Android KeyStore for secure key management"
+  - "Implement EncryptedSharedPreferences and encrypted databases"
+  - "Configure network security with certificate pinning and TLS"
+  - "Protect code with ProGuard/R8 obfuscation and tamper detection"
+  - "Integrate biometric authentication (fingerprint, face)"
+  - "Implement privacy-first patterns compliant with Google Play policies"
+prerequisites:
+  - "Android development experience"
+  - "Basic understanding of cryptography concepts"
 ---
 
 ## Module 1: Security Fundamentals

@@ -24,6 +24,7 @@
         --blockquote-border: rgba(96, 165, 250, 0.4);
         --link-color: #60a5fa;
         --link-color-hover: #93c5fd;
+        --course-accent: {{ page.color | default: '#a78bfa' }};
       }
 
       body, .right-column, .content, .content.post {
@@ -173,94 +174,328 @@
         font-weight: 500;
       }
 
-      /* Course content (modules and lessons) */
-      .course-content {
+      /* ── What You'll Learn Section ── */
+      .course-section {
+        margin-bottom: 32px;
+        padding: 24px;
+        background-color: rgba(30, 41, 59, 0.3);
+        border: 1px solid rgba(75, 85, 99, 0.3);
+        border-radius: 12px;
+      }
+
+      .course-section-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.25em;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 16px 0;
+        padding: 0;
+        border: none;
+      }
+
+      .learn-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px 24px;
+      }
+
+      .learn-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 0.92em;
+        color: #d1d5db;
+        line-height: 1.5;
+      }
+
+      .learn-check {
+        color: var(--course-accent);
+        font-size: 14px;
+        margin-top: 3px;
+        flex-shrink: 0;
+      }
+
+      .prereq-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .prereq-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.88em;
+        color: #d1d5db;
+        background-color: rgba(55, 65, 81, 0.3);
+        border: 1px solid rgba(75, 85, 99, 0.25);
+      }
+
+      .prereq-icon {
+        font-size: 13px;
+        color: #9ca3af;
+      }
+
+      /* ── Curriculum Section ── */
+      .curriculum-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .curriculum-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.25em;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+        border: none;
+      }
+
+      .curriculum-stats {
+        font-size: 0.85em;
+        color: #9ca3af;
+        font-family: 'Inter', sans-serif;
+      }
+
+      .expand-all-btn {
+        background: none;
+        border: 1px solid rgba(75, 85, 99, 0.4);
+        color: var(--course-accent);
+        font-size: 0.82em;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 5px 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .expand-all-btn:hover {
+        background-color: rgba(167, 139, 250, 0.1);
+        border-color: var(--course-accent);
+      }
+
+      /* Module accordion */
+      .module-accordion {
+        border: 1px solid rgba(75, 85, 99, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+
+      .module-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background-color: rgba(30, 41, 59, 0.4);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        user-select: none;
+        border-bottom: 1px solid transparent;
+      }
+
+      .module-header:hover {
+        background-color: rgba(30, 41, 59, 0.6);
+      }
+
+      .module-accordion.open .module-header {
+        border-bottom: 1px solid rgba(75, 85, 99, 0.25);
+      }
+
+      .module-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .module-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--course-accent), rgba(167, 139, 250, 0.6));
+        color: #ffffff;
+        font-size: 0.78em;
+        font-weight: 700;
+        flex-shrink: 0;
+        font-family: 'Inter', sans-serif;
+      }
+
+      .module-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95em;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .module-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .module-lesson-count {
+        font-size: 0.78em;
+        color: #9ca3af;
+        font-family: 'Inter', sans-serif;
+        white-space: nowrap;
+      }
+
+      .module-chevron {
+        font-size: 12px;
+        color: #9ca3af;
+        transition: transform 0.25s ease;
+        width: 16px;
+        text-align: center;
+      }
+
+      .module-accordion.open .module-chevron {
+        transform: rotate(90deg);
+      }
+
+      /* Lesson list */
+      .module-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.35s ease;
+        background-color: rgba(17, 24, 39, 0.3);
+      }
+
+      .module-accordion.open .module-body {
+        max-height: none;
+      }
+
+      .lesson-item {
+        padding: 14px 20px 14px 60px;
+        border-bottom: 1px solid rgba(75, 85, 99, 0.15);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+
+      .lesson-item:last-child {
+        border-bottom: none;
+      }
+
+      .lesson-item:hover {
+        background-color: rgba(55, 65, 81, 0.2);
+      }
+
+      .lesson-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .lesson-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .lesson-icon {
+        font-size: 14px;
+        color: #6b7280;
+        flex-shrink: 0;
+        width: 16px;
+        text-align: center;
+      }
+
+      .lesson-name {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9em;
+        color: #d1d5db;
+        font-weight: 500;
+      }
+
+      .lesson-expand-icon {
+        font-size: 10px;
+        color: #6b7280;
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .lesson-item.open .lesson-expand-icon {
+        transform: rotate(90deg);
+        color: var(--course-accent);
+      }
+
+      .lesson-item.open .lesson-name {
+        color: var(--course-accent);
+      }
+
+      /* Lesson content (expandable) */
+      .lesson-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
         margin-top: 0;
       }
 
-      .content.post h2 {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.4em;
-        margin-top: 2em;
-        margin-bottom: 0.8em;
-        color: #ffffff;
-        border-left: 3px solid #60a5fa;
-        padding: 4px 0 4px 12px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        width: 100%;
-        max-width: 100%;
-        display: block;
+      .lesson-item.open .lesson-content {
+        max-height: none;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(75, 85, 99, 0.15);
       }
 
-      .content.post h3 {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.2em;
-        margin-top: 1.5em;
-        margin-bottom: 0.8em;
-        color: #ffffff;
-        border-left: 2px solid #a78bfa;
-        padding: 2px 0 2px 10px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 600;
-        display: block;
-      }
-
-      .content.post h4 {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.1em;
-        margin-top: 1.5em;
-        margin-bottom: 0.8em;
-        color: #ffffff;
-        border-left: 2px solid #c084fc;
-        padding: 1px 0 1px 8px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 600;
-        display: block;
-      }
-
-      .content.post p {
-        font-size: 1.08em;
-        margin-bottom: 1.5em;
+      .lesson-content-inner {
+        font-size: 0.95em;
         color: #d1d5db;
-        max-width: 100%;
-        box-sizing: border-box;
         line-height: 1.7;
       }
 
-      .content.post ul,
-      .content.post ol {
-        font-size: 1.01em;
-        margin-top: 0.5em;
-        margin-bottom: 1.5em;
-        padding-left: 2em;
+      .lesson-content-inner p {
+        margin-bottom: 1em;
         color: #d1d5db;
-        max-width: 100%;
-        box-sizing: border-box;
-        list-style-position: outside;
+        font-size: 1em;
+        line-height: 1.7;
       }
 
-      .content.post li {
-        font-size: 1.01em;
-        margin-bottom: 0.5em;
-        color: #d1d5db;
-        padding-left: 0.25em;
+      .lesson-content-inner strong {
+        color: #e5e7eb;
       }
 
-      .content.post code {
+      .lesson-content-inner ul,
+      .lesson-content-inner ol {
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+        color: #d1d5db;
+      }
+
+      .lesson-content-inner li {
+        margin-bottom: 0.4em;
+        color: #d1d5db;
+      }
+
+      .lesson-content-inner code {
         background-color: var(--code-bg);
         color: var(--text-color);
-        word-wrap: break-word;
-        white-space: pre-wrap;
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 0.9em;
       }
 
-      .content.post pre {
+      .lesson-content-inner pre {
         background-color: var(--code-bg);
         color: var(--text-color);
         max-width: 100%;
@@ -269,43 +504,50 @@
         word-wrap: break-word;
         width: 100%;
         box-sizing: border-box;
-        border-radius: 12px;
-        padding: 16px;
+        border-radius: 10px;
+        padding: 14px;
         border: 1px solid rgba(55, 65, 81, 0.4);
+        margin-bottom: 1em;
       }
 
-      .content.post .highlight {
-        border-radius: 12px;
-        overflow: hidden;
-        margin-bottom: 1.5em;
-      }
-
-      .content.post .highlight pre {
-        margin: 0;
-        border-radius: 12px;
-      }
-
-      .content.post pre code {
+      .lesson-content-inner pre code {
         padding: 0;
         border-radius: 0;
         background-color: transparent;
       }
 
-      .content.post blockquote {
+      .lesson-content-inner .highlight {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 1em;
+      }
+
+      .lesson-content-inner .highlight pre {
+        margin: 0;
+        border-radius: 10px;
+      }
+
+      .lesson-content-inner blockquote {
         border-left: 3px solid rgba(96, 165, 250, 0.4);
-        padding-left: 1em;
         color: var(--blockquote-color);
         border-radius: 0 8px 8px 0;
         background-color: rgba(30, 41, 59, 0.3);
-        padding: 12px 16px 12px 16px;
+        padding: 10px 14px;
+        margin: 0 0 1em 0;
         overflow: hidden;
       }
 
-      .content.post strong {
-        color: #e5e7eb;
+      .lesson-content-inner h4 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1em;
+        font-weight: 600;
+        color: #ffffff;
+        margin: 1em 0 0.5em 0;
+        padding: 0;
+        border: none;
       }
 
-      /* Progress indicator */
+      /* Progress bar */
       .course-progress-bar {
         width: 100%;
         height: 4px;
@@ -319,6 +561,11 @@
         height: 100%;
         border-radius: 2px;
         transition: width 0.3s ease;
+      }
+
+      /* Hidden raw content container */
+      .course-raw-content {
+        display: none;
       }
 
       @media (max-width: 768px) {
@@ -347,6 +594,24 @@
 
         .course-icon {
           font-size: 36px;
+        }
+
+        .learn-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .lesson-item {
+          padding-left: 20px;
+        }
+
+        .module-title {
+          font-size: 0.88em;
+        }
+
+        .curriculum-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
         }
       }
     </style>
@@ -395,24 +660,66 @@
           </div>
           {% endif %}
           <div class="course-progress-bar">
-            <div class="course-progress-fill" style="width: 0%; background: linear-gradient(90deg, {{ page.color | default: '#60a5fa' }}, #a78bfa);"></div>
+            <div class="course-progress-fill" style="width: 0%; background: linear-gradient(90deg, var(--course-accent), #a78bfa);"></div>
           </div>
         </div>
 
-        <!-- Course Content -->
-        <div class="course-content">
+        <!-- What You'll Learn -->
+        {% if page.what_you_learn %}
+        <div class="course-section">
+          <div class="course-section-title">What You'll Learn</div>
+          <div class="learn-grid">
+            {% for item in page.what_you_learn %}
+            <div class="learn-item">
+              <span class="learn-check">✓</span>
+              <span>{{ item }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Prerequisites -->
+        {% if page.prerequisites %}
+        <div class="course-section">
+          <div class="course-section-title">Prerequisites</div>
+          <div class="prereq-list">
+            {% for item in page.prerequisites %}
+            <div class="prereq-item">
+              <span class="prereq-icon">→</span>
+              <span>{{ item }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Curriculum -->
+        <div class="curriculum-header">
+          <div>
+            <div class="curriculum-title">Course Curriculum</div>
+            <div class="curriculum-stats">{{ page.modules }} modules · {{ page.lessons }} lessons · {{ page.duration }}</div>
+          </div>
+          <button class="expand-all-btn" id="expandAllBtn">Expand All</button>
+        </div>
+
+        <!-- Accordion container — JS will build this from raw content -->
+        <div id="courseAccordion"></div>
+
+        <!-- Hidden raw rendered markdown -->
+        <div class="course-raw-content" id="courseRawContent">
           {{ content }}
         </div>
       </div>
     </div>
 
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
 
         // Tag colors
-        const TAG_COLORS = [
+        var TAG_COLORS = [
           { bg: 'rgba(255, 215, 0, 0.18)', border: 'rgba(255, 215, 0, 0.5)', color: '#FFD700' },
           { bg: 'rgba(191, 64, 255, 0.18)', border: 'rgba(191, 64, 255, 0.5)', color: '#BF40FF' },
           { bg: 'rgba(0, 150, 255, 0.18)', border: 'rgba(0, 150, 255, 0.5)', color: '#0096FF' },
@@ -433,6 +740,133 @@
           el.style.backgroundColor = c.bg;
           el.style.borderColor = c.border;
           el.style.color = c.color;
+        });
+
+        // ── Build accordion from raw markdown content ──
+        var raw = document.getElementById('courseRawContent');
+        var accordion = document.getElementById('courseAccordion');
+        if (!raw || !accordion) return;
+
+        var children = Array.from(raw.childNodes);
+        var modules = [];
+        var currentModule = null;
+        var currentLesson = null;
+
+        children.forEach(function(node) {
+          if (node.nodeType !== 1) return; // skip text nodes
+
+          if (node.tagName === 'H2') {
+            // New module
+            currentModule = { title: node.textContent.trim(), lessons: [], introContent: [] };
+            currentLesson = null;
+            modules.push(currentModule);
+          } else if (node.tagName === 'H3' && currentModule) {
+            // New lesson
+            currentLesson = { title: node.textContent.trim(), content: [] };
+            currentModule.lessons.push(currentLesson);
+          } else if (node.tagName === 'HR') {
+            // Skip horizontal rules between modules
+          } else if (currentLesson) {
+            currentLesson.content.push(node.cloneNode(true));
+          } else if (currentModule) {
+            currentModule.introContent.push(node.cloneNode(true));
+          }
+        });
+
+        // Render accordion
+        modules.forEach(function(mod, moduleIndex) {
+          var wrapper = document.createElement('div');
+          wrapper.className = 'module-accordion' + (moduleIndex === 0 ? ' open' : '');
+
+          // Extract module number from title like "Module 1: Title"
+          var titleMatch = mod.title.match(/^Module\s+(\d+)\s*:\s*(.+)$/i);
+          var moduleNum = titleMatch ? titleMatch[1] : (moduleIndex + 1);
+          var moduleTitle = titleMatch ? titleMatch[2] : mod.title;
+
+          // Module header
+          var header = document.createElement('div');
+          header.className = 'module-header';
+          header.innerHTML =
+            '<div class="module-header-left">' +
+              '<span class="module-number">' + moduleNum + '</span>' +
+              '<span class="module-title">' + moduleTitle + '</span>' +
+            '</div>' +
+            '<div class="module-header-right">' +
+              '<span class="module-lesson-count">' + mod.lessons.length + ' lesson' + (mod.lessons.length !== 1 ? 's' : '') + '</span>' +
+              '<span class="module-chevron">▶</span>' +
+            '</div>';
+          wrapper.appendChild(header);
+
+          // Module body
+          var body = document.createElement('div');
+          body.className = 'module-body';
+
+          // Module intro content (text between H2 and first H3)
+          if (mod.introContent.length > 0) {
+            var intro = document.createElement('div');
+            intro.style.cssText = 'padding: 12px 20px 4px 60px; color: #9ca3af; font-size: 0.88em; line-height: 1.6;';
+            mod.introContent.forEach(function(n) { intro.appendChild(n); });
+            body.appendChild(intro);
+          }
+
+          // Lessons
+          mod.lessons.forEach(function(lesson) {
+            var lessonEl = document.createElement('div');
+            lessonEl.className = 'lesson-item';
+
+            // Extract lesson title — remove "Lesson X.Y:" prefix
+            var lessonTitleMatch = lesson.title.match(/^Lesson\s+[\d.]+\s*:\s*(.+)$/i);
+            var lessonDisplayTitle = lessonTitleMatch ? lessonTitleMatch[1] : lesson.title;
+
+            // Lesson header
+            var lHeader = document.createElement('div');
+            lHeader.className = 'lesson-header';
+            lHeader.innerHTML =
+              '<div class="lesson-header-left">' +
+                '<span class="lesson-icon">📄</span>' +
+                '<span class="lesson-name">' + lessonDisplayTitle + '</span>' +
+              '</div>' +
+              '<span class="lesson-expand-icon">▶</span>';
+            lessonEl.appendChild(lHeader);
+
+            // Lesson content
+            var lContent = document.createElement('div');
+            lContent.className = 'lesson-content';
+            var lInner = document.createElement('div');
+            lInner.className = 'lesson-content-inner';
+            lesson.content.forEach(function(n) { lInner.appendChild(n); });
+            lContent.appendChild(lInner);
+            lessonEl.appendChild(lContent);
+
+            // Click to toggle lesson
+            lHeader.addEventListener('click', function(e) {
+              e.stopPropagation();
+              lessonEl.classList.toggle('open');
+            });
+
+            body.appendChild(lessonEl);
+          });
+
+          wrapper.appendChild(body);
+
+          // Click to toggle module
+          header.addEventListener('click', function() {
+            wrapper.classList.toggle('open');
+          });
+
+          accordion.appendChild(wrapper);
+        });
+
+        // Expand/Collapse All
+        var expandBtn = document.getElementById('expandAllBtn');
+        var allExpanded = false;
+        expandBtn.addEventListener('click', function() {
+          allExpanded = !allExpanded;
+          expandBtn.textContent = allExpanded ? 'Collapse All' : 'Expand All';
+          document.querySelectorAll('.module-accordion').forEach(function(m) {
+            if (allExpanded) m.classList.add('open');
+            else m.classList.remove('open');
+          });
         });
       });
     </script>

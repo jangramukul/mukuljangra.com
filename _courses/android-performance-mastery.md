@@ -13,6 +13,17 @@ tags:
   - Performance
   - Android
   - Optimization
+what_you_learn:
+  - "Reduce app startup time with lazy initialization and App Startup library"
+  - "Profile and fix memory leaks using LeakCanary and Android Profiler"
+  - "Optimize rendering — eliminate jank, overdraw, and layout bottlenecks"
+  - "Shrink APK size with R8, resource optimization, and dynamic delivery"
+  - "Improve battery efficiency with WorkManager and job scheduling"
+  - "Use Android Studio profiling tools for CPU, memory, and network analysis"
+prerequisites:
+  - "Android development experience"
+  - "Kotlin fundamentals"
+  - "Android Studio installed"
 ---
 
 ## Module 1: Performance Mindset

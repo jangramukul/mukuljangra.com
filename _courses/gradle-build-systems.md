@@ -13,6 +13,16 @@ tags:
   - Gradle
   - Build System
   - Android
+what_you_learn:
+  - "Write and migrate build scripts using Kotlin DSL"
+  - "Centralize dependencies with Version Catalogs (libs.versions.toml)"
+  - "Configure build types, product flavors, and signing"
+  - "Optimize build speed with caching, parallel execution, and configuration cache"
+  - "Create custom Gradle tasks and convention plugins"
+  - "Set up CI/CD pipelines with GitHub Actions for Android"
+prerequisites:
+  - "Basic Android project experience"
+  - "Terminal/command line familiarity"
 ---
 
 ## Module 1: Gradle Fundamentals

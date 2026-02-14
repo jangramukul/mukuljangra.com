@@ -13,6 +13,16 @@ tags:
   - Kotlin
   - Android
   - Language
+what_you_learn:
+  - "Write idiomatic Kotlin with null safety, sealed classes, and data classes"
+  - "Master higher-order functions, lambdas, and functional patterns"
+  - "Build type-safe DSLs and use advanced generics with variance"
+  - "Apply scope functions (let, run, apply, also, with) correctly"
+  - "Use inline functions, reified types, and delegation patterns"
+  - "Design production-ready code with Kotlin best practices"
+prerequisites:
+  - "Basic programming experience"
+  - "Android Studio installed"
 ---
 
 ## Module 1: Kotlin Fundamentals

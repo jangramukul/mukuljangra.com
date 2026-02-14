@@ -13,6 +13,17 @@ tags:
   - Architecture
   - Android
   - Design Patterns
+what_you_learn:
+  - "Implement MVVM with proper separation of concerns"
+  - "Build the Repository pattern for offline-first data access"
+  - "Apply Clean Architecture — domain, data, and presentation layers"
+  - "Design unidirectional data flow with MVI pattern"
+  - "Structure multi-module Android projects"
+  - "Handle errors gracefully across all architecture layers"
+prerequisites:
+  - "Kotlin and coroutines basics"
+  - "Android development experience"
+  - "ViewModel and LiveData/Flow familiarity"
 ---
 
 ## Module 1: Why Architecture Matters

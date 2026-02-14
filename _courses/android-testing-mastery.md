@@ -13,6 +13,17 @@ tags:
   - Testing
   - Android
   - TDD
+what_you_learn:
+  - "Write unit tests for ViewModels, Use Cases, and Repositories"
+  - "Build reusable fakes instead of fragile mocks"
+  - "Test Compose UIs with ComposeTestRule and semantics"
+  - "Write integration tests with Room and MockWebServer"
+  - "Organize test architecture with shared test fixtures"
+  - "Apply TDD (Red-Green-Refactor) for business logic"
+prerequisites:
+  - "Kotlin fundamentals"
+  - "Android development experience"
+  - "Basic understanding of MVVM/architecture patterns"
 ---
 
 ## Module 1: Testing Fundamentals

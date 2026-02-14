@@ -13,6 +13,16 @@ tags:
   - Kotlin Coroutines
   - Flows
   - Android
+what_you_learn:
+  - "Understand structured concurrency and coroutine lifecycle"
+  - "Handle exceptions and cancellation in production coroutine code"
+  - "Build reactive data streams with Flow, StateFlow, and SharedFlow"
+  - "Use Flow operators — map, filter, combine, flatMapLatest, debounce"
+  - "Implement Channels for communication between coroutines"
+  - "Test coroutines and Flows with Turbine and TestDispatcher"
+prerequisites:
+  - "Kotlin fundamentals"
+  - "Basic Android development"
 ---
 
 ## Module 1: Coroutines Fundamentals
