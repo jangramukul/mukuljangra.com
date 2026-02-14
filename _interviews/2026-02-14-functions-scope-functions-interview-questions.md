@@ -2,7 +2,7 @@
 title: "Functions & Scope Functions"
 date: 2026-02-14
 layout: interview
-tags: [Kotlin Round]
+tags: [Technical Round]
 order: 2
 sequence: 10
 ---

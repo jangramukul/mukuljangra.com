@@ -2,7 +2,7 @@
 title: "Recomposition, Stability & Performance"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 3
 sequence: 34
 ---

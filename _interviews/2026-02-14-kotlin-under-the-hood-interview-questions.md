@@ -2,7 +2,7 @@
 title: "Kotlin Under the Hood"
 date: 2026-02-14
 layout: interview
-tags: [Kotlin Round]
+tags: [Technical Round]
 order: 8
 sequence: 33
 ---

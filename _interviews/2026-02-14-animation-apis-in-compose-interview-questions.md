@@ -2,7 +2,7 @@
 title: "Animation APIs in Compose"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 7
 sequence: 53
 ---

@@ -2,7 +2,7 @@
 title: "Layouts, Modifiers & Custom Drawing"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 5
 sequence: 36
 ---

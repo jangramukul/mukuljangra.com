@@ -2,7 +2,7 @@
 title: "Navigation, Theming & Architecture Patterns"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 6
 sequence: 52
 ---

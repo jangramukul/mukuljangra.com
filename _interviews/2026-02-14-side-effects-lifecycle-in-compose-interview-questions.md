@@ -2,7 +2,7 @@
 title: "Side Effects & Lifecycle in Compose"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 4
 sequence: 35
 ---

@@ -2,7 +2,7 @@
 title: "Kotlin Coroutines — Advanced"
 date: 2026-02-14
 layout: interview
-tags: [Kotlin Round]
+tags: [Technical Round]
 order: 5
 sequence: 30
 ---

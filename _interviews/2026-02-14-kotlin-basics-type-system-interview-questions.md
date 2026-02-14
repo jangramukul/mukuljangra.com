@@ -2,7 +2,7 @@
 title: "Kotlin Basics & Type System"
 date: 2026-02-14
 layout: interview
-tags: [Kotlin Round]
+tags: [Technical Round]
 order: 1
 sequence: 9
 ---

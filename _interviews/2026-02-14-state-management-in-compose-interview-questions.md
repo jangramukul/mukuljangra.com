@@ -2,7 +2,7 @@
 title: "State Management in Compose"
 date: 2026-02-14
 layout: interview
-tags: [Jetpack Compose Round]
+tags: [Technical Round]
 order: 2
 sequence: 14
 ---
