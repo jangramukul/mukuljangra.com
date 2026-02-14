@@ -413,11 +413,22 @@
       }
 
       .lesson-icon {
-        font-size: 14px;
-        color: #6b7280;
         flex-shrink: 0;
         width: 16px;
-        text-align: center;
+        height: 16px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .lesson-icon svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
       .lesson-name {
@@ -1174,7 +1185,7 @@
             lHeader.className = 'lesson-header';
             lHeader.innerHTML =
               '<div class="lesson-header-left">' +
-                '<span class="lesson-icon">📄</span>' +
+                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
                 '<span class="lesson-name">' + lessonDisplayTitle + '</span>' +
               '</div>' +
               '<span class="lesson-expand-icon">▶</span>';
@@ -1210,7 +1221,7 @@
             qHeader.className = 'lesson-header';
             qHeader.innerHTML =
               '<div class="lesson-header-left">' +
-                '<span class="lesson-icon">❓</span>' +
+                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
                 '<span class="lesson-name">' + quizTitle + '</span>' +
               '</div>' +
               '<span class="lesson-expand-icon">▶</span>';
@@ -1249,7 +1260,7 @@
             cHeader.className = 'lesson-header';
             cHeader.innerHTML =
               '<div class="lesson-header-left">' +
-                '<span class="lesson-icon">💻</span>' +
+                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
                 '<span class="lesson-name">' + chalTitle + '</span>' +
               '</div>' +
               '<span class="lesson-expand-icon">▶</span>';
