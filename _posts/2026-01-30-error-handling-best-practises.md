@@ -106,43 +106,94 @@ class OrderRepository(private val api: OrderApi) {
 
 The mapping code looks like boilerplate, and it is. But it's boilerplate that saves you when you refactor your data layer. I've migrated a codebase from Retrofit to Ktor and the only changes were in the repository layer — every ViewModel, use case, and UI component continued working without a single modification because they only knew about domain errors.
 
-## Mapping Errors at Layer Boundaries
+## Kotlin's Built-in Result vs Custom Result Types
 
-If every function in your codebase wraps its calls in try-catch and maps errors, you end up with error transformation code scattered everywhere. The pattern I've found most maintainable is to map errors exactly once — at the boundary between architectural layers.
+Kotlin ships with `Result<T>` and `runCatching` in the standard library. They're convenient for wrapping a try-catch into a functional chain — `runCatching { api.fetchProfile() }.map { it.toUiModel() }.getOrNull()`. The `fold`, `map`, `recover`, and `onFailure` extensions make it genuinely ergonomic for simple cases where you just need "it worked" or "it threw."
 
-Your data source catches framework exceptions and returns domain results. Your repository aggregates data sources and passes domain results through. Your use case might combine results and add business-level error logic. Your ViewModel transforms domain errors into UI-displayable state. Each layer does one transformation, and the chain is predictable.
+But here's the thing. `Result<T>` carries a `Throwable` on failure — not a typed domain error. You can check `result.exceptionOrNull()` and do an `is` cast, but you're back to the same guessing game as catch blocks. There's no compiler enforcement that you've handled every error type. The other limitation is that `Result` can't be used as a direct return type for Kotlin functions (the compiler forbids it to prevent confusion with coroutine internals), though this restriction doesn't apply when it's wrapped in another type or used as a property.
+
+For anything beyond a quick one-off call, I use a custom two-type-parameter sealed interface that carries domain errors the compiler can verify.
 
 ```kotlin
-// Data source: framework errors → domain result
-class PaymentDataSource(private val api: PaymentApi) {
-    suspend fun charge(request: ChargeRequest): Result<Receipt, PaymentError> {
+sealed interface Result<out T, out E> {
+    data class Success<T>(val value: T) : Result<T, Nothing>
+    data class Failure<E>(val error: E) : Result<Nothing, E>
+}
+
+inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> {
+    return when (this) {
+        is Result.Success -> Result.Success(transform(value))
+        is Result.Failure -> this
+    }
+}
+
+inline fun <T, E> Result<T, E>.onSuccess(action: (T) -> Unit): Result<T, E> {
+    if (this is Result.Success) action(value)
+    return this
+}
+
+inline fun <T, E> Result<T, E>.onFailure(action: (E) -> Unit): Result<T, E> {
+    if (this is Result.Failure) action(error)
+    return this
+}
+```
+
+This is about 20 lines to set up, and it replaces scattered try-catch blocks across your entire codebase with typed, composable error handling. The `map` function lets you transform success values through a chain without unwrapping and re-wrapping at every step. Some teams use Arrow's `Either` for this, which gives you a full functional toolkit. I think a simple custom Result type is enough for most Android projects — Arrow is comprehensive but adds a learning curve that not every team member will be comfortable with. Use `runCatching` for quick utility calls, use your custom `Result<T, E>` for anything that crosses an architectural boundary.
+
+## Error Propagation Through Layers
+
+Knowing about domain errors and Result types is one thing. Seeing how an error actually flows from a network call all the way to the user's screen is where it clicks. The chain is: data source catches framework exceptions and produces a domain Result, the repository passes it through (or aggregates multiple sources), the use case applies business logic, the ViewModel maps to UI state, and the UI renders it. Each layer does exactly one transformation.
+
+Here's a concrete end-to-end example for placing an order. The data source catches the raw `HttpException` and `IOException`. The repository adds nothing here — it delegates. The use case validates business rules before even calling the repository. The ViewModel maps the domain error to a user-facing string and a UI state. The key insight is that `HttpException` never leaks past the data source.
+
+```kotlin
+// Data source — catches framework exceptions
+class OrderRemoteDataSource(private val api: OrderApi) {
+    suspend fun submitOrder(order: Order): Result<OrderConfirmation, OrderError> {
         return try {
-            Result.success(api.charge(request))
+            Result.Success(api.submit(order))
+        } catch (e: HttpException) {
+            when (e.code()) {
+                409 -> Result.Failure(OrderError.OutOfStock)
+                402 -> Result.Failure(OrderError.PaymentDeclined)
+                else -> Result.Failure(OrderError.Unknown(e))
+            }
         } catch (e: IOException) {
-            Result.failure(PaymentError.NetworkUnavailable)
+            Result.Failure(OrderError.NetworkUnavailable)
         }
     }
 }
 
-// ViewModel: domain result → UI state
-class CheckoutViewModel(private val paymentUseCase: ProcessPaymentUseCase) : ViewModel() {
+// Use case — adds business validation before calling repository
+class PlaceOrderUseCase(private val repository: OrderRepository) {
+    suspend operator fun invoke(cart: Cart): Result<OrderConfirmation, OrderError> {
+        if (cart.items.isEmpty()) {
+            return Result.Failure(OrderError.EmptyCart)
+        }
+        return repository.placeOrder(cart.toOrder())
+    }
+}
+
+// ViewModel — maps domain result to UI state
+class CheckoutViewModel(private val placeOrder: PlaceOrderUseCase) : ViewModel() {
+    private val _state = MutableStateFlow<CheckoutUiState>(CheckoutUiState.Idle)
+    val state: StateFlow<CheckoutUiState> = _state.asStateFlow()
+
     fun onCheckout(cart: Cart) {
         viewModelScope.launch {
-            _state.value = CheckoutState.Processing
-            when (val result = paymentUseCase(cart)) {
-                is Result.Success -> _state.value = CheckoutState.Complete(result.value)
-                is Result.Failure -> _state.value = when (result.error) {
-                    PaymentError.NetworkUnavailable -> CheckoutState.Error("Check your connection")
-                    PaymentError.CardDeclined -> CheckoutState.Error("Card was declined")
-                    is PaymentError.Unknown -> CheckoutState.Error("Something went wrong")
-                }
+            _state.value = CheckoutUiState.Processing
+            when (val result = placeOrder(cart)) {
+                is Result.Success -> _state.value =
+                    CheckoutUiState.Complete(result.value.orderId)
+                is Result.Failure -> _state.value =
+                    CheckoutUiState.Error(result.error.toUserMessage())
             }
         }
     }
 }
 ```
 
-The tradeoff is that errors pass through intermediate layers unchanged, which means your use case might feel like a pass-through for simple cases. That's fine. A thin use case that adds no error transformation is better than a use case that redundantly re-maps the same errors into identical types.
+The tradeoff is that errors pass through intermediate layers unchanged, which means your repository and use case might feel like pass-throughs for simple cases. That's fine. A thin layer that adds no error transformation is better than a layer that redundantly re-maps the same errors into identical types. The moment the use case needs to combine two data sources or add a validation check, the structure pays for itself.
 
 ## Error State in Your UI State Sealed Class
 
@@ -182,7 +233,57 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
 
 Notice the `retryAction` lambda embedded in the Error state. This makes the retry button in the UI trivial — it just calls the lambda. No need for the UI to know which function to call or what parameters to pass. The error state carries everything the UI needs to recover from it.
 
-## Retry Strategies With Exponential Backoff
+## Error Handling in Flows
+
+Suspend functions throw exceptions up the call stack, and you catch them with try-catch. Flows are different — errors propagate downstream through the stream, and uncaught exceptions cancel the collecting coroutine. This distinction matters because you can't just wrap a `flow.collect {}` in a try-catch and call it a day. Well, you can, but then your Flow stops collecting permanently after the first error.
+
+The `catch` operator intercepts upstream exceptions before they reach the collector. It only catches errors from operators above it in the chain — anything thrown inside `collect` still propagates normally. This is the Flow equivalent of mapping errors at layer boundaries: your repository emits domain Results through the catch operator, and the ViewModel never sees the raw exception.
+
+```kotlin
+// Repository exposes a Flow of domain Results
+class OrderRepository(private val api: OrderApi) {
+    fun observeOrders(userId: String): Flow<Result<List<Order>, OrderError>> {
+        return flow {
+            while (currentCoroutineContext().isActive) {
+                emit(Result.Success(api.fetchOrders(userId)))
+                delay(30_000) // Poll every 30 seconds
+            }
+        }.catch { e ->
+            when (e) {
+                is IOException -> emit(Result.Failure(OrderError.NetworkUnavailable))
+                is HttpException -> emit(Result.Failure(OrderError.Unknown(e)))
+                else -> throw e // Don't swallow CancellationException
+            }
+        }
+    }
+}
+```
+
+For transient failures in long-lived Flows, `retry` and `retryWhen` restart the upstream flow after a failure instead of terminating the whole stream. This is more natural than wrapping a suspend-based retry loop around a Flow collection — the retry lives inside the stream itself. Use `retryWhen` when you need conditional logic, like only retrying `IOException` with exponential backoff and giving up after a certain number of attempts.
+
+```kotlin
+fun observeInventory(productId: String): Flow<InventoryStatus> {
+    return flow {
+        emit(api.getInventory(productId))
+    }.retryWhen { cause, attempt ->
+        if (cause is IOException && attempt < 3) {
+            delay(1000L * (attempt + 1)) // Linear backoff
+            true // retry
+        } else {
+            false // give up
+        }
+    }.onCompletion { cause ->
+        if (cause != null) {
+            logger.logError("InventoryFlow", "observeInventory", cause,
+                mapOf("productId" to productId))
+        }
+    }
+}
+```
+
+The `onCompletion` operator runs when the Flow completes — either normally or due to an exception — making it the right place for cleanup and final logging. I think of it as the `finally` block for Flows.
+
+## Retry With Exponential Backoff
 
 Retrying a failed network call immediately is almost always wrong. If the server returned a 503, hammering it again in the next millisecond won't help. Exponential backoff gives the server time to recover and prevents your app from contributing to the load that caused the failure.
 
@@ -254,37 +355,6 @@ class UserRepository(
 
 The tradeoff is that contextual logging adds code to every error path. It's tempting to skip it for "obvious" errors. But in production, no error is obvious — you don't have a debugger attached, you can't reproduce the user's exact state, and the stack trace alone rarely tells the full story. Invest in logging context once, and it pays for itself every time something breaks.
 
-## Result Types That Carry the Error
-
-Kotlin's built-in `Result<T>` type wraps a value or an exception. But it only tells you "something went wrong" — not what specifically went wrong in domain terms. For a robust error handling strategy, you want a Result type that carries your sealed error type, so the compiler can enforce exhaustive handling.
-
-```kotlin
-sealed interface Result<out T, out E> {
-    data class Success<T>(val value: T) : Result<T, Nothing>
-    data class Failure<E>(val error: E) : Result<Nothing, E>
-}
-
-// Extension functions to make it ergonomic
-inline fun <T, E> Result<T, E>.onSuccess(action: (T) -> Unit): Result<T, E> {
-    if (this is Result.Success) action(value)
-    return this
-}
-
-inline fun <T, E> Result<T, E>.onFailure(action: (E) -> Unit): Result<T, E> {
-    if (this is Result.Failure) action(error)
-    return this
-}
-
-inline fun <T, E, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> {
-    return when (this) {
-        is Result.Success -> Result.Success(transform(value))
-        is Result.Failure -> this
-    }
-}
-```
-
-This is about 30 lines to set up, and it replaces scattered try-catch blocks across your entire codebase with typed, composable error handling. The `map` function lets you transform success values through a chain without unwrapping and re-wrapping at every step. Some teams use libraries like Arrow for this, which gives you a full functional error handling toolkit. I think a simple custom Result type is enough for most Android projects — Arrow is comprehensive but adds a learning curve that not every team member will be comfortable with.
-
 ## Never Show Raw Error Messages to Users
 
 This sounds obvious, but I've seen apps display "java.net.SocketTimeoutException: timeout" to the user. Or worse, display the server's raw error JSON. Every error that reaches the UI should go through a mapping function that converts technical errors into human-readable, actionable messages.
@@ -292,17 +362,17 @@ This sounds obvious, but I've seen apps display "java.net.SocketTimeoutException
 The mapping should be centralized — one function that takes your domain error type and returns a user-facing string. This makes it easy to update copy, support localization, and ensure consistency. Don't scatter string resources across your ViewModels.
 
 ```kotlin
-fun PaymentError.toUserMessage(): String {
+fun OrderError.toUserMessage(): String {
     return when (this) {
-        PaymentError.NetworkUnavailable ->
+        OrderError.NetworkUnavailable ->
             "Unable to connect. Please check your internet and try again."
-        PaymentError.CardDeclined ->
-            "Your card was declined. Please try a different payment method."
-        PaymentError.InsufficientFunds ->
-            "Insufficient funds. Please add funds or use a different card."
-        is PaymentError.ServerError ->
-            "We're experiencing issues. Please try again in a few minutes."
-        is PaymentError.Unknown ->
+        OrderError.PaymentDeclined ->
+            "Your payment was declined. Please try a different method."
+        OrderError.OutOfStock ->
+            "This item is currently out of stock."
+        OrderError.EmptyCart ->
+            "Your cart is empty. Add items before checking out."
+        is OrderError.Unknown ->
             "Something went wrong. Please try again."
     }
 }
@@ -312,10 +382,8 @@ Notice the messages are actionable — they tell the user what to do, not just w
 
 ## Treating Errors as Data
 
-This is the reframe that ties everything together. Most developers think of errors as interruptions to the normal flow — something that "shouldn't happen" that you need to catch and handle. But in a production app, errors are just another type of data flowing through your system.
+This is the reframe that ties everything together. Most developers think of errors as interruptions — something that "shouldn't happen" that you need to catch and handle. But in a production app, errors are just another type of data flowing through your system. Network calls fail. Payments get declined. Users have bad connectivity. These aren't edge cases — they're core scenarios that happen thousands of times a day.
 
-Network calls fail. Servers return unexpected responses. Users have bad connectivity. Payments get declined. These aren't edge cases — they're core scenarios that happen thousands of times a day. When you design your architecture to treat errors as first-class data — with proper types, proper state representation, and proper user communication — your app becomes resilient by design rather than resilient by accident.
-
-The shift from "exceptions as control flow" to "errors as data" changes how you think about every layer. Your repositories return Result types instead of throwing. Your ViewModels map results to states instead of catching exceptions. Your UI renders error states instead of showing toast messages. And your users get a consistent, informative experience when things go wrong — which, in a mobile app running on unpredictable networks, is most of the time.
+When you design your architecture to treat errors as first-class data — with sealed types, proper state representation, typed Results, and centralized user messaging — your app becomes resilient by design rather than resilient by accident. Your data sources catch framework exceptions and produce domain Results. Your repositories pass those Results through. Your use cases add business-level validation. Your ViewModels map domain errors to UI states. Your Flows carry errors downstream instead of crashing the collector. And your users get a consistent, informative experience when things go wrong — which, in a mobile app running on unpredictable networks, is most of the time.
 
 Thanks for reading!
