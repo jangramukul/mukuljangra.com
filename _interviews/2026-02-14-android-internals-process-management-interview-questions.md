@@ -210,6 +210,14 @@ When the system kills a background process to reclaim memory, it doesn't notify 
 
 A DEX file organizes its data into sections — string IDs, type IDs, method IDs, class definitions, and code items. When ART loads a DEX file, it memory-maps it and accesses classes on demand. If the classes needed at startup are scattered across the DEX file, the system triggers many page faults as it loads different pages into memory. Startup Profiles optimize this by rewriting the DEX layout so that startup classes are grouped together in contiguous pages, reducing page faults during cold start. The `dexlayout` tool in ART performs this optimization based on profile data.
 
+#### Q23: What is the 16 KB page size requirement and why does it matter?
+
+Starting with Android 15, devices can use 16 KB memory pages instead of the traditional 4 KB pages. A memory page is the smallest unit of memory the OS manages. Larger pages mean fewer page table entries, faster TLB lookups, and better memory-mapped I/O performance — Google reports up to 5-10% improvement in app launch times.
+
+The catch: native code (NDK libraries, `.so` files) must be aligned to 16 KB boundaries. If your app or any of its dependencies includes native libraries built with 4 KB alignment, they'll crash on 16 KB devices. You need to rebuild with `-Wl,-z,max-page-size=16384`.
+
+For pure Kotlin/Java apps, the change is transparent — ART handles it. But if you use libraries with native code (like SQLCipher, Realm, FFmpeg, or ML libraries), you need to verify they ship 16 KB-aligned binaries. Android Studio's APK Analyzer shows the ELF alignment of `.so` files. This is a compatibility check that every app targeting Android 15 should perform.
+
 ### Common Follow-ups
 
 - What is `android:process=":remote"` and what are the implications of running a component in a separate process?

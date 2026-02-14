@@ -488,6 +488,23 @@ The passphrase should come from Android Keystore — generate an AES key, use it
 
 The hidden gotcha: the framework calls `QueuedWork.waitToFinish()` in `Activity.onPause()`, `Activity.onStop()`, `BroadcastReceiver.onReceive()`, and `Service.onStartCommand()`. This blocks the main thread until all pending `apply()` writes complete. If you call `apply()` many times or write large data, the queued writes pile up and cause an ANR when the Activity pauses. This is one of the main reasons Google created DataStore.
 
+#### Q25: What is Write-Ahead Logging (WAL) and why does Room/SQLite use it?
+
+WAL is a journaling mode where SQLite writes changes to a separate WAL file before modifying the actual database file. The main advantage is that readers and writers can operate concurrently — reads happen from the main database while writes go to the WAL file. Without WAL (in the default rollback journal mode), a write locks the entire database and blocks all reads.
+
+Room enables WAL by default on API 16+. The WAL file is periodically "checkpointed" — its contents are written back to the main database. You can see `.db-wal` and `.db-shm` files alongside your database file. One downside: WAL uses more disk space because the WAL file grows until checkpoint. For read-heavy apps (which most Android apps are), WAL is a clear win because it eliminates read-write contention.
+
+#### Q26: When would you normalize vs denormalize your database schema?
+
+Normalization means splitting data into separate tables to avoid duplication. A `users` table and an `orders` table linked by `userId` is normalized. Denormalization means duplicating data across tables for faster reads — storing the user's name directly in the `orders` table so you don't need a JOIN.
+
+On mobile, you generally lean toward denormalization more than on servers because:
+- JOINs on SQLite are slower than on server databases
+- Mobile apps are read-heavy — you display data far more often than you write it
+- Simpler queries mean less room for bugs
+
+But don't go fully denormalized. A practical approach: normalize your core entities (users, products, orders) but denormalize the "display" data that you query frequently. Room's `@Embedded` and `@Relation` annotations make it easy to query across tables when you do need joins. The tradeoff is always read speed vs write complexity — every duplicated field needs to be updated in multiple places.
+
 ### Common Follow-ups
 
 - **Two processes accessing the same SharedPreferences?** — It's unreliable. `MODE_MULTI_PROCESS` was deprecated because it doesn't guarantee consistency. Use DataStore or ContentProvider for multi-process access.

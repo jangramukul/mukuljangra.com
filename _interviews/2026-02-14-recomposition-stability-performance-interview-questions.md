@@ -247,6 +247,30 @@ if (isFullScreen) {
 
 Without `movableContentOf`, switching between full screen and compact would destroy the chart and recreate it from scratch. With it, the chart's state, animations, and internal remember values survive the move. This is useful for shared element transitions and adaptive layouts where content physically moves between containers.
 
+#### Q19: What is the Compose stability configuration file and how do you use it?
+
+The stability configuration file lets you declare classes as stable without modifying their source code. This is critical for classes from external libraries — you can't add `@Stable` or `@Immutable` to classes you don't own, but you can list them in the config file.
+
+Create a file like `compose_stability.conf`:
+
+```
+// Treat all classes in these packages as stable
+java.time.*
+kotlinx.datetime.*
+com.google.android.gms.maps.model.LatLng
+```
+
+Then reference it in your build file:
+
+```kotlin
+composeCompiler {
+    stabilityConfigurationFile =
+        project.layout.projectDirectory.file("compose_stability.conf")
+}
+```
+
+The compiler treats listed classes as stable during recomposition analysis, enabling skipping for composables that use them. Without this, any composable accepting a `LocalDateTime` parameter would always recompose because the compiler can't verify that `java.time` classes are truly immutable. The config file is especially valuable for apps using `java.time`, Google Maps models, or Protocol Buffer generated classes.
+
 ### Common Follow-ups
 
 - How does `derivedStateOf` help reduce unnecessary recompositions?

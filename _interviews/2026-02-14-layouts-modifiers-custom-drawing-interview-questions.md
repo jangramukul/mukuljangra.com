@@ -294,6 +294,25 @@ Modifier.size(100.dp).requiredSize(200.dp)
 
 This behavior is important when composing modifiers from multiple sources, like a default modifier parameter combined with caller-provided modifiers. It's why composables should accept a `modifier` parameter and apply it as the outermost modifier.
 
+#### Q19: What are Window Size Classes and how do you build adaptive layouts in Compose?
+
+Window Size Classes categorize the app window into three width buckets: `Compact` (phone portrait), `Medium` (tablet portrait or foldable), and `Expanded` (tablet landscape or desktop). They replace hardcoded breakpoints with semantic categories.
+
+```kotlin
+val windowSizeClass = currentWindowAdaptiveInfo()
+    .windowSizeClass
+
+when (windowSizeClass.windowWidthSizeClass) {
+    WindowWidthSizeClass.COMPACT -> PhoneLayout()
+    WindowWidthSizeClass.MEDIUM -> TabletLayout()
+    WindowWidthSizeClass.EXPANDED -> DesktopLayout()
+}
+```
+
+For foldable devices, `WindowInfoTracker` provides fold state and hinge position. You can detect whether the device is in tabletop mode (half-folded horizontally) or book mode (half-folded vertically) and adapt your layout accordingly.
+
+The Material3 adaptive library provides `ListDetailPaneScaffold` and `SupportingPaneScaffold` that handle common patterns automatically — showing a list-detail split on large screens and navigating between list and detail on phones. This eliminates the manual logic of managing two navigation patterns. The key principle: design for the window, not the device. A phone in landscape or a resizable Chrome OS window should get the right layout based on available space, not device type.
+
 ### Common Follow-ups
 
 - How would you implement a flow layout (like FlowRow) using the Layout composable? (Measure children, track row width, wrap to next row when exceeding max width)

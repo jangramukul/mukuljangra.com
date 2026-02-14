@@ -327,6 +327,24 @@ The whole point of value classes is to get type safety at compile time with mini
 
 This hierarchy means a function accepting `Any` rejects `null`, while `Any?` accepts everything. When Kotlin code is compiled to JVM bytecode, `Any` maps to `java.lang.Object` since the JVM doesn't have built-in null safety.
 
+#### Q19: What is the String Pool on the JVM and how does it affect Kotlin string comparisons?
+
+The JVM maintains a pool of unique string literals called the String Pool (or intern pool). When you write `val a = "hello"` and `val b = "hello"`, both variables point to the same object in the pool. The JVM automatically interns string literals at compile time.
+
+```kotlin
+val a = "hello"
+val b = "hello"
+println(a === b) // true — same object from pool
+
+val c = String("hello".toCharArray())
+println(a === c) // false — c is a new object
+println(a == c)  // true — structural equality
+```
+
+This is why Kotlin's `===` (referential equality) can return `true` for identical string literals — they share the same pooled reference. But strings created at runtime (from `StringBuilder`, network responses, or user input) are not automatically interned. You can manually intern them with `String.intern()`, but this is rarely needed and can cause memory leaks in older JVMs where the pool was stored in PermGen.
+
+In practice, always use `==` for string comparison in Kotlin. The compiler already generates a `null`-safe `equals()` call. The String Pool is a JVM optimization detail — you should know it exists for interview questions about memory and identity, but you should never rely on `===` for string comparison.
+
 ### Common Follow-ups
 
 - What happens if you override `equals()` in a data class — does it replace the generated one?

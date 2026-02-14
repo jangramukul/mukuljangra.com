@@ -349,6 +349,20 @@ Never enable StrictMode in release builds. In development, it catches things lik
 
 `ARGB_8888` is the default and right for most images — photos, complex graphics, anything with transparency. `RGB_565` is useful for images without transparency when memory is tight, like thumbnails in a long list. The visual difference is usually not noticeable for photos but can cause visible banding in gradients.
 
+#### Q19: What is `inBitmap` and how does bitmap pooling work?
+
+Bitmap pooling reuses memory from discarded bitmaps instead of allocating new memory for every image load. When you're done with a bitmap, instead of letting GC reclaim it, you put it in a pool. When you need a new bitmap of the same (or smaller) size, you pull one from the pool and decode into its existing memory.
+
+```kotlin
+val options = BitmapFactory.Options().apply {
+    inMutable = true
+    inBitmap = reusableBitmap // decode into this existing allocation
+}
+val bitmap = BitmapFactory.decodeStream(stream, null, options)
+```
+
+On API 19+, `inBitmap` can reuse any bitmap that's equal or larger than the target — it doesn't need to be the exact same dimensions. This dramatically reduces GC pressure when scrolling through image-heavy lists. Image libraries like Glide and Coil maintain internal bitmap pools automatically. Glide's `BitmapPool` uses an LRU strategy, keeping recently released bitmaps and evicting the oldest when the pool exceeds its size limit. If you're building a custom image pipeline, implementing a bitmap pool is one of the highest-impact optimizations you can make.
+
 ### Common Follow-ups
 
 - What's the difference between `Bitmap.Config.ARGB_8888` and `RGB_565`?
@@ -358,4 +372,4 @@ Never enable StrictMode in release builds. In development, it catches things lik
 - What's the difference between `invalidate()` and `requestLayout()`?
 - How does Compose's lazy column differ from RecyclerView in terms of performance?
 - What are startup profiles and how do they differ from baseline profiles?
-- What is `inBitmap` and how does bitmap pooling work?
+- How do you detect memory leaks in production using Firebase Crashlytics?

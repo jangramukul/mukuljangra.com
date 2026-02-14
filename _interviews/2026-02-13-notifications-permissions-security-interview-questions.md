@@ -428,6 +428,26 @@ FirebaseMessaging.getInstance()
 
 Topics work well for broadcast-style notifications like breaking news, feature announcements, or promotional campaigns. The server sends a single message to the topic and FCM handles distribution. You can combine topics with conditions like `"android_weekly" in topics && "premium" in topics` for audience targeting. Limitations: you can't get a list of subscribers for a topic, and delivery to large topics can have slight delays.
 
+#### Q20: What is Firebase Remote Config and how do you use it for feature flags?
+
+Firebase Remote Config lets you change your app's behavior without publishing an update. You define key-value pairs in the Firebase console and fetch them at runtime. This is the standard approach for feature flags, A/B testing, and gradual rollouts.
+
+```kotlin
+val remoteConfig = Firebase.remoteConfig
+remoteConfig.setDefaultsAsync(R.xml.remote_config_defaults)
+
+remoteConfig.fetchAndActivate()
+    .addOnCompleteListener { task ->
+        val showNewFeature =
+            remoteConfig.getBoolean("show_new_checkout")
+        if (showNewFeature) {
+            enableNewCheckoutFlow()
+        }
+    }
+```
+
+Set defaults in XML so the app works offline on first launch. The fetch has a cache (default 12 hours) to avoid excessive network calls — you can lower it during development but keep it high in production. Remote Config integrates with Firebase A/B Testing to run experiments: show feature A to 50% of users, feature B to the other 50%, and measure which performs better. For critical features, always code both paths (enabled and disabled) and test both before deploying the flag.
+
 ### Common Follow-ups
 
 - What happens when a user revokes a permission that your app previously had?

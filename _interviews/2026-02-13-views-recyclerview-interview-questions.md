@@ -470,6 +470,43 @@ val errorLayout = findViewById<View>(R.id.error_layout)
 
 `ViewStub` can only be inflated once. After inflation, calling `inflate()` again throws an `IllegalStateException`. If you need to show/hide the inflated view repeatedly, toggle its visibility normally after the first inflation.
 
+#### Q26: What is `SurfaceView` and how is it different from a regular `View`?
+
+A regular `View` draws on the main UI thread using the window's `Surface`. `SurfaceView` creates a separate `Surface` with its own drawing layer behind or on top of the window. This means you can draw on it from a background thread without blocking the UI.
+
+```kotlin
+class GameView(context: Context) : SurfaceView(context),
+    SurfaceHolder.Callback {
+
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        // Start drawing thread
+        thread {
+            while (running) {
+                val canvas = holder.lockCanvas()
+                // draw game frame
+                holder.unlockCanvasAndPost(canvas)
+            }
+        }
+    }
+}
+```
+
+Use `SurfaceView` for camera previews, video playback, and games — anything that needs high frame rates or off-thread rendering. The downside is that `SurfaceView` can't be transformed, animated, or placed inside a `ScrollView` as smoothly as regular views. `TextureView` solves some of these limitations but uses more memory and GPU power. Starting with API 24, `SurfaceView` can be moved and resized smoothly.
+
+#### Q27: What is `SnapHelper` in RecyclerView and how does it work?
+
+`SnapHelper` automatically snaps items to a defined position after the user finishes scrolling. Android provides two built-in implementations:
+
+- `LinearSnapHelper` — snaps the closest item to the center of the RecyclerView
+- `PagerSnapHelper` — snaps one item at a time, mimicking ViewPager behavior
+
+```kotlin
+val snapHelper = PagerSnapHelper()
+snapHelper.attachToRecyclerView(recyclerView)
+```
+
+Under the hood, `SnapHelper` attaches an `OnFlingListener` to the RecyclerView. When a fling ends, it calculates the distance to the nearest snap point and triggers a smooth scroll to align the item. You can create a custom `SnapHelper` by overriding `calculateDistanceToFinalSnap()` and `findSnapView()` to control which item snaps and where.
+
 ### Common Follow-ups
 
 - What happens if you call `notifyDataSetChanged()` on a RecyclerView with thousands of items? (Answer: all visible items are rebound, animations are skipped, it's expensive — use DiffUtil instead)
