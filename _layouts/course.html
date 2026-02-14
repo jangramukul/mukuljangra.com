@@ -215,31 +215,6 @@
         flex-shrink: 0;
       }
 
-      .prereq-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .prereq-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 8px;
-        font-size: 0.88em;
-        color: #d1d5db;
-        background-color: rgba(55, 65, 81, 0.3);
-        border: 1px solid rgba(75, 85, 99, 0.25);
-      }
-
-      .prereq-icon {
-        font-size: 13px;
-        color: #9ca3af;
-      }
 
       /* ── Curriculum Section ── */
       .curriculum-header {
@@ -906,20 +881,6 @@
         </div>
         {% endif %}
 
-        <!-- Prerequisites -->
-        {% if page.prerequisites %}
-        <div class="course-section">
-          <div class="course-section-title">Prerequisites</div>
-          <div class="prereq-list">
-            {% for item in page.prerequisites %}
-            <div class="prereq-item">
-              <span class="prereq-icon">→</span>
-              <span>{{ item }}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
 
         <!-- Curriculum -->
         <div class="curriculum-header">
