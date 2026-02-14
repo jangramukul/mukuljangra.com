@@ -808,15 +808,18 @@
       }
 
       .interviews-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
       }
 
       #tab-interviews .list-post {
         border-color: rgba(75, 85, 99, 0.3);
-        padding: 16px 20px;
+        padding: 20px;
         border-radius: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       #tab-interviews .list-post:hover {
@@ -1182,6 +1185,10 @@
           grid-template-columns: 1fr;
         }
 
+        .interviews-list {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
         .list-post-icon {
           width: 36px;
           height: 36px;
@@ -1192,6 +1199,12 @@
 
         .list-post h2 {
           font-size: 0.88em;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .interviews-list {
+          grid-template-columns: 1fr;
         }
       }
     </style>
