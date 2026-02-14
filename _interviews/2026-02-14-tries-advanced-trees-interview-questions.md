@@ -10,13 +10,13 @@ description: "Tries show up in string-heavy problems like autocomplete, spell ch
 
 ## Tries & Advanced Trees
 
-Tries show up in string-heavy problems like autocomplete, spell check, and word search. Segment trees and Fenwick trees appear in range query problems. These aren't as common as arrays or graphs, but when they come up, you either know them or you don't.
+Tries, Segment Trees, and Fenwick Trees — these are the data structures that don't show up every interview, but when they do, they separate the candidates who really know their stuff. Tries dominate string-heavy problems like autocomplete, spell check, and word search. Segment Trees and Fenwick Trees own the range query world. You either know them or you're stuck at the whiteboard wishing you did.
 
 #### What is a Trie and why use it over a HashMap for prefix-based lookups?
 
-A Trie (prefix tree) is a tree where each node represents a character, and paths from root to nodes form prefixes. Each node has up to 26 children and a flag marking word endings.
+Think of a Trie like a phone book organized by letters. Each node is a single character, and walking from the root down a path spells out a prefix. Every node can have up to 26 children (one per letter) and a flag that says "hey, a complete word ends here."
 
-A HashMap can check if a word exists in O(1), but finding all words with a given prefix requires scanning every key. A Trie finds all words starting with a prefix in O(p + k) where p is the prefix length and k is the number of matching results.
+Here's the thing — a HashMap can tell you if "apple" exists in O(1), sure. But what if you need all words starting with "app"? You'd have to scan every single key. A Trie just walks to the "app" node and grabs everything below it in O(p + k) where p is the prefix length and k is the number of matches.
 
 #### How do you implement insert and search in a Trie?
 
@@ -55,7 +55,7 @@ Time O(m) for both insert and search where m is the word length.
 
 #### How does startsWith differ from search in a Trie?
 
-`startsWith` checks if any word begins with the given prefix. It's identical to search but you don't check `isEnd` — just reaching the end of the prefix without hitting null is enough.
+Almost identical to search, with one key difference — you don't check `isEnd`. If you can walk through every character of the prefix without hitting a null, the prefix exists. That's it.
 
 ```kotlin
 fun startsWith(prefix: String): Boolean {
@@ -67,9 +67,11 @@ fun startsWith(prefix: String): Boolean {
 }
 ```
 
+> **🧠 Think about it:** If `search("apple")` returns true, will `startsWith("app")` always return true too? What about the other way around?
+
 #### How do you solve Word Search II (finding multiple words in a grid)?
 
-Build a Trie from the word list, then DFS from every cell. Follow the Trie as you explore — if the current character matches a child, continue. When you hit an `isEnd` node, you found a word.
+This one's a classic. Build a Trie from the word list, then DFS from every cell in the grid. The Trie acts like a GPS — as you explore neighbors, you follow the Trie path. If the current character matches a child node, keep going. Hit an `isEnd` node? You found a word.
 
 ```kotlin
 fun findWords(board: Array<CharArray>, words: List<String>): List<String> {
@@ -101,11 +103,11 @@ fun findWords(board: Array<CharArray>, words: List<String>): List<String> {
 }
 ```
 
-The Trie prunes branches early, making the practical runtime much better than brute force.
+The Trie prunes branches early — if no word starts with "xz", you bail immediately instead of exploring further. That's what makes the practical runtime way better than brute force.
 
 #### How would you implement autocomplete using a Trie?
 
-Walk to the prefix node, then DFS from there collecting all words.
+Walk to the prefix node, then DFS from there collecting every complete word below it. It's like navigating to a folder and listing all files inside — you find the right directory first, then explore everything underneath.
 
 ```kotlin
 fun autocomplete(prefix: String): List<String> {
@@ -131,7 +133,7 @@ private fun dfs(node: TrieNode, path: StringBuilder, results: MutableList<String
 
 #### How do you delete a word from a Trie?
 
-Walk to the end and unmark `isEnd`. If the node has no children, remove it and backtrack upward removing empty parents.
+Walk to the end and flip `isEnd` to false. But wait — you're not done. If that node has no children, it's just dead weight. Remove it and backtrack upward, cleaning up any parent nodes that are now empty and aren't word endings themselves.
 
 ```kotlin
 fun delete(word: String): Boolean {
@@ -157,11 +159,13 @@ private fun deleteHelper(node: TrieNode, word: String, depth: Int): Boolean {
 
 #### What is the space optimization for Tries when the alphabet is large?
 
-Replace the fixed array with a `HashMap<Char, TrieNode>` per node. Reduces space from O(26 * N) to O(total characters stored) at the cost of slightly slower lookups. Another option is a compressed Trie (radix tree) where chains of single-child nodes merge into one node storing a substring.
+Replace the fixed 26-element array with a `HashMap<Char, TrieNode>` per node. This drops space from O(26 * N) to O(total characters stored) — you only allocate what you actually use. The tradeoff is slightly slower lookups since hash map access isn't as fast as array indexing. Another approach is a compressed Trie (radix tree) where chains of single-child nodes collapse into one node storing a whole substring.
+
+> **🧠 Think about it:** If your Trie stores URLs instead of English words, why would a fixed 26-element array be a terrible idea?
 
 #### What is a Segment Tree and what problem does it solve?
 
-A Segment Tree answers range queries (sum, min, max) in O(log n) and supports point updates in O(log n). Each leaf stores an array element, each internal node stores the aggregate of its children's range.
+A Segment Tree is built for one thing — answering range queries fast. Need the sum of elements from index 3 to 7? Min value between index 0 and 100? A Segment Tree does it in O(log n) with O(log n) point updates. Each leaf holds an array element, and each internal node stores the aggregate (sum, min, max) of its children's range.
 
 #### How do you implement a Segment Tree for range sum queries?
 
@@ -202,7 +206,7 @@ O(n) build, O(log n) query and update.
 
 #### What is a Fenwick Tree and how does it compare to a Segment Tree?
 
-A Fenwick Tree (BIT) supports prefix sum queries and point updates in O(log n) with only a flat array of size n+1. Simpler to implement and uses less memory than a Segment Tree, but only works for operations with an inverse (like addition). Segment Trees handle min/max queries too.
+A Fenwick Tree (also called a Binary Indexed Tree) is the lightweight cousin of a Segment Tree. It gives you prefix sum queries and point updates in O(log n) with just a flat array of size n+1. Way simpler to implement, way less memory. Plot twist — it only works for operations that have an inverse, like addition (you can subtract to undo). For min/max queries where there's no inverse, you still need a Segment Tree.
 
 ```kotlin
 class FenwickTree(private val n: Int) {
@@ -234,15 +238,17 @@ class FenwickTree(private val n: Int) {
 
 #### What is an N-ary tree and how does traversal differ?
 
-An N-ary tree allows any number of children per node. Traversal logic is the same — BFS uses a queue, DFS uses recursion — but you iterate over a list of children instead of left/right.
+An N-ary tree is just a tree where each node can have any number of children — not limited to left and right. Traversal logic stays the same — BFS with a queue, DFS with recursion — but instead of checking `node.left` and `node.right`, you iterate over a list of children.
 
 #### What is lazy propagation in a Segment Tree?
 
-Standard Segment Trees handle point updates in O(log n). For range updates, lazy propagation defers updates — store a pending value at the segment node and push it down only when needed. Keeps both range updates and queries at O(log n).
+Here's the problem — standard Segment Trees handle single-element updates in O(log n). But what if you need to update an entire range? Without lazy propagation, that's O(n log n). With it, you store a pending update at the segment node and only push it down to children when you actually need to query them. It's like writing "add 5 to everything" on a sticky note instead of updating every element individually. Keeps both range updates and queries at O(log n).
+
+> **🧠 Think about it:** Why can't you just apply the update immediately to all affected leaf nodes? What makes the lazy approach faster?
 
 #### How would you count the number of distinct words in a Trie?
 
-DFS through the entire Trie counting nodes where `isEnd` is true. Or maintain a counter that increments on insert when `isEnd` goes from false to true.
+Two ways. You can DFS through the entire Trie and count every node where `isEnd` is true. Or the smarter approach — maintain a running counter that increments on insert only when `isEnd` flips from false to true. That way you always know the count without traversing anything.
 
 ### Common Follow-ups
 

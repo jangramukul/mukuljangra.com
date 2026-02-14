@@ -10,11 +10,11 @@ description: "System-oriented DSA questions bridge the gap between algorithms an
 
 ## System-Oriented DSA
 
-System-oriented DSA questions bridge the gap between algorithms and real-world systems. These problems require combining multiple data structures — hash maps, heaps, linked lists — to meet specific performance constraints. LRU Cache is by far the most commonly asked.
+Here's the thing about system-oriented DSA — these aren't your typical "reverse a linked list" problems. These questions ask you to combine multiple data structures together to build something that actually works under real performance constraints. You'll be mixing hash maps with heaps, linked lists with arrays, and figuring out how to hit O(1) on operations that seem like they shouldn't be O(1). LRU Cache is the king of this category — it shows up everywhere.
 
 #### How do you implement an LRU Cache with O(1) get and put?
 
-HashMap for O(1) key lookup. Doubly linked list for O(1) insertion and removal. Most recently used goes to head, least recently used lives at tail. On get, move to head. On put, add to head, evict tail if over capacity.
+Think of it like a VIP line at a club. The bouncer (HashMap) knows exactly where everyone is standing — O(1) lookup. The line itself (doubly linked list) lets people cut to the front or get kicked from the back instantly — O(1) insertion and removal. Most recently used goes to the head, least recently used sits at the tail. On get, move to head. On put, add to head and evict the tail if you're over capacity.
 
 ```kotlin
 class LRUCache(private val capacity: Int) {
@@ -62,11 +62,11 @@ class LRUCache(private val capacity: Int) {
 
 #### How does an LFU Cache differ from LRU?
 
-LRU evicts the least recently used item. LFU evicts the least frequently used — the item accessed the fewest times. LFU needs three maps: key-to-value, key-to-frequency, and frequency-to-list-of-keys. On a tie in frequency, evict the least recently used among those.
+LRU kicks out whoever hasn't been touched the longest. LFU kicks out whoever's been touched the fewest times — it cares about popularity, not recency. That means LFU needs three maps: key-to-value, key-to-frequency, and frequency-to-list-of-keys. When there's a tie in frequency, it falls back to LRU behavior among those tied items.
 
 #### How do you design a HashMap from scratch?
 
-Array of buckets. Hash function maps keys to indices. Handle collisions with chaining (linked list per bucket) or open addressing. Load factor controls resizing — when it exceeds 0.75, double the array and rehash all entries.
+It's basically an array of buckets with a hash function deciding which bucket each key goes into. When two keys land in the same bucket (collision), you chain them together with a linked list — or use open addressing to probe for the next empty slot. The load factor is your trigger for resizing: once it crosses 0.75, double the array and rehash everything.
 
 ```kotlin
 class MyHashMap(private var capacity: Int = 16) {
@@ -115,9 +115,11 @@ class MyHashMap(private var capacity: Int = 16) {
 }
 ```
 
+> **🧠 Think about it:** Why does the load factor threshold matter? What happens to lookup performance if you let the buckets get too crowded before resizing?
+
 #### How do you find the median from a data stream?
 
-Use two heaps — a max-heap for the lower half and a min-heap for the upper half. Keep them balanced (sizes differ by at most 1). Median is the top of the larger heap or the average of both tops.
+Picture sorting a never-ending stream of numbers. You can't sort the whole thing every time a new number arrives — that's way too slow. Instead, split the stream into two halves using two heaps: a max-heap holds the lower half, a min-heap holds the upper half. Keep them balanced so they differ in size by at most 1. The median is either the top of the bigger heap, or the average of both tops.
 
 ```kotlin
 class MedianFinder {
@@ -137,15 +139,15 @@ class MedianFinder {
 }
 ```
 
-All operations O(log n). This is a very common interview question.
+All operations O(log n). This one comes up a lot.
 
 #### How do you implement a Trie-based autocomplete system?
 
-Trie stores words. Each node tracks top-k results or frequency. On each character typed, walk the Trie and return suggestions from the current node's subtree. Discussed in detail in the Tries post.
+A Trie stores words character by character, so walking the tree as the user types gives you a natural prefix match. Each node can track the top-k results or frequency counts for that prefix. On each keystroke, you walk one level deeper and return suggestions from the current node's subtree. Discussed in detail in the Tries post.
 
 #### How do you design a Twitter/News Feed system using DSA?
 
-HashMap maps each user to their tweets (a list sorted by timestamp). Follow relationships stored as a HashMap of sets. To generate feed, merge recent tweets from all followed users using a min-heap of size k. Basically a k-way merge problem.
+This is really a k-way merge problem in disguise. Each user's tweets live in a HashMap as a list sorted by timestamp. Follow relationships are stored as a HashMap of sets. To build a feed, grab the recent tweets from every user you follow and merge them using a max-heap of size k — always pulling the most recent tweet next.
 
 ```kotlin
 class Twitter {
@@ -186,11 +188,11 @@ class Twitter {
 
 #### How do you implement a stack that supports push, pop, and getMin in O(1)?
 
-Two stacks — one for values, one for minimums. Push the current min with every element. Covered in detail in the Stacks post.
+Two stacks working together — one for values, one for tracking minimums. Every time you push, you also push the current minimum onto the min stack. Covered in detail in the Stacks post.
 
 #### How do you design a data structure for insert, remove, and getRandom in O(1)?
 
-ArrayList stores elements. HashMap maps element to its index. Insert: append to list and record index. Remove: swap with last element, update map, remove last. GetRandom: pick random index from list.
+Plot twist: you need both an ArrayList and a HashMap working together. The ArrayList stores the actual elements and gives you O(1) random access. The HashMap maps each element to its index in the list. Insert just appends and records the index. The clever part is remove — you swap the target with the last element, update the map, and remove from the end. That keeps everything O(1).
 
 ```kotlin
 class RandomizedSet {
@@ -218,9 +220,11 @@ class RandomizedSet {
 }
 ```
 
+> **🧠 Think about it:** Why can't you just use a HashSet here? What operation would break if you didn't have the ArrayList?
+
 #### How would you implement a time-based key-value store?
 
-Store values with timestamps. Use a HashMap where each key maps to a list of (timestamp, value) pairs sorted by timestamp. For get, binary search for the largest timestamp <= query.
+Think of it like version control for values — every key can have multiple values at different points in time. You store them in a HashMap where each key maps to a list of (timestamp, value) pairs, naturally sorted by timestamp since sets always come in order. For get, you binary search for the largest timestamp that's less than or equal to the query.
 
 ```kotlin
 class TimeMap {
@@ -251,7 +255,7 @@ class TimeMap {
 
 #### How do you implement a basic rate limiter using a queue?
 
-For sliding window rate limiting, store timestamps in a queue. On each request, remove expired entries, check if count exceeds limit.
+It's like a sliding window — you keep a queue of request timestamps. When a new request comes in, you toss out everything that's expired (older than the window), then check if you still have room. If the queue size is under the limit, allow it and add the timestamp. Otherwise, reject it.
 
 ```kotlin
 class RateLimiter(private val maxRequests: Int, private val windowMs: Long) {
@@ -271,7 +275,7 @@ class RateLimiter(private val maxRequests: Int, private val windowMs: Long) {
 
 #### How do you solve Top K Frequent Elements?
 
-Count frequencies with a HashMap. Use a min-heap of size K to find the top K.
+Two steps. First, count every element's frequency with a HashMap. Then use a min-heap of size K — as you add elements, the heap automatically kicks out the least frequent ones, leaving you with the top K.
 
 ```kotlin
 fun topKFrequent(nums: IntArray, k: Int): IntArray {
@@ -290,11 +294,13 @@ Time O(n log k). Alternative: bucket sort for O(n).
 
 #### How do you merge K sorted arrays?
 
-Put the first element of each array into a min-heap with the array index and element index. Poll smallest, push next element from same array. Time O(n log k).
+Start by putting the first element of each array into a min-heap, along with which array it came from and its position. Poll the smallest, add it to the result, then push the next element from that same array. Keep going until the heap is empty. Time O(n log k).
+
+> **🧠 Think about it:** Why is this O(n log k) and not O(n log n)? What's the difference between sorting everything at once versus using a heap of size k?
 
 #### How do you solve the task scheduler problem?
 
-Count task frequencies. The minimum time is determined by the most frequent task and the cooling interval. Greedy: schedule the most frequent tasks first with gaps.
+Here's the thing — the most frequent task dictates everything. You build a schedule where the most frequent tasks create "slots" separated by the cooling interval, and less frequent tasks fill in the gaps. Count frequencies, find the max, and calculate the minimum time as `(maxFreq - 1) * (n + 1) + maxCount`. If the total number of tasks exceeds that, you don't need any idle time at all.
 
 ```kotlin
 fun leastInterval(tasks: CharArray, n: Int): Int {

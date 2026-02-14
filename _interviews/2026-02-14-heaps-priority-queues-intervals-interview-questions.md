@@ -10,17 +10,17 @@ description: "Heaps power efficient selection and scheduling problems. Interval 
 
 ## Heaps, Priority Queues & Intervals
 
-Heaps power efficient selection and scheduling problems. Interval problems test your ability to think about overlapping ranges. Together, they cover a wide slice of real interview questions — top K elements, merge intervals, meeting rooms.
+If you've ever been in a hospital emergency room, you know they don't serve patients first-come-first-served -- the person having a heart attack gets seen before someone with a paper cut. That's a priority queue in action. Heaps are the data structure that makes that efficient, and interval problems are all about figuring out when things overlap (like meetings that clash on your calendar). Together, these three topics show up constantly in interviews -- top K elements, merge intervals, meeting rooms -- and once you get the mental model, they're actually fun to solve.
 
 #### How does a binary heap work?
 
-A binary heap is a complete binary tree stored in an array. In a min-heap, every parent is smaller than its children. Insert: add at end, bubble up. Remove min: replace root with last element, bubble down. Both O(log n). Peek is O(1).
+Think of a binary heap like a company org chart where every manager earns less than their reports (in a min-heap) or more (in a max-heap). It's a complete binary tree, but here's the neat trick -- you store it in a flat array. Parent at index `i` has children at `2i+1` and `2i+2`, and the parent of `i` is at `(i-1)/2`.
 
-Array representation: parent at `i`, children at `2i+1` and `2i+2`. Parent of `i` is `(i-1)/2`.
+When you insert, you drop the new element at the end and "bubble up" -- swap with its parent until the heap property is restored. When you remove the root, you replace it with the last element and "bubble down." Both operations are O(log n), and peeking at the top is O(1).
 
 #### How do you find the Kth largest element using a heap?
 
-Maintain a min-heap of size K. For each element, add it and remove the smallest if heap exceeds K. The root is always the Kth largest.
+Here's the thing -- you don't need to sort the entire array. Maintain a min-heap of size K. As you scan through elements, add each one and kick out the smallest whenever the heap grows past K. The smallest element left in the heap is your Kth largest. It's like keeping a VIP list of exactly K people -- anyone who walks in has to beat the weakest member to get a spot.
 
 ```kotlin
 fun findKthLargest(nums: IntArray, k: Int): Int {
@@ -37,7 +37,7 @@ Time O(n log k), space O(k).
 
 #### How do you merge K sorted lists?
 
-Put each list's head into a min-heap. Poll the smallest, add to result, push that node's next into the heap.
+Imagine you have K conveyor belts, each already sorted. You need to merge them into one sorted stream. You put the front item from each belt into a min-heap, pull out the smallest, then push the next item from that same belt. The heap always gives you the global minimum across all K lists.
 
 ```kotlin
 fun mergeKLists(lists: List<ListNode?>): ListNode? {
@@ -57,9 +57,11 @@ fun mergeKLists(lists: List<ListNode?>): ListNode? {
 
 Time O(n log k) where n is total nodes and k is number of lists.
 
+> **🧠 Think about it:** If you had to merge two sorted lists, you'd just use two pointers. So why do we need a heap when it's K lists? What breaks about the two-pointer approach?
+
 #### How do you merge overlapping intervals?
 
-Sort by start time, then iterate and merge overlapping intervals.
+Sort all intervals by start time first. Then walk through them one by one -- if the current interval overlaps with the last one in your result, extend it. Otherwise, just add it as a new interval. It's like looking at your calendar and combining back-to-back meetings that bleed into each other into one big block.
 
 ```kotlin
 fun merge(intervals: Array<IntArray>): List<IntArray> {
@@ -82,7 +84,7 @@ Time O(n log n).
 
 #### How do you solve Meeting Rooms II (minimum rooms needed)?
 
-Sort by start time. Use a min-heap tracking end times. If a meeting starts after the earliest ending meeting, reuse that room (poll). Otherwise add a new room.
+This one is like being a hotel manager figuring out the minimum number of rooms you need. Sort meetings by start time. Keep a min-heap of end times -- it tells you when the earliest room frees up. If a new meeting starts after (or when) the earliest one ends, you recycle that room. Otherwise, you need a fresh room. The heap size at the end is your answer.
 
 ```kotlin
 fun minMeetingRooms(intervals: Array<IntArray>): Int {
@@ -102,7 +104,7 @@ Time O(n log n).
 
 #### How do you find the median from a data stream?
 
-Two heaps: max-heap for the lower half, min-heap for the upper half. Keep them balanced. Median is from the top of one or both.
+But wait -- how do you find a median when numbers keep arriving? You can't sort everything each time. The trick is to split the stream into two halves using two heaps: a max-heap holding the smaller half and a min-heap holding the larger half. Keep them balanced (at most one element difference). The median is always sitting right at the top of one or both heaps. It's like having two sorted piles of cards where you always know the middle.
 
 ```kotlin
 class MedianFinder {
@@ -124,9 +126,11 @@ class MedianFinder {
 
 O(log n) per insertion, O(1) for median.
 
+> **🧠 Think about it:** Why do we always add to `low` first and then rebalance, instead of deciding upfront which heap a number belongs in?
+
 #### How do you insert a new interval into a sorted non-overlapping list?
 
-Walk through the list. Add intervals that end before the new one starts. Merge all overlapping ones. Add remaining.
+Three-phase approach. First, add all intervals that end before the new one even starts -- they can't possibly overlap. Then, merge everything that does overlap with the new interval by expanding its boundaries. Finally, add whatever's left. Think of it like sliding a new appointment into an already organized calendar -- you skip past everything before it, merge any conflicts, and leave the rest untouched.
 
 ```kotlin
 fun insert(intervals: Array<IntArray>, newInterval: IntArray): List<IntArray> {
@@ -152,15 +156,15 @@ Time O(n).
 
 #### What is the difference between a min-heap and a max-heap?
 
-In a min-heap, the root is the smallest element. In a max-heap, the root is the largest. Kotlin's `PriorityQueue` is a min-heap by default. For max-heap, use `PriorityQueue(compareByDescending { it })`.
+Pretty straightforward -- in a min-heap, the smallest element sits at the root. In a max-heap, the largest does. Kotlin's `PriorityQueue` is a min-heap by default. If you want a max-heap, pass a custom comparator: `PriorityQueue(compareByDescending { it })`.
 
 #### How do you build a heap from an array and why is it O(n)?
 
-Bottom-up heapify — start from the last non-leaf node and bubble down. Leaf nodes (half the array) need no work. Each level does work proportional to its distance from the bottom. The sum converges to O(n), not O(n log n).
+Here's where it gets interesting. You start from the last non-leaf node and bubble down each one. Half the array is leaves -- they need zero work. The next quarter only needs one swap, the next eighth needs two, and so on. When you sum all that up mathematically, it converges to O(n), not O(n log n). It's like organizing a pyramid from the bottom -- most of the work is trivially small.
 
 #### How do you solve Top K Frequent Elements?
 
-Count frequencies with a HashMap. Use a min-heap of size K to keep the top K.
+Two steps. First, count how often each element appears using a HashMap. Then use a min-heap of size K -- feed in the elements, and whenever the heap exceeds K, kick out the least frequent one. What survives is your top K. It's like a talent show where you only have K seats -- the weakest performer gets eliminated every time a stronger one auditions.
 
 ```kotlin
 fun topKFrequent(nums: IntArray, k: Int): IntArray {
@@ -179,7 +183,7 @@ Time O(n log k). Alternative: bucket sort for O(n).
 
 #### How do you remove covered intervals?
 
-Sort by start ascending, then by end descending. Walk through and track the max end seen. An interval is covered if its end is <= max end.
+Sort by start time ascending, but here's the twist -- break ties by end time descending. Then walk through and track the maximum end you've seen. If an interval's end is less than or equal to the max end, it's completely covered by a previous one and can be tossed. It's like stacking blankets -- a smaller blanket completely covered by a bigger one doesn't add any coverage.
 
 ```kotlin
 fun removeCoveredIntervals(intervals: Array<IntArray>): Int {
@@ -196,9 +200,11 @@ fun removeCoveredIntervals(intervals: Array<IntArray>): Int {
 }
 ```
 
+> **🧠 Think about it:** Why do we sort by end time *descending* when starts are equal? What goes wrong if we sort both ascending?
+
 #### What is a non-overlapping interval count problem?
 
-Given intervals, find the minimum number to remove so the rest don't overlap. Same as activity selection — sort by end time, greedily keep non-overlapping intervals.
+Given a bunch of intervals, find the minimum number to remove so the rest don't overlap. This is actually the classic activity selection problem in disguise. Sort by end time and greedily keep every interval that doesn't clash with the last one you kept. The ones you skip are the removals. The greedy choice works because finishing early leaves the most room for future intervals.
 
 ```kotlin
 fun eraseOverlapIntervals(intervals: Array<IntArray>): Int {
@@ -218,7 +224,7 @@ fun eraseOverlapIntervals(intervals: Array<IntArray>): Int {
 
 #### How do you check if a person can attend all meetings?
 
-Sort by start time. If any meeting starts before the previous one ends, there's a conflict.
+Sort meetings by start time, then check if any meeting starts before the previous one ends. If it does -- conflict, can't attend all. If you make it through the whole list without a clash, you're good. That's it. One of the cleanest interval problems you'll see.
 
 ```kotlin
 fun canAttendMeetings(intervals: Array<IntArray>): Boolean {
@@ -232,7 +238,7 @@ fun canAttendMeetings(intervals: Array<IntArray>): Boolean {
 
 #### How do you find the Kth smallest element in a sorted matrix?
 
-Use a min-heap. Start with the first element of each row. Poll smallest, push the next element from the same row.
+The matrix is sorted row-wise and column-wise, so you can treat each row like a sorted list. Drop the first element from each row into a min-heap. Poll the smallest, then push the next element from that same row. After K polls, you have your answer. It's the same pattern as merging K sorted lists -- you're just using matrix coordinates instead of linked list pointers.
 
 ```kotlin
 fun kthSmallest(matrix: Array<IntArray>, k: Int): Int {
@@ -257,7 +263,7 @@ Time O(k log n).
 
 #### What is a heap sort and how does it work?
 
-Build a max-heap from the array. Repeatedly extract the max (swap with end), shrink heap, heapify root. Time O(n log n), space O(1). Not stable but in-place.
+Build a max-heap from the array -- that puts the largest element at the root. Swap it with the last element, shrink the heap by one, and heapify the root again. Repeat until the array is sorted. It's like repeatedly pulling the tallest person out of a crowd and lining them up at the back. Time O(n log n), space O(1). It's in-place, which is nice, but it's not stable -- equal elements might get rearranged.
 
 ```kotlin
 fun heapSort(arr: IntArray) {

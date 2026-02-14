@@ -8,7 +8,9 @@ tags:
   - Libraries
 ---
 
-I spent an embarrassing amount of time trying to build a frosted glass toolbar in Compose before I accepted that Android just doesn't make this easy. The platform has `Modifier.blur`, but that blurs the content *of* the composable — if you apply it to a `Text`, you get blurred text, not a frosted overlay showing blurred content behind it. The actual problem — capturing rendered content from one part of the tree, blurring it, and rendering it somewhere else — is fundamentally different from just slapping a Gaussian filter on a single element. `RenderScript` used to handle blur on the platform level, but it's deprecated since Android 12. The replacement, `RenderEffect`, is hardware-accelerated but only works on API 31+ and is a View-system API that doesn't integrate cleanly with Compose's rendering pipeline.
+I spent an embarrassing amount of time trying to build a frosted glass toolbar in Compose before I accepted that Android just doesn't make this easy. The platform has `Modifier.blur`, and you'd think that's your answer — but try applying it to a `TopAppBar` and see what happens. You don't get a frosted overlay showing blurred content behind it. You get blurred text. The modifier blurs the content *of* the composable, not the content *behind* it.
+
+That's a completely different problem. What you actually need is: capture the rendered pixels from one part of the composable tree, blur them, and paint them somewhere else. That's like asking the camera operator to film the background, run it through a frosted filter, and project it onto a glass panel in the foreground — all in real time, every frame. `RenderScript` used to handle blur on the platform level, but it's deprecated since Android 12. The replacement, `RenderEffect`, is hardware-accelerated but only works on API 31+ and is a View-system API that doesn't integrate cleanly with Compose's rendering pipeline.
 
 Chris Banes built [Haze](https://github.com/chrisbanes/haze) to solve this problem properly. Haze is a Compose and Compose Multiplatform library (2.1k+ GitHub stars) that handles background blur effects with a clean two-modifier API. It uses `RenderEffect` when available, falls back gracefully on older APIs, and works across Android, iOS, Desktop, Wasm, and JS/Canvas — all from the same code. Having used it in a project, I think it's the most practical blur solution for Compose today.
 
@@ -34,9 +36,11 @@ The core `haze` artifact gives you the two-modifier API — `hazeSource` and `ha
 
 ## HazeState — The Communication Bridge
 
-The core concept behind Haze's design is `HazeState`. It acts as the communication channel between the composable whose content you want to blur (the source) and the composable that displays the blur effect. You create it with `rememberHazeState()` and pass it to both modifiers.
+Here's the central idea behind Haze, and it's worth really understanding because everything else builds on it.
 
-Here's the thing — this isn't just a flag or a simple observable. Under the hood, `HazeState` tracks the source's rendered content via Compose's `GraphicsLayer` APIs (which wrap platform-specific primitives like `RenderNode` on Android). When the source content changes — the user scrolls, an image loads, an animation runs — the state updates the captured content, and the effect modifier picks up the change. It's continuous, not snapshot-based.
+Think of `HazeState` like a live TV feed. One camera (the source composable) is filming, and one or more monitors (the effect composables) are showing that feed with a frosted filter applied. The `HazeState` is the cable connecting them. You create it with `rememberHazeState()` and pass it to both modifiers.
+
+Here's the thing — this isn't just a flag or a simple observable. Under the hood, `HazeState` tracks the source's rendered content via Compose's `GraphicsLayer` APIs (which wrap platform-specific primitives like `RenderNode` on Android). When the source content changes — the user scrolls, an image loads, an animation runs — the state updates the captured content, and the effect modifier picks up the change. It's continuous, not snapshot-based. Every frame, the "camera" is filming and the "monitors" are updating.
 
 For deep UI hierarchies where passing `HazeState` through multiple composable parameters gets messy, you can use a `CompositionLocal`:
 
@@ -58,6 +62,8 @@ This pattern is especially useful in apps with shared design systems where the b
 ## The Two-Modifier API
 
 Haze's API comes down to two modifiers: `hazeSource` and `hazeEffect`. The source goes on the composable whose content should be blurred — typically your main scrollable content, a background image, or a full-screen layout. The effect goes on the overlay — a top app bar, bottom sheet, or navigation bar.
+
+Think of it this way: the source says "film me," and the effect says "show me the frosted version of whatever's behind me."
 
 ```kotlin
 val hazeState = rememberHazeState()
@@ -92,11 +98,13 @@ Scaffold(
 
 The elegance is in the separation. The source doesn't know where or how the blur is rendered. The effect doesn't reference the source composable directly. They communicate solely through `HazeState`. The effect modifier calculates the positional relationship between itself and the source — figuring out which region of the source content is directly behind it — and only blurs and renders that region. You can have multiple `hazeEffect` modifiers pointing at the same source (a toolbar *and* a bottom bar blurring the same scrollable list), and each one independently clips and processes its own portion.
 
+> **💡 The "aha" moment:** The source and effect don't know about each other at all. They're like two strangers connected by a shared radio frequency — one broadcasts, the other tunes in and applies its own filter. That's why you can have multiple effects on the same source without any coordination code.
+
 The naming has evolved over Haze's lifetime. In versions before 1.0, the modifiers were called `haze` (for source) and `hazeChild` (for effect). The rename to `hazeSource`/`hazeEffect` in 1.0 made the roles much clearer. If you're reading older blog posts or Stack Overflow answers that reference `hazeChild`, it's the same thing as `hazeEffect`.
 
 ## Styling the Blur
 
-Haze provides three core styling properties in the `hazeEffect` lambda block:
+Now you've got blur working. But it looks... clinical? Flat? That's because real frosted glass isn't just blur. Look at the glass panel on a fancy coffee shop door — there's the blur, sure, but there's also a slight color tint, and if you look closely, a fine grain texture. Haze gives you knobs for all three.
 
 ```kotlin
 Modifier.hazeEffect(state = hazeState) {
@@ -110,7 +118,7 @@ Modifier.hazeEffect(state = hazeState) {
 
 **`blurRadius`** controls blur intensity. The default is `20.dp`, and typical values range from 12dp to 30dp. Going above 40dp rarely adds visible difference but costs more GPU time. For text-heavy overlays, a higher radius (24-30dp) keeps the background indistinct enough that foreground text stays readable.
 
-**`noiseFactor`** adds a subtle grain texture. If you look closely at iOS frosted glass effects, there's a fine noise pattern that makes the blur look physical rather than digital. Haze defaults to `0.15f` (15% strength). Setting it between 0.05 and 0.2 produces subtle frosted results. Setting it to `0f` gives a clean, purely digital blur.
+**`noiseFactor`** adds that subtle grain texture. If you look closely at iOS frosted glass effects, there's a fine noise pattern that makes the blur look physical rather than digital — like actual etched glass, not Photoshop. Haze defaults to `0.15f` (15% strength). Setting it between 0.05 and 0.2 produces subtle frosted results. Setting it to `0f` gives a clean, purely digital blur.
 
 **Tints** are color overlays applied on top of the blurred content. This is how you control the "color" of the frosted glass. A semi-transparent white gives the classic iOS look. A semi-transparent version of your Material surface color integrates naturally with your theme. You can stack multiple tints for layered effects. The visual result depends on what's scrolling behind the overlay, so test with actual content, not just a placeholder.
 
@@ -120,7 +128,7 @@ Styling resolves through a precedence chain: values set directly in the `HazeEff
 
 Achieving the iOS-style frosted glass look — what designers call glassmorphism — is what Haze was specifically designed for. The combination of blur, tint, and noise produces that translucent, slightly grainy overlay that Apple has used since iOS 7.
 
-The `haze-materials` add-on library provides pre-built styles so you don't have to hand-tune blur values:
+But getting those three knobs tuned right is surprisingly fiddly. What opacity for the white tint? How much noise before it looks like static on a TV? The `haze-materials` add-on library provides pre-built styles so you don't have to hand-tune blur values:
 
 ```kotlin
 Modifier.hazeEffect(
@@ -147,7 +155,13 @@ Modifier.hazeEffect(state = hazeState) {
 
 Haze supports linear gradients (vertical and horizontal), radial gradients, and custom `Brush`-based progressive effects. The `easing` parameter is a nice touch — linear gradients tend to look harsh at the transition boundary, and applying an `EaseIn` curve makes the fade look more natural. Chris Banes borrowed the idea from using easing curves for scrims, where the same perceptual problem exists.
 
-Here's the reframe moment for this entire library, actually. Progressive blur isn't just "blur with a gradient mask." The blur *radius itself* changes spatially — different parts of the image are blurred by different amounts. On Android SDK 33+ and all Skia-backed platforms (iOS, Desktop), Haze implements this with a custom runtime shader. On SDK 32, it falls back to drawing multiple `GraphicsLayer` instances at different blur radii stacked on top of each other. On SDK 31 and below, it uses a simpler scrim-based approximation. The performance difference is real: runtime shader adds roughly 25% overhead, while the multi-layer fallback on SDK 32 costs about 2x. If progressive blur is too expensive for your target devices, Haze offers a `mask` property that uses a `Brush` as an alpha mask — visually similar but with negligible performance cost since it only fades opacity, not the blur radius.
+Now here's where it gets interesting — this is the reframe moment for the entire library, actually.
+
+You might assume progressive blur is just "blur with a gradient mask" — apply a uniform blur, then fade the opacity. Nope. The blur *radius itself* changes spatially. Different parts of the image are blurred by different amounts. That's a fundamentally harder rendering problem.
+
+On Android SDK 33+ and all Skia-backed platforms (iOS, Desktop), Haze implements this with a custom runtime shader. On SDK 32, it falls back to drawing multiple `GraphicsLayer` instances at different blur radii stacked on top of each other. On SDK 31 and below, it uses a simpler scrim-based approximation. The performance difference is real: runtime shader adds roughly 25% overhead, while the multi-layer fallback on SDK 32 costs about 2x. If progressive blur is too expensive for your target devices, Haze offers a `mask` property that uses a `Brush` as an alpha mask — visually similar but with negligible performance cost since it only fades opacity, not the blur radius.
+
+> **🧠 Think about it:** If progressive blur actually varies the blur radius pixel-by-pixel, why is the `mask` fallback so much cheaper? Because masking only changes opacity — the expensive blur computation happens once at a single radius and then parts of it are faded out. Varying the actual blur radius means running the blur algorithm multiple times at different intensities.
 
 ## Real-World Blur Patterns
 
@@ -188,13 +202,15 @@ Each effect automatically draws only the layers with a lower `zIndex` than its s
 
 ## Performance
 
-Real-time blur is expensive. This is the honest tradeoff with Haze, and it's worth understanding the numbers.
+Real-time blur is expensive. There's no getting around that. Every frame, Haze is capturing content, running it through a blur algorithm, and painting the result. This is the honest tradeoff, and it's worth understanding the numbers before you commit.
 
-On Android, Haze uses two completely different rendering paths. On API 31+ (Android 12), it uses `RenderEffect.createBlurEffect()` — a hardware-accelerated GPU operation. Below API 31, it falls back to a software path that renders to a `Bitmap` and applies blur on the CPU. Your code doesn't change between the two paths, but the performance characteristics are dramatically different.
+On Android, Haze uses two completely different rendering paths. On API 31+ (Android 12), it uses `RenderEffect.createBlurEffect()` — a hardware-accelerated GPU operation. Below API 31, it falls back to a software path that renders to a `Bitmap` and applies blur on the CPU. Your code doesn't change between the two paths, but the performance characteristics are dramatically different. Same API call, wildly different cost.
 
 Chris Banes publishes Macrobenchmark results for every major release. For Haze 1.x on a Pixel 6, the P90 frame duration numbers tell the story. In a typical Scaffold scenario (app bar and bottom nav blurred over a scrolling list), frame times go from 7.5ms without Haze to 9.7ms with it — a 29% increase. An images list with per-item blur sources adds about 45% overhead. These numbers are for the hardware-accelerated path on API 33+. On devices running the software fallback, the gap widens significantly. I'd recommend always testing on your lowest supported API level, not just your development device.
 
-Three practical tips for keeping blur performant. First, use `HazeInputScale` — setting `inputScale = HazeInputScale.Auto` (or a manual value like `0.66f`) scales down the content before blurring, reducing pixel count by up to 55% with minimal visible difference. Chris Banes' benchmarks show a 5-20% reduction in Haze's rendering cost with `inputScale = 0.5`. Second, if progressive blur is too expensive, use `mask` with a gradient `Brush` instead — it's about 5x cheaper in relative terms. Third, keep the number of simultaneous `hazeEffect` modifiers reasonable. Two or three on screen is fine on modern hardware. More than that, and you're stacking rendering passes.
+> **🔥 Real talk:** 29% frame time increase sounds scary on paper, but 9.7ms is still well under the 16ms budget for 60fps. The danger zone is older devices hitting the software fallback — that's where blur can push you over the frame budget. Always benchmark on your lowest API target.
+
+Three practical tips for keeping blur performant. First, use `HazeInputScale` — setting `inputScale = HazeInputScale.Auto` (or a manual value like `0.66f`) scales down the content before blurring, reducing pixel count by up to 55% with minimal visible difference. Think of it like blurring a thumbnail instead of the full-resolution image — the result looks the same because it's blurred anyway. Chris Banes' benchmarks show a 5-20% reduction in Haze's rendering cost with `inputScale = 0.5`. Second, if progressive blur is too expensive, use `mask` with a gradient `Brush` instead — it's about 5x cheaper in relative terms. Third, keep the number of simultaneous `hazeEffect` modifiers reasonable. Two or three on screen is fine on modern hardware. More than that, and you're stacking rendering passes.
 
 ## Compose Multiplatform Support
 

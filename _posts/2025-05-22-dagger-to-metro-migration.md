@@ -8,25 +8,29 @@ tags:
   - Libraries
 ---
 
-Every Android team I've worked on has had a complicated relationship with dependency injection. We know we need it — the alternative is manual service locators and constructor chains that make testing impossible. But the tooling around DI has always felt like it's fighting the language rather than working with it. I've been through the progression: manual injection, Dagger 1, Dagger 2, Dagger with Hilt, and most recently Dagger with Anvil. Each step solved real problems, but each also came with its own weight.
+Every Android team I've worked on has had a complicated relationship with dependency injection. It's like that kitchen gadget you know you need — a food processor, maybe — but every version you buy has some annoying quirk. The blade is hard to clean. The lid doesn't lock right. You keep upgrading, and each new model fixes one problem while introducing another. That's been my journey with DI: manual injection, Dagger 1, Dagger 2, Dagger with Hilt, and most recently Dagger with Anvil. Each step solved real problems, but each also came with its own weight.
 
-So when Cash App announced they'd completed a migration of their entire 1500-module Android project from Dagger and Anvil to Metro — Zac Sweers' compile-time DI framework — I paid close attention. Not because I follow hype, but because Cash App's engineering team doesn't make changes like this lightly. They built Anvil. They've been running Dagger at scale for years. If they're moving away, the reasons are worth understanding. And when I looked at the actual migration path, I realized this isn't just a Cash App story — it's a playbook any team on Dagger can study.
+So when Cash App announced they'd completed a migration of their entire 1500-module Android project from Dagger and Anvil to Metro — Zac Sweers' compile-time DI framework — I paid close attention. Not because I follow hype, but because Cash App's engineering team doesn't make changes like this lightly. They *built* Anvil. They've been running Dagger at scale for years. If they're moving away, the reasons are worth understanding. And when I looked at the actual migration path, I realized this isn't just a Cash App story — it's a playbook any team on Dagger can study.
 
 ## Why Leave Dagger At All?
 
 Here's the thing about Dagger that most people don't think about until it bites them: **Dagger is fundamentally a Java library.** Square (now Block) created it back in 2012, before Kotlin was even a thing on Android. Dagger 2, maintained by Google since 2018, uses Java annotation processing. On a Kotlin codebase, that means kapt — the Kotlin Annotation Processing Tool — which acts as a bridge between Kotlin's compiler and Java's annotation processor infrastructure.
 
-This creates a build pipeline that's more complex than it needs to be. Your Kotlin code gets compiled, stubs get generated for Java's annotation processor to read, Dagger's processor runs and generates Java code, and then that Java code gets compiled by javac. For a small project, this overhead is negligible. For Cash App's 1500-module monorepo? Every unnecessary compiler pass adds up.
+Think of it like this: you're writing a letter in French, but your mail carrier only understands English. So before the letter can be delivered, someone has to translate it, hand the English version to the carrier, wait for a response in English, and then translate it back. That's what kapt does — your Kotlin code gets compiled, stubs get generated for Java's annotation processor to read, Dagger's processor runs and generates Java code, and then that Java code gets compiled by javac. For a small project, this overhead is negligible. For Cash App's 1500-module monorepo? Every unnecessary compiler pass adds up.
 
 But the build speed wasn't the only issue. Kotlin 2.0 shipped with K2 — the next-generation compiler with significantly better performance and IDE integration. Cash App had upgraded to Kotlin 2.0 but couldn't enable K2 because Anvil, which is a Kotlin compiler plugin, didn't support it yet. They were stuck on language version 1.9, missing out on K2's improvements. Anvil's team was working on K2 support, but as Metro gained traction and internal evaluations showed it aligned better with their long-term vision, they made the call. Anvil moved to maintenance mode, and the migration to Metro began.
+
+So they had a Java-era DI tool in a Kotlin world, a translation layer taxing every build, and a shiny new compiler they couldn't use. That's not one reason to migrate — that's three, stacking on top of each other.
 
 ## What Metro Actually Is
 
 Metro, created by Zac Sweers, is a compile-time dependency injection framework implemented as a Kotlin compiler plugin. That distinction matters. Unlike Dagger, which runs as a separate annotation processing step, Metro hooks directly into Kotlin's FIR and IR compilation phases. There's no kapt, no Java stub generation, no separate javac pass. Your DI graph gets resolved and validated as part of the normal Kotlin compilation, which is fundamentally simpler and faster.
 
+Going back to our letter analogy — Metro is like hiring a mail carrier who actually speaks French. No translation step. No middleman. The letter goes straight from you to the recipient.
+
 Metro draws heavy inspiration from Dagger, Anvil, and kotlin-inject, unifying their best features under one framework. It supports multiplatform (JVM, JS, WASM, Native), has Anvil-style aggregation with `@ContributesTo` and `@ContributesBinding`, and offers features like optional dependencies through Kotlin default parameters and top-level function injection that none of the older frameworks support. But here's what I think is the real insight about Metro: **it's not a replacement for Dagger — it's what Dagger would be if it were designed for Kotlin from scratch.** The annotations look familiar, the mental model is the same, but the implementation is native to the language instead of fighting it through an annotation processing bridge.
 
-Metro ships with comprehensive interop tooling that can understand Dagger and Anvil annotations during a migration period. This interop capability was the key that made Cash App's migration possible without a big-bang rewrite.
+Metro ships with comprehensive interop tooling that can understand Dagger and Anvil annotations during a migration period. This interop capability was the key that made Cash App's migration possible without a big-bang rewrite. You don't have to burn down the house to renovate it.
 
 ## What Changes, What Stays
 
@@ -47,6 +51,8 @@ metro {
 ```
 
 This means your existing `@Inject` constructors, your `@Provides` methods, your `@ContributesTo` modules — they all keep working. The migration is about fixing the places where Metro's stricter validation catches things Dagger silently accepted, not about rewriting every annotation in your codebase. Cash App ran their entire 1500-module codebase on Metro's interop mode before touching a single annotation.
+
+> **💡 The "aha" moment:** The migration isn't "rewrite all your DI code." It's "flip the engine underneath and fix what the stricter engine complains about." Your annotations stay the same.
 
 ## The Migration Path
 
@@ -192,7 +198,11 @@ Both approaches work identically in Dagger. But Metro's stricter validation enfo
 
 ### Nullable Type Mismatches
 
-This is the one that surprised me most. Cash App found a "surprisingly large number of bindings that returned nullable types for non-nullable injection sites and vice versa." Dagger silently accepted these because Java doesn't distinguish nullable from non-nullable types. Metro honors Kotlin's type system properly, so it caught every mismatch. Each one was a potential `NullPointerException` source hiding in the graph.
+This is the one that surprised me most. Cash App found a "surprisingly large number of bindings that returned nullable types for non-nullable injection sites and vice versa." Dagger silently accepted these because Java doesn't distinguish nullable from non-nullable types. Metro honors Kotlin's type system properly, so it caught every mismatch.
+
+Wait — let that sink in. These were potential `NullPointerException` sources *hiding in the graph*, in code that was "working" in production. The DI framework was quietly wiring up nullable bindings to non-nullable injection points, and nobody knew. That's not a migration issue — that's a bug discovery.
+
+> **🔥 Real talk:** A DI migration that finds latent null-safety bugs your team didn't know existed? That alone would justify the effort, even if Metro weren't faster.
 
 ### Direct Calls to @Provides Methods
 
@@ -222,6 +232,8 @@ Metro's own benchmarks against a generated 500-module project tell an even more 
 Cash App wasn't alone either. Gabriel Ittner from Freeletics reported 40-55% faster ABI change builds across their 551 modules. BandLab saw ABI incremental builds go from 59.7 seconds to 26.9 seconds across 929 modules. Madis Pink from emulator.wtf said `./gradlew classes` from clean became roughly 4x faster after migrating from Anvil.
 
 Beyond raw speed, Cash App achieved three things that mattered architecturally. First, kapt is gone — no more Java stub generation, no more annotation processing as a separate build phase. Second, K2 is enabled, bringing the latest Kotlin compiler improvements. Third, Metro's stricter validation caught real bugs — nullable type mismatches, duplicate modules, dead code — that Dagger had been silently accepting for years.
+
+> **⚡ Quick check:** Can you name the three architectural wins Cash App got beyond raw build speed? (Hint: it's not just "things got faster.")
 
 ## What This Means For the Rest of Us
 

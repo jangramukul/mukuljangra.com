@@ -10,21 +10,27 @@ tags:
 
 A few months ago, I found a bug in production that took me embarrassingly long to track down. Users were seeing a blank screen — no loading spinner, no error message, nothing. Just white. The logs told the story: `isLoading = true` and `isError = true` at the same time. The loading spinner was hidden because the error UI took priority, but the error message was suppressed because the loading state skipped it. Both flags were true, the UI rendered neither, and the user stared at nothing.
 
-The fix was a one-liner — reset `isLoading` to false before setting `isError` to true. But the real problem wasn't the bug. The real problem was that the code allowed that state to exist in the first place. Four booleans sat at the top of my ViewModel: `isLoading`, `isError`, `isEmpty`, `isRetrying`. Four booleans meant 2⁴ = 16 possible combinations. I counted: exactly 4 of those 16 were valid states. The other 12 were bugs waiting to happen, and I'd just found one.
+The fix was a one-liner — reset `isLoading` to false before setting `isError` to true. But here's the thing: the real problem wasn't the bug. The real problem was that the code *allowed* that state to exist in the first place. Four booleans sat at the top of my ViewModel: `isLoading`, `isError`, `isEmpty`, `isRetrying`. Four booleans meant 2⁴ = 16 possible combinations. I counted: exactly 4 of those 16 were valid states. The other 12 were bugs waiting to happen, and I'd just met one face-to-face.
+
+Think of it like a combination lock with 16 positions, but only 4 of them actually open the door. The other 12? They don't just fail to open — they break the lock entirely.
 
 ## The Boolean Explosion Problem
 
-Here's the thing — booleans feel like the simplest possible state representation. `isLoading` is either true or false. What could go wrong? Everything, once you add a second boolean.
+Booleans feel like the simplest possible state representation. `isLoading` is either true or false. What could go wrong?
 
-Two booleans give you 4 combinations. Three give you 8. Four give you 16. Five give you 32. Think about that — a real ViewModel for a checkout screen might track `isLoading`, `isError`, `isPaymentProcessing`, `isAddressValidated`, `isCartEmpty`. That's 5 booleans and 32 possible combinations. In practice, maybe 6 of those 32 represent actual valid states your app can be in. The other 26 are impossible states that your type system happily allows. Can a cart be empty AND payment processing? Can an address be validated AND the screen be in an error state showing "address invalid"? Your business logic says no, but your compiler says sure, go ahead.
+Everything. The moment you add a second boolean.
+
+Two booleans give you 4 combinations. Three give you 8. Four give you 16. Five give you 32. Now imagine a real ViewModel for a checkout screen tracking `isLoading`, `isError`, `isPaymentProcessing`, `isAddressValidated`, `isCartEmpty`. That's 5 booleans and 32 possible combinations. In practice, maybe 6 of those 32 represent actual valid states your app can be in. The other 26 are impossible states that your type system happily allows. Can a cart be empty AND payment processing? Can an address be validated AND the screen be in an error state showing "address invalid"? Your business logic says no, but your compiler says sure, go ahead.
+
+It's like a restaurant menu that lists 32 items but only 6 are actually available. Except instead of the waiter saying "sorry, we're out of that," your app just silently shows a blank screen.
 
 I've seen this pattern in virtually every Android codebase I've worked on. The ViewModel starts clean — one boolean for loading. Then someone adds error handling. Then empty state. Then retry logic. Each addition feels small and harmless, but the combinatorial space grows exponentially while the number of valid states stays roughly constant. By the time you have 4 booleans, 75% of your state space is invalid. By 5 booleans, over 80% is invalid. And in a large codebase with multiple developers, every single state transition is a manual synchronization exercise where forgetting one reset line introduces a bug.
 
-The real cost isn't even the bugs you ship — it's the mental overhead. Every developer who touches that ViewModel has to hold the entire boolean interaction matrix in their head. Which flags need resetting when? What's the correct ordering? These are questions the type system should answer, not your team's tribal knowledge.
+And the real cost isn't even the bugs you ship — it's the mental overhead. Every developer who touches that ViewModel has to hold the entire boolean interaction matrix in their head. Which flags need resetting when? What's the correct ordering? These are questions the type system should answer, not your team's tribal knowledge.
 
 ## The Sealed Class Fix
 
-The solution is making invalid states unrepresentable. Instead of four booleans that can combine freely, you define a sealed class where each subclass represents exactly one valid state:
+So what's the fix? Making invalid states unrepresentable. Instead of four booleans that can combine freely like ingredients in a bad smoothie, you define a sealed class where each subclass represents exactly one valid state:
 
 ```kotlin
 sealed interface UiState<out T> {
@@ -38,9 +44,15 @@ sealed interface UiState<out T> {
 
 Now the ViewModel holds a single `UiState` value instead of four booleans. The states are mutually exclusive by construction — you can't be loading AND in an error state because `Loading` and `Error` are different types. The compiler enforces this at compile time, not at runtime, and not through code review comments that get ignored.
 
+Said differently: with booleans, you're telling every developer "please don't mix these wrong." With sealed classes, you're telling the compiler "make it impossible to mix these wrong." Which one do you trust more?
+
 ### Carrying Context Per State
 
-Notice that `Retrying` carries a `previousError` string and `Error` carries a `message`. This is one of the biggest advantages sealed classes have over booleans — each state can carry exactly the data relevant to it. With booleans, you end up with a bunch of extra fields like `errorMessage`, `retryCount`, `lastSuccessData` that are only meaningful when certain booleans are true. You're always wondering "is `errorMessage` valid right now or is it stale from a previous error?" With sealed classes, the data lives inside the state that uses it. When you're in `Success`, the data is right there. When you're in `Error`, the message is right there. No stale fields, no ambiguity.
+Notice that `Retrying` carries a `previousError` string and `Error` carries a `message`. This is one of the biggest advantages sealed classes have over booleans — each state can carry exactly the data relevant to it.
+
+With booleans, you end up with a bunch of extra fields like `errorMessage`, `retryCount`, `lastSuccessData` that are only meaningful when certain booleans are true. You're always wondering "is `errorMessage` valid right now or is it stale from a previous error?" It's like a filing cabinet where every drawer has a label, but you can never be sure which labels are current and which are left over from last week.
+
+With sealed classes, the data lives inside the state that uses it. When you're in `Success`, the data is right there. When you're in `Error`, the message is right there. No stale fields, no ambiguity.
 
 ### The ViewModel Refactor
 
@@ -76,6 +88,8 @@ class SearchViewModel(
 }
 ```
 
+See those comments — "easy to forget this line"? Yeah. That's the smell. When you need comments to remind you to reset flags, the design is fighting you.
+
 And the sealed class version:
 
 ```kotlin
@@ -100,7 +114,9 @@ class SearchViewModel(
 }
 ```
 
-The boolean version has 5 mutable state fields that need to be kept in sync manually. Every state transition requires resetting the right combination of flags — miss one and you get the blank screen I found in production. The sealed class version has 1 state field, and every transition is a single assignment. There's no "forgetting to reset" because there's nothing to reset. You're replacing the state entirely.
+The boolean version has 5 mutable state fields that need to be kept in sync manually. Every state transition requires resetting the right combination of flags — miss one and you get the blank screen I found in production. The sealed class version has 1 state field, and every transition is a single assignment. There's no "forgetting to reset" because there's nothing to reset. You're replacing the state entirely, like swapping out a sign on a door instead of trying to flip five different switches in the right order.
+
+> **💡 The "aha" moment:** With booleans, you *mutate* pieces of state and hope they stay consistent. With sealed classes, you *replace* the entire state atomically. One assignment. Done. No flag juggling.
 
 ## When Enums Are Enough
 
@@ -132,7 +148,7 @@ So when do you reach for a sealed class instead? **The moment any state needs to
 
 ## Nested Sealed Classes for Complex State Machines
 
-Real apps often have states that themselves contain substates. A payment flow is a perfect example — once you're in the "processing" phase, there are multiple steps happening underneath.
+Real apps often have states that themselves contain substates. Imagine you're building a payment flow — once you're in the "processing" phase, there are multiple steps happening underneath. It's like a progress bar that actually has its own mini progress bar inside it.
 
 ```kotlin
 sealed interface PaymentState {
@@ -157,7 +173,9 @@ The nested `Processing` sealed interface gives you a two-level state machine. At
 
 ## Formal State Machines and Valid Transitions
 
-Here's something sealed classes alone don't give you: **transition validation**. A sealed class prevents invalid states, but it doesn't prevent invalid transitions between states. Nothing stops you from going directly from `Loading` to `Retrying` without passing through `Error` first, even though that might not make sense in your domain.
+Here's something sealed classes alone don't give you: **transition validation**. A sealed class prevents invalid states, but it doesn't prevent invalid *transitions* between states. Nothing stops you from going directly from `Loading` to `Retrying` without passing through `Error` first, even though that might not make sense in your domain.
+
+It's like having a traffic light where the bulbs are correct (red, yellow, green — no purple), but the wiring lets it jump from green straight to red without ever passing through yellow. The states are valid. The transition isn't.
 
 For simple flows, you can enforce transitions manually with a function that takes the current state and returns the next valid state. But once your state machine grows beyond 5-6 states with complex transition rules, you want a proper state machine library. Tinder's [StateMachine](https://github.com/Tinder/StateMachine) is one of the more popular ones in the Android ecosystem. It lets you define states, events, and valid transitions declaratively:
 
@@ -196,7 +214,7 @@ To me, the real test of a pattern is how many different problems it solves clean
 
 ### Form Validation
 
-Form validation is one of those things that starts as a couple of booleans (`isEmailValid`, `isPasswordValid`) and quickly spirals. A sealed class per field keeps it sane, and each state carries the validation context:
+Form validation is one of those things that starts as a couple of booleans (`isEmailValid`, `isPasswordValid`) and quickly spirals. You know how it goes — first it's two booleans, then four, then someone adds `isPasswordStrengthChecked` and suddenly the form has opinions it can't express. A sealed class per field keeps it sane, and each state carries the validation context:
 
 ```kotlin
 sealed interface FieldValidation {
@@ -233,6 +251,8 @@ sealed interface NetworkState {
 
 This maps directly to Android's `ConnectivityManager.NetworkCallback` — `onAvailable`, `onLosing`, `onLost`, `onUnavailable`. The `Losing` state carrying `remainingMs` lets you show a "connection unstable" banner with a countdown, which is something you'd need a separate field for with booleans.
 
+> **🧠 Think about it:** How would you model the `Losing` state with booleans? You'd need `isLosing = true` *plus* a `remainingMs` field that's only valid when `isLosing` is true. That's exactly the kind of "stale data" trap sealed classes eliminate.
+
 ## Sealed Class State in Compose
 
 Sealed classes and Jetpack Compose are a natural fit. The exhaustive `when` expression maps directly to composable rendering, and Compose's smart recomposition works beautifully with sealed class state because each branch is a distinct type.
@@ -264,9 +284,11 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
 }
 ```
 
-If you add a new state — say `UiState.PartialResults` — the compiler immediately flags every `when` expression that doesn't handle it. With booleans, adding a new state means adding a new boolean and then hunting through the entire codebase for every `if (isLoading)` block that might need updating. You'll miss some. The sealed class approach turns a runtime bug hunt into a compile-time checklist.
+Now here's where it gets interesting. If you add a new state — say `UiState.PartialResults` — the compiler immediately flags every `when` expression that doesn't handle it. With booleans, adding a new state means adding a new boolean and then hunting through the entire codebase for every `if (isLoading)` block that might need updating. You'll miss some. The sealed class approach turns a runtime bug hunt into a compile-time checklist.
 
 There's a Compose-specific win here too. When your state changes from `Loading` to `Success`, Compose knows the entire branch has changed, so it recomposes the `Success` branch from scratch rather than trying to diff against the loading spinner. This is actually more efficient than having a single composable that reads multiple boolean StateFlows and recomposes partially on each flag change. Fewer, coarser recompositions are generally better than many fine-grained ones.
+
+> **⚡ Quick check:** If you have a sealed class with 5 states and you add a 6th, what happens to all your `when` expressions? (Answer: the compiler tells you exactly which ones need updating. No hunting required.)
 
 ## Even Two Booleans Are Suspicious
 
@@ -288,17 +310,17 @@ The mental model I use is simple: if two booleans are related — meaning changi
 
 ## When Booleans Are Actually Fine
 
-I'm not arguing that you should never use booleans. Some states genuinely have exactly two possibilities with no interaction between them. `isDarkMode` is either true or false, and it doesn't combine with any other state to create invalid combinations. `isMuted` is a simple toggle. `isExpanded` for a collapsible section works fine as a boolean.
+I'm not arguing that you should never use booleans. That would be ridiculous. Some states genuinely have exactly two possibilities with no interaction between them. `isDarkMode` is either true or false, and it doesn't combine with any other state to create invalid combinations. `isMuted` is a simple toggle. `isExpanded` for a collapsible section works fine as a boolean.
 
 The test is straightforward: can this boolean combine with other state in a way that creates an invalid combination? If the answer is no — if it's truly independent — use a boolean. They're simple, they're cheap, and everyone understands them. The moment you notice two or more booleans that share a conceptual relationship, that's your signal to refactor. Don't wait until you find the production bug. I did, and I don't recommend it.
 
-IMO, the cost of over-engineering with a sealed class for a genuine toggle is real — more code, more ceremony. But the cost of under-engineering with booleans for a state machine is much worse — invalid states, inconsistent UI, and bugs that hide behind the combinatorial complexity you created by accident.
+> **🔥 Real talk:** IMO, the cost of over-engineering with a sealed class for a genuine toggle is real — more code, more ceremony. But the cost of under-engineering with booleans for a state machine is *much* worse — invalid states, inconsistent UI, and bugs that hide behind the combinatorial complexity you created by accident. I'll take a little extra code over a mystery blank screen any day.
 
 ## State Shape Is a Design Decision
 
 Here's what I didn't understand early in my career: **the shape of your state is an architectural decision, not just a data modeling convenience**. When you choose booleans, you're choosing to trust developers to maintain invariants manually. When you choose sealed classes, you're encoding those invariants into the type system and letting the compiler maintain them for you.
 
-This is the same principle behind Kotlin's null safety. Before Kotlin, Java developers used `@Nullable` annotations and code review to prevent null pointer exceptions. Kotlin made null a type-level concern. The result wasn't just fewer NPEs — it fundamentally changed how developers thought about optional values. Sealed classes do the same thing for state. They move the invariant enforcement from "developer discipline" to "compiler guarantee."
+This is the same principle behind Kotlin's null safety. Before Kotlin, Java developers used `@Nullable` annotations and code review to prevent null pointer exceptions. Kotlin made null a type-level concern. The result wasn't just fewer NPEs — it fundamentally changed how developers thought about optional values. Sealed classes do the same thing for state. They move the invariant enforcement from "developer discipline" to "compiler guarantee." Same idea, different dimension.
 
 I now treat boolean proliferation as a code smell. When I see a PR that adds a third boolean to a ViewModel, I ask: "What states are valid here?" And almost every time, the answer leads to a sealed class that's cleaner, safer, and easier to reason about than the boolean soup it replaces.
 

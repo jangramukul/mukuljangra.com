@@ -14,13 +14,13 @@ Layout and drawing questions test whether you actually understand how Compose re
 
 #### What is the difference between Row, Column, and Box?
 
-`Row` places children horizontally, one after another. `Column` places children vertically. `Box` stacks children on top of each other, with the last child drawn on top. These are the three fundamental layout composables, and they're all built on top of the `Layout` composable internally.
+Think of it like arranging furniture. `Row` lines things up side by side — like chairs at a table. `Column` stacks them top to bottom — like books on a shelf. `Box` piles them on top of each other — like papers on a desk, where the last one you put down is the one you see.
 
-`Row` and `Column` support arrangement and alignment — `horizontalArrangement` and `verticalAlignment` in `Row`, and the reverse in `Column`. `Box` uses `contentAlignment` to position children within the available space. You pick the one that matches how you want children arranged.
+All three are built on the `Layout` composable internally. `Row` gives you `horizontalArrangement` and `verticalAlignment`, `Column` gives you the reverse, and `Box` uses `contentAlignment` to position children within the available space.
 
 #### How does the weight modifier work in Row and Column?
 
-`Modifier.weight` distributes remaining space among children proportionally. A child with `weight(1f)` gets an equal share. If one child has `weight(2f)` and another has `weight(1f)`, the first gets twice as much space.
+`Modifier.weight` distributes remaining space proportionally. If one child has `weight(2f)` and another has `weight(1f)`, the first gets twice as much space. It's like splitting a pizza — the numbers decide who gets the bigger slice.
 
 ```kotlin
 Row(modifier = Modifier.fillMaxWidth()) {
@@ -29,11 +29,11 @@ Row(modifier = Modifier.fillMaxWidth()) {
 }
 ```
 
-`weight` is a scoped modifier — it's only available inside `RowScope` or `ColumnScope`. It measures weighted children last, after non-weighted children have been measured, and distributes whatever space remains. If `fill` is `true` (the default), the child is forced to occupy its full allocated space. If `false`, the child can be smaller.
+Here's the thing — `weight` is a scoped modifier, so it only exists inside `RowScope` or `ColumnScope`. You can't use it anywhere else. Compose measures non-weighted children first, then distributes whatever space remains to the weighted ones. If `fill` is `true` (the default), the child is forced to occupy its full share. Set it to `false` and the child can be smaller.
 
 #### Why does modifier order matter in Compose?
 
-Modifiers are applied in the order you chain them. Each modifier wraps the result of the previous one. If you apply `padding` before `background`, the padding is outside the background. If you apply `background` before `padding`, the background extends behind the padding area.
+This one trips up almost everyone. Modifiers wrap each other like layers of an onion — each one wraps the result of the previous one. So `padding` before `background` means the padding sits outside the background. Flip them around and the background extends behind the padding.
 
 ```kotlin
 // Background does NOT cover the padding area
@@ -47,11 +47,11 @@ Modifier
     .padding(16.dp)
 ```
 
-The same applies to `clickable`. If `clickable` comes before `padding`, the padding area is also clickable. If `padding` comes first, only the inner content responds to taps. This is one of the most common sources of bugs in Compose UI code.
+Same story with `clickable`. Put `clickable` before `padding` and the padding area is tappable too. Put `padding` first and only the inner content responds to taps. This is one of the most common sources of bugs in Compose UI code.
 
 #### What happens when you apply size modifiers in different positions in the chain?
 
-The first size modifier in the chain wins because it sets constraints that inner modifiers must respect. If you write `Modifier.size(100.dp).size(200.dp)`, the outer `size(100.dp)` constrains the inner one, so the composable ends up at 100dp. The exception is `requiredSize`, which ignores incoming constraints and forces the exact size.
+The first size modifier in the chain wins. It sets the constraints, and everything inside has to respect them. So `Modifier.size(100.dp).size(200.dp)` gives you 100dp — the outer constraint clamps the inner one.
 
 ```kotlin
 // Composable is 100.dp — outer size wins
@@ -61,27 +61,29 @@ Modifier.size(100.dp).size(200.dp)
 Modifier.size(100.dp).requiredSize(200.dp)
 ```
 
-This is why composables should accept a `modifier` parameter and apply it as the outermost modifier — so callers can control sizing.
+Plot twist: `requiredSize` is the rebel. It ignores incoming constraints and forces the exact size you specify. This is also why composables should accept a `modifier` parameter and apply it outermost — so the caller, not the composable, gets the final say on sizing.
 
 #### What is the difference between offset and padding?
 
-`padding` changes the measured size of the composable. It adds space and the parent accounts for it. `offset` shifts the composable visually without changing its measured size or affecting sibling positions. A composable with `offset` can overlap others because the layout system still thinks it's at its original position.
+`padding` is like widening a picture frame — it adds space and the parent accounts for it in layout. `offset` is like sliding the picture on the wall — the frame stays the same size, siblings don't move, and the composable can overlap its neighbors because the layout system still thinks it's at the original position.
 
-Use `padding` for structural spacing and `offset` for visual displacement. The lambda overload `offset { IntOffset(x, y) }` defers the read to the layout phase, which avoids unnecessary recompositions when animating position.
+Use `padding` for structural spacing, `offset` for visual displacement. The lambda overload `offset { IntOffset(x, y) }` defers the read to the layout phase, which avoids unnecessary recompositions when you're animating position.
 
 #### What are the three phases of Compose rendering?
 
 Compose renders UI in three phases, in this order:
 
-- **Composition** — runs composable functions and builds the UI tree. Determines what elements exist.
-- **Layout** — measures each node and determines its position. Each node measures children, decides its own size, and places children. Single top-down pass.
-- **Drawing** — renders nodes to the screen using canvas draw commands.
+- **Composition** — runs your composable functions and builds the UI tree. This decides what exists.
+- **Layout** — measures each node and determines where it goes. Single top-down pass: measure children, decide own size, place children.
+- **Drawing** — actually paints pixels to the screen using canvas draw commands.
 
-These phases can be skipped independently. If only a `graphicsLayer` property changes (like alpha or rotation), Compose skips composition and layout entirely and only re-draws. Understanding which phase your change affects is how you write performant Compose UI.
+The clever part is that these phases can be skipped independently. If only a `graphicsLayer` property changes (like alpha or rotation), Compose skips composition and layout entirely and only re-draws. Understanding which phase your change affects is how you write performant Compose UI.
+
+> **🧠 Think about it:** If you animate a composable's position using `offset` vs `graphicsLayer { translationX = ... }`, which phases does each one trigger? That difference is why one is dramatically cheaper for animations.
 
 #### How does clip work in Compose?
 
-`Modifier.clip` restricts drawing to a specific shape. Content outside the shape boundary is not rendered. Common shapes include `RoundedCornerShape`, `CircleShape`, and `CutCornerShape`.
+`Modifier.clip` is like a cookie cutter — it restricts drawing to a specific shape and anything outside gets cut off. Common shapes are `RoundedCornerShape`, `CircleShape`, and `CutCornerShape`.
 
 ```kotlin
 Image(
@@ -93,11 +95,11 @@ Image(
 )
 ```
 
-Clip is implemented using `graphicsLayer` under the hood — it sets the `clip` property to `true` and applies the shape. One important detail: `clip` affects both drawing and hit testing. If you clip to a circle, taps outside the circle won't register. If you need a shadow outside the clipped area, apply `shadow` before `clip` in the modifier chain.
+Under the hood, `clip` is implemented using `graphicsLayer` — it sets the `clip` property to `true` and applies the shape. One important detail: `clip` affects both drawing and hit testing. Clip to a circle and taps outside the circle won't register. If you need a shadow outside the clipped area, apply `shadow` before `clip` in the modifier chain.
 
 #### How do you create a custom shape for clipping?
 
-You create a custom `Shape` by implementing the `createOutline` function, which returns an `Outline` based on the available size and layout direction. The outline can be a rectangle, rounded rectangle, or an arbitrary `Path`.
+You implement the `Shape` interface and override `createOutline`, which returns an `Outline` based on the available size and layout direction. The outline can be a rectangle, a rounded rectangle, or any arbitrary `Path` you draw.
 
 ```kotlin
 class DiagonalShape : Shape {
@@ -129,7 +131,7 @@ Image(
 
 #### What is graphicsLayer and when would you use it?
 
-`Modifier.graphicsLayer` draws the composable's content into a separate render layer, similar to a `RenderNode` on Android. It supports `scaleX`, `scaleY`, `rotationX`, `rotationY`, `rotationZ`, `translationX`, `translationY`, and `alpha` — all without triggering recomposition or re-measurement. It only affects the draw phase.
+`Modifier.graphicsLayer` is your performance escape hatch. It draws the composable's content into a separate render layer (similar to a `RenderNode` on Android) and lets you apply `scaleX`, `scaleY`, `rotationX`, `rotationY`, `rotationZ`, `translationX`, `translationY`, and `alpha` — all without triggering recomposition or re-measurement. It only touches the draw phase.
 
 ```kotlin
 Image(
@@ -144,19 +146,19 @@ Image(
 )
 ```
 
-Because `graphicsLayer` doesn't change measured size or placement, the composable can overlap siblings if the transformation makes it larger. This is intentional — it lets you animate visual properties cheaply without causing layout recalculations.
+Because `graphicsLayer` doesn't change measured size or placement, the composable can visually overlap siblings if the transformation makes it larger. That's intentional — it lets you animate visual properties cheaply without causing layout recalculations.
 
 #### What are the three main drawing modifiers in Compose?
 
-- `Modifier.drawBehind` — draws behind the composable content. The `Canvas` composable is actually just a wrapper around `drawBehind`.
+- `Modifier.drawBehind` — draws behind the composable content. Fun fact: the `Canvas` composable is actually just a wrapper around this.
 - `Modifier.drawWithContent` — gives you control over drawing order. You call `drawContent()` to render the composable, and you can draw before or after it.
-- `Modifier.drawWithCache` — same as the others but caches objects like `Brush`, `Path`, and `Shader` so they're not reallocated on every draw call. The cache stays valid as long as the drawing area size stays the same and state objects haven't changed.
+- `Modifier.drawWithCache` — same idea but caches objects like `Brush`, `Path`, and `Shader` so they're not reallocated on every draw call. The cache stays valid as long as the drawing area size is the same and state objects haven't changed.
 
-All three give you a `DrawScope` with the `size`, coordinate system, and draw functions like `drawRect`, `drawCircle`, `drawLine`, and `drawPath`.
+All three hand you a `DrawScope` with the `size`, coordinate system, and draw functions like `drawRect`, `drawCircle`, `drawLine`, and `drawPath`.
 
 #### What is Canvas in Compose and how is it different from Android's Canvas?
 
-The Compose `Canvas` composable is a wrapper around `Modifier.drawBehind`. It gives you a `DrawScope` where you can issue draw commands. Unlike Android's `Canvas` class which you get in `onDraw()` of a custom View, Compose's `DrawScope` provides a higher-level API with built-in support for transformations like `rotate`, `scale`, `translate`, and `withTransform`.
+The Compose `Canvas` composable is a wrapper around `Modifier.drawBehind`. It gives you a `DrawScope` to issue draw commands. Unlike the old View system where you get an Android `Canvas` in `onDraw()`, Compose's `DrawScope` is a higher-level API with built-in `rotate`, `scale`, `translate`, and `withTransform` helpers.
 
 ```kotlin
 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -168,11 +170,11 @@ Canvas(modifier = Modifier.fillMaxSize()) {
 }
 ```
 
-You can still access the underlying Android `Canvas` through `drawIntoCanvas { canvas -> ... }` if you need platform-specific APIs like `drawText` with `TextPaint`.
+If you need platform-specific APIs like `drawText` with `TextPaint`, you can still access the underlying Android `Canvas` through `drawIntoCanvas { canvas -> ... }`.
 
 #### What is Brush in Compose?
 
-`Brush` defines how colors fill a shape or path. The most common types are:
+`Brush` defines how colors fill a shape or path. Think of it like choosing between different paint rollers — each one spreads color in a different pattern:
 
 - `Brush.linearGradient` — colors spread in a straight line from start to end.
 - `Brush.radialGradient` — colors spread outward from a center point.
@@ -190,19 +192,21 @@ Canvas(modifier = Modifier.fillMaxSize()) {
 }
 ```
 
-You can also use `Brush.verticalGradient` and `Brush.horizontalGradient` as shortcuts. Brushes are often used with `drawWithCache` to avoid reallocating them on every frame.
+There are also `Brush.verticalGradient` and `Brush.horizontalGradient` shortcuts. Brushes are often paired with `drawWithCache` to avoid reallocating them on every frame.
 
 #### How does the modifier chain work internally?
 
 Internally, a modifier chain is a linked list of `Modifier.Element` nodes folded together using `then`. When you write `Modifier.padding(8.dp).background(Color.Red)`, you're creating a chain where `padding` wraps `background`, which wraps the actual content. Each modifier element creates a corresponding node in the layout tree.
 
-Layout modifiers affect measurement, drawing modifiers affect rendering, and pointer input modifiers affect touch handling. They're processed from outer to inner during measurement (first modifier measures first) and inner to outer during drawing (content draws first, then outer modifiers draw on top).
+Layout modifiers affect measurement, drawing modifiers affect rendering, and pointer input modifiers affect touch handling. Here's where it gets interesting — they're processed outer-to-inner during measurement (first modifier measures first) but inner-to-outer during drawing (content draws first, then outer modifiers draw on top).
 
 Since Compose 1.5, modifiers use a node-based system instead of the old composed modifier approach. This reduces allocations and makes modifier application more efficient, especially during recomposition where unchanged modifier nodes can be reused.
 
+> **🧠 Think about it:** If modifiers are processed outer-to-inner for measurement but inner-to-outer for drawing, what does that mean for a `background` modifier placed before vs after a `clip`? Walk through both directions mentally.
+
 #### How does the Layout composable work?
 
-The `Layout` composable is the building block for custom layouts. Every built-in layout like `Column`, `Row`, and `Box` is built on top of it. It takes a `content` lambda and a `MeasurePolicy` that defines how to measure and place children.
+`Layout` is the building block for everything. Every `Column`, `Row`, and `Box` you've ever used is built on top of it. It takes a `content` lambda and a `MeasurePolicy` that defines how to measure and place children.
 
 ```kotlin
 @Composable
@@ -228,25 +232,25 @@ fun VerticalStack(
 }
 ```
 
-The process has three steps: measure children, decide own size, place children. A key rule is that each child can only be measured once — measuring twice throws an `IllegalStateException`. This single-pass constraint is what makes Compose layouts performant.
+Three steps: measure children, decide your own size, place children. And there's one strict rule — each child can only be measured once. Measure twice and you get an `IllegalStateException`. This single-pass constraint is what makes Compose layouts performant compared to the old View system where nested layouts could cause exponential measurement passes.
 
 #### What is the difference between the layout modifier and the Layout composable?
 
-The `layout` modifier (lowercase) changes how a single composable is measured and placed. It receives one `measurable` and `constraints`. The `Layout` composable (uppercase) creates an entirely new layout that can measure and place multiple children — it receives a list of `measurables`.
+The `layout` modifier (lowercase) changes how a single composable is measured and placed — it receives one `measurable` and `constraints`. The `Layout` composable (uppercase) creates an entirely new layout that arranges multiple children — it receives a list of `measurables`.
 
-Use the `layout` modifier when you want to adjust a single element's measurement, like adding baseline padding or shifting placement. Use the `Layout` composable when you need to arrange multiple children in a custom way, like a flow layout or a staggered grid.
+Use the `layout` modifier when you want to tweak a single element's measurement, like adding baseline padding or shifting placement. Use the `Layout` composable when you need to arrange multiple children in a custom way, like a flow layout or a staggered grid.
 
 #### What is the difference between Modifier.layout and Modifier.offset for positioning?
 
-Both can move a composable, but they work differently. `Modifier.offset` shifts the composable visually without changing its reported size — the parent still sees the original bounds. `Modifier.layout` gives you full control over both measurement and placement, so you can change the reported size.
+Both can move a composable, but they play by different rules. `Modifier.offset` shifts the composable visually without changing its reported size — the parent still sees the original bounds. `Modifier.layout` gives you full control over both measurement and placement, so you can change the reported size too.
 
-If you use `offset(x = 20.dp)`, the parent lays out siblings as if the composable didn't move. If you use `layout` and shift the placement, you can also adjust the reported width and height so siblings react to the new position. For most cases, `offset` is simpler. Use `layout` when you need to change the measurement itself, like the `paddingFromBaseline` modifier that adjusts height based on text baseline position.
+If you use `offset(x = 20.dp)`, siblings act like the composable didn't move at all. With `layout`, you can shift placement and also adjust the reported width and height so siblings react to the new position. For most cases, `offset` is simpler and sufficient. Reach for `layout` when you need to change the measurement itself, like `paddingFromBaseline` which adjusts height based on text baseline position.
 
 #### What are intrinsic measurements and when are they needed?
 
-Compose has a strict rule: you can only measure a child once. But sometimes a parent needs to know something about a child's size before measuring it. Intrinsic measurements solve this by letting you query a child's preferred size without actually measuring it.
+Here's the problem: Compose says you can only measure a child once. But sometimes a parent needs to peek at a child's preferred size before actually measuring it. Intrinsic measurements solve this — they let you query a child's preferred size without counting as a real measurement.
 
-There are four intrinsic queries: `IntrinsicSize.Min` and `IntrinsicSize.Max` for both width and height. A common use case is a `Row` with a `Divider` that should match the height of the tallest text.
+There are four queries: `IntrinsicSize.Min` and `IntrinsicSize.Max` for both width and height. The classic use case is a `Row` with a `Divider` that should match the tallest text.
 
 ```kotlin
 Row(modifier = Modifier.height(IntrinsicSize.Min)) {
@@ -258,19 +262,19 @@ Row(modifier = Modifier.height(IntrinsicSize.Min)) {
 }
 ```
 
-Without `Modifier.height(IntrinsicSize.Min)`, the divider either fills the max height or collapses to zero. With it, the `Row` queries each child's minimum intrinsic height and uses the maximum as its constraint. When creating custom layouts, you can override `minIntrinsicWidth`, `minIntrinsicHeight`, `maxIntrinsicWidth`, and `maxIntrinsicHeight` in your `MeasurePolicy` for accurate values.
+Without `Modifier.height(IntrinsicSize.Min)`, the divider either fills the max height or collapses to zero. With it, the `Row` queries each child's minimum intrinsic height and uses the largest as its constraint. When building custom layouts, you can override `minIntrinsicWidth`, `minIntrinsicHeight`, `maxIntrinsicWidth`, and `maxIntrinsicHeight` in your `MeasurePolicy` for accurate values.
 
 #### What is SubcomposeLayout and how does LazyColumn use it?
 
-`SubcomposeLayout` defers composition of children until the measurement phase. In a regular `Layout`, all children are composed before measurement. `SubcomposeLayout` lets you compose children on-demand based on information available only during measurement, like the available size.
+`SubcomposeLayout` is like a just-in-time factory — it defers composition of children until the measurement phase. In a regular `Layout`, all children are composed before measurement begins. `SubcomposeLayout` lets you compose children on-demand based on information only available during measurement, like the available size.
 
-`LazyColumn` uses `SubcomposeLayout` internally because it needs to know how much space is available before deciding which items to compose. It only composes items visible in the viewport plus a small prefetch buffer. Items that scroll out are disposed, new items are composed as they scroll in. This is what makes lazy lists efficient — they don't hold the entire list in the composition tree.
+`LazyColumn` uses this internally because it needs to know how much space is available before deciding which items to compose. It only composes items visible in the viewport plus a small prefetch buffer. Items that scroll out get disposed, new items get composed as they scroll in. That's why lazy lists are efficient — they never hold the entire list in the composition tree.
 
 The tradeoff is that `SubcomposeLayout` doesn't support lookahead-based animations as smoothly and has more overhead because it runs composition during the measure pass. For most custom layouts, the regular `Layout` composable is preferred.
 
 #### How do alignment lines work in custom layouts?
 
-Alignment lines let composables communicate special positions to their parent layouts. Every `Text` composable provides `FirstBaseline` and `LastBaseline` alignment lines. Parent layouts like `Row` use these to align children by their baselines instead of their top edges.
+Alignment lines let composables communicate special positions to their parent. Every `Text` composable provides `FirstBaseline` and `LastBaseline` alignment lines. Parent layouts like `Row` use these to align children by their baselines instead of their top edges.
 
 In a custom `Layout`, you read alignment lines from a `Placeable` using bracket syntax: `placeable[FirstBaseline]`. The value is `AlignmentLine.Unspecified` if the child doesn't provide that line. You can also define custom alignment lines for your own layouts — useful for aligning non-text elements with text baselines or creating specialized grid alignments.
 
@@ -279,8 +283,8 @@ In a custom `Layout`, you read alignment lines from a `Placeable` using bracket 
 `CompositingStrategy` controls how a layer's content is composited with what's underneath:
 
 - **Auto** (default) — the system decides whether to use an offscreen buffer. Alpha and blend modes apply directly to drawn content.
-- **Offscreen** — creates a separate offscreen buffer, applies transformations and blend modes, then composites the result. Required for mask effects where you use `BlendMode.Clear` to cut out shapes.
-- **ModulateAlpha** — applies alpha directly to each draw instruction without an offscreen buffer. More efficient for simple alpha, but children's colors can blend with each other instead of fading uniformly.
+- **Offscreen** — creates a separate offscreen buffer, applies transformations and blend modes, then composites the result. This is what you need for mask effects where you use `BlendMode.Clear` to cut out shapes.
+- **ModulateAlpha** — applies alpha directly to each draw instruction without an offscreen buffer. More efficient for simple alpha, but children's colors can bleed into each other instead of fading uniformly.
 
 ```kotlin
 Box(modifier = Modifier.graphicsLayer {
@@ -292,11 +296,13 @@ Box(modifier = Modifier.graphicsLayer {
 }
 ```
 
-The Offscreen strategy is essential for mask effects. Without it, `BlendMode.Clear` clears through to the window background instead of just the layer content.
+Here's the thing — without `Offscreen`, `BlendMode.Clear` clears through to the window background instead of just the layer content. That's why the Offscreen strategy is essential for mask effects.
+
+> **🧠 Think about it:** If you apply `alpha = 0.5f` with `CompositingStrategy.Auto` to a `Box` containing overlapping `Text` and `Icon`, what visual artifact would you see compared to using `Offscreen`?
 
 #### What are Window Size Classes and how do you build adaptive layouts?
 
-Window Size Classes categorize the app window into three width buckets: `Compact` (phone portrait), `Medium` (tablet portrait or foldable), and `Expanded` (tablet landscape or desktop). They replace hardcoded breakpoints with semantic categories.
+Window Size Classes give you three width buckets instead of hardcoded pixel breakpoints: `Compact` (phone portrait), `Medium` (tablet portrait or foldable), and `Expanded` (tablet landscape or desktop).
 
 ```kotlin
 val windowSizeClass = currentWindowAdaptiveInfo()
@@ -309,11 +315,11 @@ when (windowSizeClass.windowWidthSizeClass) {
 }
 ```
 
-The Material3 adaptive library provides `ListDetailPaneScaffold` and `SupportingPaneScaffold` for common patterns — showing a list-detail split on large screens and navigating between them on phones. The key principle is to design for the window, not the device. A phone in landscape or a resizable Chrome OS window should get the right layout based on available space.
+The Material3 adaptive library provides `ListDetailPaneScaffold` and `SupportingPaneScaffold` for common patterns — list-detail split on large screens, navigation between them on phones. The key principle is to design for the window, not the device. A phone in landscape or a resizable Chrome OS window should get the right layout based on available space, not based on whether the hardware is a phone or tablet.
 
 #### How does ConstraintLayout work in Compose?
 
-`ConstraintLayout` in Compose works similarly to the View version — you define constraints between elements using references. It's useful for complex flat layouts where nesting `Row` and `Column` would get messy or cause unnecessary measurement passes.
+`ConstraintLayout` in Compose works like the View version — you define constraints between elements using references. It's useful for complex flat layouts where nesting `Row` and `Column` would get messy.
 
 ```kotlin
 ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
@@ -337,7 +343,7 @@ ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
 }
 ```
 
-You create references with `createRefs()` and position elements using `constrainAs`. It also supports guidelines, barriers, and chains. In most cases, `Row`, `Column`, and `Box` are simpler and sufficient. I reach for `ConstraintLayout` when I have many elements that need relative positioning that would require deeply nested standard layouts.
+You create references with `createRefs()` and position elements with `constrainAs`. It also supports guidelines, barriers, and chains. In most cases, `Row`, `Column`, and `Box` are simpler and sufficient. I reach for `ConstraintLayout` when I have many elements that need relative positioning and nesting standard layouts would get deeply awkward.
 
 ### Common Follow-ups
 
