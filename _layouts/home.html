@@ -335,52 +335,46 @@
       .roadmap-accordion {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 16px;
       }
 
       .roadmap-phase {
-        border-radius: 14px;
+        border-radius: 16px;
         background-color: rgba(17, 24, 39, 0.6);
         border: 1px solid rgba(75, 85, 99, 0.3);
         overflow: hidden;
-        transition: border-color 0.2s ease;
-      }
-
-      .roadmap-phase:hover {
-        border-color: rgba(96, 165, 250, 0.4);
-      }
-
-      .roadmap-phase.active {
-        border-color: rgba(96, 165, 250, 0.5);
       }
 
       .roadmap-phase-header {
         display: flex;
         align-items: center;
         gap: 14px;
-        padding: 16px 20px;
-        cursor: pointer;
-        user-select: none;
-        transition: background-color 0.2s ease;
-      }
-
-      .roadmap-phase-header:hover {
-        background-color: rgba(96, 165, 250, 0.05);
+        padding: 20px 24px;
       }
 
       .roadmap-phase-number {
-        width: 32px;
-        height: 32px;
-        min-width: 32px;
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 12px;
         background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: 'Inter', sans-serif;
         font-weight: 800;
-        font-size: 0.8em;
+        font-size: 0.82em;
         color: #60a5fa;
+        flex-direction: column;
+        line-height: 1.1;
+      }
+
+      .roadmap-phase-number .week-label {
+        font-size: 0.55em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #93c5fd;
       }
 
       .roadmap-phase-info {
@@ -390,7 +384,7 @@
 
       .roadmap-phase-title {
         font-family: 'Inter', sans-serif;
-        font-size: 0.92em;
+        font-size: 1.05em;
         font-weight: 700;
         color: #e5e7eb;
         line-height: 1.3;
@@ -398,88 +392,80 @@
 
       .roadmap-phase-meta {
         font-family: 'Inter', sans-serif;
-        font-size: 0.72em;
+        font-size: 0.8em;
         color: #6b7280;
         margin-top: 2px;
       }
 
       .roadmap-phase-level {
         font-family: 'Inter', sans-serif;
-        font-size: 0.68em;
+        font-size: 0.75em;
         font-weight: 500;
         color: #9ca3af;
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 9999px;
         background-color: rgba(55, 65, 81, 0.5);
         white-space: nowrap;
       }
 
-      .roadmap-phase-chevron {
-        width: 18px;
-        height: 18px;
-        color: #6b7280;
-        transition: transform 0.25s ease;
-        flex-shrink: 0;
-      }
-
-      .roadmap-phase.active .roadmap-phase-chevron {
-        transform: rotate(180deg);
-        color: #60a5fa;
-      }
-
-      .roadmap-phase-body {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-      }
-
-      .roadmap-phase.active .roadmap-phase-body {
-        max-height: 600px;
-      }
-
       .roadmap-topics {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-        padding: 0 20px 16px 66px;
+        gap: 8px;
+        padding: 0 24px 20px 24px;
       }
 
       .roadmap-topic {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        border-radius: 10px;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
         background-color: rgba(31, 41, 55, 0.5);
-        transition: background-color 0.15s ease;
+        text-decoration: none;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+        border: 1px solid transparent;
       }
 
       .roadmap-topic:hover {
         background-color: rgba(55, 65, 81, 0.5);
+        border-color: rgba(96, 165, 250, 0.3);
       }
 
       .roadmap-topic-dot {
-        width: 5px;
-        height: 5px;
-        min-width: 5px;
+        width: 6px;
+        height: 6px;
+        min-width: 6px;
         border-radius: 50%;
         background-color: rgba(96, 165, 250, 0.5);
       }
 
       .roadmap-topic-name {
         font-family: 'Inter', sans-serif;
-        font-size: 0.8em;
+        font-size: 0.9em;
         font-weight: 500;
         color: #d1d5db;
+        flex: 1;
+      }
+
+      .roadmap-topic-link {
+        font-size: 0.7em;
+        color: #6b7280;
+        transition: color 0.15s ease;
+        flex-shrink: 0;
+      }
+
+      .roadmap-topic:hover .roadmap-topic-link {
+        color: #60a5fa;
       }
 
       @media (max-width: 768px) {
         .roadmap-topics {
           grid-template-columns: 1fr;
-          padding-left: 20px;
+          padding: 0 16px 16px 16px;
         }
         .roadmap-phase-header {
-          padding: 14px 16px;
+          padding: 16px;
         }
       }
 
