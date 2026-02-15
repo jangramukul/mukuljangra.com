@@ -1443,7 +1443,7 @@
             <div class="feature-card-title">Privacy First</div>
             <p class="feature-card-desc">Zero analytics, zero cookies, zero data collection. Learn without being watched — your privacy is respected here.</p>
           </div>
-          <div class="feature-card feature-card-premium">
+          <div class="feature-card">
             <span class="feature-card-icon">👑</span>
             <div class="feature-card-title">Forever Free Premium Content</div>
             <p class="feature-card-desc">Deep dives, interview guides, and exclusive content that other platforms charge for — yours forever, no strings attached.</p>
@@ -1455,11 +1455,9 @@
         <!-- Tabs -->
         <div class="section-tabs">
           <div class="section-tab active" data-tab="articles">Guides <span class="tab-count">{{ site.guides | size }}</span></div>
-          <div class="section-tab" data-tab="newsletter">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
           <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
           <div class="section-tab" data-tab="courses">Courses <span class="tab-count">{{ site.courses | size }}</span></div>
           <div class="section-tab" data-tab="roadmap">Roadmap</div>
-          <div class="section-tab" data-tab="tools">Tools I Use</div>
           <div class="section-tab" data-tab="resources">Resources</div>
         </div>
 
@@ -1504,39 +1502,6 @@
           </a>
           {% endfor %}
           </div>
-        </div>
-
-        <!-- Newsletter tab -->
-        <div class="tab-content" id="tab-newsletter">
-          {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
-          {% if newsletters.size > 0 %}
-            <div class="newsletter-chips">
-              {% for newsletter in newsletters %}
-              <div class="newsletter-chip{% if forloop.first %} active{% endif %}" data-newsletter="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
-              {% endfor %}
-              <a href="/newsletter.xml" class="rss-chip" target="_blank" rel="noopener" title="Subscribe via RSS">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>RSS
-              </a>
-            </div>
-            {% for newsletter in newsletters %}
-            <div class="newsletter-card{% if forloop.first %} active{% endif %}" id="newsletter-{{ forloop.index0 }}">
-              <div class="newsletter-card-header">
-                <span class="newsletter-card-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
-                <span class="newsletter-card-label">Weekly</span>
-              </div>
-              <div class="newsletter-card-date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
-              <div class="newsletter-card-divider"></div>
-              <div class="newsletter-card-body">
-                {{ newsletter.content }}
-              </div>
-            </div>
-            {% endfor %}
-          {% else %}
-            <div class="empty-state">
-              <p>No newsletters yet.</p>
-              <p class="empty-hint">Stay tuned — the first issue is coming soon!</p>
-            </div>
-          {% endif %}
         </div>
 
         <!-- Interview Prep tab -->
@@ -1593,11 +1558,6 @@
         <!-- Courses tab -->
         <div class="tab-content" id="tab-courses">
           {% include courses-tab.html %}
-        </div>
-
-        <!-- Tools tab -->
-        <div class="tab-content" id="tab-tools">
-          {% include tools-tab.html %}
         </div>
 
         <!-- Resources tab -->
@@ -1694,20 +1654,6 @@
         // Tag filtering (articles only)
         const chips = document.querySelectorAll('#tab-articles .category-chip');
         const posts = document.querySelectorAll('#tab-articles .list-post-link');
-
-        // Newsletter chip switching
-        const nlChips = document.querySelectorAll('.newsletter-chip');
-        const nlCards = document.querySelectorAll('.newsletter-card');
-
-        nlChips.forEach(chip => {
-          chip.addEventListener('click', function() {
-            nlChips.forEach(c => c.classList.remove('active'));
-            nlCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            const idx = this.dataset.newsletter;
-            document.getElementById('newsletter-' + idx).classList.add('active');
-          });
-        });
 
         function selectTag(tag) {
           chips.forEach(c => c.classList.remove('active'));
