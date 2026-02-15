@@ -133,6 +133,45 @@
   .quiz-chip-correct { color: #34d399; }
   .quiz-chip-wrong { color: #f87171; }
 
+  /* Card stack container */
+  .quiz-card-stack {
+    position: relative;
+    perspective: 1200px;
+  }
+
+  /* Background stack cards (pseudo-elements on the container) */
+  .quiz-card-stack::before,
+  .quiz-card-stack::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 0; bottom: 0;
+    border-radius: 16px;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Bottom card in stack (3rd card) */
+  .quiz-card-stack::before {
+    background: rgba(17, 24, 39, 0.25);
+    border: 1px solid rgba(75, 85, 99, 0.12);
+    transform: translateY(16px) scale(0.94);
+    z-index: 1;
+  }
+
+  /* Middle card in stack (2nd card) */
+  .quiz-card-stack::after {
+    background: rgba(17, 24, 39, 0.4);
+    border: 1px solid rgba(75, 85, 99, 0.2);
+    transform: translateY(8px) scale(0.97);
+    z-index: 2;
+  }
+
+  /* Hide stack indicators when only 1 card left */
+  .quiz-card-stack.last-card::before,
+  .quiz-card-stack.last-card::after { opacity: 0; transform: translateY(0) scale(1); }
+  .quiz-card-stack.penultimate::before { opacity: 0; transform: translateY(0) scale(1); }
+
   .quiz-card {
     background: rgba(17, 24, 39, 0.6);
     border: 1px solid rgba(75, 85, 99, 0.3);
@@ -140,12 +179,45 @@
     padding: 36px;
     position: relative;
     overflow: hidden;
-    animation: quizCardIn 0.35s ease;
+    z-index: 3;
+    animation: quizCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes quizCardIn {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    0% {
+      opacity: 0;
+      transform: translateY(16px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Outgoing card animation */
+  @keyframes quizCardOut {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-40px) scale(0.95);
+    }
+  }
+
+  .quiz-card-exit {
+    animation: quizCardOut 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  }
+
+  /* Remaining cards count badge */
+  .quiz-stack-remaining {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 1.1rem;
+    color: rgba(156, 163, 175, 0.5);
+    font-weight: 500;
+    letter-spacing: 0.5px;
   }
 
   .quiz-q-badges {
@@ -518,6 +590,8 @@
     .quiz-start h2 { font-size: 2rem; }
     .quiz-start p { font-size: 1.15rem; }
     .quiz-card { padding: 24px 20px; }
+    .quiz-card-stack::before { transform: translateY(12px) scale(0.95); }
+    .quiz-card-stack::after { transform: translateY(6px) scale(0.975); }
     .quiz-q-text { font-size: 1.25rem; }
     .quiz-diff-options { flex-direction: column; align-items: center; }
     .quiz-diff-btn { width: 100%; max-width: 260px; }
@@ -573,7 +647,10 @@
       </div>
     </div>
 
-    <div id="quiz-question-area"></div>
+    <div class="quiz-card-stack" id="quiz-card-stack">
+      <div id="quiz-question-area"></div>
+    </div>
+    <div class="quiz-stack-remaining" id="quiz-stack-remaining"></div>
   </div>
 
   <!-- Results Screen -->
@@ -673,6 +750,24 @@
     return text;
   }
 
+  function updateStackState() {
+    var stack = document.getElementById('quiz-card-stack');
+    var remaining = qzQuestions.length - qzIdx - 1;
+    var badge = document.getElementById('quiz-stack-remaining');
+    if (remaining <= 0) {
+      stack.classList.add('last-card');
+      stack.classList.remove('penultimate');
+      badge.textContent = '';
+    } else if (remaining === 1) {
+      stack.classList.add('penultimate');
+      stack.classList.remove('last-card');
+      badge.textContent = remaining + ' card remaining';
+    } else {
+      stack.classList.remove('last-card', 'penultimate');
+      badge.textContent = remaining + ' cards remaining';
+    }
+  }
+
   function renderQ() {
     qzAnswered = false;
     var q = qzQuestions[qzIdx];
@@ -732,6 +827,7 @@
 
     html += '</div>';
     area.innerHTML = html;
+    updateStackState();
   }
 
   window.quizSelect = function(idx) {
@@ -796,9 +892,19 @@
   }
 
   window.quizNext = function() {
-    qzIdx++;
-    if (qzIdx >= qzQuestions.length) showResults();
-    else renderQ();
+    var card = document.getElementById('quiz-card');
+    if (card) {
+      card.classList.add('quiz-card-exit');
+      setTimeout(function() {
+        qzIdx++;
+        if (qzIdx >= qzQuestions.length) showResults();
+        else renderQ();
+      }, 250);
+    } else {
+      qzIdx++;
+      if (qzIdx >= qzQuestions.length) showResults();
+      else renderQ();
+    }
   };
 
   function showResults() {
