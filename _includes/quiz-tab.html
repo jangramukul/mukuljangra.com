@@ -47,32 +47,41 @@
 
   .quiz-diff-btn {
     padding: 16px 36px;
-    border: 2px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    background: #1e293b;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 16px;
+    background: rgba(17, 24, 39, 0.6);
     color: #e5e7eb;
     font-size: 1.25rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    transition: all 0.25s ease;
+    font-family: 'Inter', sans-serif;
   }
 
-  .quiz-diff-btn:hover { border-color: #60a5fa; transform: translateY(-2px); }
-  .quiz-diff-btn.selected { border-color: #60a5fa; background: rgba(96,165,250,0.15); }
+  .quiz-diff-btn:hover {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(17, 24, 39, 0.8);
+    transform: translateY(-2px);
+  }
+
+  .quiz-diff-btn.selected {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.1);
+  }
+
   .quiz-diff-btn .diff-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
 
   .quiz-go-btn {
     padding: 18px 52px;
     border: none;
-    border-radius: 14px;
+    border-radius: 16px;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: #fff;
     font-size: 1.35rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    transition: all 0.25s ease;
+    font-family: 'Inter', sans-serif;
     opacity: 0.5;
     pointer-events: none;
   }
@@ -89,11 +98,12 @@
     margin-bottom: 10px;
     font-size: 1.15rem;
     color: #9ca3af;
+    font-family: 'Inter', sans-serif;
   }
 
   .quiz-progress-bg {
     height: 8px;
-    background: rgba(255,255,255,0.06);
+    background: rgba(75, 85, 99, 0.3);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -117,9 +127,9 @@
   .quiz-chip-wrong { color: #f87171; }
 
   .quiz-card {
-    background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 18px;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 16px;
     padding: 36px;
     position: relative;
     overflow: hidden;
@@ -131,15 +141,21 @@
     to { opacity: 1; transform: translateX(0); }
   }
 
+  .quiz-q-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
   .quiz-q-topic {
     display: inline-block;
     padding: 5px 14px;
     border-radius: 20px;
     font-size: 1rem;
     font-weight: 600;
-    background: rgba(96,165,250,0.12);
+    background: rgba(96, 165, 250, 0.12);
     color: #60a5fa;
-    margin-bottom: 18px;
   }
 
   .quiz-q-diff {
@@ -148,14 +164,13 @@
     border-radius: 20px;
     font-size: 0.95rem;
     font-weight: 600;
-    margin-left: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .quiz-q-diff.easy { background: rgba(52,211,153,0.12); color: #34d399; }
-  .quiz-q-diff.medium { background: rgba(251,191,36,0.12); color: #fbbf24; }
-  .quiz-q-diff.hard { background: rgba(248,113,113,0.12); color: #f87171; }
+  .quiz-q-diff.easy { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+  .quiz-q-diff.medium { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+  .quiz-q-diff.hard { background: rgba(248, 113, 113, 0.12); color: #f87171; }
 
   .quiz-q-type {
     display: inline-block;
@@ -163,8 +178,7 @@
     border-radius: 20px;
     font-size: 0.95rem;
     font-weight: 600;
-    margin-left: 8px;
-    background: rgba(139,92,246,0.12);
+    background: rgba(139, 92, 246, 0.12);
     color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -181,8 +195,8 @@
   }
 
   .quiz-q-code {
-    background: #1e293b !important;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #0d1117 !important;
+    border: 1px solid rgba(75, 85, 99, 0.4);
     border-radius: 8px;
     padding: 20px 24px;
     margin-bottom: 24px;
@@ -190,9 +204,18 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 1.1rem;
     line-height: 1.8;
-    color: #e5e7eb !important;
+    color: #e6edf3 !important;
     white-space: pre;
   }
+
+  /* Syntax highlighting inside code blocks */
+  .quiz-q-code .kw { color: #ff7b72; font-weight: bold; }
+  .quiz-q-code .fn { color: #d2a8ff; }
+  .quiz-q-code .str { color: #a5d6ff; }
+  .quiz-q-code .num { color: #79c0ff; }
+  .quiz-q-code .type { color: #79c0ff; }
+  .quiz-q-code .cmt { color: #8b949e; font-style: italic; }
+  .quiz-q-code .ann { color: #7ee787; }
 
   .quiz-options {
     display: flex;
@@ -205,44 +228,64 @@
     align-items: flex-start;
     gap: 14px;
     padding: 18px 22px;
-    border: 2px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(75, 85, 99, 0.3);
     border-radius: 14px;
-    background: rgba(255,255,255,0.02);
+    background: rgba(17, 24, 39, 0.4);
     color: #e5e7eb;
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.2s ease;
     text-align: left;
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     line-height: 1.6;
     width: 100%;
   }
 
-  .quiz-option:hover:not(.disabled) { border-color: #60a5fa; background: rgba(96,165,250,0.06); }
+  .quiz-option:hover:not(.disabled) {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(17, 24, 39, 0.8);
+  }
 
   .quiz-option-letter {
     flex-shrink: 0;
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.06);
+    background: rgba(75, 85, 99, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.05rem;
     font-weight: 700;
+    color: #9ca3af;
   }
 
-  .quiz-option.correct { border-color: #34d399; background: rgba(52,211,153,0.12); }
-  .quiz-option.correct .quiz-option-letter { background: #34d399; color: #111827; }
-  .quiz-option.wrong { border-color: #f87171; background: rgba(248,113,113,0.12); }
-  .quiz-option.wrong .quiz-option-letter { background: #f87171; color: #111827; }
-  .quiz-option.disabled { cursor: default; opacity: 0.6; }
+  .quiz-option.correct {
+    border-color: #34d399;
+    background: rgba(52, 211, 153, 0.1);
+  }
+
+  .quiz-option.correct .quiz-option-letter {
+    background: #34d399;
+    color: #111827;
+  }
+
+  .quiz-option.wrong {
+    border-color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+  }
+
+  .quiz-option.wrong .quiz-option-letter {
+    background: #f87171;
+    color: #111827;
+  }
+
+  .quiz-option.disabled { cursor: default; opacity: 0.5; }
   .quiz-option.correct.disabled, .quiz-option.wrong.disabled { opacity: 1; }
 
   .quiz-reveal-btn {
     padding: 18px 32px;
-    border: 2px dashed rgba(255,255,255,0.15);
+    border: 2px dashed rgba(75, 85, 99, 0.4);
     border-radius: 14px;
     background: transparent;
     color: #60a5fa;
@@ -250,17 +293,20 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     width: 100%;
   }
 
-  .quiz-reveal-btn:hover { border-color: #60a5fa; background: rgba(96,165,250,0.06); }
+  .quiz-reveal-btn:hover {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(96, 165, 250, 0.06);
+  }
 
   .quiz-answer-reveal {
     padding: 24px;
     border-radius: 14px;
-    background: rgba(52,211,153,0.06);
-    border: 1px solid rgba(52,211,153,0.2);
+    background: rgba(52, 211, 153, 0.06);
+    border: 1px solid rgba(52, 211, 153, 0.2);
     margin-top: 18px;
     line-height: 1.8;
     font-size: 1.35rem;
@@ -291,27 +337,27 @@
   .quiz-rate-btn {
     flex: 1;
     padding: 16px;
-    border: 2px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(75, 85, 99, 0.3);
     border-radius: 12px;
-    background: rgba(255,255,255,0.02);
+    background: rgba(17, 24, 39, 0.4);
     color: #e5e7eb;
     font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
   }
 
   .quiz-rate-btn:hover { transform: translateY(-1px); }
-  .quiz-rate-btn.knew-it:hover { border-color: #34d399; background: rgba(52,211,153,0.12); }
-  .quiz-rate-btn.didnt-know:hover { border-color: #f87171; background: rgba(248,113,113,0.12); }
+  .quiz-rate-btn.knew-it:hover { border-color: #34d399; background: rgba(52, 211, 153, 0.1); }
+  .quiz-rate-btn.didnt-know:hover { border-color: #f87171; background: rgba(248, 113, 113, 0.1); }
 
   .quiz-explanation {
     margin-top: 18px;
     padding: 20px 24px;
     border-radius: 12px;
-    background: rgba(96,165,250,0.06);
-    border-left: 4px solid #60a5fa;
+    background: rgba(96, 165, 250, 0.06);
+    border-left: 4px solid rgba(96, 165, 250, 0.4);
     font-size: 1.25rem;
     line-height: 1.8;
     color: #d1d5db;
@@ -320,8 +366,32 @@
 
   .quiz-explanation strong { color: #60a5fa; font-weight: 600; }
 
-  .quiz-next-btn {
+  .quiz-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 28px;
+  }
+
+  .quiz-restart-mid {
+    padding: 12px 24px;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 12px;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .quiz-restart-mid:hover {
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #f87171;
+  }
+
+  .quiz-next-btn {
     padding: 16px 36px;
     border: none;
     border-radius: 12px;
@@ -331,8 +401,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    font-family: inherit;
-    float: right;
+    font-family: 'Inter', sans-serif;
   }
 
   .quiz-next-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
@@ -355,10 +424,10 @@
     position: relative;
   }
 
-  .quiz-results-circle.grade-a { border-color: #34d399; background: rgba(52,211,153,0.12); }
-  .quiz-results-circle.grade-b { border-color: #60a5fa; background: rgba(96,165,250,0.08); }
-  .quiz-results-circle.grade-c { border-color: #fbbf24; background: rgba(251,191,36,0.12); }
-  .quiz-results-circle.grade-d { border-color: #f87171; background: rgba(248,113,113,0.12); }
+  .quiz-results-circle.grade-a { border-color: #34d399; background: rgba(52, 211, 153, 0.12); }
+  .quiz-results-circle.grade-b { border-color: #60a5fa; background: rgba(96, 165, 250, 0.08); }
+  .quiz-results-circle.grade-c { border-color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+  .quiz-results-circle.grade-d { border-color: #f87171; background: rgba(248, 113, 113, 0.12); }
 
   .quiz-results-score { font-size: 3.4rem; font-weight: 800; }
   .quiz-results-sublabel { font-size: 1.2rem; color: #9ca3af; margin-top: 2px; }
@@ -380,9 +449,9 @@
   }
 
   .quiz-stat-card {
-    background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 16px;
     padding: 24px 32px;
     min-width: 130px;
   }
@@ -393,22 +462,22 @@
   .quiz-restart-btn {
     padding: 18px 52px;
     border: none;
-    border-radius: 14px;
+    border-radius: 16px;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: #fff;
     font-size: 1.35rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
+    transition: all 0.25s ease;
+    font-family: 'Inter', sans-serif;
   }
 
   .quiz-restart-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(59,130,246,0.3); }
 
   @keyframes quizCorrectPulse {
-    0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
-    70% { box-shadow: 0 0 0 14px rgba(52,211,153,0); }
-    100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+    0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); }
+    70% { box-shadow: 0 0 0 14px rgba(52, 211, 153, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
   }
 
   @keyframes quizWrongShake {
@@ -436,7 +505,6 @@
   }
 
   .quiz-hidden { display: none !important; }
-  .quiz-clearfix::after { content: ''; display: table; clear: both; }
 
   @media (max-width: 600px) {
     .quiz-start h2 { font-size: 2rem; }
@@ -449,6 +517,9 @@
     .quiz-self-rate { flex-direction: column; }
     .quiz-option { font-size: 1.1rem; }
     .quiz-q-code { font-size: 0.95rem; }
+    .quiz-actions { flex-direction: column-reverse; gap: 12px; }
+    .quiz-actions .quiz-next-btn { width: 100%; }
+    .quiz-actions .quiz-restart-mid { width: 100%; text-align: center; }
   }
 </style>
 
@@ -497,7 +568,8 @@
 
     <div id="quiz-question-area"></div>
 
-    <div class="quiz-clearfix">
+    <div class="quiz-actions">
+      <button class="quiz-restart-mid" onclick="quizRestart()">↺ Restart</button>
       <button class="quiz-next-btn quiz-hidden" id="quiz-next-btn" onclick="quizNext()">Next →</button>
     </div>
   </div>
@@ -557,6 +629,45 @@
     renderQ();
   };
 
+  function highlightCode(code) {
+    var text = escHtml(code);
+    // Kotlin/Java syntax highlighting
+    var keywords = ['fun ', 'val ', 'var ', 'class ', 'object ', 'interface ', 'abstract ', 'override ', 'private ', 'public ', 'internal ', 'protected ', 'open ', 'sealed ', 'data ', 'enum ', 'companion ', 'suspend ', 'inline ', 'crossinline ', 'noinline ', 'reified ', 'return ', 'return\n', 'if ', 'if(', 'else ', 'else{', 'when ', 'when(', 'when {', 'for ', 'for(', 'while ', 'while(', 'do ', 'do{', 'try ', 'try{', 'catch ', 'catch(', 'finally ', 'finally{', 'throw ', 'import ', 'package ', 'is ', 'as ', 'in ', 'by ', 'lazy ', 'lateinit ', 'const ', 'true', 'false', 'null', 'this', 'super', 'it ', 'it.', 'it)', 'it,', 'it}', 'typealias ', 'init ', 'init{', 'constructor'];
+    var types = ['Int', 'Long', 'Float', 'Double', 'Boolean', 'String', 'Unit', 'Any', 'Nothing', 'List', 'Map', 'Set', 'MutableList', 'MutableMap', 'MutableSet', 'Array', 'Pair', 'Triple', 'Sequence', 'Flow', 'StateFlow', 'SharedFlow', 'MutableStateFlow', 'MutableSharedFlow', 'Channel', 'Deferred', 'Job', 'SupervisorJob', 'CoroutineScope', 'CoroutineContext', 'Dispatchers', 'CoroutineExceptionHandler', 'Mutex', 'Semaphore', 'LiveData', 'MutableLiveData', 'ViewModel', 'AndroidViewModel', 'Composable', 'Modifier', 'State', 'MutableState', 'LaunchedEffect', 'DisposableEffect', 'SideEffect', 'remember', 'rememberSaveable', 'derivedStateOf', 'snapshotFlow', 'Context', 'Intent', 'Activity', 'Fragment', 'Service', 'BroadcastReceiver', 'ContentProvider', 'Application', 'Bundle', 'Parcelable', 'Serializable', 'View', 'ViewGroup', 'RecyclerView', 'Adapter', 'ViewHolder'];
+    var annotations = ['@Composable', '@Inject', '@HiltViewModel', '@Module', '@InstallIn', '@Provides', '@Singleton', '@Binds', '@AndroidEntryPoint', '@Override', '@Test', '@Before', '@After', '@JvmStatic', '@JvmField', '@JvmOverloads', '@Volatile', '@Synchronized', '@Suppress'];
+
+    // Comments
+    text = text.replace(/(\/\/.*$)/gm, '<span class="cmt">$1</span>');
+    // Annotations
+    annotations.forEach(function(ann) {
+      text = text.split(ann).join('<span class="ann">' + ann + '</span>');
+    });
+    // Strings
+    text = text.replace(/(&quot;[^&]*?&quot;)/g, '<span class="str">$1</span>');
+    text = text.replace(/("(?:[^"\\]|\\.)*?")/g, '<span class="str">$1</span>');
+    // Numbers
+    text = text.replace(/\b(\d+[Lf]?)\b/g, '<span class="num">$1</span>');
+    // Types
+    types.forEach(function(t) {
+      var re = new RegExp('\\b(' + t + ')\\b', 'g');
+      text = text.replace(re, '<span class="type">$1</span>');
+    });
+    // Keywords (word boundary safe)
+    var kwList = ['fun', 'val', 'var', 'class', 'object', 'interface', 'abstract', 'override', 'private', 'public', 'internal', 'protected', 'open', 'sealed', 'data', 'enum', 'companion', 'suspend', 'inline', 'crossinline', 'noinline', 'reified', 'return', 'if', 'else', 'when', 'for', 'while', 'do', 'try', 'catch', 'finally', 'throw', 'import', 'package', 'is', 'as', 'in', 'by', 'lazy', 'lateinit', 'const', 'true', 'false', 'null', 'this', 'super', 'typealias', 'init', 'constructor', 'emit', 'collect', 'launch', 'async', 'await', 'withContext', 'coroutineScope', 'supervisorScope', 'runBlocking', 'delay'];
+    kwList.forEach(function(kw) {
+      var re = new RegExp('(?<![\\w.])(' + kw + ')(?=\\s|\\(|\\{|\\)|\\}|,|\\.|;|$|&lt;|&gt;|:)', 'gm');
+      text = text.replace(re, '<span class="kw">$1</span>');
+    });
+    // Function calls
+    text = text.replace(/(?<![.\w])(\w+)(?=\()/g, function(match, fn) {
+      if (kwList.indexOf(fn) === -1) {
+        return '<span class="fn">' + fn + '</span>';
+      }
+      return match;
+    });
+    return text;
+  }
+
   function renderQ() {
     qzAnswered = false;
     var q = qzQuestions[qzIdx];
@@ -571,19 +682,27 @@
     var area = document.getElementById('quiz-question-area');
     var letters = ['A', 'B', 'C', 'D'];
     var typeLabel = q.type === 'mcq' ? 'Multiple Choice' : 'Flashcard';
-    var codeBlock = q.code ? '<pre class="quiz-q-code">' + escHtml(q.code) + '</pre>' : '';
 
     var questionText = q.q;
+    var codeStr = q.code || null;
+
+    // Extract embedded code blocks from question text
     var codeMatch = questionText.match(/```(\w*)\n([\s\S]*?)```/);
-    if (codeMatch && !q.code) {
-      codeBlock = '<pre class="quiz-q-code">' + escHtml(codeMatch[2].trim()) + '</pre>';
+    if (codeMatch && !codeStr) {
+      codeStr = codeMatch[2].trim();
       questionText = questionText.replace(/\n?```(\w*)\n[\s\S]*?```/, '').trim();
     }
+    // Also strip backtick markers that might still be in question text
+    questionText = questionText.replace(/```\w*/g, '').replace(/```/g, '').trim();
+
+    var codeBlock = codeStr ? '<pre class="quiz-q-code">' + highlightCode(codeStr) + '</pre>' : '';
 
     var html = '<div class="quiz-card" id="quiz-card">' +
+      '<div class="quiz-q-badges">' +
       '<span class="quiz-q-topic">' + q.topic + '</span>' +
       '<span class="quiz-q-diff ' + q.difficulty + '">' + q.difficulty + '</span>' +
       '<span class="quiz-q-type">' + typeLabel + '</span>' +
+      '</div>' +
       '<div class="quiz-q-text">' + escHtml(questionText) + '</div>' +
       codeBlock;
 
@@ -728,7 +847,7 @@
     var div = document.createElement('div');
     div.textContent = str;
     var result = div.innerHTML;
-    result = result.replace(/`([^`]+)`/g, '<code style="background:rgba(96,165,250,0.12);padding:4px 10px;border-radius:6px;font-family:JetBrains Mono,monospace;font-size:1.05em">$1</code>');
+    result = result.replace(/`([^`]+)`/g, '<code style="background:rgba(96,165,250,0.12);padding:3px 8px;border-radius:6px;font-family:JetBrains Mono,monospace;font-size:0.95em;color:#79c0ff">$1</code>');
     return result;
   }
 })();

@@ -2,16 +2,26 @@
   {
     "q": "What happens when the user rotates the device?",
     "type": "mcq",
-    "options": ["Only onPause is called", "The Activity is destroyed and recreated", "The ViewModel is destroyed", "Nothing — Compose handles it automatically"],
+    "options": [
+      "Only onPause is called",
+      "The Activity is destroyed and recreated",
+      "The ViewModel is destroyed",
+      "Nothing \u2014 Compose handles it automatically"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "Rotation is a configuration change. The system calls onPause → onStop → onSaveInstanceState → onDestroy → onCreate → onStart → onRestoreInstanceState → onResume."
+    "explanation": "Rotation is a configuration change. The system calls onPause \u2192 onStop \u2192 onSaveInstanceState \u2192 onDestroy \u2192 onCreate \u2192 onStart \u2192 onRestoreInstanceState \u2192 onResume."
   },
   {
     "q": "What is the difference between `commit()` and `apply()` in SharedPreferences?",
     "type": "mcq",
-    "options": ["commit() is async, apply() is sync", "commit() is sync and returns boolean, apply() is async", "They are identical", "apply() writes to a database, commit() writes to XML"],
+    "options": [
+      "commit() is async, apply() is sync",
+      "commit() is sync and returns boolean, apply() is async",
+      "They are identical",
+      "apply() writes to a database, commit() writes to XML"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
@@ -20,7 +30,12 @@
   {
     "q": "What does the `suspend` keyword do to a function?",
     "type": "mcq",
-    "options": ["Makes it run on a background thread", "Allows it to be paused and resumed without blocking the thread", "Makes it return a Deferred", "Marks it as a coroutine builder"],
+    "options": [
+      "Makes it run on a background thread",
+      "Allows it to be paused and resumed without blocking the thread",
+      "Makes it return a Deferred",
+      "Marks it as a coroutine builder"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
@@ -29,7 +44,12 @@
   {
     "q": "Which Dispatcher should you use for network calls?",
     "type": "mcq",
-    "options": ["Dispatchers.Main", "Dispatchers.Default", "Dispatchers.IO", "Dispatchers.Unconfined"],
+    "options": [
+      "Dispatchers.Main",
+      "Dispatchers.Default",
+      "Dispatchers.IO",
+      "Dispatchers.Unconfined"
+    ],
     "answer": 2,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
@@ -38,7 +58,12 @@
   {
     "q": "What is the purpose of `remember` in Jetpack Compose?",
     "type": "mcq",
-    "options": ["To cache expensive computations across app restarts", "To store a value in the slot table so it survives recomposition", "To create a ViewModel", "To trigger recomposition when state changes"],
+    "options": [
+      "To cache expensive computations across app restarts",
+      "To store a value in the slot table so it survives recomposition",
+      "To create a ViewModel",
+      "To trigger recomposition when state changes"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
@@ -47,7 +72,12 @@
   {
     "q": "What does `@Composable` tell the Kotlin compiler?",
     "type": "mcq",
-    "options": ["To generate a View subclass", "That this function describes UI and should be processed by the Compose compiler plugin", "To make the function run on the main thread", "To enable preview in Android Studio"],
+    "options": [
+      "To generate a View subclass",
+      "That this function describes UI and should be processed by the Compose compiler plugin",
+      "To make the function run on the main thread",
+      "To enable preview in Android Studio"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
@@ -56,7 +86,12 @@
   {
     "q": "What is the difference between `launch` and `async`?",
     "type": "mcq",
-    "options": ["launch returns Deferred, async returns Job", "launch is for UI, async is for IO", "launch returns Job (fire-and-forget), async returns Deferred with a result", "They are identical but with different names"],
+    "options": [
+      "launch returns Deferred, async returns Job",
+      "launch is for UI, async is for IO",
+      "launch returns Job (fire-and-forget), async returns Deferred with a result",
+      "They are identical but with different names"
+    ],
     "answer": 2,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
@@ -65,7 +100,12 @@
   {
     "q": "What is null safety in Kotlin?",
     "type": "mcq",
-    "options": ["All variables can be null by default", "The compiler enforces null checks at compile time using nullable types (Type?)", "Null values are replaced with empty strings", "Kotlin doesn't support null values at all"],
+    "options": [
+      "All variables can be null by default",
+      "The compiler enforces null checks at compile time using nullable types (Type?)",
+      "Null values are replaced with empty strings",
+      "Kotlin doesn't support null values at all"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -74,7 +114,12 @@
   {
     "q": "What is a `data class` in Kotlin?",
     "type": "mcq",
-    "options": ["A class that can only hold data and has no functions", "A class that auto-generates equals(), hashCode(), toString(), and copy()", "A class backed by a database table", "A class that is always immutable"],
+    "options": [
+      "A class that can only hold data and has no functions",
+      "A class that auto-generates equals(), hashCode(), toString(), and copy()",
+      "A class backed by a database table",
+      "A class that is always immutable"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -83,25 +128,40 @@
   {
     "q": "What is the Single Responsibility Principle?",
     "type": "mcq",
-    "options": ["A class should have only one instance", "A class should have only one reason to change", "A function should have only one parameter", "A module should export only one class"],
+    "options": [
+      "A class should have only one instance",
+      "A class should have only one reason to change",
+      "A function should have only one parameter",
+      "A module should export only one class"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
-    "explanation": "SRP states that a class should have one responsibility — one reason to change. This promotes maintainable, testable code."
+    "explanation": "SRP states that a class should have one responsibility \u2014 one reason to change. This promotes maintainable, testable code."
   },
   {
     "q": "In Clean Architecture, which layer defines the Repository interface?",
     "type": "mcq",
-    "options": ["Presentation layer", "Data layer", "Domain layer", "Framework layer"],
+    "options": [
+      "Presentation layer",
+      "Data layer",
+      "Domain layer",
+      "Framework layer"
+    ],
     "answer": 2,
     "difficulty": "easy",
     "topic": "Architecture",
-    "explanation": "The domain layer defines the Repository interface. The data layer implements it. This is dependency inversion — inner layers define contracts, outer layers provide implementations."
+    "explanation": "The domain layer defines the Repository interface. The data layer implements it. This is dependency inversion \u2014 inner layers define contracts, outer layers provide implementations."
   },
   {
     "q": "What is a memory leak in Android?",
     "type": "mcq",
-    "options": ["When the app uses too much RAM", "When an object is no longer needed but still referenced, preventing GC", "When a bitmap is too large", "When the heap size exceeds 512MB"],
+    "options": [
+      "When the app uses too much RAM",
+      "When an object is no longer needed but still referenced, preventing GC",
+      "When a bitmap is too large",
+      "When the heap size exceeds 512MB"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Performance",
@@ -110,7 +170,12 @@
   {
     "q": "What is Hilt in Android?",
     "type": "mcq",
-    "options": ["A networking library", "A compile-time DI framework built on top of Dagger", "A database ORM", "A testing framework"],
+    "options": [
+      "A networking library",
+      "A compile-time DI framework built on top of Dagger",
+      "A database ORM",
+      "A testing framework"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
@@ -119,7 +184,12 @@
   {
     "q": "What is the purpose of `viewModelScope` in Android?",
     "type": "mcq",
-    "options": ["To create a new ViewModel", "To provide a CoroutineScope tied to the ViewModel lifecycle", "To access the View from a ViewModel", "To save state during process death"],
+    "options": [
+      "To create a new ViewModel",
+      "To provide a CoroutineScope tied to the ViewModel lifecycle",
+      "To access the View from a ViewModel",
+      "To save state during process death"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
@@ -128,7 +198,12 @@
   {
     "q": "What does `sealed class` enable in Kotlin?",
     "type": "mcq",
-    "options": ["Multiple inheritance", "Restricted class hierarchies where all subclasses are known at compile time", "Automatic serialization", "Thread-safe access"],
+    "options": [
+      "Multiple inheritance",
+      "Restricted class hierarchies where all subclasses are known at compile time",
+      "Automatic serialization",
+      "Thread-safe access"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -137,7 +212,12 @@
   {
     "q": "What are the three phases of Jetpack Compose rendering?",
     "type": "mcq",
-    "options": ["Inflate, Measure, Draw", "Composition, Layout, Drawing", "Parse, Build, Render", "Create, Bind, Display"],
+    "options": [
+      "Inflate, Measure, Draw",
+      "Composition, Layout, Drawing",
+      "Parse, Build, Render",
+      "Create, Bind, Display"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
@@ -146,7 +226,12 @@
   {
     "q": "What is Room in Android?",
     "type": "mcq",
-    "options": ["A Jetpack library that provides an abstraction layer over SQLite", "A layout manager for RecyclerView", "A memory management tool", "A navigation component"],
+    "options": [
+      "A Jetpack library that provides an abstraction layer over SQLite",
+      "A layout manager for RecyclerView",
+      "A memory management tool",
+      "A navigation component"
+    ],
     "answer": 0,
     "difficulty": "easy",
     "topic": "Android Core",
@@ -155,7 +240,12 @@
   {
     "q": "What is Dependency Injection?",
     "type": "mcq",
-    "options": ["A design pattern where a class creates its own dependencies", "A design pattern where dependencies are provided externally to a class", "A way to inject code at runtime", "A Gradle plugin for managing dependencies"],
+    "options": [
+      "A design pattern where a class creates its own dependencies",
+      "A design pattern where dependencies are provided externally to a class",
+      "A way to inject code at runtime",
+      "A Gradle plugin for managing dependencies"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
@@ -164,16 +254,26 @@
   {
     "q": "What is `withContext` used for in coroutines?",
     "type": "mcq",
-    "options": ["To create a new CoroutineScope", "To switch the dispatcher without creating a new coroutine", "To catch exceptions in coroutines", "To delay execution"],
+    "options": [
+      "To create a new CoroutineScope",
+      "To switch the dispatcher without creating a new coroutine",
+      "To catch exceptions in coroutines",
+      "To delay execution"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
-    "explanation": "withContext switches the coroutine to a different dispatcher, runs the block, and returns the result — all without creating a new coroutine."
+    "explanation": "withContext switches the coroutine to a different dispatcher, runs the block, and returns the result \u2014 all without creating a new coroutine."
   },
   {
     "q": "What is recomposition in Jetpack Compose?",
     "type": "mcq",
-    "options": ["Recreating the entire UI tree from scratch", "Re-executing only the composable functions that read changed state", "Rebuilding the Activity", "Inflating XML layouts again"],
+    "options": [
+      "Recreating the entire UI tree from scratch",
+      "Re-executing only the composable functions that read changed state",
+      "Rebuilding the Activity",
+      "Inflating XML layouts again"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
@@ -182,34 +282,54 @@
   {
     "q": "What is the purpose of `LaunchedEffect` in Compose?",
     "type": "mcq",
-    "options": ["To launch an animation", "To run a suspend function as a side effect tied to composition lifecycle", "To create a coroutine that survives recomposition", "To navigate between screens"],
+    "options": [
+      "To launch an animation",
+      "To run a suspend function as a side effect tied to composition lifecycle",
+      "To create a coroutine that survives recomposition",
+      "To navigate between screens"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
-    "explanation": "LaunchedEffect runs a suspend function when a composable enters composition and cancels it when the composable leaves. It's keyed — changing the key restarts it."
+    "explanation": "LaunchedEffect runs a suspend function when a composable enters composition and cancels it when the composable leaves. It's keyed \u2014 changing the key restarts it."
   },
   {
     "q": "What is `StateFlow` in Kotlin?",
     "type": "mcq",
-    "options": ["A cold Flow that emits values on demand", "A hot observable state holder that always has a current value", "A Flow that runs on the main thread", "A replacement for LiveData in XML-based UIs"],
+    "options": [
+      "A cold Flow that emits values on demand",
+      "A hot observable state holder that always has a current value",
+      "A Flow that runs on the main thread",
+      "A replacement for LiveData in XML-based UIs"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
-    "explanation": "StateFlow is a hot Flow that always has a current value. It's similar to LiveData but built on coroutines. It conflates — only the latest value is delivered."
+    "explanation": "StateFlow is a hot Flow that always has a current value. It's similar to LiveData but built on coroutines. It conflates \u2014 only the latest value is delivered."
   },
   {
     "q": "What is the difference between `val` and `var` in Kotlin?",
     "type": "mcq",
-    "options": ["val is for primitives, var is for objects", "val is immutable reference, var is mutable reference", "val is private, var is public", "There is no difference"],
+    "options": [
+      "val is for primitives, var is for objects",
+      "val is immutable reference, var is mutable reference",
+      "val is private, var is public",
+      "There is no difference"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "val declares a read-only (immutable) reference — it cannot be reassigned. var declares a mutable reference. Note: val objects themselves can still be mutable."
+    "explanation": "val declares a read-only (immutable) reference \u2014 it cannot be reassigned. var declares a mutable reference. Note: val objects themselves can still be mutable."
   },
   {
     "q": "What happens during process death on Android?",
     "type": "mcq",
-    "options": ["Only the current Activity is destroyed", "ViewModel data is preserved", "The entire process is killed — all in-memory data is lost", "The app restarts from the launcher"],
+    "options": [
+      "Only the current Activity is destroyed",
+      "ViewModel data is preserved",
+      "The entire process is killed \u2014 all in-memory data is lost",
+      "The app restarts from the launcher"
+    ],
     "answer": 2,
     "difficulty": "easy",
     "topic": "Android Core",
@@ -218,7 +338,12 @@
   {
     "q": "What is the purpose of a Use Case in Clean Architecture?",
     "type": "mcq",
-    "options": ["To replace the Repository", "To encapsulate a single piece of business logic in the domain layer", "To manage database transactions", "To handle UI events in the presentation layer"],
+    "options": [
+      "To replace the Repository",
+      "To encapsulate a single piece of business logic in the domain layer",
+      "To manage database transactions",
+      "To handle UI events in the presentation layer"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
@@ -227,16 +352,26 @@
   {
     "q": "What is the difference between `@Provides` and `@Binds` in Hilt?",
     "type": "mcq",
-    "options": ["@Provides is for singletons, @Binds is for factories", "@Provides is for concrete construction, @Binds maps an interface to its implementation", "@Provides is for Hilt, @Binds is for Dagger", "They are interchangeable"],
+    "options": [
+      "@Provides is for singletons, @Binds is for factories",
+      "@Provides is for concrete construction, @Binds maps an interface to its implementation",
+      "@Provides is for Hilt, @Binds is for Dagger",
+      "They are interchangeable"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Architecture",
-    "explanation": "@Provides is for when you need code to create an instance. @Binds maps an interface to an implementation — it generates less code than @Provides."
+    "explanation": "@Provides is for when you need code to create an instance. @Binds maps an interface to an implementation \u2014 it generates less code than @Provides."
   },
   {
-    "q": "What will this code print?\n```kotlin\nval list = listOf(1, 2, 3, 4, 5)\nval result = list.filter { it > 2 }.map { it * 2 }\nprintln(result)\n```",
+    "q": "What will this code print?",
     "type": "mcq",
-    "options": ["[6, 8, 10]", "[2, 4, 6, 8, 10]", "[3, 4, 5]", "[1, 2, 6, 8, 10]"],
+    "options": [
+      "[6, 8, 10]",
+      "[2, 4, 6, 8, 10]",
+      "[3, 4, 5]",
+      "[1, 2, 6, 8, 10]"
+    ],
     "answer": 0,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -244,9 +379,14 @@
     "explanation": "filter keeps elements > 2: [3, 4, 5]. map doubles each: [6, 8, 10]."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val x: String? = null\n    println(x?.length ?: \"empty\")\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["null", "0", "empty", "NullPointerException"],
+    "options": [
+      "null",
+      "0",
+      "empty",
+      "NullPointerException"
+    ],
     "answer": 2,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -256,7 +396,12 @@
   {
     "q": "What is structured concurrency in Kotlin coroutines?",
     "type": "mcq",
-    "options": ["A way to structure code into modules", "A principle where child coroutines are tied to a parent scope and cancellation propagates", "A threading model using structured threads", "A design pattern for organizing suspend functions"],
+    "options": [
+      "A way to structure code into modules",
+      "A principle where child coroutines are tied to a parent scope and cancellation propagates",
+      "A threading model using structured threads",
+      "A design pattern for organizing suspend functions"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -265,16 +410,26 @@
   {
     "q": "What does `SupervisorJob` do differently from a regular `Job`?",
     "type": "mcq",
-    "options": ["It runs coroutines on a priority thread", "A child failure doesn't cancel the parent or other siblings", "It makes coroutines run sequentially", "It provides logging for coroutine failures"],
+    "options": [
+      "It runs coroutines on a priority thread",
+      "A child failure doesn't cancel the parent or other siblings",
+      "It makes coroutines run sequentially",
+      "It provides logging for coroutine failures"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "With a regular Job, a child failure cancels the parent and all siblings. SupervisorJob isolates failures — one child failing doesn't affect others."
+    "explanation": "With a regular Job, a child failure cancels the parent and all siblings. SupervisorJob isolates failures \u2014 one child failing doesn't affect others."
   },
   {
     "q": "What is `derivedStateOf` in Compose?",
     "type": "mcq",
-    "options": ["A way to derive new composables from existing ones", "A state that is computed from other state values and only triggers recomposition when its result changes", "A function that derives layouts from state", "An alternative to remember for complex calculations"],
+    "options": [
+      "A way to derive new composables from existing ones",
+      "A state that is computed from other state values and only triggers recomposition when its result changes",
+      "A function that derives layouts from state",
+      "An alternative to remember for complex calculations"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
@@ -283,7 +438,12 @@
   {
     "q": "Why should composable functions be free of side effects?",
     "type": "mcq",
-    "options": ["Because they run on the IO thread", "Because recomposition can be cancelled, skipped, or re-executed, making side effects unpredictable", "Because Compose doesn't support side effects", "Because Android restricts side effects in UI code"],
+    "options": [
+      "Because they run on the IO thread",
+      "Because recomposition can be cancelled, skipped, or re-executed, making side effects unpredictable",
+      "Because Compose doesn't support side effects",
+      "Because Android restricts side effects in UI code"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
@@ -292,7 +452,12 @@
   {
     "q": "What is the Compose Snapshot System?",
     "type": "mcq",
-    "options": ["A screenshot testing framework", "A mechanism that tracks state reads/writes and enables isolated, atomic state transactions", "A way to save composable state to disk", "A caching system for Compose layouts"],
+    "options": [
+      "A screenshot testing framework",
+      "A mechanism that tracks state reads/writes and enables isolated, atomic state transactions",
+      "A way to save composable state to disk",
+      "A caching system for Compose layouts"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
@@ -301,16 +466,26 @@
   {
     "q": "What is the Compose Slot Table?",
     "type": "mcq",
-    "options": ["A UI component for displaying data in slots", "A gap buffer data structure that stores the composition tree, remembered values, and state", "A layout system for placing composables in predefined positions", "A table that maps composables to their Views"],
+    "options": [
+      "A UI component for displaying data in slots",
+      "A gap buffer data structure that stores the composition tree, remembered values, and state",
+      "A layout system for placing composables in predefined positions",
+      "A table that maps composables to their Views"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
-    "explanation": "The Slot Table is a gap buffer that stores the entire composition tree — composable calls, parameters, remembered values, and state. It's updated in-place during recomposition."
+    "explanation": "The Slot Table is a gap buffer that stores the entire composition tree \u2014 composable calls, parameters, remembered values, and state. It's updated in-place during recomposition."
   },
   {
-    "q": "What is the output?\n```kotlin\nrunBlocking {\n    val result = withContext(Dispatchers.Default) {\n        delay(100)\n        42\n    }\n    println(result)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["null", "42", "Unit", "Compilation error"],
+    "options": [
+      "null",
+      "42",
+      "Unit",
+      "Compilation error"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
@@ -320,7 +495,12 @@
   {
     "q": "What is the key difference between `StateFlow` and `SharedFlow`?",
     "type": "mcq",
-    "options": ["StateFlow is hot, SharedFlow is cold", "StateFlow always has a value and conflates; SharedFlow can buffer multiple emissions", "StateFlow is for UI, SharedFlow is for data layer", "SharedFlow replaces StateFlow in newer Kotlin versions"],
+    "options": [
+      "StateFlow is hot, SharedFlow is cold",
+      "StateFlow always has a value and conflates; SharedFlow can buffer multiple emissions",
+      "StateFlow is for UI, SharedFlow is for data layer",
+      "SharedFlow replaces StateFlow in newer Kotlin versions"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -329,7 +509,12 @@
   {
     "q": "What happens if you call `flow.collect {}` on the main thread without switching context?",
     "type": "mcq",
-    "options": ["It crashes with a NetworkOnMainThread exception", "It blocks the main thread if the flow performs blocking operations", "It automatically switches to Dispatchers.IO", "Nothing — Flows are always asynchronous"],
+    "options": [
+      "It crashes with a NetworkOnMainThread exception",
+      "It blocks the main thread if the flow performs blocking operations",
+      "It automatically switches to Dispatchers.IO",
+      "Nothing \u2014 Flows are always asynchronous"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -338,16 +523,26 @@
   {
     "q": "What is the difference between `Modifier.clickable` and `Modifier.pointerInput`?",
     "type": "mcq",
-    "options": ["clickable is for clicks, pointerInput handles raw touch events like drag and swipe", "pointerInput is deprecated", "clickable works only on buttons", "They are interchangeable"],
+    "options": [
+      "clickable is for clicks, pointerInput handles raw touch events like drag and swipe",
+      "pointerInput is deprecated",
+      "clickable works only on buttons",
+      "They are interchangeable"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
     "explanation": "Modifier.clickable handles simple clicks with accessibility support. Modifier.pointerInput gives access to raw touch events for custom gesture detection."
   },
   {
-    "q": "What does modifier ordering matter in Compose?\n```kotlin\n// A:\nBox(Modifier.padding(16.dp).background(Color.Red))\n// B:\nBox(Modifier.background(Color.Red).padding(16.dp))\n```",
+    "q": "What does modifier ordering matter in Compose?",
     "type": "mcq",
-    "options": ["A and B look identical", "A has red background inside padding; B has red background extending to edges", "A won't compile", "B has padding outside the red background"],
+    "options": [
+      "A and B look identical",
+      "A has red background inside padding; B has red background extending to edges",
+      "A won't compile",
+      "B has padding outside the red background"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
@@ -357,7 +552,12 @@
   {
     "q": "What is `stateIn` used for in Kotlin Flows?",
     "type": "mcq",
-    "options": ["To convert a Flow into a StateFlow with a coroutine scope, initial value, and sharing strategy", "To filter state from a Flow", "To create a new State in Compose", "To persist Flow values to disk"],
+    "options": [
+      "To convert a Flow into a StateFlow with a coroutine scope, initial value, and sharing strategy",
+      "To filter state from a Flow",
+      "To create a new State in Compose",
+      "To persist Flow values to disk"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -366,25 +566,40 @@
   {
     "q": "What is the difference between `SharingStarted.WhileSubscribed(5000)` and `SharingStarted.Eagerly`?",
     "type": "mcq",
-    "options": ["Eagerly starts immediately and never stops; WhileSubscribed starts when first subscriber appears and stops 5s after last subscriber leaves", "WhileSubscribed is faster", "Eagerly uses more memory", "They are the same for StateFlow"],
+    "options": [
+      "Eagerly starts immediately and never stops; WhileSubscribed starts when first subscriber appears and stops 5s after last subscriber leaves",
+      "WhileSubscribed is faster",
+      "Eagerly uses more memory",
+      "They are the same for StateFlow"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "Eagerly starts upstream immediately and never cancels. WhileSubscribed(5000) starts on first collector and cancels 5 seconds after the last collector disappears — good for surviving configuration changes."
+    "explanation": "Eagerly starts upstream immediately and never cancels. WhileSubscribed(5000) starts on first collector and cancels 5 seconds after the last collector disappears \u2014 good for surviving configuration changes."
   },
   {
     "q": "What happens when an uncaught exception occurs in a coroutine launched with `launch`?",
     "type": "mcq",
-    "options": ["The exception is silently swallowed", "It propagates to the parent scope and cancels all siblings", "It only crashes the current coroutine", "It's automatically caught by the ViewModel"],
+    "options": [
+      "The exception is silently swallowed",
+      "It propagates to the parent scope and cancels all siblings",
+      "It only crashes the current coroutine",
+      "It's automatically caught by the ViewModel"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
     "explanation": "With a regular Job, an uncaught exception in a child coroutine propagates to the parent, cancelling the parent and all sibling coroutines."
   },
   {
-    "q": "What is the output?\n```kotlin\nsealed class Result {\n    data class Success(val data: String) : Result()\n    data class Error(val msg: String) : Result()\n    object Loading : Result()\n}\n\nfun handle(r: Result) = when(r) {\n    is Result.Success -> \"Got: ${r.data}\"\n    is Result.Error -> \"Err: ${r.msg}\"\n    Result.Loading -> \"...\"\n}\nprintln(handle(Result.Success(\"OK\")))\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["Got: OK", "Err: OK", "...", "Compilation error — missing else"],
+    "options": [
+      "Got: OK",
+      "Err: OK",
+      "...",
+      "Compilation error \u2014 missing else"
+    ],
     "answer": 0,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -394,7 +609,12 @@
   {
     "q": "In Hilt, what scope does `@Singleton` correspond to?",
     "type": "mcq",
-    "options": ["ActivityComponent", "ViewModelComponent", "SingletonComponent (Application scope)", "FragmentComponent"],
+    "options": [
+      "ActivityComponent",
+      "ViewModelComponent",
+      "SingletonComponent (Application scope)",
+      "FragmentComponent"
+    ],
     "answer": 2,
     "difficulty": "medium",
     "topic": "Architecture",
@@ -403,14 +623,19 @@
   {
     "q": "What is `callbackFlow` used for?",
     "type": "mcq",
-    "options": ["To call a function with a callback", "To bridge callback-based APIs into a Flow", "To create a Flow that calls back on completion", "To handle Flow errors with callbacks"],
+    "options": [
+      "To call a function with a callback",
+      "To bridge callback-based APIs into a Flow",
+      "To create a Flow that calls back on completion",
+      "To handle Flow errors with callbacks"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
     "explanation": "callbackFlow bridges callback-based APIs (like listeners, sensors, Firebase) into a cold Flow. It uses a channel internally and requires awaitClose to clean up."
   },
   {
-    "q": "What is the problem with this code?\n```kotlin\nclass UserViewModel : ViewModel() {\n    val users = repository.getUsers()\n        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())\n}\n```",
+    "q": "What is the problem with this code?",
     "type": "open",
     "answer": "SharingStarted.Lazily never stops collecting even when there are no subscribers. Use SharingStarted.WhileSubscribed(5000) to stop collecting when the UI goes to background, saving resources and respecting lifecycle.",
     "difficulty": "medium",
@@ -420,21 +645,26 @@
   {
     "q": "What is `Dispatchers.Unconfined` and why is it a trap?",
     "type": "open",
-    "answer": "Dispatchers.Unconfined starts in the caller's thread but resumes in whatever thread the suspending function resumes in. This makes behavior unpredictable — your code might start on the main thread and resume on an IO thread. For tests, use EmptyCoroutineContext or UnconfinedTestDispatcher instead.",
+    "answer": "Dispatchers.Unconfined starts in the caller's thread but resumes in whatever thread the suspending function resumes in. This makes behavior unpredictable \u2014 your code might start on the main thread and resume on an IO thread. For tests, use EmptyCoroutineContext or UnconfinedTestDispatcher instead.",
     "difficulty": "hard",
     "topic": "Kotlin Coroutines"
   },
   {
     "q": "What is the conflation problem when testing StateFlow?",
     "type": "open",
-    "answer": "StateFlow conflates — it only keeps the latest value. If a ViewModel emits Loading → Success rapidly, a test collecting the StateFlow might only see Success, missing the Loading state. Turbine helps by collecting values eagerly, but you still need to use UnconfinedTestDispatcher or yield() to ensure intermediate states are captured.",
+    "answer": "StateFlow conflates \u2014 it only keeps the latest value. If a ViewModel emits Loading \u2192 Success rapidly, a test collecting the StateFlow might only see Success, missing the Loading state. Turbine helps by collecting values eagerly, but you still need to use UnconfinedTestDispatcher or yield() to ensure intermediate states are captured.",
     "difficulty": "hard",
     "topic": "Kotlin Coroutines"
   },
   {
-    "q": "What does this code do?\n```kotlin\nval flow = flow {\n    emit(1)\n    delay(100)\n    emit(2)\n    delay(100)\n    emit(3)\n}\n\nflow.conflate().collect { value ->\n    delay(200)\n    println(value)\n}\n```",
+    "q": "What does this code do?",
     "type": "mcq",
-    "options": ["Prints 1, 2, 3", "Prints 1, 3 (2 is conflated because collector is slower)", "Prints 3 only", "Throws an exception"],
+    "options": [
+      "Prints 1, 2, 3",
+      "Prints 1, 3 (2 is conflated because collector is slower)",
+      "Prints 3 only",
+      "Throws an exception"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin Coroutines",
@@ -444,23 +674,33 @@
   {
     "q": "Why does ViewModel survive configuration changes but not process death?",
     "type": "open",
-    "answer": "ViewModel is stored in ViewModelStore, which is retained through NonConfigurationInstances during config changes — the process stays alive, just the Activity is recreated. During process death, the entire Linux process is killed. ViewModelStore and all its ViewModels are gone. Only the Bundle from onSaveInstanceState survives because the system stores it outside the process.",
+    "answer": "ViewModel is stored in ViewModelStore, which is retained through NonConfigurationInstances during config changes \u2014 the process stays alive, just the Activity is recreated. During process death, the entire Linux process is killed. ViewModelStore and all its ViewModels are gone. Only the Bundle from onSaveInstanceState survives because the system stores it outside the process.",
     "difficulty": "medium",
     "topic": "Android Core"
   },
   {
     "q": "What is the difference between `rememberSaveable` and `remember` in Compose?",
     "type": "mcq",
-    "options": ["rememberSaveable persists across configuration changes and process death; remember only survives recomposition", "rememberSaveable saves to database; remember saves to memory", "They are identical", "rememberSaveable is slower and should be avoided"],
+    "options": [
+      "rememberSaveable persists across configuration changes and process death; remember only survives recomposition",
+      "rememberSaveable saves to database; remember saves to memory",
+      "They are identical",
+      "rememberSaveable is slower and should be avoided"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
     "explanation": "remember survives recomposition only. rememberSaveable uses the saved instance state mechanism to persist values across config changes and process death."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val nums = listOf(1, 2, 3)\n    val result = nums.fold(10) { acc, n -> acc + n }\n    println(result)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["6", "16", "10", "Compilation error"],
+    "options": [
+      "6",
+      "16",
+      "10",
+      "Compilation error"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -470,7 +710,12 @@
   {
     "q": "What is the `by` keyword used for in Kotlin?",
     "type": "mcq",
-    "options": ["To define a variable as private", "For property delegation and class delegation", "To import specific functions", "To declare abstract classes"],
+    "options": [
+      "To define a variable as private",
+      "For property delegation and class delegation",
+      "To import specific functions",
+      "To declare abstract classes"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -479,16 +724,26 @@
   {
     "q": "What problem does `Modifier.graphicsLayer` solve in Compose?",
     "type": "mcq",
-    "options": ["It adds a shadow to composables", "It allows state reads only in the Drawing phase, skipping Composition and Layout", "It creates a new graphics context", "It enables hardware acceleration"],
+    "options": [
+      "It adds a shadow to composables",
+      "It allows state reads only in the Drawing phase, skipping Composition and Layout",
+      "It creates a new graphics context",
+      "It enables hardware acceleration"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
-    "explanation": "graphicsLayer creates a render layer. State reads inside it only trigger the Drawing phase — Composition and Layout are skipped, which is a key performance optimization."
+    "explanation": "graphicsLayer creates a render layer. State reads inside it only trigger the Drawing phase \u2014 Composition and Layout are skipped, which is a key performance optimization."
   },
   {
     "q": "What is the key difference between `flatMapLatest` and `flatMapConcat` in Flow?",
     "type": "mcq",
-    "options": ["flatMapLatest processes all emissions in parallel; flatMapConcat processes sequentially", "flatMapLatest cancels the previous inner flow when a new value arrives; flatMapConcat waits for each to complete", "flatMapConcat is deprecated", "They produce the same result"],
+    "options": [
+      "flatMapLatest processes all emissions in parallel; flatMapConcat processes sequentially",
+      "flatMapLatest cancels the previous inner flow when a new value arrives; flatMapConcat waits for each to complete",
+      "flatMapConcat is deprecated",
+      "They produce the same result"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -497,14 +752,19 @@
   {
     "q": "What is stability in Jetpack Compose and why does it matter?",
     "type": "open",
-    "answer": "Stability determines whether Compose can skip recomposition of a composable. A type is stable if its public properties are immutable (val) and all their types are also stable. Stable parameters enable Compose to compare previous and current values — if they're equal, the composable is skipped. Unstable types (like List, Map, or classes with var properties) force recomposition every time. Mark classes with @Stable or @Immutable to tell Compose they're safe to skip.",
+    "answer": "Stability determines whether Compose can skip recomposition of a composable. A type is stable if its public properties are immutable (val) and all their types are also stable. Stable parameters enable Compose to compare previous and current values \u2014 if they're equal, the composable is skipped. Unstable types (like List, Map, or classes with var properties) force recomposition every time. Mark classes with @Stable or @Immutable to tell Compose they're safe to skip.",
     "difficulty": "hard",
     "topic": "Jetpack Compose"
   },
   {
-    "q": "What will this coroutine code do?\n```kotlin\nviewModelScope.launch {\n    try {\n        coroutineScope {\n            launch { throw RuntimeException(\"fail\") }\n            launch { delay(1000); println(\"done\") }\n        }\n    } catch (e: Exception) {\n        println(\"caught: ${e.message}\")\n    }\n}\n```",
+    "q": "What will this coroutine code do?",
     "type": "mcq",
-    "options": ["Prints \"done\" then \"caught: fail\"", "Prints \"caught: fail\" — the second launch is cancelled", "Crashes the app", "Prints \"done\" only"],
+    "options": [
+      "Prints \"done\" then \"caught: fail\"",
+      "Prints \"caught: fail\" \u2014 the second launch is cancelled",
+      "Crashes the app",
+      "Prints \"done\" only"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin Coroutines",
@@ -514,23 +774,33 @@
   {
     "q": "Explain the difference between `coroutineScope` and `supervisorScope`.",
     "type": "open",
-    "answer": "coroutineScope cancels all children when any child fails and rethrows the exception. supervisorScope isolates child failures — if one child throws, other children continue running. Use coroutineScope for all-or-nothing operations (parallel API calls that all need to succeed). Use supervisorScope when children are independent (firing multiple analytics events).",
+    "answer": "coroutineScope cancels all children when any child fails and rethrows the exception. supervisorScope isolates child failures \u2014 if one child throws, other children continue running. Use coroutineScope for all-or-nothing operations (parallel API calls that all need to succeed). Use supervisorScope when children are independent (firing multiple analytics events).",
     "difficulty": "medium",
     "topic": "Kotlin Coroutines"
   },
   {
     "q": "What is `AnimatedVisibility` in Compose?",
     "type": "mcq",
-    "options": ["A composable that animates between two different composables", "A composable that animates the appearance and disappearance of its content", "An animation API for moving composables on screen", "A function that makes composables invisible"],
+    "options": [
+      "A composable that animates between two different composables",
+      "A composable that animates the appearance and disappearance of its content",
+      "An animation API for moving composables on screen",
+      "A function that makes composables invisible"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
     "explanation": "AnimatedVisibility animates the enter and exit transitions of its content. It supports EnterTransition (fadeIn, slideIn, expandIn) and ExitTransition (fadeOut, slideOut, shrinkOut)."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val map = mapOf(\"a\" to 1, \"b\" to 2, \"c\" to 3)\n    val result = map.filter { (_, v) -> v > 1 }.keys\n    println(result)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["[a, b, c]", "[b, c]", "[2, 3]", "[a]"],
+    "options": [
+      "[a, b, c]",
+      "[b, c]",
+      "[2, 3]",
+      "[a]"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -540,7 +810,12 @@
   {
     "q": "What is the purpose of `@HiltViewModel`?",
     "type": "mcq",
-    "options": ["To make a ViewModel singleton", "To tell Hilt to provide dependencies to the ViewModel via constructor injection", "To enable SavedStateHandle", "To bind the ViewModel to an Activity"],
+    "options": [
+      "To make a ViewModel singleton",
+      "To tell Hilt to provide dependencies to the ViewModel via constructor injection",
+      "To enable SavedStateHandle",
+      "To bind the ViewModel to an Activity"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Architecture",
@@ -549,32 +824,42 @@
   {
     "q": "What is the difference between `DisposableEffect` and `LaunchedEffect` in Compose?",
     "type": "mcq",
-    "options": ["LaunchedEffect runs suspend functions; DisposableEffect provides an onDispose callback for cleanup", "DisposableEffect is deprecated", "LaunchedEffect is for animations only", "They are interchangeable"],
+    "options": [
+      "LaunchedEffect runs suspend functions; DisposableEffect provides an onDispose callback for cleanup",
+      "DisposableEffect is deprecated",
+      "LaunchedEffect is for animations only",
+      "They are interchangeable"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
-    "explanation": "LaunchedEffect launches a coroutine for async work. DisposableEffect is for non-suspend setup/cleanup — register a listener in the body, unregister in onDispose."
+    "explanation": "LaunchedEffect launches a coroutine for async work. DisposableEffect is for non-suspend setup/cleanup \u2014 register a listener in the body, unregister in onDispose."
   },
   {
     "q": "How does Compose know which composables to recompose when state changes?",
     "type": "open",
-    "answer": "The Snapshot System tracks which State objects each composable reads during composition. When a State value changes, Compose looks up all composables that read it and schedules them for recomposition. This is automatic — you don't register listeners. The tracking happens at the Snapshot level using thread-local read observers.",
+    "answer": "The Snapshot System tracks which State objects each composable reads during composition. When a State value changes, Compose looks up all composables that read it and schedules them for recomposition. This is automatic \u2014 you don't register listeners. The tracking happens at the Snapshot level using thread-local read observers.",
     "difficulty": "hard",
     "topic": "Jetpack Compose"
   },
   {
     "q": "What is a `value class` in Kotlin and when should you use it?",
     "type": "mcq",
-    "options": ["A class that can only hold value types like Int", "A wrapper class that is eliminated at compile time to avoid allocation overhead", "A class that stores values in a database", "A class that is always stored on the stack"],
+    "options": [
+      "A class that can only hold value types like Int",
+      "A wrapper class that is eliminated at compile time to avoid allocation overhead",
+      "A class that stores values in a database",
+      "A class that is always stored on the stack"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "Value classes wrap a single value and are erased at compile time — the wrapper object is eliminated, using the underlying type directly. Useful for type-safe wrappers without allocation cost."
+    "explanation": "Value classes wrap a single value and are erased at compile time \u2014 the wrapper object is eliminated, using the underlying type directly. Useful for type-safe wrappers without allocation cost."
   },
   {
-    "q": "What is the problem with using `Boolean` for UI state?\n```kotlin\ndata class UiState(\n    val isLoading: Boolean = false,\n    val isError: Boolean = false,\n    val data: List<Item>? = null\n)\n```",
+    "q": "What is the problem with using `Boolean` for UI state?",
     "type": "open",
-    "answer": "Multiple booleans create impossible state combinations — isLoading=true AND isError=true simultaneously. This leads to bugs where the UI shows conflicting states. Use a sealed class instead: sealed class UiState { object Loading, data class Success(data), data class Error(msg) }. This makes invalid states unrepresentable.",
+    "answer": "Multiple booleans create impossible state combinations \u2014 isLoading=true AND isError=true simultaneously. This leads to bugs where the UI shows conflicting states. Use a sealed class instead: sealed class UiState { object Loading, data class Success(data), data class Error(msg) }. This makes invalid states unrepresentable.",
     "difficulty": "medium",
     "topic": "Architecture",
     "code": "data class UiState(\n    val isLoading: Boolean = false,\n    val isError: Boolean = false,\n    val data: List<Item>? = null\n)"
@@ -582,16 +867,26 @@
   {
     "q": "What is `Turbine` and how does it help test Flows?",
     "type": "mcq",
-    "options": ["A UI testing framework", "A library for testing Flow emissions with awaitItem(), awaitComplete(), and awaitError()", "A performance profiling tool", "A Flow operator for buffering"],
+    "options": [
+      "A UI testing framework",
+      "A library for testing Flow emissions with awaitItem(), awaitComplete(), and awaitError()",
+      "A performance profiling tool",
+      "A Flow operator for buffering"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Testing",
     "explanation": "Turbine is a testing library by Cash App that makes Flow testing deterministic with awaitItem(), awaitComplete(), awaitError(), and timeout control."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val s = \"Kotlin\"\n    println(s.let { it.length }.also { println(it) })\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["Kotlin\\n6", "6\\n6", "6\\nKotlin", "Compilation error"],
+    "options": [
+      "Kotlin\\n6",
+      "6\\n6",
+      "6\\nKotlin",
+      "Compilation error"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
@@ -601,7 +896,12 @@
   {
     "q": "What does `inline` do for higher-order functions in Kotlin?",
     "type": "mcq",
-    "options": ["Makes the function run faster by caching", "Inlines the function body and lambda at the call site, avoiding lambda object allocation", "Makes the function private", "Enables the function to be called from Java"],
+    "options": [
+      "Makes the function run faster by caching",
+      "Inlines the function body and lambda at the call site, avoiding lambda object allocation",
+      "Makes the function private",
+      "Enables the function to be called from Java"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
@@ -610,7 +910,12 @@
   {
     "q": "What is the difference between `reified` and regular type parameters?",
     "type": "mcq",
-    "options": ["reified types are available at runtime inside inline functions; regular generic types are erased", "reified makes types immutable", "Regular types are faster", "reified is only for Compose"],
+    "options": [
+      "reified types are available at runtime inside inline functions; regular generic types are erased",
+      "reified makes types immutable",
+      "Regular types are faster",
+      "reified is only for Compose"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin",
@@ -619,7 +924,12 @@
   {
     "q": "What does `@InstallIn(SingletonComponent::class)` mean in Hilt?",
     "type": "mcq",
-    "options": ["The module is installed in every component", "The module's bindings live for the entire application lifetime", "The module creates a new singleton each time", "The module is only for testing"],
+    "options": [
+      "The module is installed in every component",
+      "The module's bindings live for the entire application lifetime",
+      "The module creates a new singleton each time",
+      "The module is only for testing"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Architecture",
@@ -628,25 +938,40 @@
   {
     "q": "What is the purpose of `TestDispatcher` in coroutine testing?",
     "type": "mcq",
-    "options": ["To run tests on a real IO thread", "To control virtual time and execute coroutines deterministically in tests", "To dispatch test results", "To test UI on the main thread"],
+    "options": [
+      "To run tests on a real IO thread",
+      "To control virtual time and execute coroutines deterministically in tests",
+      "To dispatch test results",
+      "To test UI on the main thread"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Testing",
-    "explanation": "TestDispatcher controls virtual time — you can advance time, run pending tasks, and make coroutine execution deterministic without waiting for real delays."
+    "explanation": "TestDispatcher controls virtual time \u2014 you can advance time, run pending tasks, and make coroutine execution deterministic without waiting for real delays."
   },
   {
     "q": "What is the difference between `StandardTestDispatcher` and `UnconfinedTestDispatcher`?",
     "type": "mcq",
-    "options": ["StandardTestDispatcher requires explicit time advancement; UnconfinedTestDispatcher executes coroutines eagerly", "They are identical", "StandardTestDispatcher is for UI tests only", "UnconfinedTestDispatcher is deprecated"],
+    "options": [
+      "StandardTestDispatcher requires explicit time advancement; UnconfinedTestDispatcher executes coroutines eagerly",
+      "They are identical",
+      "StandardTestDispatcher is for UI tests only",
+      "UnconfinedTestDispatcher is deprecated"
+    ],
     "answer": 0,
     "difficulty": "hard",
     "topic": "Testing",
-    "explanation": "StandardTestDispatcher queues coroutines — you advance time manually. UnconfinedTestDispatcher runs coroutines eagerly until the first suspension point."
+    "explanation": "StandardTestDispatcher queues coroutines \u2014 you advance time manually. UnconfinedTestDispatcher runs coroutines eagerly until the first suspension point."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val list = mutableListOf(1, 2, 3)\n    val ref = list\n    ref.add(4)\n    println(list)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["[1, 2, 3]", "[1, 2, 3, 4]", "[4]", "UnsupportedOperationException"],
+    "options": [
+      "[1, 2, 3]",
+      "[1, 2, 3, 4]",
+      "[4]",
+      "UnsupportedOperationException"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -656,7 +981,12 @@
   {
     "q": "What is Molecule in the Compose ecosystem?",
     "type": "mcq",
-    "options": ["A UI component library", "A library that uses the Compose runtime to produce Flow-based state without rendering UI", "A testing framework for Compose", "An animation library"],
+    "options": [
+      "A UI component library",
+      "A library that uses the Compose runtime to produce Flow-based state without rendering UI",
+      "A testing framework for Compose",
+      "An animation library"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
@@ -665,25 +995,40 @@
   {
     "q": "What is the difference between `onPause` and `onStop` in the Activity lifecycle?",
     "type": "mcq",
-    "options": ["onPause means the Activity is not visible; onStop means it's destroyed", "onPause means partially visible (may still show); onStop means completely hidden", "They are called at the same time", "onStop is called before onPause"],
+    "options": [
+      "onPause means the Activity is not visible; onStop means it's destroyed",
+      "onPause means partially visible (may still show); onStop means completely hidden",
+      "They are called at the same time",
+      "onStop is called before onPause"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "onPause — Activity may still be partially visible (multi-window, dialog). onStop — Activity is completely hidden. Release heavy resources in onStop, lightweight ones in onPause."
+    "explanation": "onPause \u2014 Activity may still be partially visible (multi-window, dialog). onStop \u2014 Activity is completely hidden. Release heavy resources in onStop, lightweight ones in onPause."
   },
   {
     "q": "What is the dependency rule in Clean Architecture?",
     "type": "mcq",
-    "options": ["All dependencies must use Hilt", "Inner layers cannot reference outer layers — dependencies point inward only", "Every class must have at most 3 dependencies", "Dependencies must be declared in a separate module"],
+    "options": [
+      "All dependencies must use Hilt",
+      "Inner layers cannot reference outer layers \u2014 dependencies point inward only",
+      "Every class must have at most 3 dependencies",
+      "Dependencies must be declared in a separate module"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
     "explanation": "The dependency rule states that inner layers (domain) cannot import anything from outer layers (data, presentation). If domain needs data, it defines an interface that the data layer implements."
   },
   {
-    "q": "What will this Compose code do?\n```kotlin\n@Composable\nfun Counter() {\n    var count = 0\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}\n```",
+    "q": "What will this Compose code do?",
     "type": "mcq",
-    "options": ["Shows a working counter that increments", "Always shows 'Count: 0' — count resets on every recomposition", "Crashes at runtime", "Shows 'Count: 1' and stops updating"],
+    "options": [
+      "Shows a working counter that increments",
+      "Always shows 'Count: 0' \u2014 count resets on every recomposition",
+      "Crashes at runtime",
+      "Shows 'Count: 1' and stops updating"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
@@ -691,9 +1036,14 @@
     "explanation": "Without remember, count is a local variable that resets to 0 on every recomposition. The click increments a local copy but doesn't trigger recomposition with mutableStateOf."
   },
   {
-    "q": "What is the correct way to fix this counter?\n```kotlin\n@Composable\nfun Counter() {\n    var count = 0\n    Button(onClick = { count++ }) {\n        Text(\"Count: $count\")\n    }\n}\n```",
+    "q": "What is the correct way to fix this counter?",
     "type": "mcq",
-    "options": ["Use var count = remember { 0 }", "Use var count by remember { mutableStateOf(0) }", "Use val count = mutableStateOf(0)", "Use var count = rememberSaveable { 0 }"],
+    "options": [
+      "Use var count = remember { 0 }",
+      "Use var count by remember { mutableStateOf(0) }",
+      "Use val count = mutableStateOf(0)",
+      "Use var count = rememberSaveable { 0 }"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
@@ -710,7 +1060,12 @@
   {
     "q": "What is the benefit of KSP over KAPT?",
     "type": "mcq",
-    "options": ["KSP supports Java annotations", "KSP is up to 2x faster because it doesn't create Java stubs", "KSP works on all Kotlin targets including JS and Native", "All of the above"],
+    "options": [
+      "KSP supports Java annotations",
+      "KSP is up to 2x faster because it doesn't create Java stubs",
+      "KSP works on all Kotlin targets including JS and Native",
+      "All of the above"
+    ],
     "answer": 3,
     "difficulty": "medium",
     "topic": "Gradle",
@@ -719,16 +1074,26 @@
   {
     "q": "What are Gradle's three build phases?",
     "type": "mcq",
-    "options": ["Compile, Link, Run", "Initialization, Configuration, Execution", "Setup, Build, Deploy", "Parse, Resolve, Execute"],
+    "options": [
+      "Compile, Link, Run",
+      "Initialization, Configuration, Execution",
+      "Setup, Build, Deploy",
+      "Parse, Resolve, Execute"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Gradle",
     "explanation": "Initialization determines which projects participate. Configuration evaluates build scripts and creates the task graph. Execution runs the selected tasks."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val x: Int = 128\n    val y: Int = 128\n    val a: Int? = 128\n    val b: Int? = 128\n    println(x == y)\n    println(a === b)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["true, true", "true, false", "false, true", "false, false"],
+    "options": [
+      "true, true",
+      "true, false",
+      "false, true",
+      "false, false"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin",
@@ -745,16 +1110,26 @@
   {
     "q": "What is `flowOn` used for?",
     "type": "mcq",
-    "options": ["To change the dispatcher of the Flow collector", "To change the upstream context of the Flow (emissions happen on specified dispatcher)", "To pause a Flow", "To merge multiple Flows"],
+    "options": [
+      "To change the dispatcher of the Flow collector",
+      "To change the upstream context of the Flow (emissions happen on specified dispatcher)",
+      "To pause a Flow",
+      "To merge multiple Flows"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "flowOn changes the context of the upstream Flow — emissions and transformations above flowOn run on the specified dispatcher. It doesn't affect the collector's context."
+    "explanation": "flowOn changes the context of the upstream Flow \u2014 emissions and transformations above flowOn run on the specified dispatcher. It doesn't affect the collector's context."
   },
   {
     "q": "What is a `Channel` in Kotlin coroutines?",
     "type": "mcq",
-    "options": ["A replacement for LiveData", "A hot stream for coroutine-to-coroutine communication with backpressure", "A cold stream like Flow", "A dispatcher for channels"],
+    "options": [
+      "A replacement for LiveData",
+      "A hot stream for coroutine-to-coroutine communication with backpressure",
+      "A cold stream like Flow",
+      "A dispatcher for channels"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -763,23 +1138,33 @@
   {
     "q": "What are extension functions in Kotlin?",
     "type": "mcq",
-    "options": ["Functions that extend the compilation time", "Functions that add new behavior to existing classes without modifying them", "Functions that run in a separate process", "Functions that are only available in extensions libraries"],
+    "options": [
+      "Functions that extend the compilation time",
+      "Functions that add new behavior to existing classes without modifying them",
+      "Functions that run in a separate process",
+      "Functions that are only available in extensions libraries"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "Extension functions let you add new functions to existing classes without inheritance or modification. They're resolved statically — compiled to static methods with the receiver as the first parameter."
+    "explanation": "Extension functions let you add new functions to existing classes without inheritance or modification. They're resolved statically \u2014 compiled to static methods with the receiver as the first parameter."
   },
   {
     "q": "What is the Liskov Substitution Principle?",
     "type": "mcq",
-    "options": ["All classes must have a substitute", "A subclass should be usable wherever its parent class is expected without breaking behavior", "Substitution of variables is mandatory in Kotlin", "Every class must implement at least one interface"],
+    "options": [
+      "All classes must have a substitute",
+      "A subclass should be usable wherever its parent class is expected without breaking behavior",
+      "Substitution of variables is mandatory in Kotlin",
+      "Every class must implement at least one interface"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
     "explanation": "LSP states that objects of a superclass should be replaceable with objects of its subclasses without altering the correctness of the program."
   },
   {
-    "q": "What is wrong with this ViewModel?\n```kotlin\nclass UserViewModel(\n    private val context: Activity\n) : ViewModel() {\n    fun loadUser() { /* uses context */ }\n}\n```",
+    "q": "What is wrong with this ViewModel?",
     "type": "open",
     "answer": "The ViewModel holds a reference to an Activity, which is a memory leak. ViewModels outlive Activities during configuration changes. The destroyed Activity can't be garbage collected because the ViewModel still references it. Use Application context if needed, or inject dependencies that don't hold Activity references.",
     "difficulty": "easy",
@@ -789,7 +1174,12 @@
   {
     "q": "What is `SavedStateHandle` in Android?",
     "type": "mcq",
-    "options": ["A replacement for ViewModel", "A key-value map that survives both configuration changes AND process death", "A database for saving state", "A Compose-specific state mechanism"],
+    "options": [
+      "A replacement for ViewModel",
+      "A key-value map that survives both configuration changes AND process death",
+      "A database for saving state",
+      "A Compose-specific state mechanism"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Android Core",
@@ -798,7 +1188,12 @@
   {
     "q": "How many threads does `Dispatchers.IO` use by default?",
     "type": "mcq",
-    "options": ["1", "Number of CPU cores", "64", "Unlimited"],
+    "options": [
+      "1",
+      "Number of CPU cores",
+      "64",
+      "Unlimited"
+    ],
     "answer": 2,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
@@ -807,7 +1202,12 @@
   {
     "q": "What is `limitedParallelism()` used for?",
     "type": "mcq",
-    "options": ["To limit the number of coroutines in a scope", "To create a sub-dispatcher with a maximum number of concurrent coroutines", "To limit memory usage", "To restrict coroutines to a single thread"],
+    "options": [
+      "To limit the number of coroutines in a scope",
+      "To create a sub-dispatcher with a maximum number of concurrent coroutines",
+      "To limit memory usage",
+      "To restrict coroutines to a single thread"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin Coroutines",
@@ -816,7 +1216,12 @@
   {
     "q": "What is `Modifier.semantics` used for in Compose?",
     "type": "mcq",
-    "options": ["For code analysis", "To provide accessibility information and enable UI testing with semantic matchers", "For styling purposes", "To define layout constraints"],
+    "options": [
+      "For code analysis",
+      "To provide accessibility information and enable UI testing with semantic matchers",
+      "For styling purposes",
+      "To define layout constraints"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
@@ -825,7 +1230,12 @@
   {
     "q": "What does `crossinline` do in Kotlin?",
     "type": "mcq",
-    "options": ["Allows the lambda to cross module boundaries", "Prevents non-local returns from the lambda in an inline function", "Makes the lambda run on a different thread", "Enables cross-platform compilation"],
+    "options": [
+      "Allows the lambda to cross module boundaries",
+      "Prevents non-local returns from the lambda in an inline function",
+      "Makes the lambda run on a different thread",
+      "Enables cross-platform compilation"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin",
@@ -834,25 +1244,40 @@
   {
     "q": "What is the difference between `object` and `companion object` in Kotlin?",
     "type": "mcq",
-    "options": ["object creates a singleton; companion object creates a singleton tied to a class (like Java static members)", "They are identical", "companion object can have multiple instances", "object is deprecated in favor of companion object"],
+    "options": [
+      "object creates a singleton; companion object creates a singleton tied to a class (like Java static members)",
+      "They are identical",
+      "companion object can have multiple instances",
+      "object is deprecated in favor of companion object"
+    ],
     "answer": 0,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "object declares a singleton. companion object is a singleton tied to a class — it can access private members and serves as a container for factory methods and constants."
+    "explanation": "object declares a singleton. companion object is a singleton tied to a class \u2014 it can access private members and serves as a container for factory methods and constants."
   },
   {
     "q": "What is Network Security Config in Android?",
     "type": "mcq",
-    "options": ["A Gradle plugin for network security", "An XML configuration that defines network security policies like certificate pinning and cleartext traffic", "A runtime API for encrypting network calls", "A Firebase feature for secure networking"],
+    "options": [
+      "A Gradle plugin for network security",
+      "An XML configuration that defines network security policies like certificate pinning and cleartext traffic",
+      "A runtime API for encrypting network calls",
+      "A Firebase feature for secure networking"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Security",
     "explanation": "Network Security Config is an XML file that lets you configure certificate pinning, trusted CAs, cleartext traffic policies, and debug overrides without changing code."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val list = listOf(1, 2, 3, 4, 5)\n    val result = list.takeWhile { it < 4 }\n    println(result)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["[1, 2, 3, 4]", "[1, 2, 3]", "[4, 5]", "[1, 2, 3, 5]"],
+    "options": [
+      "[1, 2, 3, 4]",
+      "[1, 2, 3]",
+      "[4, 5]",
+      "[1, 2, 3, 5]"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -869,7 +1294,12 @@
   {
     "q": "What does `Dispatchers.Default` use for its thread pool?",
     "type": "mcq",
-    "options": ["A single thread", "A pool sized to the number of CPU cores", "64 threads like Dispatchers.IO", "An unlimited thread pool"],
+    "options": [
+      "A single thread",
+      "A pool sized to the number of CPU cores",
+      "64 threads like Dispatchers.IO",
+      "An unlimited thread pool"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
@@ -885,7 +1315,12 @@
   {
     "q": "What is the difference between `map` and `flatMap` in Kotlin collections?",
     "type": "mcq",
-    "options": ["map transforms each element; flatMap transforms and flattens the result", "flatMap is for nullable types only", "map returns a Set; flatMap returns a List", "They produce identical output"],
+    "options": [
+      "map transforms each element; flatMap transforms and flattens the result",
+      "flatMap is for nullable types only",
+      "map returns a Set; flatMap returns a List",
+      "They produce identical output"
+    ],
     "answer": 0,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -894,16 +1329,26 @@
   {
     "q": "What is `EncryptedSharedPreferences`?",
     "type": "mcq",
-    "options": ["A faster version of SharedPreferences", "A SharedPreferences wrapper that encrypts both keys and values using AES-256", "A cloud-backed preference storage", "A testing utility for SharedPreferences"],
+    "options": [
+      "A faster version of SharedPreferences",
+      "A SharedPreferences wrapper that encrypts both keys and values using AES-256",
+      "A cloud-backed preference storage",
+      "A testing utility for SharedPreferences"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Security",
     "explanation": "EncryptedSharedPreferences encrypts keys with AES-256-SIV and values with AES-256-GCM, using a master key stored in Android Keystore."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun foo(): Int {\n    try {\n        return 1\n    } finally {\n        return 2\n    }\n}\nprintln(foo())\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["1", "2", "Compilation error", "Exception"],
+    "options": [
+      "1",
+      "2",
+      "Compilation error",
+      "Exception"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin",
@@ -913,32 +1358,47 @@
   {
     "q": "What is the difference between `collectAsState()` and `collectAsStateWithLifecycle()` in Compose?",
     "type": "mcq",
-    "options": ["collectAsStateWithLifecycle stops collecting when the app goes to background; collectAsState doesn't", "They are identical", "collectAsState is for StateFlow; collectAsStateWithLifecycle is for SharedFlow", "collectAsStateWithLifecycle is deprecated"],
+    "options": [
+      "collectAsStateWithLifecycle stops collecting when the app goes to background; collectAsState doesn't",
+      "They are identical",
+      "collectAsState is for StateFlow; collectAsStateWithLifecycle is for SharedFlow",
+      "collectAsStateWithLifecycle is deprecated"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
-    "explanation": "collectAsStateWithLifecycle respects the lifecycle — it stops collecting when the lifecycle is below the minimum state (STARTED by default). collectAsState keeps collecting even in background."
+    "explanation": "collectAsStateWithLifecycle respects the lifecycle \u2014 it stops collecting when the lifecycle is below the minimum state (STARTED by default). collectAsState keeps collecting even in background."
   },
   {
     "q": "What is variance in Kotlin generics? Explain `in` and `out`.",
     "type": "open",
-    "answer": "`out` is covariance — the type parameter is only produced (returned), never consumed. Producer<out T> means Producer<Dog> is a subtype of Producer<Animal>. `in` is contravariance — the type parameter is only consumed (accepted as parameter), never produced. Consumer<in T> means Consumer<Animal> is a subtype of Consumer<Dog>. Remember: 'out' = produce, 'in' = consume.",
+    "answer": "`out` is covariance \u2014 the type parameter is only produced (returned), never consumed. Producer<out T> means Producer<Dog> is a subtype of Producer<Animal>. `in` is contravariance \u2014 the type parameter is only consumed (accepted as parameter), never produced. Consumer<in T> means Consumer<Animal> is a subtype of Consumer<Dog>. Remember: 'out' = produce, 'in' = consume.",
     "difficulty": "hard",
     "topic": "Kotlin"
   },
   {
     "q": "What is the purpose of `Baseline Profiles` in Android?",
     "type": "mcq",
-    "options": ["To set minimum SDK requirements", "To provide AOT compilation hints that speed up app startup and reduce jank", "To profile battery usage", "To define baseline test coverage"],
+    "options": [
+      "To set minimum SDK requirements",
+      "To provide AOT compilation hints that speed up app startup and reduce jank",
+      "To profile battery usage",
+      "To define baseline test coverage"
+    ],
     "answer": 1,
     "difficulty": "medium",
     "topic": "Performance",
     "explanation": "Baseline Profiles tell the ART runtime which code paths are critical. ART ahead-of-time compiles those methods at install time, avoiding JIT compilation at runtime."
   },
   {
-    "q": "What is the output?\n```kotlin\nfun main() {\n    val list = listOf(\"a\", \"b\", \"c\")\n    val result = list.mapIndexed { i, s -> \"$i:$s\" }\n    println(result)\n}\n```",
+    "q": "What is the output?",
     "type": "mcq",
-    "options": ["[a, b, c]", "[0:a, 1:b, 2:c]", "[1:a, 2:b, 3:c]", "[a:0, b:1, c:2]"],
+    "options": [
+      "[a, b, c]",
+      "[0:a, 1:b, 2:c]",
+      "[1:a, 2:b, 3:c]",
+      "[a:0, b:1, c:2]"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
@@ -948,16 +1408,26 @@
   {
     "q": "What is the difference between Sequences and Lists in Kotlin?",
     "type": "mcq",
-    "options": ["Sequences process elements lazily (one at a time); Lists create intermediate collections eagerly", "Lists are lazy; Sequences are eager", "Sequences are always faster", "They behave identically"],
+    "options": [
+      "Sequences process elements lazily (one at a time); Lists create intermediate collections eagerly",
+      "Lists are lazy; Sequences are eager",
+      "Sequences are always faster",
+      "They behave identically"
+    ],
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "Lists evaluate each operation eagerly, creating intermediate collections. Sequences evaluate lazily — each element passes through the entire chain before the next element is processed."
+    "explanation": "Lists evaluate each operation eagerly, creating intermediate collections. Sequences evaluate lazily \u2014 each element passes through the entire chain before the next element is processed."
   },
   {
     "q": "What does `@Stable` annotation do in Compose?",
     "type": "mcq",
-    "options": ["Makes a composable function stable", "Tells the Compose compiler that a type's public properties won't change, enabling recomposition skipping", "Prevents crashes in Compose", "Makes the class thread-safe"],
+    "options": [
+      "Makes a composable function stable",
+      "Tells the Compose compiler that a type's public properties won't change, enabling recomposition skipping",
+      "Prevents crashes in Compose",
+      "Makes the class thread-safe"
+    ],
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
@@ -966,19 +1436,29 @@
   {
     "q": "What is WorkManager used for?",
     "type": "mcq",
-    "options": ["To manage UI workers on the main thread", "For guaranteed, deferrable background work that runs even after app kill or device reboot", "For real-time network requests", "To manage foreground services"],
+    "options": [
+      "To manage UI workers on the main thread",
+      "For guaranteed, deferrable background work that runs even after app kill or device reboot",
+      "For real-time network requests",
+      "To manage foreground services"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "WorkManager handles background work that needs guaranteed execution — syncing data, uploading logs, processing images. Work survives app kill and device reboot."
+    "explanation": "WorkManager handles background work that needs guaranteed execution \u2014 syncing data, uploading logs, processing images. Work survives app kill and device reboot."
   },
   {
     "q": "What is R8 in Android?",
     "type": "mcq",
-    "options": ["A testing framework", "A code shrinker, optimizer, and obfuscator that replaces ProGuard", "A build tool for Gradle", "A layout renderer"],
+    "options": [
+      "A testing framework",
+      "A code shrinker, optimizer, and obfuscator that replaces ProGuard",
+      "A build tool for Gradle",
+      "A layout renderer"
+    ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Performance",
-    "explanation": "R8 is Google's replacement for ProGuard. It shrinks unused code, optimizes bytecode, and obfuscates class/method names — all in one step during the build."
+    "explanation": "R8 is Google's replacement for ProGuard. It shrinks unused code, optimizes bytecode, and obfuscates class/method names \u2014 all in one step during the build."
   }
 ]
