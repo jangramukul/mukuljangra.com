@@ -25,6 +25,8 @@
         --link-color: #60a5fa;
         --link-color-hover: #93c5fd;
         --course-accent: {{ page.color | default: '#a78bfa' }};
+        --course-accent-33: {{ page.color | default: '#a78bfa' }}33;
+        --course-accent-11: {{ page.color | default: '#a78bfa' }}11;
       }
 
       body, .right-column, .content, .content.post {
@@ -108,9 +110,15 @@
       }
 
       .course-icon {
-        font-size: 48px;
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
         margin-bottom: 16px;
-        display: block;
+        background: linear-gradient(135deg, var(--course-accent-33), var(--course-accent-11));
       }
 
       .course-title {
@@ -484,7 +492,10 @@
         }
 
         .course-icon {
-          font-size: 36px;
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+          font-size: 28px;
         }
 
         .learn-grid {
@@ -535,9 +546,9 @@
         <!-- Course Hero -->
         <div class="course-hero">
           {% if page.icon_svg %}
-          <span class="course-icon" style="font-size: 48px; display: flex;">{{ page.icon_svg }}</span>
+          <div class="course-icon">{{ page.icon_svg }}</div>
           {% else %}
-          <span class="course-icon">{{ page.icon }}</span>
+          <div class="course-icon">{{ page.icon }}</div>
           {% endif %}
           <h1 class="course-title">{{ page.title }}</h1>
           <p class="course-description">{{ page.description }}</p>
