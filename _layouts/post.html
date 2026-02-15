@@ -403,6 +403,50 @@
           width: 100%;
         }
       }
+
+      .post-navigation {
+        margin-top: 80px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        width: 100%;
+      }
+
+      .nav-links {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .prev-post {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        height: 36px;
+        background-color: rgba(55, 65, 81, 0.3);
+        border-radius: 9999px;
+        text-decoration: none;
+        color: #d1d5db;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(75, 85, 99, 0.4);
+        padding: 0 16px;
+        font-family: 'Inter', -apple-system, sans-serif;
+        gap: 6px;
+        font-weight: 500;
+        margin-right: auto;
+      }
+
+      .prev-post:hover {
+        background-color: rgba(96, 165, 250, 0.15);
+        color: #ffffff;
+        border-color: rgba(96, 165, 250, 0.3);
+        text-decoration: none;
+      }
+
+      @media (max-width: 600px) {
+        .post-navigation { margin-top: 60px; }
+        .prev-post { height: 32px; padding: 0 12px; font-size: 12px; }
+      }
     </style>
   </head>
   <body>
@@ -444,7 +488,15 @@
 
         {{ content }}
         
-        {% include post-navigation.html %}
+        <!-- Back button -->
+        <div class="post-navigation">
+          <div class="nav-links">
+            <a href="#" class="prev-post" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
+              <span class="nav-arrow">←</span>
+              <span class="nav-text">Back</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
