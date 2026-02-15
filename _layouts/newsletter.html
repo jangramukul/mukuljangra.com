@@ -427,7 +427,7 @@
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
         <div class="back-navigation">
-          <a href="/" id="back-to-home" class="back-button">
+          <a href="#" id="back-to-home" class="back-button" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
             <span class="nav-arrow">←</span>
             <span class="nav-text">Back</span>
           </a>

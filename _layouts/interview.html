@@ -427,7 +427,7 @@
     <div class="right-column">
       <div class="content post" style="background-color: transparent !important;">
         <div class="back-navigation">
-          <a href="/" id="back-to-home" class="back-button">
+          <a href="#" id="back-to-home" class="back-button" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
             <span class="nav-arrow">←</span>
             <span class="nav-text">Back</span>
           </a>
@@ -484,12 +484,6 @@
           el.style.backgroundColor = c.bg;
           el.style.borderColor = c.border;
           el.style.color = c.color;
-        });
-        
-        // Handle back button click to preserve scroll position
-        document.getElementById('back-to-home').addEventListener('click', function(e) {
-          // Save current scroll position before navigating
-          localStorage.setItem('scrollPosition', window.scrollY);
         });
       });
     </script>
