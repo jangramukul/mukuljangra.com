@@ -147,7 +147,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(255, 215, 0, 0.6) 330deg, rgba(255, 255, 255, 0.8) 345deg, rgba(255, 215, 0, 0.6) 360deg);
+        background: conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(255, 215, 0, 0.3) 240deg, rgba(255, 215, 0, 0.6) 270deg, rgba(255, 255, 255, 0.9) 300deg, rgba(255, 215, 0, 0.6) 330deg, rgba(255, 215, 0, 0.3) 345deg, transparent 360deg);
         animation: border-spin 3s linear infinite;
         z-index: -1;
       }
@@ -211,7 +211,7 @@
         border-bottom-color: #60a5fa;
       }
 
-      .section-tab.active[data-tab="newsletter"] {
+      .section-tab.active[data-tab="weekly"] {
         color: #FFD700;
         border-bottom-color: #FFD700;
       }
@@ -231,7 +231,7 @@
         color: #60a5fa;
       }
 
-      .section-tab.active[data-tab="newsletter"] .tab-count {
+      .section-tab.active[data-tab="weekly"] .tab-count {
         background-color: rgba(255, 215, 0, 0.15);
         color: #FFD700;
       }
@@ -424,14 +424,14 @@
       }
 
       /* Newsletter chips & card */
-      .newsletter-chips {
+      .nl-issue-chips {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 24px;
       }
 
-      .newsletter-chip {
+      .nl-issue-chip {
         padding: 5px 15px;
         border-radius: 9999px;
         font-size: 0.85em;
@@ -445,13 +445,13 @@
         user-select: none;
       }
 
-      .newsletter-chip:hover {
+      .nl-issue-chip:hover {
         background-color: rgba(212, 160, 23, 0.25);
         border-color: rgba(255, 200, 50, 0.5);
         color: #FFD700;
       }
 
-      .newsletter-chip.active {
+      .nl-issue-chip.active {
         background-color: rgba(212, 160, 23, 0.25);
         border-color: rgba(255, 215, 0, 0.6);
         border-width: 2px;
@@ -480,39 +480,27 @@
         border-color: rgba(255, 255, 255, 0.3);
       }
 
-      .newsletter-card {
+      .nl-issue-content {
         background-color: rgba(17, 24, 39, 0.6);
         border: 1px solid rgba(255, 215, 0, 0.4);
         border-radius: 16px;
         padding: 32px;
-        height: 0;
-        overflow: hidden;
-        opacity: 0;
-        padding: 0;
-        margin: 0;
-        border: none;
-        visibility: hidden;
-        position: absolute;
+        display: none;
+        overflow: visible;
+        max-height: none;
         width: 100%;
         box-sizing: border-box;
       }
 
-      .newsletter-card.active {
-        height: auto;
-        overflow: visible;
-        opacity: 1;
-        padding: 32px;
-        margin: 0;
-        border: 1px solid rgba(255, 215, 0, 0.4);
-        visibility: visible;
-        position: relative;
+      .nl-issue-content.active {
+        display: block;
       }
 
-      .newsletter-card-header {
+      .nl-issue-header {
         margin-bottom: 16px;
       }
 
-      .newsletter-card-number {
+      .nl-issue-number {
         font-family: 'Inter', sans-serif;
         font-size: 2em;
         font-weight: 700;
@@ -523,7 +511,7 @@
         display: inline;
       }
 
-      .newsletter-card-label {
+      .nl-issue-label {
         font-family: 'Inter', sans-serif;
         font-size: 1.3em;
         font-weight: 500;
@@ -531,14 +519,14 @@
         margin-left: 8px;
       }
 
-      .newsletter-card-date {
+      .nl-issue-date {
         font-family: 'Inter', sans-serif;
         font-size: 0.9em;
         color: #6b7280;
         margin-bottom: 12px;
       }
 
-      .newsletter-card-divider {
+      .nl-issue-divider {
         width: 80px;
         height: 3px;
         background: linear-gradient(135deg, #7F52FF, #E44857, #0095D5);
@@ -546,14 +534,14 @@
         margin-bottom: 24px;
       }
 
-      .newsletter-card-body {
+      .nl-issue-body {
         color: #d1d5db;
         font-size: 16px;
         line-height: 1.8;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
 
-      .newsletter-card-body h2 {
+      .nl-issue-body h2 {
         font-family: 'Inter', sans-serif;
         font-size: 1.3em;
         color: #ffffff;
@@ -564,7 +552,7 @@
         padding: 0;
       }
 
-      .newsletter-card-body h3 {
+      .nl-issue-body h3 {
         font-family: 'Inter', sans-serif;
         font-size: 1.15em;
         color: #ffffff;
@@ -573,22 +561,22 @@
         font-weight: 600;
       }
 
-      .newsletter-card-body p {
+      .nl-issue-body p {
         margin-bottom: 1.2em;
         font-size: 16px;
       }
 
-      .newsletter-card-body ul, .newsletter-card-body ol {
+      .nl-issue-body ul, .nl-issue-body ol {
         padding-left: 1.5em;
         margin-bottom: 1em;
       }
 
-      .newsletter-card-body li {
+      .nl-issue-body li {
         margin-bottom: 0.5em;
         font-size: 16px;
       }
 
-      .newsletter-card-body a {
+      .nl-issue-body a {
         color: #60a5fa;
         text-decoration: underline;
         text-underline-offset: 2px;
@@ -597,17 +585,17 @@
         z-index: 1;
       }
 
-      .newsletter-card-body a:hover {
+      .nl-issue-body a:hover {
         color: #93c5fd;
       }
 
-      .newsletter-card-body hr {
+      .nl-issue-body hr {
         border: none;
         border-top: 1px solid rgba(75, 85, 99, 0.4);
         margin: 1.5em 0;
       }
 
-      .newsletter-card-body blockquote {
+      .nl-issue-body blockquote {
         border-left: 3px solid rgba(96, 165, 250, 0.4);
         padding: 8px 16px;
         color: #9ca3af;
@@ -616,7 +604,7 @@
         margin: 1em 0;
       }
 
-      .newsletter-card-body code {
+      .nl-issue-body code {
         background-color: #1e293b;
         color: #e5e7eb;
         padding: 2px 6px;
@@ -624,7 +612,7 @@
         font-size: 0.9em;
       }
 
-      .newsletter-card-body pre {
+      .nl-issue-body pre {
         background-color: #1e293b;
         padding: 16px;
         border-radius: 12px;
@@ -633,18 +621,18 @@
         margin: 0;
       }
 
-      .newsletter-card-body pre code {
+      .nl-issue-body pre code {
         padding: 0;
         background: transparent;
       }
 
-      .newsletter-card-body .highlight {
+      .nl-issue-body .highlight {
         border-radius: 12px;
         overflow: hidden;
         margin-bottom: 16px;
       }
 
-      .newsletter-card-body .highlight pre {
+      .nl-issue-body .highlight pre {
         margin: 0;
         border-radius: 12px;
       }
@@ -801,19 +789,19 @@
           font-size: 0.88em;
         }
 
-        .newsletter-card {
+        .nl-issue-content {
           padding: 20px;
         }
 
-        .newsletter-card-number {
+        .nl-issue-number {
           font-size: 1.3em;
         }
 
-        .newsletter-card-label {
+        .nl-issue-label {
           font-size: 1.1em;
         }
 
-        .newsletter-chip {
+        .nl-issue-chip {
           padding: 8px 14px;
           font-size: 0.82em;
         }
@@ -860,7 +848,7 @@
         <!-- Tabs -->
         <div class="section-tabs">
           <div class="section-tab active" data-tab="blog">Blog <span class="tab-count">{{ site.articles | size | minus: 1 }}</span></div>
-          <div class="section-tab" data-tab="newsletter">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
+          <div class="section-tab" data-tab="weekly">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
           <div class="section-tab" data-tab="tools">Tools I Use</div>
         </div>
 
@@ -888,7 +876,7 @@
           {% unless post.tags contains "Book" %}
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon">📝</div>
+              <div class="list-post-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
               <div class="list-post-content">
                 <h2>{{ post.title }}</h2>
                 {% if post.tags.size > 0 %}
@@ -909,26 +897,26 @@
         </div>
 
         <!-- Newsletter tab -->
-        <div class="tab-content" id="tab-newsletter">
+        <div class="tab-content" id="tab-weekly">
           {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
           {% if newsletters.size > 0 %}
-            <div class="newsletter-chips">
+            <div class="nl-issue-chips">
               {% for newsletter in newsletters %}
-              <div class="newsletter-chip{% if forloop.first %} active{% endif %}" data-newsletter="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
+              <div class="nl-issue-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
               {% endfor %}
               <a href="/newsletter.xml" class="rss-chip" target="_blank" rel="noopener" title="Subscribe via RSS">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>RSS
               </a>
             </div>
             {% for newsletter in newsletters %}
-            <div class="newsletter-card{% if forloop.first %} active{% endif %}" id="newsletter-{{ forloop.index0 }}">
-              <div class="newsletter-card-header">
-                <span class="newsletter-card-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
-                <span class="newsletter-card-label">Weekly</span>
+            <div class="nl-issue-content{% if forloop.first %} active{% endif %}" id="issue-{{ forloop.index0 }}">
+              <div class="nl-issue-header">
+                <span class="nl-issue-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
+                <span class="nl-issue-label">Weekly</span>
               </div>
-              <div class="newsletter-card-date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
-              <div class="newsletter-card-divider"></div>
-              <div class="newsletter-card-body">
+              <div class="nl-issue-date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
+              <div class="nl-issue-divider"></div>
+              <div class="nl-issue-body">
                 {{ newsletter.content }}
               </div>
             </div>
@@ -1054,16 +1042,16 @@
         });
 
         // Newsletter chip switching
-        const nlChips = document.querySelectorAll('.newsletter-chip');
-        const nlCards = document.querySelectorAll('.newsletter-card');
+        const nlChips = document.querySelectorAll('.nl-issue-chip');
+        const nlCards = document.querySelectorAll('.nl-issue-content');
 
         nlChips.forEach(chip => {
           chip.addEventListener('click', function() {
             nlChips.forEach(c => c.classList.remove('active'));
             nlCards.forEach(c => c.classList.remove('active'));
             this.classList.add('active');
-            const idx = this.dataset.newsletter;
-            document.getElementById('newsletter-' + idx).classList.add('active');
+            const idx = this.dataset.issue;
+            document.getElementById('issue-' + idx).classList.add('active');
           });
         });
 
