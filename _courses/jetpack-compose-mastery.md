@@ -38,7 +38,7 @@ Compose isn't just a new UI toolkit — it's a fundamentally different mental mo
 
 In the View system, you tell the framework **how** to update the UI step by step. You hold references to views, call setter methods, toggle visibility flags, and manually keep the screen in sync with your data. In Compose, you describe **what** the UI should look like for a given state, and the framework figures out how to get there. This inversion is what makes Compose fundamentally different — you stop managing view state and start describing it.
 
-The imperative approach requires you to track every possible state transition manually. If a user object has 5 fields and each can change independently, you need 5 update paths. With 10 fields, you need 10. In Compose, you write one function that handles all of it.
+The imperative approach requires you to track every possible state transition manually. If a user object has 5 fields and each can change independently, you need 5 update paths. With 10 fields, you need 10. In Compose, you write one function that handles all of it. This distinction becomes exponentially more painful as your screen grows in complexity. Consider a screen with a loading state, an error state, an empty state, and a success state — each with different data fields. In the View system, you would need separate update methods for each transition, and you would need to ensure that every view is correctly reset when moving between states. You would toggle visibility on containers, clear text fields, reset adapters, and manually handle all edge cases. In Compose, you write a single `when` block that describes each state, and the framework handles every transition.
 
 ```kotlin
 // Imperative (View system) — step by step mutations
@@ -69,15 +69,100 @@ fun UserCard(user: User) {
 }
 ```
 
+The difference becomes even clearer when you consider state transitions in the View system. Suppose you need to handle a loading → success → error flow. In the View system, each transition requires explicit cleanup of the previous state and setup of the new state. You need to track what's currently visible and carefully tear it down before building the new UI.
+
+```kotlin
+// Imperative — handling multiple states is error-prone
+fun updateScreenState(state: ScreenState) {
+    loadingView.visibility = View.GONE
+    contentView.visibility = View.GONE
+    errorView.visibility = View.GONE
+    emptyView.visibility = View.GONE
+
+    when (state) {
+        is ScreenState.Loading -> {
+            loadingView.visibility = View.VISIBLE
+        }
+        is ScreenState.Success -> {
+            contentView.visibility = View.VISIBLE
+            recyclerAdapter.submitList(state.items)
+            titleTextView.text = state.title
+        }
+        is ScreenState.Error -> {
+            errorView.visibility = View.VISIBLE
+            errorMessageTextView.text = state.message
+            retryButton.setOnClickListener { retry() }
+        }
+        is ScreenState.Empty -> {
+            emptyView.visibility = View.VISIBLE
+        }
+    }
+}
+
+// Declarative — each state is self-contained
+@Composable
+fun Screen(state: ScreenState) {
+    when (state) {
+        is ScreenState.Loading -> LoadingSpinner()
+        is ScreenState.Success -> {
+            Column {
+                Text(state.title)
+                LazyColumn {
+                    items(state.items) { ItemCard(it) }
+                }
+            }
+        }
+        is ScreenState.Error -> ErrorMessage(
+            message = state.message,
+            onRetry = { retry() }
+        )
+        is ScreenState.Empty -> EmptyState()
+    }
+}
+```
+
 **The key insight** — In Compose, `if (user.isPremium)` doesn't show/hide a badge. It controls whether the badge **exists** in the composition. When `isPremium` changes from true to false, the badge is removed from the tree entirely, not hidden. This is conditional composition, and it's fundamentally different from toggling `View.VISIBLE` and `View.GONE`. In the View system, a hidden view still occupies memory, still holds state, and still participates in layout traversals. In Compose, a composable that doesn't execute simply doesn't exist.
 
+This distinction has profound implications for how you think about UI architecture. In the imperative world, you design your layout XML with all possible views pre-inflated, and your code selectively shows and hides them. In the declarative world, you describe what should exist right now, and composition handles the rest. This means your composable functions are pure descriptions of a UI snapshot at a given moment in time — there is no concept of "updating" or "modifying" the UI. You simply describe it again with the new state.
+
 This shift also means you don't hold references to UI elements. There's no `findViewById`, no view binding, no synthetic accessors. The composable function IS the UI. When data changes, the function re-executes, and the framework diffs the output against the previous composition to determine the minimal set of actual UI updates.
+
+The mental model shift can be summarized as: in imperative UI, you are a construction worker who places and moves bricks. In declarative UI, you are an architect who draws blueprints — someone else (the Compose runtime) handles the construction, renovation, and demolition. Your only responsibility is ensuring the blueprint accurately reflects the desired state.
+
+```kotlin
+// The declarative mental model extends to lists and dynamic content
+@Composable
+fun TagList(tags: List<String>, onRemove: (String) -> Unit) {
+    // No adapter, no ViewHolder, no notifyDataSetChanged
+    // Just describe what should be on screen right now
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        tags.forEach { tag ->
+            FilterChip(
+                selected = true,
+                onClick = { onRemove(tag) },
+                label = { Text(tag) },
+                trailingIcon = {
+                    Icon(Icons.Default.Close, contentDescription = "Remove $tag")
+                }
+            )
+        }
+    }
+}
+```
+
+In production, the declarative model eliminates entire categories of bugs. You never have a stale view showing old data because you forgot to update it. You never have a visibility flag set incorrectly because of a missed code path. You never have a click listener attached to a recycled view from a previous item. The framework guarantees that the UI matches your description of the current state — always.
+
+**Common Pitfalls:**
+
+One common mistake when transitioning from imperative to declarative thinking is trying to "update" composables imperatively. Developers new to Compose often try to hold references to composables or call methods on them. This doesn't work — composables are functions, not objects. Another pitfall is thinking about visibility. There is no `visible` or `gone` concept in Compose. If you don't want something on screen, simply don't call the composable. Wrapping a composable in an `if` statement is the correct approach, and it is fundamentally different from hiding a view.
 
 **Key takeaway:** Compose functions describe UI as a function of state. When state changes, the function re-executes (recomposes), and Compose updates only what changed.
 
 ### Lesson 1.2: Composable Functions and the Compiler
 
-A `@Composable` function looks like a regular Kotlin function, but the `@Composable` annotation fundamentally changes what the compiler does with it. The Compose compiler plugin transforms every composable function by injecting a `Composer` parameter — an object that manages the composition's internal state. This transformation means composable functions can only be called from other composable functions, because only composable contexts have a `Composer` to pass down.
+A `@Composable` function looks like a regular Kotlin function, but the `@Composable` annotation fundamentally changes what the compiler does with it. The Compose compiler plugin transforms every composable function by injecting a `Composer` parameter — an object that manages the composition's internal state. This transformation means composable functions can only be called from other composable functions, because only composable contexts have a `Composer` to pass down. The `@Composable` annotation is not merely a marker — it changes the function's calling convention at the bytecode level.
+
+The Compose compiler plugin runs as a Kotlin compiler plugin during the IR (Intermediate Representation) phase of compilation. It scans for functions annotated with `@Composable` and transforms them by adding synthetic parameters. This is why you cannot call a composable function from a regular function — the regular function doesn't have the synthetic `Composer` parameter to pass. The compiler enforces this at compile time, preventing accidental misuse.
 
 ```kotlin
 @Composable
@@ -99,17 +184,97 @@ fun Greeting(name: String, $composer: Composer, $changed: Int) {
 
 The compiler also injects a `$changed` bitmask parameter that tracks which parameters have changed since the last composition. Each parameter gets a few bits in this mask — enough to represent "unchanged," "changed," "uncertain," and "static." When the runtime calls a composable, it checks these bits before executing the body. If all parameters are unchanged and stable, the entire function body is skipped. This is the mechanism behind intelligent recomposition — it's not runtime magic, it's compiler-generated code.
 
-The `startRestartGroup` and `endRestartGroup` calls create a **restart scope** — a boundary that the recomposer can re-invoke independently when the composable's dependencies change. The `updateScope` lambda at the end captures the composable's parameters so it can be called again later without re-running the parent. This is how Compose achieves granular recomposition — each restartable composable is independently re-executable.
+To understand the bitmask in detail, each parameter is allocated 2-3 bits in the `$changed` integer. The possible states for each parameter slot are: `Same` (0b00 — the parameter has not changed), `Different` (0b01 — the parameter has changed), `Uncertain` (0b10 — the runtime doesn't know yet and needs to check), and `Static` (0b11 — the parameter is a compile-time constant that never changes). When a composable is called, the caller sets these bits based on what it knows. If a literal string `"Hello"` is passed, the compiler marks it as `Static`. If a variable is passed, the compiler marks it as `Uncertain` and the runtime resolves it by comparing with the previous value using `equals()` for stable types.
 
-Composable functions have important constraints. They should be **idempotent** — calling them with the same parameters should produce the same UI output. They should be **free of side effects** — no network calls, database writes, or analytics events directly in the composition body. And they should be **fast** — composition happens on the UI thread, and slow composables cause dropped frames.
+```kotlin
+// Multiple parameters get different bits in the bitmask
+@Composable
+fun UserInfo(name: String, age: Int, isOnline: Boolean) {
+    // Compiler generates: UserInfo(name, age, isOnline, $composer, $changed)
+    // $changed has bits for each parameter:
+    // bits 0-1: name status
+    // bits 2-3: age status
+    // bits 4-5: isOnline status
+    Text("$name, $age years old")
+    if (isOnline) StatusDot()
+}
+
+// When called with a constant and variables:
+UserInfo(
+    name = "Mukul",     // Static — compiler knows this never changes
+    age = currentAge,   // Uncertain — runtime must compare
+    isOnline = true     // Static — compiler knows this never changes
+)
+```
+
+The `startRestartGroup` and `endRestartGroup` calls create a **restart scope** — a boundary that the recomposer can re-invoke independently when the composable's dependencies change. The `updateScope` lambda at the end captures the composable's parameters so it can be called again later without re-running the parent. This is how Compose achieves granular recomposition — each restartable composable is independently re-executable. The key ID passed to `startRestartGroup` is a compiler-generated integer unique to each call site in the source code, used by the slot table to identify groups.
+
+Not all composable functions get restart scopes. The compiler applies an optimization: **inline composable functions** don't get their own restart scopes because their bodies are inlined into the caller. Composable functions that **return a value** (like `remember`) also don't get restart scopes because they can't be re-invoked independently — their return value feeds into the caller's logic. Only composable functions that return `Unit` and are not inline are typically restartable.
+
+```kotlin
+// Restartable — returns Unit, not inline
+@Composable
+fun StatusBadge(isActive: Boolean) {
+    // Gets its own restart scope
+    Box(modifier = Modifier
+        .size(12.dp)
+        .background(if (isActive) Color.Green else Color.Gray, CircleShape)
+    )
+}
+
+// NOT restartable — returns a value
+@Composable
+fun rememberFormatter(pattern: String): DateFormat {
+    // No restart scope — return value is used by caller
+    return remember(pattern) { SimpleDateFormat(pattern, Locale.getDefault()) }
+}
+
+// NOT restartable — inline
+@Composable
+inline fun ConditionalWrapper(
+    condition: Boolean,
+    wrapper: @Composable (content: @Composable () -> Unit) -> Unit,
+    content: @Composable () -> Unit
+) {
+    if (condition) wrapper(content) else content()
+}
+```
+
+Composable functions have important constraints. They should be **idempotent** — calling them with the same parameters should produce the same UI output. They should be **free of side effects** — no network calls, database writes, or analytics events directly in the composition body. And they should be **fast** — composition happens on the UI thread, and slow composables cause dropped frames. These constraints arise directly from how the compiler transforms the code: if a composable has side effects, those effects might execute unpredictably because the runtime can skip, reorder, or re-run composables.
+
+The compiler also generates **group markers** that are stored in the slot table. Every composable call, every `remember`, every conditional branch, and every loop iteration gets a group. Groups define the tree structure in the flat slot table. When the runtime encounters a group during recomposition, it compares the group key against the slot table to determine if the composable at that position is the same as before. If the keys match, it proceeds with comparing parameters. If they don't match, it knows the composition structure has changed and needs to handle insertions or deletions.
+
+```kotlin
+// The compiler generates groups for control flow
+@Composable
+fun ConditionalContent(showExtra: Boolean) {
+    // Group 1: Text
+    Text("Always shown")
+
+    // Group 2: conditional group
+    if (showExtra) {
+        // Group 3: Text (inside conditional)
+        Text("Extra content")
+        // Group 4: Icon (inside conditional)
+        Icon(Icons.Default.Star, contentDescription = null)
+    }
+
+    // Group 5: Button (position depends on whether showExtra is true)
+    Button(onClick = {}) { Text("Action") }
+}
+```
+
+**Common Pitfalls:**
+
+A common mistake is calling composable functions inside non-composable contexts — like inside a `forEach` lambda on a regular collection, or inside a coroutine body. The compiler will catch most of these, but some patterns can confuse developers. Another pitfall is assuming that composable functions execute top-to-bottom in a predictable single pass. During recomposition, the runtime may skip portions of the tree, and the order of execution within a composable is an implementation detail, not a guarantee.
 
 **Key takeaway:** `@Composable` functions are transformed by the compiler into restartable, skippable units. The `Composer` parameter, `$changed` bitmask, and restart scopes are the machinery that makes intelligent recomposition possible.
 
 ### Lesson 1.3: Recomposition — When and How
 
-Recomposition is the process of re-executing composable functions when state changes. Understanding exactly when it happens, what scope it covers, and what guarantees it does and doesn't provide is essential for writing correct and performant Compose code.
+Recomposition is the process of re-executing composable functions when state changes. Understanding exactly when it happens, what scope it covers, and what guarantees it does and doesn't provide is essential for writing correct and performant Compose code. Recomposition is the core mechanism that keeps your UI synchronized with your data — it is the beating heart of the Compose runtime.
 
-Compose tracks which composable functions read which state objects through the snapshot system. When a `MutableState` value changes, Compose doesn't recompose the entire tree — it identifies the specific restart scopes that read that state and schedules only those for re-execution. This is **intelligent recomposition**.
+Compose tracks which composable functions read which state objects through the snapshot system. When a `MutableState` value changes, Compose doesn't recompose the entire tree — it identifies the specific restart scopes that read that state and schedules only those for re-execution. This is **intelligent recomposition**. The tracking happens automatically through the snapshot system's read observers — when your composable body reads `counter.value`, the snapshot system records that the current restart scope depends on that state object. Later, when `counter.value` changes, the system looks up all dependent scopes and marks them as invalid.
 
 ```kotlin
 @Composable
@@ -127,9 +292,70 @@ fun Counter() {
 
 When `count` changes, Compose doesn't re-run the entire `Counter` function from scratch. It re-runs the `Counter` restart scope, but the `Button`'s content lambda — `Text("Increment")` — has no dependency on `count`, so it gets skipped. The `Text("Count: $count")` reads `count`, so it recomposes. The precision of this tracking is what makes Compose performant by default.
 
+The recomposition scope is determined by the nearest enclosing restartable composable. The runtime does not recompose individual expressions or lines — it recomposes entire restart scopes. This means if you read state in a large composable, the entire composable body re-executes. This is why extracting composables into smaller functions is a performance technique — it creates smaller, more targeted recomposition boundaries.
+
+```kotlin
+// Large composable — entire body recomposes when ANY state changes
+@Composable
+fun DashboardScreen() {
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
+    val notificationCount by viewModel.notifications.collectAsStateWithLifecycle()
+    val isOnline by viewModel.onlineStatus.collectAsStateWithLifecycle()
+
+    Column {
+        // When userName changes, ALL of these re-execute
+        Text("Hello, $userName")
+        Text("$notificationCount notifications")
+        StatusDot(isOnline)
+        // ... 20 more composables
+    }
+}
+
+// Better — extracted composables create isolated recomposition scopes
+@Composable
+fun DashboardScreen() {
+    Column {
+        UserGreeting()       // Only recomposes when userName changes
+        NotificationBadge()  // Only recomposes when count changes
+        OnlineStatus()       // Only recomposes when status changes
+    }
+}
+```
+
 However, recomposition comes with important guarantees and non-guarantees. Compose guarantees that the UI will eventually reflect the current state. It does **not** guarantee that recomposition happens immediately, that it happens exactly once per state change, or that composables recompose in any particular order. Multiple state changes between frames are batched into a single recomposition. The runtime may skip recomposition entirely if a composable's parameters haven't changed. And recomposition can be abandoned mid-execution if newer state arrives.
 
+The "abandoned recomposition" behavior deserves special attention. If the runtime is partway through recomposing a tree and a new state change arrives that invalidates the current work, Compose can throw away the in-progress recomposition and start over with the latest state. This ensures the UI always reflects the most recent state, but it also means any side effects that ran during the abandoned recomposition are lost. This is the fundamental reason why side effects must be managed through effect handlers, not placed directly in the composition body.
+
+```kotlin
+// Demonstrating non-guarantee: recomposition count
+@Composable
+fun RecompositionDemo() {
+    var count by remember { mutableStateOf(0) }
+    var recompCount by remember { mutableIntStateOf(0) }
+
+    // ❌ This DOES NOT accurately track recompositions
+    // because recomposition itself can be skipped, batched, or abandoned
+    recompCount++
+
+    Column {
+        Text("Count: $count")
+        Text("Recompositions: $recompCount") // Unreliable number
+        Button(onClick = { count++ }) { Text("Increment") }
+    }
+}
+
+// If you need to track recompositions for debugging, use SideEffect
+@Composable
+fun DebugRecomposition(tag: String) {
+    SideEffect {
+        Log.d("Recomposition", "$tag recomposed")
+    }
+}
+```
+
 This has practical implications. Never put side effects directly in the composition body — they might run zero times (if skipped), once, twice, or any number of times depending on recomposition behavior. Never rely on the order of composable execution for correctness. And never assume a composable runs on every frame — it only runs when its dependencies change.
+
+Recomposition order is also non-deterministic. The runtime processes invalidated scopes in an order that it determines is most efficient, not necessarily top-to-bottom or parent-before-child. In practice, the runtime tends to process parent scopes before child scopes, but this is an implementation detail, not a contract. Your composable logic must be correct regardless of the order in which sibling composables recompose.
 
 ```kotlin
 @Composable
@@ -149,15 +375,91 @@ fun BadExample() {
 }
 ```
 
+Another important concept is **recomposition skipping**. When a parent recomposes, it calls its child composables with potentially the same parameters. If the child composable is skippable (all parameters are stable) and the parameters haven't changed (structural equality), the child's body is skipped entirely — it doesn't execute at all. This is the most important performance optimization in Compose, and it happens automatically for well-structured code with stable types.
+
+```kotlin
+// Skipping in action
+@Composable
+fun ParentWithTwoChildren() {
+    var activeTab by remember { mutableStateOf(0) }
+
+    Column {
+        // TabBar reads activeTab — recomposes when tab changes
+        TabBar(activeTab = activeTab, onTabSelected = { activeTab = it })
+
+        // ContentArea does NOT read activeTab — skipped on tab change
+        // (assuming its parameters are stable and unchanged)
+        ContentArea(items = stableItemList)
+    }
+}
+
+@Composable
+fun ContentArea(items: ImmutableList<Item>) {
+    // This entire function is SKIPPED when parent recomposes
+    // because ImmutableList is stable and the reference hasn't changed
+    LazyColumn {
+        items(items, key = { it.id }) { item ->
+            ItemCard(item)
+        }
+    }
+}
+```
+
+In production, understanding recomposition behavior is critical for debugging performance issues. The Layout Inspector in Android Studio shows recomposition counts for each composable. A composable with a high recomposition count and zero skip count is a red flag — it means the composable is being re-executed on every parent recomposition and can never be skipped. This typically indicates unstable parameters.
+
+**Common Pitfalls:**
+
+The most common recomposition pitfall is reading state in a scope that's too wide. If you read a rapidly-changing state (like scroll position) at the top of a large composable, the entire tree below that point recomposes on every frame. The fix is to either extract the state-reading portion into a smaller composable or defer the read to a later phase using lambda-based modifiers. Another pitfall is creating new object instances during composition that get passed to child composables — this defeats skipping because the child sees a "new" parameter every time, even if the data is identical.
+
 **Key takeaway:** Recomposition can happen at any time, in any order, and can be skipped. Never put side effects directly in composable functions — that code might run more often or less often than you expect.
 
 ### Lesson 1.4: Composition, Layout, Drawing — The Three Phases
 
-Compose renders UI in three sequential phases, and understanding them is the single most important performance concept in the entire framework. Each phase does fundamentally different work, reads different state, and has different performance characteristics. When a frame drops, most developers blame recomposition, but layout and drawing phase issues are equally common.
+Compose renders UI in three sequential phases, and understanding them is the single most important performance concept in the entire framework. Each phase does fundamentally different work, reads different state, and has different performance characteristics. When a frame drops, most developers blame recomposition, but layout and drawing phase issues are equally common. Mastering the three phases is what separates developers who write smooth UIs from those who fight jank.
 
 **Composition** is where your `@Composable` functions execute. It builds and updates the UI tree by evaluating conditionals, loops, and `remember` calls. The output is a set of layout nodes stored in the slot table. **Layout** measures and positions each node — this is where `Modifier.size()`, `Modifier.padding()`, and constraint propagation happen. Each child is measured exactly once (a critical guarantee that prevents O(n²) measurement cascades). **Drawing** paints pixels to a Canvas — `Modifier.background()`, `drawBehind`, `graphicsLayer`, and `Canvas` composable execute here.
 
-The key insight is that **each phase can be triggered independently**. If a state change is only read during the Drawing phase, Compose skips Composition and Layout entirely. If state is only read during Layout, Composition is skipped.
+The three phases execute in order: Composition → Layout → Drawing. But the critical optimization is that **not all phases need to run on every frame**. If a state change only affects how something is drawn (like its alpha or color), Compose can skip Composition and Layout entirely and only run the Drawing phase. If state only affects position, Compose can skip Composition. This is the performance lever that makes or breaks scroll performance.
+
+```kotlin
+// Phase awareness — which phase reads the state determines cost
+@Composable
+fun PhaseDemo(scrollOffset: Float) {
+    // Reading in COMPOSITION phase (most expensive)
+    // All 3 phases run: Composition → Layout → Drawing
+    val alpha = (1f - scrollOffset / 500f).coerceIn(0f, 1f)
+    Box(modifier = Modifier.alpha(alpha)) {
+        Text("Content")
+    }
+}
+
+@Composable
+fun PhaseDemoOptimized(scrollOffset: () -> Float) {
+    // Reading in LAYOUT phase (medium cost)
+    // 2 phases run: Layout → Drawing (Composition skipped)
+    Box(modifier = Modifier.offset {
+        IntOffset(0, (scrollOffset() * 0.5f).toInt())
+    }) {
+        Text("Content")
+    }
+}
+
+@Composable
+fun PhaseDemoBest(scrollOffset: () -> Float) {
+    // Reading in DRAWING phase (cheapest)
+    // 1 phase runs: Drawing only (Composition + Layout skipped)
+    Box(modifier = Modifier.graphicsLayer {
+        alpha = (1f - scrollOffset() / 500f).coerceIn(0f, 1f)
+        translationY = scrollOffset() * 0.5f
+    }) {
+        Text("Content")
+    }
+}
+```
+
+The key insight is that **each phase can be triggered independently**. If a state change is only read during the Drawing phase, Compose skips Composition and Layout entirely. If state is only read during Layout, Composition is skipped. The way you structure your state reads determines which phases execute on each frame.
+
+To understand why this matters so much, consider what each phase costs. Composition is the most expensive because it executes Kotlin code, allocates objects, traverses the slot table, and potentially triggers child composables to re-execute. Layout is medium cost — it propagates constraints through the tree and positions nodes. Drawing is cheapest — it issues GPU draw commands through RenderNodes. During a 60fps scroll, you have 16.67ms per frame. If you can skip Composition and Layout, you might use only 2-3ms for Drawing instead of 10-12ms for all three phases.
 
 ```kotlin
 @Composable
@@ -184,15 +486,72 @@ fun AnimatedCardOptimized(scrollOffset: () -> Float) {
 
 The difference between passing `Float` and `() -> Float` is the difference between triggering all three phases on every scroll pixel versus triggering only the Drawing phase. In a list with 20 visible cards, that's the difference between smooth scrolling and visible jank. The `graphicsLayer` modifier reads state in the draw phase because it operates at the RenderNode level — it doesn't need to re-measure or re-position anything, just repaint with new parameters.
 
+Understanding which modifiers read in which phase is essential. Here's the breakdown: `Modifier.padding()`, `Modifier.size()`, `Modifier.fillMaxWidth()`, and `Modifier.offset(x, y)` (value-based) read during **Layout**. `Modifier.background()`, `Modifier.border()`, `Modifier.drawBehind {}`, and `Modifier.drawWithContent {}` read during **Drawing**. `Modifier.graphicsLayer {}`, `Modifier.alpha {}`, and `Modifier.offset {}` (lambda-based) also read during **Drawing**. Conditional composition (`if/else`, `when`), `remember`, and direct parameter reads happen during **Composition**.
+
+```kotlin
+// Practical example: collapsing toolbar
+@Composable
+fun CollapsingToolbar(
+    title: String,
+    scrollState: LazyListState
+) {
+    // ❌ BAD: reads scroll state in Composition — all 3 phases on every scroll
+    val toolbarHeight = (200 - scrollState.firstVisibleItemScrollOffset)
+        .coerceAtLeast(56)
+    val titleAlpha = ((toolbarHeight - 56f) / 144f).coerceIn(0f, 1f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(toolbarHeight.dp)
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
+        Text(title, modifier = Modifier.alpha(titleAlpha))
+    }
+}
+
+@Composable
+fun CollapsingToolbarOptimized(
+    title: String,
+    scrollState: LazyListState
+) {
+    // ✅ GOOD: fixed size, visual changes in graphicsLayer (Drawing phase)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .graphicsLayer {
+                val scrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+                val maxScroll = 144f
+                val progress = (scrollOffset / maxScroll).coerceIn(0f, 1f)
+                alpha = 1f - progress * 0.3f
+                scaleY = 1f - progress * 0.5f
+                translationY = -scrollOffset * 0.5f
+            }
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
+        Text(title)
+    }
+}
+```
+
+In the optimized version, the toolbar has a fixed size (no Layout recalculation needed), and visual changes happen entirely in `graphicsLayer` (Drawing phase only). The scroll-dependent calculations for alpha, scale, and translation all happen in the draw lambda, so Compose skips Composition and Layout entirely on each scroll frame. This pattern is the foundation of performant scroll-linked animations in Compose.
+
+**Common Pitfalls:**
+
+The most common mistake is using value-based modifiers instead of lambda-based modifiers for animated or scroll-linked values. `Modifier.offset(x = offsetDp, y = 0.dp)` reads during Composition/Layout, while `Modifier.offset { IntOffset(offsetPx, 0) }` reads during Layout only. `Modifier.alpha(alphaFloat)` reads during Composition, while `Modifier.graphicsLayer { alpha = alphaFloat }` reads during Drawing. Another pitfall is not realizing that `Modifier.background()` with a computed color reads during Composition (the color is computed in composition), even though the background itself draws in the Drawing phase. To defer the color computation, use `Modifier.drawBehind { drawRect(computeColor()) }`.
+
 **Key takeaway:** Push state reads to the latest possible phase. Reading state in Drawing is cheaper than Layout, which is cheaper than Composition. Use lambda-based modifiers (`graphicsLayer {}`, `offset {}`, `drawBehind {}`) to defer reads.
 
 ### Lesson 1.5: The Slot Table — Where Composition Lives
 
-The slot table is Compose's internal data structure that stores everything about a composition — the UI tree, remembered values, state objects, group markers, and metadata for diffing. Understanding the slot table explains why `remember` is positional, why `key` matters, and why composable call order can't change between recompositions.
+The slot table is Compose's internal data structure that stores everything about a composition — the UI tree, remembered values, state objects, group markers, and metadata for diffing. Understanding the slot table explains why `remember` is positional, why `key` matters, and why composable call order can't change between recompositions. The slot table is the physical manifestation of your composition — it is where your entire UI state lives in memory.
 
 Compose doesn't build a traditional tree of objects like the View system's `ViewGroup` hierarchy. Instead, it uses a flat array where composable calls are stored linearly as they execute, with group markers defining the tree structure. This linear layout means Compose can walk the table sequentially during recomposition, comparing new outputs against the previous frame using **gap buffers** — a technique borrowed from text editors.
 
-A gap buffer is a contiguous array with a movable "gap" (unused space) that allows O(1) insertions and deletions at any position. When you add a composable to the tree (new conditional branch becomes true), the gap moves to that position and the new entries are inserted. When a composable is removed, its entries are deleted and the gap absorbs the space. This fits compositions well because they're predominantly linear — you walk the composable tree top to bottom, left to right.
+A gap buffer is a contiguous array with a movable "gap" (unused space) that allows O(1) insertions and deletions at any position. When you add a composable to the tree (new conditional branch becomes true), the gap moves to that position and the new entries are inserted. When a composable is removed, its entries are deleted and the gap absorbs the space. This fits compositions well because they're predominantly linear — you walk the composable tree top to bottom, left to right. Gap buffers are the same data structure used by Emacs and many other text editors for efficient insertion — the "cursor position" in the gap buffer corresponds to the current position in the composition traversal.
+
+The slot table stores several types of entries. **Group entries** define the tree structure — each composable call creates a group with a key, and groups can be nested. **Data entries** store values — `remember` values, state objects, and composable parameters are stored as data within their enclosing group. **Node entries** represent actual layout nodes that will participate in measurement and drawing. Understanding this structure explains many Compose behaviors.
 
 ```kotlin
 @Composable
@@ -221,17 +580,102 @@ fun SlotTableDemo() {
 
 When `count` goes from 5 to 6, the conditional becomes true and `Text("High count!")` needs to be inserted. The gap buffer moves to position 4, the new group entries are inserted, and the Button group shifts to position 5. When `count` goes from 6 back to 5, the Text group at position 4 is removed and the gap absorbs it. This insertion and deletion is efficient because the gap is already near the modification point.
 
+To visualize the slot table more concretely, think of it as a serialized representation of your composition tree:
+
+```kotlin
+// Conceptual slot table contents for SlotTableDemo when count = 7:
+// [GROUP: remember] [DATA: MutableState(7)]
+// [GROUP: Column]
+//   [GROUP: Text] [DATA: "Count: 7"]
+//   [GROUP: if(true)]
+//     [GROUP: Text] [DATA: "High count!"]
+//   [GROUP: Button]
+//     [GROUP: Text] [DATA: "Increment"]
+
+// When count changes from 7 to 4:
+// [GROUP: remember] [DATA: MutableState(4)]
+// [GROUP: Column]
+//   [GROUP: Text] [DATA: "Count: 4"]
+//   [GROUP: if(false)]
+//     ← gap absorbs the removed Text group →
+//   [GROUP: Button]
+//     [GROUP: Text] [DATA: "Increment"]
+```
+
 The practical implication is that `remember` is **positional**. Two `remember` calls in the same composable occupy different slots, and moving a `remember` call changes which slot it reads from. This is also why you can't call composable functions conditionally without `key` — if the condition changes, slot positions shift and Compose reads the wrong cached values.
+
+Consider this dangerous pattern:
+
+```kotlin
+@Composable
+fun BrokenPositionalIdentity(showGreeting: Boolean) {
+    // ❌ DANGEROUS: remember positions shift when showGreeting changes
+    if (showGreeting) {
+        val greeting = remember { mutableStateOf("Hello") }  // Slot 0 when true
+        Text(greeting.value)
+    }
+    val counter = remember { mutableStateOf(0) }  // Slot 1 when true, Slot 0 when false
+    Text("Counter: ${counter.value}")
+    // When showGreeting changes from true to false, the counter's remember
+    // might read from the slot that previously held the greeting!
+}
+
+// ✅ SAFE: key() provides stable identity regardless of position
+@Composable
+fun SafePositionalIdentity(showGreeting: Boolean) {
+    if (showGreeting) {
+        key("greeting") {
+            val greeting = remember { mutableStateOf("Hello") }
+            Text(greeting.value)
+        }
+    }
+    key("counter") {
+        val counter = remember { mutableStateOf(0) }
+        Text("Counter: ${counter.value}")
+    }
+}
+```
+
+The `key` composable provides an explicit identity to a group in the slot table, independent of its position. When the runtime encounters a `key` group during recomposition, it matches by the key value rather than by position. This means groups can move, appear, or disappear without corrupting the identity of neighboring groups.
+
+This positional identity system is also why `LazyColumn` requires `key` for items. Without explicit keys, items use their position (index) as identity. When items are reordered, the state stored in slot position 3 stays at position 3 — but the data at position 3 might now be a different item. With `key = { it.id }`, each item's slot table entries are tracked by its unique ID, so reordering preserves state correctly.
+
+```kotlin
+// Without key: state follows position, not identity
+LazyColumn {
+    items(sortedItems) { item ->
+        // If items are reordered, expanded state stays at the position
+        // not with the item — item 3's state shows on the new item 3
+        var expanded by remember { mutableStateOf(false) }
+        ItemCard(item, expanded, onExpand = { expanded = !expanded })
+    }
+}
+
+// With key: state follows identity
+LazyColumn {
+    items(sortedItems, key = { it.id }) { item ->
+        // Expanded state follows the item even after reordering
+        var expanded by remember { mutableStateOf(false) }
+        ItemCard(item, expanded, onExpand = { expanded = !expanded })
+    }
+}
+```
+
+The slot table also has performance implications for composition size. Every `remember`, every conditional branch, every `key`, and every composable call adds entries to the slot table. For screens with very deep composable hierarchies or many remembered values, the slot table itself can become a memory concern. In practice, this is rarely an issue for normal screens, but it's worth knowing when building extremely large or complex compositions like spreadsheets or code editors.
+
+**Common Pitfalls:**
+
+The most common pitfall is changing the number or order of composable calls between recompositions without using `key`. If you conditionally call a composable before other composables, the positions of everything after it shift. The compiler handles many cases with implicit groups for conditionals, but complex control flow can still cause identity mismatches. Another pitfall is using non-unique keys — duplicate keys in a `LazyColumn` cause undefined behavior because the runtime can't distinguish between items.
 
 **Key takeaway:** The slot table stores composition state in a flat, gap-buffered array. `remember` is positional, composable identity is order-dependent, and `key` helps Compose match entries correctly across recompositions.
 
 ### Lesson 1.6: Restartable vs Skippable — What the Compiler Decides
 
-The Compose compiler analyzes every `@Composable` function and classifies it along two dimensions: **restartable** and **skippable**. Understanding these classifications explains why some composables recompose unnecessarily and others don't.
+The Compose compiler analyzes every `@Composable` function and classifies it along two dimensions: **restartable** and **skippable**. Understanding these classifications explains why some composables recompose unnecessarily and others don't. These compiler decisions are the foundation of Compose performance — they determine whether your composable participates in intelligent recomposition or always re-executes.
 
-A composable is **restartable** if the compiler can generate a restart scope for it — meaning it can be re-invoked independently when its dependencies change. Most composables are restartable. Inline composables and composables that return values are not restartable because they don't have independent restart scopes.
+A composable is **restartable** if the compiler can generate a restart scope for it — meaning it can be re-invoked independently when its dependencies change. Most composables are restartable. Inline composables and composables that return values are not restartable because they don't have independent restart scopes. Restartability is about whether the runtime can selectively re-execute this particular composable without re-executing its parent. If a composable is not restartable, changes to its state dependencies require the parent to recompose.
 
-A composable is **skippable** if the compiler can generate comparison code to check whether all parameters have changed. A composable is skippable only when **all** its parameters are stable types. If even one parameter is unstable, the composable becomes non-skippable — it recomposes every time its parent recomposes, regardless of whether its data actually changed.
+A composable is **skippable** if the compiler can generate comparison code to check whether all parameters have changed. A composable is skippable only when **all** its parameters are stable types. If even one parameter is unstable, the composable becomes non-skippable — it recomposes every time its parent recomposes, regardless of whether its data actually changed. Skippability is the key to efficient recomposition in large trees — without it, every parent recomposition cascades to all children.
 
 ```kotlin
 // Restartable AND skippable — all params are stable
@@ -260,7 +704,105 @@ fun TagList(tags: ImmutableList<String>) { // ImmutableList = stable
 }
 ```
 
+The stability rules are precise. A type is considered **stable** if: (1) it is a primitive type (`Int`, `Float`, `Boolean`, etc.), (2) it is `String`, (3) it is a function type (lambdas), (4) it is annotated with `@Stable` or `@Immutable`, (5) it is an enum type, (6) it is a data class where all properties are stable types, or (7) it is `MutableState<T>` (the state holder itself is stable — changes are tracked through the snapshot system). Everything else is unstable by default, including `List`, `Map`, `Set`, and classes from external modules that the Compose compiler can't analyze.
+
+```kotlin
+// Stability examples
+@Composable
+fun StabilityDemo(
+    name: String,             // ✅ Stable — primitive wrapper
+    count: Int,               // ✅ Stable — primitive
+    isEnabled: Boolean,       // ✅ Stable — primitive
+    onClick: () -> Unit,      // ✅ Stable — function type
+    items: List<String>,      // ❌ Unstable — List interface
+    metadata: Map<String, Any>, // ❌ Unstable — Map interface
+    config: ThirdPartyConfig, // ❌ Unstable — external module class
+    state: MutableState<Int>, // ✅ Stable — MutableState
+) {
+    // This composable is NOT skippable because of items, metadata, and config
+}
+
+// Fix with annotations
+@Immutable
+data class StableProduct(
+    val id: String,
+    val name: String,
+    val price: Double,
+    val imageUrl: String
+)
+
+@Composable
+fun ProductCard(product: StableProduct) { // ✅ All stable — skippable
+    Card {
+        Column {
+            Text(product.name)
+            Text("$${product.price}")
+        }
+    }
+}
+```
+
+The distinction between `@Immutable` and `@Stable` is important. `@Immutable` is a strong contract: you promise the compiler that once an instance is created, none of its public properties will ever change. This is appropriate for data classes, value objects, and truly immutable types. `@Stable` is a weaker contract: you promise that mutations will be observable through the Compose snapshot system. This is appropriate for classes with `mutableStateOf` properties — the properties can change, but Compose will know about it.
+
+```kotlin
+// @Immutable — nothing changes after construction
+@Immutable
+data class ArticleUiModel(
+    val id: String,
+    val title: String,
+    val summary: String,
+    val imageUrl: String,
+    val publishedAt: Long
+)
+
+// @Stable — properties can change, but changes are observable
+@Stable
+class FormFieldState(initialValue: String = "") {
+    var text by mutableStateOf(initialValue)
+        private set
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    fun updateText(newText: String) {
+        text = newText
+        error = validate(newText)
+    }
+
+    private fun validate(text: String): String? {
+        return if (text.isBlank()) "Required" else null
+    }
+}
+```
+
 You can check which composables are skippable using the Compose compiler reports. Add `-P plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=/path/to/reports` to your Kotlin compiler arguments. The generated report shows every composable with its restartable/skippable status and lists which parameters are stable or unstable. This is the fastest way to find performance issues — a composable that shows "restartable but not skippable" is one that recomposes unnecessarily.
+
+```kotlin
+// Example compiler report output:
+// restartable skippable scheme("[androidx.compose.ui.UiComposable]")
+// fun UserBadge(name: String, isOnline: Boolean)
+//   stable name: String
+//   stable isOnline: Boolean
+
+// restartable scheme("[androidx.compose.ui.UiComposable]")
+// fun TagList(tags: List<String>)
+//   unstable tags: List<String>  ← This is the problem
+
+// To enable reports in build.gradle.kts:
+// kotlinOptions {
+//     freeCompilerArgs += listOf(
+//         "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+//             "${project.buildDir.absolutePath}/compose_metrics"
+//     )
+// }
+```
+
+In a real production codebase, auditing the compiler reports is one of the highest-impact performance activities you can do. A common pattern is that a ViewModel exposes a `StateFlow<UiState>` with a data class containing a `List<Item>`. Since `List` is unstable, the entire screen composable becomes non-skippable. Every unrelated state change causes the entire screen to recompose. The fix is straightforward: use `ImmutableList` from `kotlinx-collections-immutable`, or wrap the list in an `@Immutable` data class, or use `@Stable` annotation on the UiState class itself.
+
+The performance implications are significant. In a `LazyColumn` with 100 items, each item card that is non-skippable will recompose every time ANY state in the parent changes — even if the item's data hasn't changed. With stable types, only items whose data actually changed recompose. The difference can be 1 recomposition vs 100 recompositions per state change.
+
+**Common Pitfalls:**
+
+Breaking the `@Immutable` contract is the most dangerous pitfall. If you annotate a data class as `@Immutable` but then mutate the list it contains externally, Compose will skip recomposition because it trusts your annotation — resulting in stale UI with no error or warning. Another pitfall is forgetting that classes from external libraries (Retrofit models, Room entities) are typically unstable because the Compose compiler can't analyze their source. You need to map them to `@Immutable` UI models at the boundary. Finally, a common mistake is trying to make everything `@Immutable` — only annotate types that you can genuinely guarantee won't be mutated.
 
 **Key takeaway:** Skippability is determined at compile time based on parameter stability. Use Compose compiler reports to identify non-skippable composables, then fix them with `@Immutable`, `@Stable`, or immutable collection types.
 
@@ -344,9 +886,11 @@ State is the core of Compose. Get it right, and your UI is predictable. Get it w
 
 ### Lesson 2.1: remember and mutableStateOf
 
-The `remember` API stores a value in the slot table so it survives recomposition. Without `remember`, a variable declared in a composable function would be re-initialized on every recomposition — losing its value. `mutableStateOf` creates a `MutableState` object that's observable by the snapshot system — when its value changes, any composable that reads it is scheduled for recomposition.
+The `remember` API stores a value in the slot table so it survives recomposition. Without `remember`, a variable declared in a composable function would be re-initialized on every recomposition — losing its value. `mutableStateOf` creates a `MutableState` object that's observable by the snapshot system — when its value changes, any composable that reads it is scheduled for recomposition. Together, these two APIs form the foundation of local state management in Compose.
 
-These two APIs are almost always used together, but they serve different purposes. `remember` provides **persistence** across recompositions. `mutableStateOf` provides **observability** for triggering recompositions. You can `remember` non-state values (formatters, parsers, computed results), and you can use `mutableStateOf` outside of `remember` (though it would be recreated on every recomposition, which is usually a bug).
+These two APIs are almost always used together, but they serve different purposes. `remember` provides **persistence** across recompositions. `mutableStateOf` provides **observability** for triggering recompositions. You can `remember` non-state values (formatters, parsers, computed results), and you can use `mutableStateOf` outside of `remember` (though it would be recreated on every recomposition, which is usually a bug). Understanding this separation is critical: `remember` without `mutableStateOf` stores a value but doesn't trigger recomposition when it changes. `mutableStateOf` without `remember` triggers recomposition but loses its value on every recomposition, creating an infinite loop.
+
+Under the hood, `remember` stores its value at a specific position in the slot table. The first time the composable executes, `remember` evaluates its lambda, stores the result in the slot table, and returns it. On subsequent recompositions, `remember` reads the stored value from the slot table and returns it without re-evaluating the lambda. The key (if provided) controls whether the stored value is invalidated — when the key changes, the lambda re-evaluates and the new value replaces the old one.
 
 ```kotlin
 @Composable
@@ -373,15 +917,115 @@ fun LoginForm() {
 }
 ```
 
+The `by` keyword uses Kotlin property delegation. `mutableStateOf` returns a `MutableState<T>`, which implements `getValue` and `setValue` operators. Using `by` delegation, you can read and write the state like a regular property — `email` instead of `email.value`. This is syntactic sugar, but it significantly improves readability in composables with many state variables.
+
+There are three ways to declare state, and each has implications:
+
+```kotlin
+@Composable
+fun StateDeclarationStyles() {
+    // Style 1: Direct MutableState — need .value for reads/writes
+    val count1 = remember { mutableStateOf(0) }
+    Text("Count: ${count1.value}")
+
+    // Style 2: Property delegation with 'by' — clean reads/writes
+    var count2 by remember { mutableStateOf(0) }
+    Text("Count: $count2")
+
+    // Style 3: Destructured — separate getter and setter
+    val (count3, setCount3) = remember { mutableStateOf(0) }
+    Text("Count: $count3")
+    Button(onClick = { setCount3(count3 + 1) }) { Text("+") }
+}
+```
+
+Style 2 (property delegation) is the most common and recommended for local state. Style 1 is useful when you need to pass the `MutableState` object itself to another function. Style 3 (destructuring) is useful in patterns where you want to pass the setter as a callback.
+
+For non-state remembered values, `remember` caches expensive computations across recompositions:
+
+```kotlin
+@Composable
+fun FormattedPrice(priceInCents: Long) {
+    // Cached across recompositions — NumberFormat creation is expensive
+    val formatter = remember {
+        NumberFormat.getCurrencyInstance(Locale.US)
+    }
+
+    // Recalculated when priceInCents changes
+    val formatted = remember(priceInCents) {
+        formatter.format(priceInCents / 100.0)
+    }
+
+    Text(formatted)
+}
+
+@Composable
+fun RegexValidator(pattern: String, input: String) {
+    // Regex compiled once per pattern, not on every recomposition
+    val regex = remember(pattern) { Regex(pattern) }
+    val isValid = remember(input, regex) { regex.matches(input) }
+
+    Text(
+        text = if (isValid) "Valid" else "Invalid",
+        color = if (isValid) Color.Green else Color.Red
+    )
+}
+```
+
 A common mistake is `remember { mutableStateOf(parameter) }` where `parameter` is a composable parameter. When the parameter changes, the state doesn't update because `remember` has no key. The fix is `remember(parameter) { mutableStateOf(parameter) }` — but be careful, this resets the state every time the parameter changes. If you want the initial value from a parameter but allow the user to modify it, you need to carefully design the key strategy.
+
+```kotlin
+// ❌ BUG: remember has no key — state never updates when initialText changes
+@Composable
+fun EditableField(initialText: String) {
+    var text by remember { mutableStateOf(initialText) }
+    TextField(value = text, onValueChange = { text = it })
+}
+
+// ⚠️ WORKS but resets user edits when initialText changes
+@Composable
+fun EditableField(initialText: String) {
+    var text by remember(initialText) { mutableStateOf(initialText) }
+    TextField(value = text, onValueChange = { text = it })
+}
+
+// ✅ BEST: separate initial value from user edits
+@Composable
+fun EditableField(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    TextField(value = value, onValueChange = onValueChange)
+}
+```
+
+For specialized state types, Compose provides optimized variants: `mutableIntStateOf`, `mutableLongStateOf`, `mutableFloatStateOf`, and `mutableDoubleStateOf`. These avoid autoboxing overhead when storing primitive numeric types. In performance-critical code like animation or scroll tracking, using `mutableIntStateOf` instead of `mutableStateOf(0)` avoids creating `Integer` wrapper objects on every read.
+
+```kotlin
+@Composable
+fun OptimizedCounter() {
+    // ✅ Uses primitive int — no autoboxing
+    var count by remember { mutableIntStateOf(0) }
+
+    // ❌ Uses boxed Integer — slight overhead
+    var countBoxed by remember { mutableStateOf(0) }
+
+    Text("Count: $count")
+    Button(onClick = { count++ }) { Text("Increment") }
+}
+```
+
+**Common Pitfalls:**
+
+Using `mutableStateOf` without `remember` is the number one beginner mistake. The state is recreated on every recomposition, resetting to its initial value. Another pitfall is using `remember` with a stale key — if the key doesn't change when it should, the cached value becomes stale. The opposite pitfall is using too many keys, causing unnecessary recomputation. Each `remember(key)` call checks the key on every recomposition; adding expensive-to-compare keys wastes cycles. Finally, mutating remembered objects directly without `mutableStateOf` doesn't trigger recomposition — `remember { mutableListOf<String>() }` stores a list, but adding items to it is invisible to Compose.
 
 **Key takeaway:** `remember` keeps a value across recompositions. `mutableStateOf` makes it observable — changes trigger recomposition. Always use them together for UI state, and always consider your key strategy.
 
 ### Lesson 2.2: State Hoisting
 
-State hoisting is the pattern of moving state up to the caller and passing it down as parameters with events flowing up as callbacks. This makes composables stateless, reusable, and testable. It's the Compose equivalent of the "dumb view" pattern in MVP/MVVM.
+State hoisting is the pattern of moving state up to the caller and passing it down as parameters with events flowing up as callbacks. This makes composables stateless, reusable, and testable. It's the Compose equivalent of the "dumb view" pattern in MVP/MVVM. State hoisting is not just a best practice — it is the architectural pattern that Compose is designed around. Every Material component follows this pattern: `TextField` takes `value` and `onValueChange`, `Checkbox` takes `checked` and `onCheckedChange`.
 
-The pattern creates a clear separation: the **state owner** (parent or ViewModel) holds the state, the **stateless composable** receives data and emits events. State flows down through parameters, events flow up through callbacks. This unidirectional data flow makes the UI predictable — for any given set of parameters, the composable always produces the same output.
+The pattern creates a clear separation: the **state owner** (parent or ViewModel) holds the state, the **stateless composable** receives data and emits events. State flows down through parameters, events flow up through callbacks. This unidirectional data flow makes the UI predictable — for any given set of parameters, the composable always produces the same output. This is the declarative promise in action: the composable is a pure function of its parameters.
 
 ```kotlin
 // ❌ State inside — not reusable, not testable
@@ -417,7 +1061,66 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
 }
 ```
 
-The question of **where** to hoist state has a clear answer: hoist to the **lowest common ancestor** that needs it. If only one composable reads a piece of state, keep it local with `remember`. If siblings need to share state, hoist to their parent. If the state needs to survive configuration changes or be shared across screens, hoist to a ViewModel.
+The testability benefit cannot be overstated. A stateless composable can be tested by setting content with known parameters and verifying the output. No ViewModel mocking, no dependency injection, no Hilt modules. You pass state in, check the UI, simulate user actions, and verify the emitted events.
+
+```kotlin
+// Testing a hoisted composable is trivial
+@Test
+fun searchBar_displays_query_and_emits_changes() {
+    var capturedQuery = ""
+    composeTestRule.setContent {
+        SearchBar(
+            query = "initial",
+            onQueryChange = { capturedQuery = it }
+        )
+    }
+
+    // Verify initial state
+    composeTestRule.onNodeWithText("initial").assertIsDisplayed()
+
+    // Simulate user typing
+    composeTestRule.onNode(hasText("initial")).performTextInput(" text")
+
+    // Verify event was emitted
+    assert(capturedQuery == "initial text")
+}
+```
+
+The question of **where** to hoist state has a clear answer: hoist to the **lowest common ancestor** that needs it. If only one composable reads a piece of state, keep it local with `remember`. If siblings need to share state, hoist to their parent. If the state needs to survive configuration changes or be shared across screens, hoist to a ViewModel. This creates a hierarchy of state ownership that mirrors the composable hierarchy.
+
+```kotlin
+// Decision tree for state placement:
+// Q: Does only this composable use the state?
+//   → Yes: keep local with remember
+// Q: Do sibling composables need this state?
+//   → Yes: hoist to parent
+// Q: Does the state need to survive config changes?
+//   → Yes: hoist to ViewModel
+// Q: Does the state need to survive process death?
+//   → Yes: use rememberSaveable or SavedStateHandle
+
+// Local state — only this composable uses it
+@Composable
+fun ExpandableCard(title: String, content: String) {
+    var expanded by remember { mutableStateOf(false) }
+    Card(modifier = Modifier.clickable { expanded = !expanded }) {
+        Text(title)
+        AnimatedVisibility(visible = expanded) {
+            Text(content)
+        }
+    }
+}
+
+// Shared state — siblings need it, hoist to parent
+@Composable
+fun TabbedContent() {
+    var selectedTab by remember { mutableStateOf(0) }
+    Column {
+        TabRow(selectedTab) // reads selectedTab
+        TabContent(selectedTab) // also reads selectedTab
+    }
+}
+```
 
 There's also the concept of a **plain class state holder** — for UI logic that's too complex for a single composable but doesn't belong in a ViewModel. Navigation drawer state, scroll state coordination, or complex form logic can live in a plain Kotlin class created with `remember`. The ViewModel handles business logic and data flow; the plain state holder manages UI-specific logic.
 
@@ -439,6 +1142,12 @@ fun rememberDrawerState(initialOpen: Boolean = false): DrawerState {
     return remember { DrawerState(initialOpen) }
 }
 ```
+
+In production, the state hoisting pattern extends beyond individual composables to entire screen architectures. A well-structured screen has a thin screen-level composable that connects to the ViewModel and a thick content-level composable that is entirely stateless. This pattern is covered in detail in Module 12, but the foundation is state hoisting.
+
+**Common Pitfalls:**
+
+Over-hoisting is a common mistake — hoisting state higher than necessary creates unnecessary coupling and causes wider recomposition scopes. If a state value is only used by one composable, keeping it local with `remember` is correct. Another pitfall is hoisting state that doesn't need to be shared. Not every piece of state needs to be in a ViewModel. Scroll position, expansion state, and text field focus are often better managed locally. A third pitfall is forgetting to pass the `Modifier` parameter — every public composable should accept a `modifier: Modifier = Modifier` parameter for flexibility. This is part of the hoisting contract: the caller controls the composable's external behavior through modifiers.
 
 **Key takeaway:** Hoist state to the lowest common ancestor that needs it. UI components should be stateless — they receive data and emit events. Use plain classes for complex UI logic, ViewModels for business logic.
 
@@ -494,9 +1203,11 @@ A common mistake is using `rememberSaveable` for everything. The `Bundle` has a 
 
 ### Lesson 2.4: ViewModel Integration and StateFlow
 
-For state that survives configuration changes, comes from a data layer, or needs to be shared across composables, the ViewModel is the right state holder. In Compose, ViewModels expose state as `StateFlow` (or `Flow`) and composables collect it with `collectAsStateWithLifecycle()`.
+For state that survives configuration changes, comes from a data layer, or needs to be shared across composables, the ViewModel is the right state holder. In Compose, ViewModels expose state as `StateFlow` (or `Flow`) and composables collect it with `collectAsStateWithLifecycle()`. This integration pattern is the backbone of production Compose apps — understanding it deeply prevents a class of subtle lifecycle bugs.
 
-The `collectAsStateWithLifecycle` extension is lifecycle-aware — it starts collecting when the composable is at least `STARTED` and stops when it drops below `STARTED`. This prevents processing emissions when the UI isn't visible, saving resources and avoiding crashes from updates to an invisible UI.
+The `collectAsStateWithLifecycle` extension is lifecycle-aware — it starts collecting when the composable is at least `STARTED` and stops when it drops below `STARTED`. This prevents processing emissions when the UI isn't visible, saving resources and avoiding crashes from updates to an invisible UI. This is a critical distinction from `collectAsState()`, which collects regardless of lifecycle state. In production, always prefer `collectAsStateWithLifecycle()` — it is the correct choice for any flow that originates from a repository or data source.
+
+The lifecycle awareness solves a subtle problem. When the user presses Home and the Activity goes to `STOPPED`, `collectAsState()` continues collecting emissions. If the flow emits a navigation event while the app is backgrounded, the composable tries to navigate — potentially crashing. `collectAsStateWithLifecycle()` stops collecting when the lifecycle drops below `STARTED`, preventing this class of bugs entirely. It also prevents wasted work — if your flow triggers network requests or database queries, stopping collection when the UI isn't visible avoids unnecessary battery and data usage.
 
 ```kotlin
 class ProfileViewModel(
@@ -536,7 +1247,9 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
 }
 ```
 
-There are multiple approaches to managing state in a ViewModel. The simplest is a single `MutableStateFlow` with a data class. For more complex screens, you can use multiple individual state flows and combine them using the `combine` operator. The `combine` approach is more flexible — each piece of state can be updated independently, and you can mix flows from the repository with local UI state.
+There are multiple approaches to managing state in a ViewModel. The simplest is a single `MutableStateFlow` with a data class. This works well for most screens and provides atomic state updates — the UI never sees a partially-updated state. The tradeoff is that every state update creates a new data class instance, which triggers recomposition of the entire screen composable (though skippable children with unchanged parameters will be skipped).
+
+For more complex screens, you can use multiple individual state flows and combine them using the `combine` operator. The `combine` approach is more flexible — each piece of state can be updated independently, and you can mix flows from the repository with local UI state. The tradeoff is more boilerplate and the need to handle the initial empty state before all flows have emitted.
 
 ```kotlin
 class DashboardViewModel(
@@ -565,6 +1278,44 @@ class DashboardViewModel(
     )
 }
 ```
+
+The `SharingStarted.WhileSubscribed(5_000)` parameter deserves explanation. It tells the `stateIn` operator to keep the upstream flows active for 5 seconds after the last subscriber disconnects. This handles a common scenario: during a configuration change (screen rotation), the old composable is destroyed and the new one starts collecting. There's a brief gap where no subscribers exist. Without the 5-second grace period, the upstream flows would stop and restart, potentially re-fetching data from the network. The 5-second window bridges this gap, keeping the data flow alive during configuration changes.
+
+An alternative approach is exposing multiple individual `State` objects from the ViewModel, each with its own `collectAsStateWithLifecycle()` in the composable. This creates finer-grained recomposition boundaries — only the composables that read the specific state that changed will recompose.
+
+```kotlin
+class FineGrainedViewModel : ViewModel() {
+    val userName: StateFlow<String> = userRepo.userName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    val notifications: StateFlow<Int> = notifRepo.unreadCount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    val isOnline: StateFlow<Boolean> = connectivityRepo.isOnline
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+}
+
+@Composable
+fun FineGrainedScreen(viewModel: FineGrainedViewModel = viewModel()) {
+    Column {
+        // Only recomposes when userName changes
+        val name by viewModel.userName.collectAsStateWithLifecycle()
+        Text("Hello, $name")
+
+        // Only recomposes when notification count changes
+        val count by viewModel.notifications.collectAsStateWithLifecycle()
+        Badge { Text("$count") }
+
+        // Only recomposes when online status changes
+        val online by viewModel.isOnline.collectAsStateWithLifecycle()
+        StatusDot(online)
+    }
+}
+```
+
+**Common Pitfalls:**
+
+Using `collectAsState()` instead of `collectAsStateWithLifecycle()` is the most common mistake — it leads to wasted work and potential crashes when the app is backgrounded. Another pitfall is using `SharingStarted.Lazily` or `SharingStarted.Eagerly` when `WhileSubscribed` is the correct default. `Eagerly` starts collection immediately and never stops, wasting resources. `Lazily` starts on first subscriber but never stops. `WhileSubscribed(5_000)` starts and stops appropriately. A third pitfall is updating `MutableStateFlow` from background threads without proper synchronization — use `_state.update { }` instead of `_state.value = _state.value.copy(...)` because `update` is atomic.
 
 **Key takeaway:** Use `collectAsStateWithLifecycle()` to bridge ViewModel StateFlows into Compose state. Choose between single-state and combine-based patterns based on complexity. Use `SharingStarted.WhileSubscribed(5_000)` to keep upstream flows alive during configuration changes.
 
@@ -771,9 +1522,11 @@ Side effects are operations that escape the scope of a composable function — n
 
 ### Lesson 3.1: LaunchedEffect — The Workhorse
 
-`LaunchedEffect` launches a coroutine that's tied to the composition lifecycle. When the composable enters the composition, the coroutine starts. When the composable leaves the composition, the coroutine is cancelled. If the key changes, the current coroutine is cancelled and a new one starts. This is the most commonly used effect handler in Compose.
+`LaunchedEffect` launches a coroutine that's tied to the composition lifecycle. When the composable enters the composition, the coroutine starts. When the composable leaves the composition, the coroutine is cancelled. If the key changes, the current coroutine is cancelled and a new one starts. This is the most commonly used effect handler in Compose, and understanding its lifecycle is essential for correct side effect management.
 
-The key parameter is the most important thing to get right. Think of it not as "when should this run" but as "what input does this effect depend on." If your effect depends on a `userId`, the key is `userId`. If it depends on nothing (one-time initialization), the key is `Unit`. If you're not sure what the key should be, you probably don't fully understand your effect's dependencies.
+The key parameter is the most important thing to get right. Think of it not as "when should this run" but as "what input does this effect depend on." If your effect depends on a `userId`, the key is `userId`. If it depends on nothing (one-time initialization), the key is `Unit`. If you're not sure what the key should be, you probably don't fully understand your effect's dependencies. The key is the contract between you and the runtime: "restart this effect whenever this value changes."
+
+Internally, `LaunchedEffect` stores its coroutine job in the slot table. When the key changes, the stored job is cancelled via cooperative cancellation (the standard Kotlin coroutine cancellation mechanism), and a new job is launched. The coroutine scope provided to the lambda is a `CoroutineScope` that uses `Dispatchers.Main.immediate` by default, meaning the coroutine starts executing synchronously on the UI thread until it hits a suspension point. This is important for understanding timing — code before the first `delay` or `suspend` call runs immediately after composition.
 
 ```kotlin
 @Composable
@@ -797,6 +1550,29 @@ fun ProfileScreen(userId: String) {
 }
 ```
 
+The `LaunchedEffect(Unit)` pattern deserves special attention. Using `Unit` as the key means "this effect runs exactly once when the composable enters the composition and is cancelled when it leaves." This is the correct pattern for one-time setup, event collection, and indefinite operations like timers. Because the key never changes (it's always `Unit`), the effect never restarts during recompositions.
+
+Multiple keys are supported — `LaunchedEffect(key1, key2)` restarts when either key changes. The runtime checks all keys for equality and restarts if any one has changed. Use multiple keys when your effect depends on multiple inputs.
+
+```kotlin
+@Composable
+fun FilteredList(
+    category: String,
+    sortOrder: SortOrder,
+    viewModel: ListViewModel
+) {
+    // Restarts when either category OR sortOrder changes
+    LaunchedEffect(category, sortOrder) {
+        viewModel.loadItems(category, sortOrder)
+    }
+
+    // ❌ BAD: separate effects for related keys
+    // If both change simultaneously, you get two loads
+    LaunchedEffect(category) { viewModel.loadItems(category, sortOrder) }
+    LaunchedEffect(sortOrder) { viewModel.loadItems(category, sortOrder) }
+}
+```
+
 A common mistake is using `LaunchedEffect` with a state value as the key when you actually want it to run once. For example, `LaunchedEffect(uiState)` restarts on every state change — if the effect updates state, you get an infinite loop. The fix is to use `LaunchedEffect(Unit)` for one-time effects and handle state changes through flow collection or event channels.
 
 Another common pattern is using `LaunchedEffect` for one-time navigation events. But be careful: if the composable recomposes between the event emission and the `LaunchedEffect` collecting it, the event might be missed. Use a `Channel` or `SharedFlow(replay = 0)` in the ViewModel to ensure events are consumed exactly once.
@@ -816,13 +1592,45 @@ class OrderViewModel : ViewModel() {
 }
 ```
 
+A production pattern you'll use frequently is launching parallel operations with structured concurrency inside `LaunchedEffect`:
+
+```kotlin
+@Composable
+fun DashboardScreen(viewModel: DashboardViewModel) {
+    LaunchedEffect(Unit) {
+        // Launch parallel data loads using structured concurrency
+        coroutineScope {
+            launch { viewModel.loadUserProfile() }
+            launch { viewModel.loadNotifications() }
+            launch { viewModel.loadRecentActivity() }
+        }
+        // All three complete before this line executes
+        viewModel.markDataReady()
+    }
+
+    // Another common pattern: periodic refresh
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            viewModel.refreshData()
+            delay(30_000) // Refresh every 30 seconds
+        }
+    }
+}
+```
+
+**Common Pitfalls:**
+
+The most dangerous pitfall is capturing a changing value in a `LaunchedEffect(Unit)` without `rememberUpdatedState`. Since the effect never restarts, it captures the initial value of its closures. If a callback parameter changes, the effect still holds the original reference. Use `rememberUpdatedState` (covered in Lesson 3.3) to solve this. Another pitfall is blocking the UI thread with expensive synchronous operations before the first suspension point — remember that `LaunchedEffect` starts on `Dispatchers.Main.immediate`. Switch to `Dispatchers.IO` for blocking operations using `withContext(Dispatchers.IO) { ... }`.
+
 **Key takeaway:** `LaunchedEffect` launches a coroutine scoped to the composition. When the key changes, the previous coroutine is cancelled and a new one starts. Use `Unit` for one-time effects, specific values for effects that depend on parameters.
 
 ### Lesson 3.2: DisposableEffect — Setup and Teardown
 
-`DisposableEffect` is for effects that need explicit cleanup — registering/unregistering listeners, adding/removing observers, connecting/disconnecting from services. It provides an `onDispose` block that runs when the composable leaves the composition or when the key changes (before the effect restarts).
+`DisposableEffect` is for effects that need explicit cleanup — registering/unregistering listeners, adding/removing observers, connecting/disconnecting from services. It provides an `onDispose` block that runs when the composable leaves the composition or when the key changes (before the effect restarts). This is the Compose equivalent of `onResume`/`onPause` or `addListener`/`removeListener` patterns. Any time you have a setup/teardown pair, `DisposableEffect` is the right tool.
 
-This is the Compose equivalent of `onResume`/`onPause` or `addListener`/`removeListener` patterns. Any time you have a setup/teardown pair, `DisposableEffect` is the right tool.
+The critical difference between `DisposableEffect` and `LaunchedEffect` is the cleanup mechanism. `LaunchedEffect` cleans up by cancelling its coroutine — any suspending operation is automatically cancelled through Kotlin's cooperative cancellation. `DisposableEffect` cleans up by running an explicit `onDispose` block — this is necessary when the resource doesn't support coroutine cancellation. Platform listeners, broadcast receivers, sensor registrations, and callback-based APIs all need explicit cleanup through `onDispose`.
+
+The execution lifecycle of `DisposableEffect` follows a precise sequence. On first composition, the setup block runs and registrations are established. When the key changes, `onDispose` runs first to clean up the old registrations, then the setup block runs again with the new key. When the composable leaves the composition entirely, `onDispose` runs one final time. This ordering guarantees that there is never a gap or overlap in resource management — the old resource is always released before the new one is acquired.
 
 ```kotlin
 @Composable
@@ -871,6 +1679,57 @@ fun SensorTracker(sensorManager: SensorManager) {
 ```
 
 The key parameter for `DisposableEffect` follows the same rules as `LaunchedEffect`. When the key changes, `onDispose` runs first to clean up the old effect, then the setup block runs again with the new key value. This ensures resources are always properly released before re-acquisition.
+
+A production pattern that appears frequently is wrapping platform callback APIs into Compose-friendly state. The combination of `DisposableEffect` for lifecycle management and `mutableStateOf` for Compose state creates a bridge between the imperative Android platform and the declarative Compose world:
+
+```kotlin
+@Composable
+fun rememberWindowInsets(): WindowInsetsCompat {
+    var insets by remember { mutableStateOf(WindowInsetsCompat.CONSUMED) }
+    val view = LocalView.current
+
+    DisposableEffect(view) {
+        val listener = OnApplyWindowInsetsListener { _, windowInsets ->
+            insets = windowInsets
+            windowInsets
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(view, listener)
+
+        onDispose {
+            ViewCompat.setOnApplyWindowInsetsListener(view, null)
+        }
+    }
+
+    return insets
+}
+
+// Using a map listener with cleanup
+@Composable
+fun MapCameraTracker(mapView: MapView, onCameraMove: (LatLng) -> Unit) {
+    val currentOnCameraMove by rememberUpdatedState(onCameraMove)
+
+    DisposableEffect(mapView) {
+        val listener = GoogleMap.OnCameraMoveListener {
+            mapView.getMapAsync { map ->
+                currentOnCameraMove(map.cameraPosition.target)
+            }
+        }
+        mapView.getMapAsync { map ->
+            map.setOnCameraMoveListener(listener)
+        }
+
+        onDispose {
+            mapView.getMapAsync { map ->
+                map.setOnCameraMoveListener(null)
+            }
+        }
+    }
+}
+```
+
+**Common Pitfalls:**
+
+Forgetting to include `onDispose` is a compiler error — `DisposableEffect` requires it. But a common runtime pitfall is doing incomplete cleanup. If your setup block registers two listeners, your `onDispose` must unregister both. Another pitfall is referencing stale values inside the setup or `onDispose` blocks. If a callback parameter changes but the key doesn't, the `DisposableEffect` continues using the old callback. Use `rememberUpdatedState` (covered in Lesson 3.3) to solve this. Finally, avoid doing heavy work inside `onDispose` — it runs synchronously on the UI thread during composition disposal.
 
 **Key takeaway:** `DisposableEffect` is for effects that need cleanup — listeners, callbacks, subscriptions. The `onDispose` block runs when the key changes or when leaving composition. Always pair setup with teardown.
 
@@ -1237,7 +2096,9 @@ fun ConstraintDemo() {
 
 ### Lesson 4.4: LazyColumn and LazyRow
 
-`LazyColumn` and `LazyRow` are the Compose equivalents of `RecyclerView`. They only compose and lay out visible items, reusing composition slots as items scroll off-screen. This makes them efficient for lists of any size — from 10 items to 10,000.
+`LazyColumn` and `LazyRow` are the Compose equivalents of `RecyclerView`. They only compose and lay out visible items, reusing composition slots as items scroll off-screen. This makes them efficient for lists of any size — from 10 items to 10,000. Understanding how they work internally — and the performance pitfalls that come with misuse — is essential for any production Compose app.
+
+The internal mechanism of `LazyColumn` is fundamentally different from `RecyclerView`. `RecyclerView` recycles View objects — it creates a pool of ViewHolders and rebinds them with new data as items scroll. `LazyColumn` recycles composition slots — as items scroll off the visible area, their composition is disposed (state is discarded), and when new items scroll into view, they are composed from scratch. There is no "view pool" or "rebinding" — each item is a fresh composition. This means `remember` state in lazy items is lost when items scroll off-screen, which is both a feature (no stale state) and a gotcha (state you want preserved must be hoisted).
 
 Always provide stable `key` parameters. Without `key`, Compose uses position-based identity. If items are reordered, deleted, or inserted, position-based identity causes incorrect state preservation — item 3's state ends up on item 4. `key = { it.id }` tells Compose to track items by their unique ID, enabling correct state preservation and efficient diffing.
 
@@ -1274,7 +2135,7 @@ fun MessageList(messages: List<Message>) {
 }
 ```
 
-Performance considerations for lazy lists: avoid passing unstable types as item content parameters (use `@Immutable` data classes). Use `contentType` when your list has multiple item types — this helps Compose reuse compositions more efficiently. Avoid nesting scrollable containers in the same direction. And never use `Modifier.fillMaxHeight()` or `Modifier.height(IntrinsicSize.Min)` on items — it forces measurement of all items, defeating the lazy loading purpose.
+The `contentType` parameter is a performance optimization that most developers overlook. When a `LazyColumn` has multiple item types (posts, ads, headers), `contentType` tells Compose which compositions are structurally similar. Items with the same content type can potentially have their composition slots reused more efficiently, reducing composition overhead during scrolling. Without `contentType`, Compose treats all items as potentially different, which means more composition work when items scroll in and out.
 
 ```kotlin
 LazyColumn {
@@ -1297,6 +2158,90 @@ LazyColumn {
     }
 }
 ```
+
+Performance considerations for lazy lists are numerous and critical for production apps. First, avoid passing unstable types as item content parameters — use `@Immutable` data classes. Each item composable should be skippable so that when the list recomposes (e.g., a new item is added), existing items that haven't changed are skipped. Second, use `contentType` when your list has multiple item types. Third, avoid nesting scrollable containers in the same direction — a `LazyColumn` inside a `Column(modifier = Modifier.verticalScroll())` is undefined behavior. Fourth, never use `Modifier.fillMaxHeight()` or `Modifier.height(IntrinsicSize.Min)` on items — it forces measurement of all items, defeating the lazy loading purpose.
+
+```kotlin
+// ❌ BAD: nesting scrollable containers in the same direction
+Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+    // This LazyColumn inside a scrollable Column has undefined behavior
+    LazyColumn(modifier = Modifier.height(500.dp)) {
+        items(items) { ItemCard(it) }
+    }
+}
+
+// ✅ GOOD: use a single LazyColumn with mixed content
+LazyColumn {
+    item { HeaderContent() }
+    items(items, key = { it.id }) { ItemCard(it) }
+    item { FooterContent() }
+}
+
+// ❌ BAD: expensive operations in the item lambda
+LazyColumn {
+    items(items, key = { it.id }) { item ->
+        // This runs during composition on the UI thread
+        val bitmap = BitmapFactory.decodeResource(resources, item.imageRes) // ❌
+        ImageCard(bitmap)
+    }
+}
+
+// ✅ GOOD: defer expensive operations
+LazyColumn {
+    items(items, key = { it.id }) { item ->
+        // AsyncImage loads off the main thread
+        AsyncImageCard(imageUrl = item.imageUrl)
+    }
+}
+```
+
+For advanced use cases, `LazyListState` provides programmatic control over scroll position. You can read `firstVisibleItemIndex` and `firstVisibleItemScrollOffset` for scroll-linked animations, call `animateScrollToItem` for smooth scrolling, and observe `layoutInfo` for precise information about visible items. All of these are snapshot state, meaning they integrate naturally with Compose's reactivity system.
+
+```kotlin
+@Composable
+fun SmartList(
+    items: ImmutableList<Item>,
+    viewModel: ListViewModel
+) {
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.savedScrollIndex,
+        initialFirstVisibleItemScrollOffset = viewModel.savedScrollOffset
+    )
+
+    // Save scroll position when it changes
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            listState.firstVisibleItemIndex to
+                listState.firstVisibleItemScrollOffset
+        }.debounce(300)
+         .collect { (index, offset) ->
+            viewModel.saveScrollPosition(index, offset)
+        }
+    }
+
+    // Detect end of list for pagination
+    val reachedEnd by remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem != null && lastVisibleItem.index >= items.size - 5
+        }
+    }
+
+    LaunchedEffect(reachedEnd) {
+        if (reachedEnd) viewModel.loadMore()
+    }
+
+    LazyColumn(state = listState) {
+        items(items, key = { it.id }) { item ->
+            ItemCard(item)
+        }
+    }
+}
+```
+
+**Common Pitfalls:**
+
+The biggest performance pitfall is not providing `key`. Without keys, item animations break, swipe-to-dismiss targets the wrong item, and `remember` state drifts when items are reordered. Another common mistake is using `Modifier.animateItem()` (for item animations) without `key` — the animation has nothing to track and produces jarring results. A subtler pitfall is creating new lambda instances for each item's callback without using method references or `remember`. In a list of 100 items, 100 new lambda objects are created on every recomposition, preventing child items from being skipped.
 
 **Key takeaway:** `LazyColumn` only composes visible items. Always use `key` for stable item identity, `contentType` for heterogeneous lists, and stable data types for item parameters.
 
@@ -1509,29 +2454,43 @@ This solution demonstrates a custom `Layout` with constraint handling, position 
 
 ### Lesson 5.1: Material 3 Theming
 
-Material 3 theming in Compose uses `MaterialTheme` to provide colors, typography, and shapes throughout the composition tree. Unlike XML themes that use style resources, Compose themes are Kotlin code — fully type-safe and composable.
+Material 3 theming in Compose uses `MaterialTheme` to provide colors, typography, and shapes throughout the composition tree. Unlike XML themes that use style resources, Compose themes are Kotlin code — fully type-safe and composable. The theming system is built on `CompositionLocal` (covered in Lesson 5.2), which means theme values are implicitly available to every composable in the tree without explicit parameter passing. This is the declarative equivalent of XML's theme attribute system, but with compile-time safety and full Kotlin expressiveness.
 
-The `MaterialTheme` composable uses `CompositionLocal` under the hood to provide theme values. Any composable in the tree can access them via `MaterialTheme.colorScheme`, `MaterialTheme.typography`, and `MaterialTheme.shapes`. This replaces the XML-based `R.style` and `R.color` approach entirely.
+The `MaterialTheme` composable uses `CompositionLocal` under the hood to provide theme values. Any composable in the tree can access them via `MaterialTheme.colorScheme`, `MaterialTheme.typography`, and `MaterialTheme.shapes`. This replaces the XML-based `R.style` and `R.color` approach entirely. The key advantage is that theme values are resolved at composition time, not at inflation time — meaning you can dynamically switch themes without recreating the Activity. Dark mode, dynamic color, and user-selectable themes all become trivial.
+
+The Material 3 color system is built on the concept of **tonal palettes** — a set of colors generated from a seed color using the HCT (Hue, Chroma, Tone) color space. Each seed color generates a palette of 13 tones (0-100), and these tones are mapped to semantic roles like `primary`, `onPrimary`, `primaryContainer`, and `onPrimaryContainer`. The "on" prefix indicates a color suitable for text and icons placed on top of the corresponding surface color. The "container" suffix indicates a less prominent variant used for backgrounds of interactive elements.
+
+On Android 12+, dynamic color theming extracts the seed color from the user's wallpaper. This creates a deeply personalized experience where your app's color scheme harmonizes with the user's device. Compose makes this trivial with `dynamicLightColorScheme()` and `dynamicDarkColorScheme()`.
 
 ```kotlin
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) darkColorScheme(
-        primary = Color(0xFF60A5FA),
-        secondary = Color(0xFFA78BFA),
-        background = Color(0xFF111827),
-        surface = Color(0xFF1F2937),
-        onPrimary = Color.White,
-        onBackground = Color(0xFFF9FAFB)
-    ) else lightColorScheme(
-        primary = Color(0xFF3B82F6),
-        secondary = Color(0xFF8B5CF6),
-        background = Color(0xFFF9FAFB),
-        surface = Color.White
-    )
+    val colorScheme = when {
+        // Dynamic color on Android 12+
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
+        }
+        darkTheme -> darkColorScheme(
+            primary = Color(0xFF60A5FA),
+            secondary = Color(0xFFA78BFA),
+            background = Color(0xFF111827),
+            surface = Color(0xFF1F2937),
+            onPrimary = Color.White,
+            onBackground = Color(0xFFF9FAFB)
+        )
+        else -> lightColorScheme(
+            primary = Color(0xFF3B82F6),
+            secondary = Color(0xFF8B5CF6),
+            background = Color(0xFFF9FAFB),
+            surface = Color.White
+        )
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -1571,6 +2530,48 @@ fun ThemedCard(title: String) {
 ```
 
 The Material 3 color system uses **color roles** rather than specific colors. `primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer` — each role has a semantic meaning. The system automatically generates tonal palettes from a seed color. When designing a custom theme, define the seed colors and let the system generate the full palette, or override individual roles for precise control.
+
+Typography in Material 3 uses a simplified scale compared to Material 2. The five categories are: Display (3 sizes), Headline (3 sizes), Title (3 sizes), Body (3 sizes), and Label (3 sizes) — 15 text styles total. Each style specifies font family, size, weight, letter spacing, and line height. In production, you'll typically customize a subset of these styles and let the rest use Material defaults.
+
+```kotlin
+// Creating a complete custom typography scale
+val AppTypography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = InterFamily,
+        fontSize = 57.sp,
+        lineHeight = 64.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = InterFamily,
+        fontSize = 28.sp,
+        lineHeight = 36.sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = InterFamily,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = InterFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    )
+)
+```
+
+**Common Pitfalls:**
+
+The most common theming pitfall is hardcoding colors instead of using `MaterialTheme.colorScheme`. Hardcoded colors don't adapt to dark mode, dynamic color, or theme changes. Another pitfall is ignoring the "on" color roles — using `Color.White` for text on a `primary` background instead of `MaterialTheme.colorScheme.onPrimary`. The "on" colors are calculated for sufficient contrast ratio. A third pitfall is not testing with dark theme, large font sizes (accessibility), and different device sizes. Use `@Preview` annotations with `uiMode = UI_MODE_NIGHT_YES` and `fontScale = 2f` to catch visual regressions early.
 
 **Key takeaway:** Use `MaterialTheme` for consistent styling. Access colors via `MaterialTheme.colorScheme`, typography via `MaterialTheme.typography`. The color system uses semantic roles, not arbitrary color names.
 
@@ -1798,9 +2799,11 @@ This solution uses a custom `CompositionLocal` to propagate variant-specific dim
 
 ### Lesson 6.1: Compose Navigation Basics
 
-Compose Navigation manages screen transitions with a `NavController` and `NavHost`. The `NavHost` composable acts as a container that swaps composable destinations based on the current route. Each destination is defined by a route string and a composable lambda.
+Compose Navigation manages screen transitions with a `NavController` and `NavHost`. The `NavHost` composable acts as a container that swaps composable destinations based on the current route. Each destination is defined by a route string and a composable lambda. Navigation in Compose follows the same fundamental principles as Fragment-based navigation but uses composable functions instead of Fragments as destinations.
 
-The key architectural principle is that **screens should not hold a reference to NavController**. Instead, screens receive navigation callbacks as parameters and the navigation logic stays in the `NavHost` setup. This keeps screens testable and decoupled from the navigation framework.
+The key architectural principle is that **screens should not hold a reference to NavController**. Instead, screens receive navigation callbacks as parameters and the navigation logic stays in the `NavHost` setup. This keeps screens testable and decoupled from the navigation framework. If a screen composable takes a `NavController` parameter, it becomes impossible to test without mocking the entire navigation stack. By passing callbacks, you can test the screen with `setContent { ProfileScreen(state, onNavigate = { captured = it }) }`.
+
+Internally, `NavHost` uses `SubcomposeLayout` and `AnimatedContent` to swap between destinations. Each destination's composable content is composed when navigated to and disposed when navigated away from (unless `saveState` is used). The `NavController` manages the back stack as a list of `NavBackStackEntry` objects, each holding the route, arguments, and lifecycle state for that destination.
 
 ```kotlin
 @Composable
@@ -1834,6 +2837,55 @@ fun AppNavigation() {
     }
 }
 ```
+
+Arguments can be required (path parameters) or optional (query parameters). Path parameters like `profile/{userId}` are embedded in the route string. Optional parameters use query-style syntax: `search?query={query}&filter={filter}`. Default values can be specified in the `navArgument` builder. This mirrors REST URL patterns and is intuitive for web developers.
+
+```kotlin
+composable(
+    route = "search?query={query}&category={category}",
+    arguments = listOf(
+        navArgument("query") {
+            type = NavType.StringType
+            defaultValue = ""
+        },
+        navArgument("category") {
+            type = NavType.StringType
+            defaultValue = "all"
+            nullable = true
+        }
+    )
+) { backStackEntry ->
+    val query = backStackEntry.arguments?.getString("query") ?: ""
+    val category = backStackEntry.arguments?.getString("category") ?: "all"
+    SearchScreen(initialQuery = query, initialCategory = category)
+}
+
+// Navigating with optional arguments
+navController.navigate("search?query=kotlin&category=tutorials")
+navController.navigate("search") // uses defaults
+```
+
+Each `NavBackStackEntry` has its own `LifecycleOwner`, `ViewModelStoreOwner`, and `SavedStateRegistryOwner`. This means ViewModels created with `viewModel()` inside a composable destination are scoped to that destination's back stack entry. When the user navigates back (pops the entry), the ViewModel is cleared. This scoping is automatic and is one of the key benefits of the Navigation library — you don't need to manually manage ViewModel lifecycle.
+
+```kotlin
+composable("profile/{userId}") { backStackEntry ->
+    // This ViewModel is scoped to this back stack entry
+    // It's created when navigating to this destination
+    // and cleared when navigating back
+    val viewModel: ProfileViewModel = viewModel()
+
+    // For shared ViewModels between destinations, scope to the nav graph
+    val sharedViewModel: SharedViewModel = viewModel(
+        viewModelStoreOwner = backStackEntry.rememberParentEntry(navController)
+    )
+
+    ProfileScreen(viewModel = viewModel)
+}
+```
+
+**Common Pitfalls:**
+
+The most common navigation pitfall is passing `NavController` to screen composables, creating tight coupling. Another pitfall is navigating multiple times from rapid clicks — tapping a button twice can create duplicate destinations. Use `launchSingleTop = true` or debounce clicks to prevent this. A third pitfall is encoding complex objects in route strings. Routes should contain IDs, not full objects. Pass an ID, then let the ViewModel fetch the full object. Serializing large objects in route strings can crash with `TransactionTooLargeException`. Finally, forgetting that `popBackStack()` returns a `Boolean` indicating success — if the stack is empty, it returns false and does nothing, which can confuse developers who expect it to close the Activity.
 
 **Key takeaway:** Use `NavHost` as the navigation container, define routes with `composable`, and pass navigation actions as callbacks to keep screens decoupled from `NavController`.
 
@@ -1994,9 +3046,11 @@ Compose's animation system is built on a single concept: **an animation is a val
 
 ### Lesson 7.1: animate*AsState — Fire and Forget
 
-`animate*AsState` functions are the simplest animation API. You give them a target value, and they animate from the current value to the target whenever the target changes. They return a `State<T>` that Compose reads during recomposition. Interruptions are handled automatically — if the target changes mid-animation, the animation reverses from its current position.
+`animate*AsState` functions are the simplest animation API. You give them a target value, and they animate from the current value to the target whenever the target changes. They return a `State<T>` that Compose reads during recomposition. Interruptions are handled automatically — if the target changes mid-animation, the animation reverses from its current position. This "fire and forget" nature makes them the default choice for most UI animations.
 
-The family includes `animateFloatAsState`, `animateDpAsState`, `animateColorAsState`, `animateIntAsState`, `animateOffsetAsState`, `animateSizeAsState`, and more. For custom types, `animateValueAsState` with a `TwoWayConverter` handles arbitrary types.
+The family includes `animateFloatAsState`, `animateDpAsState`, `animateColorAsState`, `animateIntAsState`, `animateOffsetAsState`, `animateSizeAsState`, and more. For custom types, `animateValueAsState` with a `TwoWayConverter` handles arbitrary types. Each function follows the same pattern: provide a target value, optionally specify an `animationSpec`, and receive a `State` that smoothly transitions.
+
+Internally, `animate*AsState` creates an `Animatable` (Lesson 7.5), remembers it, and launches a coroutine in a `LaunchedEffect` keyed to the target value. When the target changes, the `LaunchedEffect` cancels the previous animation and starts a new one toward the new target. This is why interruptions work seamlessly — the `Animatable` preserves its current velocity when redirected, creating physically plausible motion.
 
 ```kotlin
 @Composable
@@ -2027,7 +3081,74 @@ fun ExpandableCard(isExpanded: Boolean, title: String, content: String) {
 }
 ```
 
-The `label` parameter is used by Animation Preview in Android Studio and Layout Inspector to identify animations. Always include it — debugging unnamed animations in the inspector is painful.
+The `label` parameter is used by Animation Preview in Android Studio and Layout Inspector to identify animations. Always include it — debugging unnamed animations in the inspector is painful. Labels should be descriptive enough to identify the animation in a list of many: "cardElevation" is better than "dp" or "animation1".
+
+For performance, consider where the animated value is consumed. If an animated float is read directly in the composition body, every animation frame triggers recomposition. If it's read inside `graphicsLayer {}`, only the drawing phase runs. This is the same phase-optimization from Lesson 1.4, applied to animations:
+
+```kotlin
+// ❌ Animated value read in Composition — all 3 phases on every frame
+@Composable
+fun PulsingDot(isActive: Boolean) {
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1.2f else 1f,
+        label = "scale"
+    )
+    Box(
+        modifier = Modifier
+            .size((12 * scale).dp) // Read in Composition → triggers Layout
+            .background(Color.Green, CircleShape)
+    )
+}
+
+// ✅ Animated value read in Drawing — only draw phase
+@Composable
+fun PulsingDotOptimized(isActive: Boolean) {
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1.2f else 1f,
+        label = "scale"
+    )
+    Box(
+        modifier = Modifier
+            .size(12.dp)
+            .graphicsLayer {
+                scaleX = scale // Read in Drawing phase
+                scaleY = scale
+            }
+            .background(Color.Green, CircleShape)
+    )
+}
+```
+
+For animating custom types that don't have a built-in `animate*AsState` variant, use `animateValueAsState` with a `TwoWayConverter`. The converter defines how to convert your type to and from an `AnimationVector` — the internal representation that the animation system uses for interpolation.
+
+```kotlin
+// Custom type animation
+data class PolarCoordinate(val radius: Float, val angle: Float)
+
+val PolarConverter = TwoWayConverter<PolarCoordinate, AnimationVector2D>(
+    convertToVector = { AnimationVector2D(it.radius, it.angle) },
+    convertFromVector = { PolarCoordinate(it.v1, it.v2) }
+)
+
+@Composable
+fun AnimatedPolarDot(target: PolarCoordinate) {
+    val current by animateValueAsState(
+        targetValue = target,
+        typeConverter = PolarConverter,
+        label = "polarPosition"
+    )
+
+    Canvas(modifier = Modifier.size(200.dp)) {
+        val x = center.x + current.radius * cos(current.angle)
+        val y = center.y + current.radius * sin(current.angle)
+        drawCircle(Color.Blue, radius = 8f, center = Offset(x, y))
+    }
+}
+```
+
+**Common Pitfalls:**
+
+The most common mistake is animating values that trigger expensive recomposition. If your animated float is used to compute the content of a composable (like selecting different items based on a float threshold), every animation frame triggers full recomposition. Another pitfall is creating multiple independent `animate*AsState` calls for properties that should be coordinated — use `updateTransition` (Lesson 7.4) instead to keep them synchronized. Finally, forgetting the `label` parameter makes debugging animations nearly impossible in the Layout Inspector.
 
 **Key takeaway:** `animate*AsState` is the simplest animation API. Provide a target value and an optional `animationSpec`. Interruptions are handled automatically. Always include a `label` for debugging.
 
@@ -2393,7 +3514,11 @@ The snapshot system is the foundation that makes everything in Compose work — 
 
 ### Lesson 8.1: Snapshots and Isolation
 
-A `Snapshot` is an isolated, read-only view of all snapshot state values at the point it was created. Think of it like a database transaction — it captures the state of every `MutableState`, `SnapshotStateList`, `SnapshotStateMap`, and `derivedStateOf` in your entire program at that moment. Inside a snapshot's `enter {}` block, every state object returns the value it had when the snapshot was taken, regardless of what changed since.
+A `Snapshot` is an isolated, read-only view of all snapshot state values at the point it was created. Think of it like a database transaction — it captures the state of every `MutableState`, `SnapshotStateList`, `SnapshotStateMap`, and `derivedStateOf` in your entire program at that moment. Inside a snapshot's `enter {}` block, every state object returns the value it had when the snapshot was taken, regardless of what changed since. This isolation mechanism is what makes Compose thread-safe and enables features like abandoned recomposition.
+
+The snapshot system is built on **Multiversion Concurrency Control (MVCC)** — the same technique used by PostgreSQL, SQLite, and other databases for transaction isolation. Each state value maintains multiple versions (one per snapshot that modified it), and each snapshot sees a consistent view of the world based on when it was created. This means multiple threads can read and write state simultaneously without locks — each thread works in its own isolated snapshot, and conflicts are resolved at apply time.
+
+To understand why this matters for Compose specifically: recomposition happens in a mutable snapshot. While the recomposer is re-executing your composable functions, it's working inside an isolated snapshot. This means any state changes that happen on other threads (from network callbacks, background coroutines, etc.) during recomposition are invisible to the recomposer. The recomposer sees a consistent view of state throughout the entire recomposition pass. If other threads change state during recomposition, those changes become visible only after the recomposition snapshot is applied.
 
 ```kotlin
 val userName = mutableStateOf("Spot")
@@ -2409,9 +3534,9 @@ println(userName.value)                    // Fido
 snapshot.dispose()
 ```
 
-All code runs inside some snapshot — even if you never explicitly create one. The root of the snapshot tree is the **global snapshot**, a special mutable snapshot that's always open. When you write `counter.value = 5` in a click handler, that write happens in the global snapshot.
+All code runs inside some snapshot — even if you never explicitly create one. The root of the snapshot tree is the **global snapshot**, a special mutable snapshot that's always open. When you write `counter.value = 5` in a click handler, that write happens in the global snapshot. The global snapshot is the "current reality" of your app — all UI code reads from it (unless inside an explicit snapshot), and all user-initiated mutations happen in it.
 
-`MutableSnapshot` adds write capability and isolation. Inside a mutable snapshot's `enter {}` block, you can read and write state freely. Those changes are invisible to all other threads and snapshots until you explicitly call `apply()`. This isolation is what makes Compose thread-safe without `synchronized` blocks.
+`MutableSnapshot` adds write capability and isolation. Inside a mutable snapshot's `enter {}` block, you can read and write state freely. Those changes are invisible to all other threads and snapshots until you explicitly call `apply()`. This isolation is what makes Compose thread-safe without `synchronized` blocks. No thread can see another thread's in-progress work until that work is explicitly committed.
 
 ```kotlin
 val balance = mutableStateOf(100)
@@ -2428,7 +3553,30 @@ println(balance.value)      // 70 — now visible globally
 snapshot.dispose()
 ```
 
-Snapshots also nest. Applying an inner snapshot pushes changes to the outer snapshot, not globally. The outer snapshot must also be applied for changes to become visible at the top level. This nesting is how the Compose runtime layers composition snapshots on top of the global snapshot.
+Snapshots also nest. Applying an inner snapshot pushes changes to the outer snapshot, not globally. The outer snapshot must also be applied for changes to become visible at the top level. This nesting is how the Compose runtime layers composition snapshots on top of the global snapshot. When a recomposition completes, its snapshot is applied to the global snapshot, making all composition-generated state changes visible to the rest of the app atomically.
+
+The conflict resolution mechanism is worth understanding. When two mutable snapshots modify the same state object, the first to apply succeeds. The second encounters a conflict and must either resolve it or fail. The Compose runtime handles this internally — if a recomposition conflict occurs (state was modified externally during recomposition), the runtime abandons the current recomposition and starts a new one with the updated state. This is the mechanism behind abandoned recomposition.
+
+```kotlin
+// Demonstrating snapshot conflict
+val counter = mutableStateOf(0)
+
+val snapshot1 = Snapshot.takeMutableSnapshot()
+val snapshot2 = Snapshot.takeMutableSnapshot()
+
+snapshot1.enter { counter.value = 1 }
+snapshot2.enter { counter.value = 2 }
+
+snapshot1.apply() // Succeeds — counter is now 1
+// snapshot2.apply() would fail — conflict, counter was modified since snapshot2 was taken
+
+snapshot1.dispose()
+snapshot2.dispose()
+```
+
+**Common Pitfalls:**
+
+The most common pitfall is forgetting to dispose snapshots. Each snapshot holds references to state records and read/write observers. Failing to dispose causes memory leaks. In practice, you rarely create explicit snapshots — the runtime manages them. But if you use `Snapshot.takeSnapshot()` for debugging or testing, always call `dispose()`. Another pitfall is assuming that snapshot isolation provides thread safety for non-snapshot operations. Only snapshot state objects (`MutableState`, `SnapshotStateList`, etc.) participate in the snapshot system. Regular Kotlin variables, `AtomicInteger`, or `ConcurrentHashMap` are not isolated by snapshots.
 
 **Key takeaway:** Snapshots provide isolated, transactional views of state. The global snapshot is always active. Mutable snapshots provide write isolation that's invisible until applied. This is how Compose achieves thread safety without locks.
 
@@ -2623,9 +3771,11 @@ Understanding performance in Compose means understanding the three-phase renderi
 
 ### Lesson 9.1: Stability and the Compose Compiler
 
-Compose's stability system determines whether the runtime can skip recomposing a composable when its parent recomposes. A composable is skippable only if **all** its parameters are stable and **equal** to the previous composition's values. A type is stable if it has consistent equality, observable mutations, and all public properties are also stable types.
+Compose's stability system determines whether the runtime can skip recomposing a composable when its parent recomposes. A composable is skippable only if **all** its parameters are stable and **equal** to the previous composition's values. A type is stable if it has consistent equality, observable mutations, and all public properties are also stable types. Stability is the single most impactful performance characteristic in a Compose codebase — it determines whether your app recomposes 10 composables or 1,000 composables per state change.
 
-Primitive types, `String`, function types, and `MutableState` are stable by default. Data classes are stable if all properties are stable. But collections are unstable — `List<T>`, `Map<K, V>`, and `Set<T>` are Kotlin interfaces that could be backed by mutable implementations, so Compose marks them unstable.
+Primitive types, `String`, function types, and `MutableState` are stable by default. Data classes are stable if all properties are stable. But collections are unstable — `List<T>`, `Map<K, V>`, and `Set<T>` are Kotlin interfaces that could be backed by mutable implementations, so Compose marks them unstable. This is because Kotlin's `List` is actually `java.util.List` at the JVM level, and `java.util.List` has mutable implementations like `ArrayList`. The Compose compiler cannot guarantee at compile time that the list won't be mutated between recompositions, so it marks it unstable as a safe default.
+
+The stability inference rules are transitive. If a data class has a property of type `List<String>`, the entire data class becomes unstable — even if all other properties are primitives. This one unstable property poisons the entire class, making every composable that receives it non-skippable. This is the most common source of performance issues in production Compose apps.
 
 ```kotlin
 // This composable can NEVER be skipped — List is unstable
@@ -2663,7 +3813,72 @@ fun ProductGrid(
 
 `@Immutable` is a promise to the compiler: "I guarantee this data won't change without Compose knowing about it." If you break that promise by mutating the list after passing it, you'll get stale UI with no error. `@Stable` is a weaker promise — mutations will be observable through the snapshot system. Use `@Immutable` for truly immutable state, `@Stable` for objects with observable mutable properties.
 
-Enable Compose compiler reports to audit stability: `-P plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=/path/to/reports`. The report shows every composable with its restartable/skippable status and flags unstable parameters. This is the fastest way to find performance issues.
+Understanding how external module types interact with stability is critical for production apps. Classes defined in modules that don't have the Compose compiler plugin applied are always considered unstable. This includes Retrofit API models, Room entities, Protocol Buffer generated classes, and any data class from a non-Compose module. The fix is to create a mapping layer at your architecture boundary that converts these external types into `@Immutable` UI models.
+
+```kotlin
+// External module model — always unstable
+// (from :data module without Compose compiler)
+data class ApiProduct(
+    val id: String,
+    val name: String,
+    val price: Double,
+    val tags: List<String>
+)
+
+// UI model — marked @Immutable, used in composables
+@Immutable
+data class ProductUiModel(
+    val id: String,
+    val name: String,
+    val formattedPrice: String,
+    val tags: ImmutableList<String>
+)
+
+// Mapping function in the ViewModel
+fun ApiProduct.toUiModel() = ProductUiModel(
+    id = id,
+    name = name,
+    formattedPrice = formatPrice(price),
+    tags = tags.toImmutableList()
+)
+```
+
+The `@Stable` annotation is appropriate for classes that have mutable state but where that state is observable through the snapshot system. The canonical example is a state holder class with `mutableStateOf` properties:
+
+```kotlin
+@Stable
+class TextFieldState(initialText: String = "") {
+    var text by mutableStateOf(initialText)
+        private set
+
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    val isValid: Boolean
+        get() = error == null && text.isNotBlank()
+
+    fun onTextChanged(newText: String) {
+        text = newText
+        error = validate(newText)
+    }
+
+    private fun validate(text: String): String? {
+        return when {
+            text.isBlank() -> "Required"
+            text.length < 3 -> "Too short"
+            else -> null
+        }
+    }
+}
+```
+
+Enable Compose compiler reports to audit stability: `-P plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=/path/to/reports`. The report shows every composable with its restartable/skippable status and flags unstable parameters. This is the fastest way to find performance issues. Run the reports as part of your CI pipeline to catch stability regressions early — a single unstable parameter in a widely-used composable can cascade through your entire app.
+
+In a production audit workflow, the steps are: (1) generate compiler reports, (2) grep for "restartable scheme" (composables that are restartable but NOT skippable), (3) identify the unstable parameters, (4) fix them with `@Immutable`, `@Stable`, `ImmutableList`, or by adding the Compose compiler plugin to the module that defines the type, (5) verify with Layout Inspector that recomposition counts dropped.
+
+**Common Pitfalls:**
+
+The most dangerous pitfall is using `@Immutable` on types that can actually be mutated. This causes silent correctness bugs — the UI shows stale data with no error. Another pitfall is assuming that `val` properties make a data class immutable. `val tags: List<String>` is a `val` reference to a mutable list — the reference can't change, but the list contents can. You need `ImmutableList<String>` for true immutability. A third pitfall is forgetting to mark interfaces with `@Stable` — if your composable takes an interface parameter, and the interface isn't annotated, the composable is non-skippable even if the concrete implementation is `@Stable`.
 
 **Key takeaway:** Stability determines skippability. Use `@Immutable`, `@Stable`, or `ImmutableList`/`ImmutableMap` to make parameters stable. Enable compiler reports to audit your codebase.
 
@@ -3043,7 +4258,11 @@ Compose's graphics system provides Canvas, DrawScope, Path, Brush, BlendMode, an
 
 ### Lesson 10.1: Canvas and DrawScope
 
-The `Canvas` composable is the entry point for custom drawing. It provides a `DrawScope` where you issue drawing commands. The coordinate system starts at `[0, 0]` in the top-left, with `x` increasing rightward and `y` increasing downward.
+The `Canvas` composable is the entry point for custom drawing. It provides a `DrawScope` where you issue drawing commands. The coordinate system starts at `[0, 0]` in the top-left, with `x` increasing rightward and `y` increasing downward. Custom drawing is essential for charts, graphs, progress indicators, decorative elements, and any visual that can't be composed from existing components. Understanding `DrawScope` unlocks the full visual power of Compose.
+
+`DrawScope` is a scoped interface that provides drawing primitives, size information, density, and layout direction. Every draw call happens within this scope, which ensures that all measurements are properly density-aware and positioned within the composable's bounds. The `size` property gives you the total available drawing area, and `center` gives you the center point — these are the two most frequently used properties.
+
+The drawing pipeline in Compose mirrors the Android `Canvas` API but with a higher-level, more Kotlin-friendly interface. Under the hood, `DrawScope` delegates to an Android `Canvas` (or a similar platform canvas on other targets), but the API surface is designed for Compose's declarative paradigm. You don't hold references to `Paint` objects — instead, you pass color, brush, and style parameters directly to draw methods.
 
 ```kotlin
 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -3081,9 +4300,76 @@ Canvas(modifier = Modifier.fillMaxSize()) {
 }
 ```
 
-`DrawScope` provides high-level methods: `drawRect`, `drawCircle`, `drawLine`, `drawArc`, `drawImage`, `drawPath`, `drawPoints`, `drawOval`, `drawRoundRect`. For operations not exposed by `DrawScope`, use `drawIntoCanvas` to access the underlying `Canvas` and `nativeCanvas`.
+`DrawScope` provides high-level methods: `drawRect`, `drawCircle`, `drawLine`, `drawArc`, `drawImage`, `drawPath`, `drawPoints`, `drawOval`, `drawRoundRect`. For operations not exposed by `DrawScope`, use `drawIntoCanvas` to access the underlying `Canvas` and `nativeCanvas`. This is the escape hatch for platform-specific drawing operations like text drawing with `Paint.drawText`, `RenderEffect` application, or direct `NativeCanvas` operations.
 
-`DrawScope` also provides transformation functions — `translate`, `rotate`, `scale`, `withTransform` — that scope transformations to a lambda. `withTransform` combines multiple transforms into a single operation, which is more efficient than nesting individual ones.
+```kotlin
+Canvas(modifier = Modifier.size(200.dp)) {
+    // High-level DrawScope API
+    drawRoundRect(
+        color = Color.Blue,
+        cornerRadius = CornerRadius(16f, 16f),
+        style = Stroke(width = 4f)
+    )
+
+    // Escape hatch for platform-specific operations
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            color = android.graphics.Color.RED
+            textSize = 48f
+            isAntiAlias = true
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        canvas.nativeCanvas.drawText(
+            "Custom Text",
+            center.x - 100f,
+            center.y,
+            paint
+        )
+    }
+}
+```
+
+`DrawScope` also provides transformation functions — `translate`, `rotate`, `scale`, `withTransform` — that scope transformations to a lambda. `withTransform` combines multiple transforms into a single operation, which is more efficient than nesting individual ones. Transformations only affect draw calls within their lambda scope, and the coordinate system is automatically restored afterward. This is different from the imperative `Canvas.save()`/`Canvas.restore()` pattern — Compose handles save/restore automatically through scoping.
+
+```kotlin
+Canvas(modifier = Modifier.size(300.dp)) {
+    // Individual transforms (less efficient — two save/restore pairs)
+    rotate(degrees = 45f) {
+        translate(left = 50f, top = 50f) {
+            drawRect(Color.Red, size = Size(100f, 100f))
+        }
+    }
+
+    // Combined transform (more efficient — single save/restore pair)
+    withTransform({
+        rotate(degrees = 45f)
+        translate(left = 50f, top = 50f)
+    }) {
+        drawRect(Color.Blue, size = Size(100f, 100f))
+    }
+
+    // Practical example: drawing a rotated star pattern
+    val numPoints = 12
+    val angleStep = 360f / numPoints
+    repeat(numPoints) { i ->
+        rotate(degrees = i * angleStep) {
+            drawLine(
+                color = Color.Yellow,
+                start = center,
+                end = Offset(center.x, center.y - size.minDimension / 2.5f),
+                strokeWidth = 3f,
+                cap = StrokeCap.Round
+            )
+        }
+    }
+}
+```
+
+For production use, the `Canvas` composable should be sized explicitly with `Modifier.size()` or `Modifier.fillMaxSize()`. An unsized `Canvas` has zero width and height, rendering nothing. Always verify that your `Canvas` has non-zero dimensions. For responsive drawing, use `size.width` and `size.height` to compute all positions relative to the available space, rather than hardcoding pixel values.
+
+**Common Pitfalls:**
+
+The biggest pitfall is creating objects (like `Path`, `Paint`, or `Brush`) inside the `Canvas` draw lambda. Since the draw lambda executes on every frame during animations, creating objects per-frame causes garbage collection pressure. Use `drawWithCache` (Lesson 10.5) instead, or `remember` the objects outside the draw scope. Another pitfall is forgetting that `Canvas` coordinates are in pixels, not dp. Use `Dp.toPx()` within `DrawScope` (which provides `Density`) to convert dp values. A third pitfall is overdrawing — drawing overlapping shapes without considering GPU fill rate. On low-end devices, heavy overdraw causes janky rendering.
 
 **Key takeaway:** `Canvas` and `DrawScope` provide a comprehensive drawing API. Use the high-level `draw*` methods for common shapes. Use `drawIntoCanvas` for platform-specific operations. Transformations are scoped to lambdas for safety.
 
@@ -3366,7 +4652,13 @@ Testing Compose UIs uses a semantic tree rather than view IDs. The testing frame
 
 ### Lesson 11.1: ComposeTestRule and Basic Assertions
 
-`createComposeRule()` sets up a test environment where you render composables and interact with the semantic tree. You find nodes with finders (`onNodeWithText`, `onNodeWithTag`, `onNodeWithContentDescription`), perform actions (`performClick`, `performTextInput`), and make assertions (`assertIsDisplayed`, `assertIsEnabled`, `assertTextEquals`).
+`createComposeRule()` sets up a test environment where you render composables and interact with the semantic tree. You find nodes with finders (`onNodeWithText`, `onNodeWithTag`, `onNodeWithContentDescription`), perform actions (`performClick`, `performTextInput`), and make assertions (`assertIsDisplayed`, `assertIsEnabled`, `assertTextEquals`). Compose testing is fundamentally different from View testing — instead of interacting with View objects directly, you interact with an abstract semantic tree that describes the meaning and structure of your UI.
+
+The semantic tree is Compose's accessibility tree — the same tree that screen readers like TalkBack use. Testing against it means your tests verify both visual correctness and accessibility. If a test can't find a node, it might mean you're missing accessibility annotations, which is both a testing problem and an accessibility problem. This dual purpose is a powerful feature of Compose testing: writing good tests naturally improves your app's accessibility.
+
+Under the hood, the test framework creates a virtual Compose environment with a controlled clock. This means animations run at controlled speed, recompositions happen deterministically, and you can advance time without waiting in real-time. The test rule manages the Compose runtime lifecycle: it creates a `Recomposer`, sets up the density and layout direction, and provides thread-safe access to the semantic tree for assertions.
+
+There are two types of test rules. `createComposeRule()` creates a standalone Compose environment without an Activity — suitable for testing individual composables in isolation. `createAndroidComposeRule<MyActivity>()` launches a real Activity and provides access to both the Compose tree and the Activity instance — suitable for integration tests that need Android framework resources.
 
 ```kotlin
 @get:Rule
@@ -3403,7 +4695,51 @@ fun loginButton_enabled_after_input() {
 }
 ```
 
-The semantic tree is Compose's accessibility tree — the same tree that screen readers use. Testing against it means your tests verify both visual correctness and accessibility. If a test can't find a node, it might mean you're missing accessibility annotations, which is both a testing problem and an accessibility problem.
+Finders are the entry point for all test interactions. The most common finders are `onNodeWithText` (finds by displayed text), `onNodeWithTag` (finds by `testTag`), and `onNodeWithContentDescription` (finds by accessibility description). For multiple matches, use `onAllNodesWithText` and filter with `[index]` or `filter()`. For complex queries, combine matchers with `hasText`, `hasTestTag`, `hasContentDescription`, `hasClickAction`, `isEnabled`, and boolean operators `and`/`or`.
+
+```kotlin
+@Test
+fun multipleNodes_filteredByPredicate() {
+    composeTestRule.setContent {
+        Column {
+            repeat(5) { i ->
+                Card(
+                    modifier = Modifier.testTag("card_$i")
+                ) {
+                    Text("Card $i")
+                    if (i % 2 == 0) {
+                        Button(onClick = {}) { Text("Action") }
+                    }
+                }
+            }
+        }
+    }
+
+    // Find all cards
+    composeTestRule
+        .onAllNodesWithTag("card", substring = true)
+        .assertCountEquals(5)
+
+    // Find specific card by combined matcher
+    composeTestRule
+        .onNode(hasTestTag("card_2") and hasAnyChild(hasText("Action")))
+        .assertIsDisplayed()
+
+    // Find all buttons and click the first one
+    composeTestRule
+        .onAllNodesWithText("Action")
+        .onFirst()
+        .performClick()
+}
+```
+
+Assertions verify the state of found nodes. `assertIsDisplayed()` checks that the node is visible on screen. `assertExists()` checks that the node is in the tree (but may be off-screen). `assertDoesNotExist()` verifies the node is not in the tree at all. The distinction between `assertIsDisplayed` and `assertExists` matters for scrollable lists — an item may exist in the tree but be scrolled off-screen.
+
+Actions simulate user interactions. `performClick()` taps the node. `performTextInput("text")` types into a text field. `performScrollTo()` scrolls a scrollable container to make the node visible. `performTouchInput { swipeUp() }` performs gesture-based interactions like swipes and flings. Actions are executed synchronously in tests, and the test framework waits for all resulting recompositions to complete before proceeding.
+
+**Common Pitfalls:**
+
+The most common pitfall is using `assertIsDisplayed()` when `assertExists()` is appropriate. In a `LazyColumn`, items that are composed but scrolled off-screen exist in the semantic tree but are not displayed. Another pitfall is not waiting for asynchronous operations — use `composeTestRule.waitForIdle()` after actions that trigger state changes or animations. A third pitfall is over-relying on `onNodeWithText` for dynamic text — if the text includes numbers or dates that change, the test becomes flaky. Use `testTag` for stable identification.
 
 **Key takeaway:** Compose tests use the semantic tree. Find nodes with finders, interact with actions, verify with assertions. Tests that use `contentDescription` also validate accessibility.
 
@@ -3891,9 +5227,11 @@ This approach works best for simpler screens where the event types are straightf
 
 ### Lesson 12.4: Optimistic Updates and UI Responsiveness
 
-Production apps need to feel instant. When users tap a button, they expect immediate feedback — not a loading spinner followed by the result. Optimistic updates immediately reflect the user action in the UI and handle the actual operation (database, network) in the background.
+Production apps need to feel instant. When users tap a button, they expect immediate feedback — not a loading spinner followed by the result. Optimistic updates immediately reflect the user action in the UI and handle the actual operation (database, network) in the background. This pattern is the foundation of responsive, modern mobile UIs and is critical for features like bookmarking, liking, toggling settings, and adding items to carts.
 
-The pattern: update UI state immediately on user action, perform the actual operation asynchronously, and revert the UI state if the operation fails. This eliminates perceived latency because the UI responds in the same frame as the tap.
+The pattern: update UI state immediately on user action, perform the actual operation asynchronously, and revert the UI state if the operation fails. This eliminates perceived latency because the UI responds in the same frame as the tap. The user sees the result instantly, even if the actual database write takes 20ms or the network call takes 300ms. In production, the difference between a 0ms response (optimistic) and a 300ms response (wait-for-result) is the difference between an app that feels native and one that feels sluggish.
+
+A real-world example: article bookmarking. Without optimistic updates, the user taps the bookmark icon, waits for the database operation (20ms), then waits for the observer that tracks saved article IDs to propagate the updated state to the UI (which can take 1-3 seconds due to query complexity). With optimistic updates, the bookmark icon toggles instantly — the UI updates in the same frame as the tap, and the database operation happens in the background. The worst-case response time drops from 3-4 seconds to under 300ms.
 
 ```kotlin
 class BookmarkViewModel(
@@ -3929,7 +5267,115 @@ class BookmarkViewModel(
 }
 ```
 
-For more complex scenarios — like syncing with a remote API — combine optimistic updates with `WorkManager` for guaranteed delivery. Update the local database immediately, show the result to the user, and enqueue a `WorkManager` task to sync with the server. This is the foundation of offline-first architecture.
+There are several alternative approaches to UI responsiveness, each with different tradeoffs. The first alternative is **showing a loading state** — display a loading indicator during the operation. This is honest but feels slow. The second is **optimistic updates with local-first persistence** — update the local database immediately, update the UI from the local database, and sync with the remote API asynchronously using `WorkManager`. This provides both instant responsiveness and data consistency.
+
+```kotlin
+// Alternative 1: Loading state (simplest but feels slow)
+class LoadingStateViewModel(
+    private val repository: ArticleRepository
+) : ViewModel() {
+    private val _isBookmarking = MutableStateFlow<Set<String>>(emptySet())
+    val isBookmarking = _isBookmarking.asStateFlow()
+
+    fun toggleBookmark(articleId: String) {
+        viewModelScope.launch {
+            _isBookmarking.update { it + articleId } // Show loading
+            repository.toggleBookmark(articleId)
+            _isBookmarking.update { it - articleId } // Hide loading
+        }
+    }
+}
+
+// Alternative 2: Local-first with background sync
+class LocalFirstBookmarkViewModel(
+    private val localDb: BookmarkDao,
+    private val workManager: WorkManager
+) : ViewModel() {
+    // UI observes local database directly — always fast
+    val bookmarkedIds = localDb.getAllBookmarkIds()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    fun toggleBookmark(articleId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 1. Update local database immediately (< 20ms)
+            localDb.toggleBookmark(articleId)
+
+            // 2. Schedule background sync with remote API
+            val syncRequest = OneTimeWorkRequestBuilder<BookmarkSyncWorker>()
+                .setInputData(workDataOf("articleId" to articleId))
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+
+            workManager.enqueueUniqueWork(
+                "bookmark_sync_$articleId",
+                ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+        }
+    }
+}
+```
+
+For handling rapid repeated clicks (like a user spamming the bookmark button), you need debouncing or click coalescing. Without protection, each click enqueues a separate toggle operation, and the final state depends on the race between them. The simplest approach is to track the "in-progress" state and ignore clicks while an operation is pending:
+
+```kotlin
+class DebounceBookmarkViewModel(
+    private val repository: ArticleRepository
+) : ViewModel() {
+    private val _state = MutableStateFlow(BookmarkUiState())
+    val state = _state.asStateFlow()
+
+    private val pendingOperations = MutableStateFlow<Set<String>>(emptySet())
+
+    fun toggleBookmark(articleId: String) {
+        // Ignore if operation already in progress for this article
+        if (articleId in pendingOperations.value) return
+
+        val wasBookmarked = articleId in _state.value.bookmarkedIds
+
+        // Optimistic update
+        _state.update { current ->
+            current.copy(
+                bookmarkedIds = if (wasBookmarked)
+                    current.bookmarkedIds - articleId
+                else
+                    current.bookmarkedIds + articleId
+            )
+        }
+
+        pendingOperations.update { it + articleId }
+
+        viewModelScope.launch {
+            try {
+                repository.setBookmarked(articleId, !wasBookmarked)
+            } catch (e: Exception) {
+                // Revert on failure
+                _state.update { current ->
+                    current.copy(
+                        bookmarkedIds = if (wasBookmarked)
+                            current.bookmarkedIds + articleId
+                        else
+                            current.bookmarkedIds - articleId
+                    )
+                }
+            } finally {
+                pendingOperations.update { it - articleId }
+            }
+        }
+    }
+}
+```
+
+For more complex scenarios — like syncing with a remote API — combine optimistic updates with `WorkManager` for guaranteed delivery. Update the local database immediately, show the result to the user, and enqueue a `WorkManager` task to sync with the server. This is the foundation of offline-first architecture. The key insight is that the UI should never wait for the network — it should always reflect the user's intent immediately, and background sync ensures eventual consistency.
+
+**Common Pitfalls:**
+
+The most dangerous pitfall is not handling the revert case properly. If the optimistic update succeeds but the background operation fails, you must revert the UI to the pre-optimistic state, not just ignore the failure. Another pitfall is race conditions with rapid clicks — without debouncing, you can end up in an inconsistent state. A third pitfall is showing a success message before the operation actually succeeds — optimistic updates mean the UI shows success immediately, but if the operation fails, the user sees a brief success followed by a revert, which is confusing. Consider showing success feedback only after the operation confirms.
 
 **Key takeaway:** Optimistic updates provide instant UI feedback by updating state immediately and performing the actual operation asynchronously. Revert on failure. Combine with WorkManager for offline-first reliability.
 
