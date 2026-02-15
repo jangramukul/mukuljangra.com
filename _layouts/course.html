@@ -345,7 +345,7 @@
         transform: rotate(90deg);
       }
 
-      /* Lesson list */
+      /* Topic list */
       .module-body {
         max-height: 0;
         overflow: hidden;
@@ -357,29 +357,29 @@
         max-height: none;
       }
 
-      .lesson-item {
-        padding: 14px 20px 14px 60px;
+      .topic-item {
         border-bottom: 1px solid rgba(75, 85, 99, 0.15);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
       }
 
-      .lesson-item:last-child {
+      .topic-item:last-child {
         border-bottom: none;
       }
 
-      .lesson-item:hover {
-        background-color: rgba(55, 65, 81, 0.2);
-      }
-
-      .lesson-header {
+      .topic-link {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
+        padding: 14px 20px 14px 60px;
+        text-decoration: none;
+        transition: background-color 0.15s ease;
       }
 
-      .lesson-header-left {
+      .topic-link:hover {
+        background-color: rgba(55, 65, 81, 0.2);
+      }
+
+      .topic-link-left {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -387,7 +387,7 @@
         min-width: 0;
       }
 
-      .lesson-icon {
+      .topic-icon {
         flex-shrink: 0;
         width: 16px;
         height: 16px;
@@ -396,7 +396,7 @@
         align-items: center;
         justify-content: center;
       }
-      .lesson-icon svg {
+      .topic-icon svg {
         width: 15px;
         height: 15px;
         fill: none;
@@ -406,347 +406,36 @@
         stroke-linejoin: round;
       }
 
-      .lesson-name {
+      .topic-name {
         font-family: 'Inter', sans-serif;
         font-size: 0.9em;
         color: #d1d5db;
         font-weight: 500;
       }
 
-      .lesson-expand-icon {
-        font-size: 10px;
-        color: #6b7280;
-        transition: transform 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .lesson-item.open .lesson-expand-icon {
-        transform: rotate(90deg);
+      .topic-link:hover .topic-name {
         color: var(--course-accent);
       }
 
-      .lesson-item.open .lesson-name {
-        color: var(--course-accent);
-      }
-
-      /* Lesson content (expandable) */
-      .lesson-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-        margin-top: 0;
-      }
-
-      .lesson-item.open .lesson-content {
-        max-height: none;
-        margin-top: 14px;
-        padding-top: 14px;
-        border-top: 1px solid rgba(75, 85, 99, 0.15);
-      }
-
-      .lesson-content-inner {
-        font-size: 0.95em;
-        color: #d1d5db;
-        line-height: 1.7;
-      }
-
-      .lesson-content-inner p {
-        margin-bottom: 1em;
-        color: #d1d5db;
-        font-size: 1em;
-        line-height: 1.7;
-      }
-
-      .lesson-content-inner strong {
-        color: #e5e7eb;
-      }
-
-      .lesson-content-inner ul,
-      .lesson-content-inner ol {
-        padding-left: 1.5em;
-        margin-bottom: 1em;
-        color: #d1d5db;
-      }
-
-      .lesson-content-inner li {
-        margin-bottom: 0.4em;
-        color: #d1d5db;
-      }
-
-      .lesson-content-inner code {
-        background-color: var(--code-bg);
-        color: var(--text-color);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.9em;
-      }
-
-      .lesson-content-inner pre {
-        background-color: var(--code-bg);
-        color: var(--text-color);
-        max-width: 100%;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        width: 100%;
-        box-sizing: border-box;
-        border-radius: 10px;
-        padding: 14px;
-        border: 1px solid rgba(55, 65, 81, 0.4);
-        margin-bottom: 1em;
-      }
-
-      .lesson-content-inner pre code {
-        padding: 0;
-        border-radius: 0;
-        background-color: transparent;
-      }
-
-      .lesson-content-inner .highlight {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 1em;
-      }
-
-      .lesson-content-inner .highlight pre {
-        margin: 0;
-        border-radius: 10px;
-      }
-
-      .lesson-content-inner blockquote {
-        border-left: 3px solid rgba(96, 165, 250, 0.4);
-        color: var(--blockquote-color);
-        border-radius: 0 8px 8px 0;
-        background-color: rgba(30, 41, 59, 0.3);
-        padding: 10px 14px;
-        margin: 0 0 1em 0;
-        overflow: hidden;
-      }
-
-      .lesson-content-inner h4 {
-        font-family: 'Inter', sans-serif;
-        font-size: 1em;
-        font-weight: 600;
-        color: #ffffff;
-        margin: 1em 0 0.5em 0;
-        padding: 0;
-        border: none;
-      }
-
-      /* ── Quiz & Coding Challenge ── */
-      .quiz-item, .challenge-item {
-        padding: 16px 20px 16px 60px;
-        border-bottom: 1px solid rgba(75, 85, 99, 0.15);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-      }
-
-      .quiz-item:last-child, .challenge-item:last-child {
-        border-bottom: none;
-      }
-
-      .quiz-item:hover, .challenge-item:hover {
-        background-color: rgba(55, 65, 81, 0.2);
-      }
-
-      .quiz-item .lesson-header-left .lesson-icon { color: #fbbf24; }
-      .challenge-item .lesson-header-left .lesson-icon { color: #34d399; }
-
-      .quiz-item.open .lesson-name { color: #fbbf24; }
-      .challenge-item.open .lesson-name { color: #34d399; }
-      .quiz-item.open .lesson-expand-icon { transform: rotate(90deg); color: #fbbf24; }
-      .challenge-item.open .lesson-expand-icon { transform: rotate(90deg); color: #34d399; }
-
-      .quiz-item .lesson-content, .challenge-item .lesson-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-        margin-top: 0;
-      }
-
-      .quiz-item.open .lesson-content, .challenge-item.open .lesson-content {
-        max-height: none;
-        margin-top: 14px;
-        padding-top: 14px;
-        border-top: 1px solid rgba(75, 85, 99, 0.15);
-      }
-
-      .quiz-question {
-        background-color: rgba(30, 41, 59, 0.4);
-        border: 1px solid rgba(75, 85, 99, 0.3);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-
-      .quiz-question-text {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.92em;
-        font-weight: 600;
-        color: #ffffff;
-        margin-bottom: 12px;
-        line-height: 1.5;
-      }
-
-      .quiz-options {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-
-      .quiz-option {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        border-radius: 8px;
-        background-color: rgba(55, 65, 81, 0.25);
-        border: 1px solid rgba(75, 85, 99, 0.3);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.88em;
-        color: #d1d5db;
-        font-family: 'Inter', sans-serif;
-      }
-
-      .quiz-option:hover {
-        border-color: rgba(251, 191, 36, 0.4);
-        background-color: rgba(251, 191, 36, 0.06);
-      }
-
-      .quiz-option.selected {
-        border-color: rgba(96, 165, 250, 0.5);
-        background-color: rgba(96, 165, 250, 0.1);
-        color: #ffffff;
-      }
-
-      .quiz-option.correct {
-        border-color: rgba(52, 211, 153, 0.6);
-        background-color: rgba(52, 211, 153, 0.12);
-        color: #34d399;
-      }
-
-      .quiz-option.incorrect {
-        border-color: rgba(248, 113, 113, 0.5);
-        background-color: rgba(248, 113, 113, 0.08);
-        color: #f87171;
-        opacity: 0.7;
-      }
-
-      .quiz-option-letter {
-        width: 22px;
-        height: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        background-color: rgba(75, 85, 99, 0.3);
-        font-size: 0.8em;
-        font-weight: 600;
-        color: #9ca3af;
+      .topic-external-icon {
         flex-shrink: 0;
+        width: 14px;
+        height: 14px;
+        color: #4b5563;
+        transition: color 0.15s ease;
+      }
+      .topic-external-icon svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
-      .quiz-option.correct .quiz-option-letter {
-        background-color: rgba(52, 211, 153, 0.2);
-        color: #34d399;
-      }
-
-      .quiz-explanation {
-        display: none;
-        padding: 12px 14px;
-        border-radius: 8px;
-        background-color: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(75, 85, 99, 0.25);
-        font-size: 0.86em;
-        color: #9ca3af;
-        line-height: 1.6;
-        margin-top: 4px;
-      }
-
-      .quiz-explanation.visible {
-        display: block;
-      }
-
-      .quiz-explanation strong {
-        color: #34d399;
-      }
-
-      .challenge-box {
-        background-color: rgba(30, 41, 59, 0.4);
-        border: 1px solid rgba(52, 211, 153, 0.2);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-
-      .challenge-prompt {
-        font-size: 0.92em;
-        color: #d1d5db;
-        line-height: 1.7;
-        margin-bottom: 14px;
-      }
-
-      .challenge-prompt strong {
-        color: #e5e7eb;
-      }
-
-      .challenge-prompt code {
-        background-color: var(--code-bg);
-        color: var(--text-color);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.9em;
-      }
-
-      .challenge-prompt ul, .challenge-prompt ol {
-        padding-left: 1.5em;
-        margin: 0.5em 0;
-      }
-
-      .challenge-prompt li {
-        margin-bottom: 0.3em;
-      }
-
-      .challenge-solution-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        border-radius: 8px;
-        background-color: rgba(52, 211, 153, 0.1);
-        border: 1px solid rgba(52, 211, 153, 0.3);
-        color: #34d399;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.84em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-bottom: 12px;
-      }
-
-      .challenge-solution-toggle:hover {
-        background-color: rgba(52, 211, 153, 0.15);
-        border-color: rgba(52, 211, 153, 0.5);
-      }
-
-      .challenge-solution {
-        display: none;
-      }
-
-      .challenge-solution.visible {
-        display: block;
-      }
-
-      .challenge-solution .lesson-content-inner {
-        font-size: 0.92em;
-      }
-
-      @media (max-width: 768px) {
-        .quiz-item, .challenge-item {
-          padding-left: 20px;
-        }
+      .topic-link:hover .topic-external-icon {
+        color: var(--course-accent);
       }
 
       /* Progress bar */
@@ -802,7 +491,7 @@
           grid-template-columns: 1fr;
         }
 
-        .lesson-item {
+        .topic-link {
           padding-left: 20px;
         }
 
@@ -851,7 +540,7 @@
           <div class="course-meta">
             <span class="course-meta-item"><span class="course-meta-icon">📊</span> {{ page.difficulty }}</span>
             <span class="course-meta-item"><span class="course-meta-icon">📦</span> {{ page.modules }} Modules</span>
-            <span class="course-meta-item"><span class="course-meta-icon">📖</span> {{ page.lessons }} Lessons</span>
+            <span class="course-meta-item"><span class="course-meta-icon">📖</span> {{ page.topics }} Topics</span>
             <span class="course-meta-item"><span class="course-meta-icon">⏱️</span> {{ page.duration }}</span>
           </div>
           {% if page.tags %}
@@ -886,7 +575,7 @@
         <div class="curriculum-header">
           <div>
             <div class="curriculum-title">Course Curriculum</div>
-            <div class="curriculum-stats">{{ page.modules }} modules · {{ page.lessons }} lessons · {{ page.duration }}</div>
+            <div class="curriculum-stats">{{ page.modules }} modules · {{ page.topics }} topics · {{ page.duration }}</div>
           </div>
           <button class="expand-all-btn" id="expandAllBtn">Expand All</button>
         </div>
@@ -901,41 +590,6 @@
       </div>
     </div>
 
-    <script>
-      // Global handlers for quiz and challenge interactions
-      function handleQuizClick(el) {
-        var parent = el.parentElement;
-        var correct = parseInt(parent.getAttribute('data-correct'));
-        var idx = parseInt(el.getAttribute('data-index'));
-        var qid = parent.getAttribute('data-qid');
-
-        // Prevent re-answering
-        if (parent.classList.contains('answered')) return;
-        parent.classList.add('answered');
-
-        // Mark all options
-        var options = parent.querySelectorAll('.quiz-option');
-        options.forEach(function(opt) {
-          var oi = parseInt(opt.getAttribute('data-index'));
-          if (oi === correct) {
-            opt.classList.add('correct');
-          } else if (oi === idx && idx !== correct) {
-            opt.classList.add('incorrect');
-          }
-        });
-
-        // Show explanation
-        var exp = document.getElementById(qid + '_exp');
-        if (exp) exp.classList.add('visible');
-      }
-
-      function toggleSolution(id, btn) {
-        var sol = document.getElementById(id);
-        if (!sol) return;
-        var visible = sol.classList.toggle('visible');
-        btn.innerHTML = visible ? '👁️ Hide Solution' : '👁️ Show Solution';
-      }
-    </script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.setAttribute('data-theme', 'dark');
@@ -965,98 +619,6 @@
           el.style.color = c.color;
         });
 
-        // ── Quiz parser: converts markdown content into interactive quiz ──
-        function parseQuizContent(container) {
-          var html = '';
-          var children = Array.from(container.children);
-          var currentQ = null;
-          var questions = [];
-
-          children.forEach(function(el) {
-            if (el.tagName === 'H4') {
-              if (currentQ) questions.push(currentQ);
-              currentQ = { text: el.textContent.trim(), options: [], correct: -1, explanation: '' };
-            } else if (el.tagName === 'UL' && currentQ) {
-              var items = Array.from(el.querySelectorAll('li'));
-              items.forEach(function(li, idx) {
-                var text = li.textContent.trim();
-                var isCorrect = text.startsWith('✅') || text.startsWith('✓');
-                if (isCorrect) {
-                  currentQ.correct = idx;
-                  text = text.replace(/^[✅✓]\s*/, '');
-                }
-                text = text.replace(/^[❌✗]\s*/, '');
-                currentQ.options.push(text);
-              });
-            } else if (el.tagName === 'BLOCKQUOTE' && currentQ) {
-              currentQ.explanation = el.innerHTML;
-            } else if (el.tagName === 'P' && currentQ && currentQ.options.length === 0) {
-              currentQ.text += ' ' + el.textContent.trim();
-            }
-          });
-          if (currentQ) questions.push(currentQ);
-
-          var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-          questions.forEach(function(q, qi) {
-            var qid = 'quiz_' + Math.random().toString(36).substr(2, 8);
-            html += '<div class="quiz-question">';
-            html += '<div class="quiz-question-text">' + (qi + 1) + '. ' + q.text + '</div>';
-            html += '<div class="quiz-options" data-correct="' + q.correct + '" data-qid="' + qid + '">';
-            q.options.forEach(function(opt, oi) {
-              html += '<div class="quiz-option" data-index="' + oi + '" onclick="handleQuizClick(this)">';
-              html += '<span class="quiz-option-letter">' + letters[oi] + '</span>';
-              html += '<span>' + opt + '</span>';
-              html += '</div>';
-            });
-            html += '</div>';
-            if (q.explanation) {
-              html += '<div class="quiz-explanation" id="' + qid + '_exp">' + q.explanation + '</div>';
-            }
-            html += '</div>';
-          });
-
-          return html;
-        }
-
-        // ── Challenge parser: splits prompt from solution ──
-        function parseChallengeContent(container) {
-          var html = '';
-          var children = Array.from(container.children);
-          var promptParts = [];
-          var solutionParts = [];
-          var foundSolution = false;
-
-          children.forEach(function(el) {
-            // Solution starts at "Solution" H4 or first code block after prompt text
-            if (el.tagName === 'H4' && /solution/i.test(el.textContent)) {
-              foundSolution = true;
-              return;
-            }
-            if (!foundSolution && (el.tagName === 'DIV' && el.classList.contains('highlight')) || (!foundSolution && el.tagName === 'PRE')) {
-              // First code block marks beginning of solution
-              foundSolution = true;
-            }
-            if (foundSolution) {
-              solutionParts.push(el.outerHTML);
-            } else {
-              promptParts.push(el.outerHTML);
-            }
-          });
-
-          html += '<div class="challenge-box">';
-          html += '<div class="challenge-prompt">' + promptParts.join('') + '</div>';
-          if (solutionParts.length > 0) {
-            var solId = 'sol_' + Math.random().toString(36).substr(2, 8);
-            html += '<button class="challenge-solution-toggle" onclick="toggleSolution(\'' + solId + '\', this)">👁️ Show Solution</button>';
-            html += '<div class="challenge-solution" id="' + solId + '">';
-            html += '<div class="lesson-content-inner">' + solutionParts.join('') + '</div>';
-            html += '</div>';
-          }
-          html += '</div>';
-
-          return html;
-        }
-
         // ── Build accordion from raw markdown content ──
         var raw = document.getElementById('courseRawContent');
         var accordion = document.getElementById('courseAccordion');
@@ -1065,32 +627,24 @@
         var children = Array.from(raw.childNodes);
         var modules = [];
         var currentModule = null;
-        var currentLesson = null;
 
         children.forEach(function(node) {
-          if (node.nodeType !== 1) return; // skip text nodes
+          if (node.nodeType !== 1) return;
 
           if (node.tagName === 'H2') {
-            // New module
-            currentModule = { title: node.textContent.trim(), lessons: [], introContent: [], quizzes: [], challenges: [] };
-            currentLesson = null;
+            currentModule = { title: node.textContent.trim(), topics: [], introContent: [] };
             modules.push(currentModule);
-          } else if (node.tagName === 'H3' && currentModule) {
-            var h3Text = node.textContent.trim();
-            if (/^Quiz/i.test(h3Text)) {
-              currentLesson = { title: h3Text, content: [], type: 'quiz' };
-              currentModule.quizzes.push(currentLesson);
-            } else if (/^Coding Challenge/i.test(h3Text)) {
-              currentLesson = { title: h3Text, content: [], type: 'challenge' };
-              currentModule.challenges.push(currentLesson);
-            } else {
-              currentLesson = { title: h3Text, content: [], type: 'lesson' };
-              currentModule.lessons.push(currentLesson);
-            }
+          } else if (node.tagName === 'UL' && currentModule) {
+            // Parse topic links from list items
+            var items = Array.from(node.querySelectorAll('li'));
+            items.forEach(function(li) {
+              var link = li.querySelector('a');
+              if (link) {
+                currentModule.topics.push({ title: link.textContent.trim(), url: link.getAttribute('href') });
+              }
+            });
           } else if (node.tagName === 'HR') {
-            // Skip horizontal rules between modules
-          } else if (currentLesson) {
-            currentLesson.content.push(node.cloneNode(true));
+            // Skip horizontal rules
           } else if (currentModule) {
             currentModule.introContent.push(node.cloneNode(true));
           }
@@ -1101,7 +655,6 @@
           var wrapper = document.createElement('div');
           wrapper.className = 'module-accordion' + (moduleIndex === 0 ? ' open' : '');
 
-          // Extract module number from title like "Module 1: Title"
           var titleMatch = mod.title.match(/^Module\s+(\d+)\s*:\s*(.+)$/i);
           var moduleNum = titleMatch ? titleMatch[1] : (moduleIndex + 1);
           var moduleTitle = titleMatch ? titleMatch[2] : mod.title;
@@ -1115,7 +668,7 @@
               '<span class="module-title">' + moduleTitle + '</span>' +
             '</div>' +
             '<div class="module-header-right">' +
-              '<span class="module-lesson-count">' + mod.lessons.length + ' lesson' + (mod.lessons.length !== 1 ? 's' : '') + '</span>' +
+              '<span class="module-lesson-count">' + mod.topics.length + ' topic' + (mod.topics.length !== 1 ? 's' : '') + '</span>' +
               '<span class="module-chevron">▶</span>' +
             '</div>';
           wrapper.appendChild(header);
@@ -1124,7 +677,7 @@
           var body = document.createElement('div');
           body.className = 'module-body';
 
-          // Module intro content (text between H2 and first H3)
+          // Module intro content
           if (mod.introContent.length > 0) {
             var intro = document.createElement('div');
             intro.style.cssText = 'padding: 12px 20px 4px 60px; color: #9ca3af; font-size: 0.88em; line-height: 1.6;';
@@ -1132,125 +685,29 @@
             body.appendChild(intro);
           }
 
-          // Lessons
-          mod.lessons.forEach(function(lesson) {
-            var lessonEl = document.createElement('div');
-            lessonEl.className = 'lesson-item';
+          // Topics as links
+          mod.topics.forEach(function(topic) {
+            var topicEl = document.createElement('div');
+            topicEl.className = 'topic-item';
 
-            // Extract lesson title — remove "Lesson X.Y:" prefix
-            var lessonTitleMatch = lesson.title.match(/^Lesson\s+[\d.]+\s*:\s*(.+)$/i);
-            var lessonDisplayTitle = lessonTitleMatch ? lessonTitleMatch[1] : lesson.title;
-
-            // Lesson header
-            var lHeader = document.createElement('div');
-            lHeader.className = 'lesson-header';
-            lHeader.innerHTML =
-              '<div class="lesson-header-left">' +
-                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
-                '<span class="lesson-name">' + lessonDisplayTitle + '</span>' +
+            var link = document.createElement('a');
+            link.className = 'topic-link';
+            link.href = topic.url;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.innerHTML =
+              '<div class="topic-link-left">' +
+                '<span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
+                '<span class="topic-name">' + topic.title + '</span>' +
               '</div>' +
-              '<span class="lesson-expand-icon">▶</span>';
-            lessonEl.appendChild(lHeader);
+              '<span class="topic-external-icon"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span>';
 
-            // Lesson content
-            var lContent = document.createElement('div');
-            lContent.className = 'lesson-content';
-            var lInner = document.createElement('div');
-            lInner.className = 'lesson-content-inner';
-            lesson.content.forEach(function(n) { lInner.appendChild(n); });
-            lContent.appendChild(lInner);
-            lessonEl.appendChild(lContent);
-
-            // Click to toggle lesson
-            lHeader.addEventListener('click', function(e) {
-              e.stopPropagation();
-              lessonEl.classList.toggle('open');
-            });
-
-            body.appendChild(lessonEl);
-          });
-
-          // Quizzes
-          mod.quizzes.forEach(function(quiz) {
-            var quizEl = document.createElement('div');
-            quizEl.className = 'quiz-item';
-
-            var quizTitle = quiz.title.replace(/^Quiz\s*:\s*/i, '').replace(/^Quiz\s*/i, '');
-            quizTitle = quizTitle ? 'Quiz — ' + quizTitle : 'Quiz';
-
-            var qHeader = document.createElement('div');
-            qHeader.className = 'lesson-header';
-            qHeader.innerHTML =
-              '<div class="lesson-header-left">' +
-                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
-                '<span class="lesson-name">' + quizTitle + '</span>' +
-              '</div>' +
-              '<span class="lesson-expand-icon">▶</span>';
-            quizEl.appendChild(qHeader);
-
-            var qContent = document.createElement('div');
-            qContent.className = 'lesson-content';
-            var qInner = document.createElement('div');
-            qInner.className = 'lesson-content-inner';
-
-            // Parse quiz content: look for H4 as questions, lists as options, blockquotes as explanations
-            var tempDiv = document.createElement('div');
-            quiz.content.forEach(function(n) { tempDiv.appendChild(n); });
-            var quizHTML = parseQuizContent(tempDiv);
-            qInner.innerHTML = quizHTML;
-            qContent.appendChild(qInner);
-            quizEl.appendChild(qContent);
-
-            qHeader.addEventListener('click', function(e) {
-              e.stopPropagation();
-              quizEl.classList.toggle('open');
-            });
-
-            body.appendChild(quizEl);
-          });
-
-          // Coding Challenges
-          mod.challenges.forEach(function(challenge) {
-            var chalEl = document.createElement('div');
-            chalEl.className = 'challenge-item';
-
-            var chalTitle = challenge.title.replace(/^Coding Challenge\s*:\s*/i, '').replace(/^Coding Challenge\s*/i, '');
-            chalTitle = chalTitle ? 'Coding Test — ' + chalTitle : 'Coding Test';
-
-            var cHeader = document.createElement('div');
-            cHeader.className = 'lesson-header';
-            cHeader.innerHTML =
-              '<div class="lesson-header-left">' +
-                '<span class="lesson-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>' +
-                '<span class="lesson-name">' + chalTitle + '</span>' +
-              '</div>' +
-              '<span class="lesson-expand-icon">▶</span>';
-            chalEl.appendChild(cHeader);
-
-            var cContent = document.createElement('div');
-            cContent.className = 'lesson-content';
-            var cInner = document.createElement('div');
-            cInner.className = 'lesson-content-inner';
-
-            // Split content: everything before first code block is prompt, rest is solution
-            var tempDiv2 = document.createElement('div');
-            challenge.content.forEach(function(n) { tempDiv2.appendChild(n); });
-            var chalHTML = parseChallengeContent(tempDiv2);
-            cInner.innerHTML = chalHTML;
-            cContent.appendChild(cInner);
-            chalEl.appendChild(cContent);
-
-            cHeader.addEventListener('click', function(e) {
-              e.stopPropagation();
-              chalEl.classList.toggle('open');
-            });
-
-            body.appendChild(chalEl);
+            topicEl.appendChild(link);
+            body.appendChild(topicEl);
           });
 
           wrapper.appendChild(body);
 
-          // Click to toggle module
           header.addEventListener('click', function() {
             wrapper.classList.toggle('open');
           });
