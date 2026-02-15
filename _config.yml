@@ -17,6 +17,14 @@ plugins:
   - jekyll-redirect-from
 
 collections:
+  articles:
+    output: true
+    permalink: /article/:title/
+
+  guides:
+    output: true
+    permalink: /guide/:title/
+
   presentations:
     output: true
     permalink: /:title/

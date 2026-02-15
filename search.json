@@ -2,7 +2,15 @@
 layout: null
 ---
 [
-  {% for post in site.posts %}
+  {% for post in site.articles %}
+    {
+      "title": {{ post.title | jsonify }},
+      "url": {{ post.url | jsonify }},
+      "date": {{ post.date | date: "%B %d, %Y" | jsonify }},
+      "content": {{ post.content | strip_html | jsonify }}
+    },
+  {% endfor %}
+  {% for post in site.guides %}
     {
       "title": {{ post.title | jsonify }},
       "url": {{ post.url | jsonify }},
