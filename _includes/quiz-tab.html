@@ -153,7 +153,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 18px;
-    padding-top: 40px;
+    align-items: center;
   }
 
   .quiz-q-topic {
@@ -375,21 +375,19 @@
   .quiz-explanation strong { color: #60a5fa; font-weight: 600; }
 
   .quiz-actions {
-    position: absolute;
-    top: 16px;
-    right: 16px;
     display: flex;
     gap: 8px;
-    z-index: 2;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .quiz-restart-mid {
-    padding: 8px 16px;
+    padding: 8px 18px;
     border: 1px solid rgba(75, 85, 99, 0.3);
     border-radius: 8px;
     background: rgba(17, 24, 39, 0.8);
     color: #9ca3af;
-    font-size: 0.85rem;
+    font-size: 1.05rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -402,12 +400,12 @@
   }
 
   .quiz-next-btn {
-    padding: 8px 16px;
+    padding: 8px 18px;
     border: none;
     border-radius: 8px;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 1.05rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -527,9 +525,9 @@
     .quiz-self-rate { flex-direction: column; }
     .quiz-option { font-size: 1.1rem; }
     .quiz-q-code { font-size: 0.95rem; }
-    .quiz-actions { top: 12px; right: 12px; }
-    .quiz-actions .quiz-next-btn { font-size: 0.8rem; padding: 6px 12px; }
-    .quiz-actions .quiz-restart-mid { font-size: 0.8rem; padding: 6px 12px; }
+    .quiz-actions { margin-left: 0; margin-top: 8px; width: 100%; justify-content: stretch; }
+    .quiz-actions .quiz-next-btn { flex: 1; font-size: 0.95rem; padding: 8px 14px; }
+    .quiz-actions .quiz-restart-mid { flex: 1; font-size: 0.95rem; padding: 8px 14px; }
   }
 </style>
 
@@ -591,25 +589,6 @@
   var qzWrong = 0;
   var qzDiff = null;
   var qzAnswered = false;
-
-  // Web Audio API sound for correct answer
-  var audioCtx = null;
-  function playCorrectSound() {
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      var osc = audioCtx.createOscillator();
-      var gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1); // G5
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-      osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 0.4);
-    } catch(e) {}
-  }
 
   fetch('/static/quiz-questions.json')
     .then(function(r) { return r.json(); })
@@ -722,14 +701,14 @@
     var codeBlock = codeStr ? '<pre class="quiz-q-code">' + highlightCode(codeStr) + '</pre>' : '';
 
     var html = '<div class="quiz-card" id="quiz-card">' +
-      '<div class="quiz-actions">' +
-      '<button class="quiz-restart-mid" onclick="quizRestart()">↺ Restart</button>' +
-      '<button class="quiz-next-btn quiz-hidden" id="quiz-next-btn" onclick="quizNext()">Next →</button>' +
-      '</div>' +
       '<div class="quiz-q-badges">' +
       '<span class="quiz-q-topic">' + q.topic + '</span>' +
       '<span class="quiz-q-diff ' + q.difficulty + '">' + q.difficulty + '</span>' +
       '<span class="quiz-q-type">' + typeLabel + '</span>' +
+      '<div class="quiz-actions">' +
+      '<button class="quiz-restart-mid" onclick="quizRestart()">↺ Restart</button>' +
+      '<button class="quiz-next-btn quiz-hidden" id="quiz-next-btn" onclick="quizNext()">Next →</button>' +
+      '</div>' +
       '</div>' +
       '<div class="quiz-q-text">' + escHtml(questionText) + '</div>' +
       codeBlock;
@@ -766,7 +745,6 @@
     if (idx === q.answer) {
       qzCorrect++;
       card.classList.add('quiz-card-correct');
-      playCorrectSound();
       spawnConfetti(card);
     } else {
       qzWrong++;
@@ -792,7 +770,7 @@
   window.quizRate = function(knew) {
     if (qzAnswered) return;
     qzAnswered = true;
-    if (knew) { qzCorrect++; playCorrectSound(); spawnConfetti(document.getElementById('quiz-card')); }
+    if (knew) { qzCorrect++; spawnConfetti(document.getElementById('quiz-card')); }
     else { qzWrong++; }
     document.querySelectorAll('.quiz-rate-btn').forEach(function(b) { b.style.pointerEvents = 'none'; b.style.opacity = '0.5'; });
     var q = qzQuestions[qzIdx];
