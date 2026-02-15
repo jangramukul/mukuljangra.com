@@ -3,6 +3,7 @@ title: "Gradle & Build Systems"
 layout: course
 description: "The Gradle build pipeline, configuration optimization, convention plugins, version catalogs, modularization, and CI/CD for Android projects."
 icon: "🔧"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8h20v14a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" stroke="#22d3ee" stroke-width="1.8" fill="rgba(34,211,238,0.1)"/><path d="M4 8l10 7 10-7" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round"/><rect x="8" y="4" width="12" height="4" rx="1" stroke="#22d3ee" stroke-width="1.5" fill="rgba(34,211,238,0.15)"/></svg>'
 color: "#22d3ee"
 difficulty: "Intermediate to Expert"
 modules: 6

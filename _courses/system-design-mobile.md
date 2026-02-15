@@ -3,6 +3,7 @@ title: "System Design for Mobile"
 layout: course
 description: "End-to-end mobile system design — from API contract to offline support, caching strategies, data synchronization, and real-world case studies."
 icon: "📐"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="22" height="22" rx="3" stroke="#8b5cf6" stroke-width="1.8" fill="rgba(139,92,246,0.1)"/><line x1="3" y1="10" x2="25" y2="10" stroke="#8b5cf6" stroke-width="1.2"/><line x1="3" y1="17" x2="25" y2="17" stroke="#8b5cf6" stroke-width="1.2"/><line x1="10" y1="3" x2="10" y2="25" stroke="#8b5cf6" stroke-width="1.2"/><line x1="18" y1="3" x2="18" y2="25" stroke="#8b5cf6" stroke-width="1.2"/><circle cx="14" cy="14" r="2" fill="#8b5cf6"/></svg>'
 color: "#8b5cf6"
 difficulty: "Advanced to Expert"
 modules: 7

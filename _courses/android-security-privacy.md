@@ -3,6 +3,7 @@ title: "Android Security & Privacy"
 layout: course
 description: "Secure storage, network security, authentication, deep links, and the security best practices every Android developer should know."
 icon: "🔒"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="12" width="16" height="12" rx="2" stroke="#ef4444" stroke-width="1.8" fill="rgba(239,68,68,0.1)"/><path d="M9 12V9a5 5 0 0110 0v3" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="18" r="2" fill="#ef4444"/><line x1="14" y1="20" x2="14" y2="22" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/></svg>'
 color: "#ef4444"
 difficulty: "Intermediate to Expert"
 modules: 6

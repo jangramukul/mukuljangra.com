@@ -874,7 +874,8 @@
             {% endfor %}
           </div>
           <div class="articles-grid">
-          {% for post in site.articles %}
+          {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
+          {% for post in sorted_articles %}
           {% unless post.tags contains "Book" %}
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">

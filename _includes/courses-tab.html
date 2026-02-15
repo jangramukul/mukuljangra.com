@@ -5,7 +5,11 @@
           <a href="{{ course.url }}" class="course-card-link">
             <div class="course-card">
               <div class="course-card-icon" style="background: linear-gradient(135deg, {{ course.color | default: '#60a5fa' }}33, {{ course.color | default: '#60a5fa' }}11);">
+                {% if course.icon_svg %}
+                <span style="font-size: 28px; display: flex; align-items: center; justify-content: center;">{{ course.icon_svg }}</span>
+                {% else %}
                 <span style="font-size: 28px;">{{ course.icon }}</span>
+                {% endif %}
               </div>
               <div class="course-card-content">
                 <h3 class="course-card-title">{{ course.title }}</h3>

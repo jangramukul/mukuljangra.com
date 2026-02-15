@@ -73,6 +73,20 @@
         color: #ffffff;
         line-height: 1.2;
         letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .android-robot-icon {
+        flex-shrink: 0;
+        filter: drop-shadow(0 0 12px rgba(61, 220, 132, 0.4));
+        animation: robot-float 3s ease-in-out infinite;
+      }
+
+      @keyframes robot-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
       }
 
       .intro-headline .highlight-text {
@@ -326,11 +340,6 @@
         border-bottom-color: #60a5fa;
       }
 
-      .section-tab.active[data-tab="roadmap"] {
-        color: #60a5fa;
-        border-bottom-color: #60a5fa;
-      }
-
       .section-tab.active[data-tab="courses"] {
         color: #a78bfa;
         border-bottom-color: #a78bfa;
@@ -475,159 +484,6 @@
 
         .course-card {
           padding: 20px;
-        }
-      }
-
-      /* Roadmap */
-      .roadmap-accordion {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .roadmap-phase {
-        border-radius: 16px;
-        background-color: rgba(17, 24, 39, 0.6);
-        border: 1px solid rgba(75, 85, 99, 0.3);
-        overflow: hidden;
-      }
-
-      .roadmap-phase-header {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 20px 24px;
-      }
-
-      .roadmap-phase-number {
-        width: 52px;
-        height: 52px;
-        min-width: 52px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Inter', sans-serif;
-        font-weight: 800;
-        font-size: 1.05em;
-        color: #60a5fa;
-        flex-direction: column;
-        line-height: 1.15;
-      }
-
-      .roadmap-phase-number .week-label {
-        font-size: 0.55em;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        opacity: 0.8;
-      }
-
-      .roadmap-phase:nth-child(1) .roadmap-phase-number { background: linear-gradient(135deg, rgba(96, 165, 250, 0.25), rgba(96, 165, 250, 0.1)); color: #60a5fa; }
-      .roadmap-phase:nth-child(2) .roadmap-phase-number { background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(52, 211, 153, 0.1)); color: #34d399; }
-      .roadmap-phase:nth-child(3) .roadmap-phase-number { background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.1)); color: #fbbf24; }
-      .roadmap-phase:nth-child(4) .roadmap-phase-number { background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(167, 139, 250, 0.1)); color: #a78bfa; }
-      .roadmap-phase:nth-child(5) .roadmap-phase-number { background: linear-gradient(135deg, rgba(244, 114, 182, 0.25), rgba(244, 114, 182, 0.1)); color: #f472b6; }
-      .roadmap-phase:nth-child(6) .roadmap-phase-number { background: linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(251, 146, 60, 0.1)); color: #fb923c; }
-      .roadmap-phase:nth-child(7) .roadmap-phase-number { background: linear-gradient(135deg, rgba(45, 212, 191, 0.25), rgba(45, 212, 191, 0.1)); color: #2dd4bf; }
-      .roadmap-phase:nth-child(8) .roadmap-phase-number { background: linear-gradient(135deg, rgba(248, 113, 113, 0.25), rgba(248, 113, 113, 0.1)); color: #f87171; }
-      .roadmap-phase:nth-child(9) .roadmap-phase-number { background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(129, 140, 248, 0.1)); color: #818cf8; }
-      .roadmap-phase:nth-child(10) .roadmap-phase-number { background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(74, 222, 128, 0.1)); color: #4ade80; }
-      .roadmap-phase:nth-child(11) .roadmap-phase-number { background: linear-gradient(135deg, rgba(232, 121, 249, 0.25), rgba(232, 121, 249, 0.1)); color: #e879f9; }
-      .roadmap-phase:nth-child(12) .roadmap-phase-number { background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(56, 189, 248, 0.1)); color: #38bdf8; }
-      .roadmap-phase:nth-child(13) .roadmap-phase-number { background: linear-gradient(135deg, rgba(253, 186, 116, 0.25), rgba(253, 186, 116, 0.1)); color: #fdba74; }
-      .roadmap-phase:nth-child(14) .roadmap-phase-number { background: linear-gradient(135deg, rgba(110, 231, 183, 0.25), rgba(110, 231, 183, 0.1)); color: #6ee7b7; }
-
-      .roadmap-phase-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .roadmap-phase-title {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.2em;
-        font-weight: 700;
-        color: #e5e7eb;
-        line-height: 1.3;
-      }
-
-      .roadmap-phase-meta {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.8em;
-        color: #6b7280;
-        margin-top: 2px;
-      }
-
-      .roadmap-phase-level {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75em;
-        font-weight: 500;
-        color: #9ca3af;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        background-color: rgba(55, 65, 81, 0.5);
-        white-space: nowrap;
-      }
-
-      .roadmap-topics {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-        padding: 0 24px 20px 24px;
-      }
-
-      .roadmap-topic {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        background-color: rgba(31, 41, 55, 0.5);
-        text-decoration: none;
-        transition: background-color 0.15s ease, border-color 0.15s ease;
-        border: 1px solid transparent;
-      }
-
-      .roadmap-topic:hover {
-        background-color: rgba(55, 65, 81, 0.5);
-        border-color: rgba(96, 165, 250, 0.3);
-      }
-
-      .roadmap-topic-dot {
-        width: 6px;
-        height: 6px;
-        min-width: 6px;
-        border-radius: 50%;
-        background-color: rgba(96, 165, 250, 0.5);
-      }
-
-      .roadmap-topic-name {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.9em;
-        font-weight: 500;
-        color: #d1d5db;
-        flex: 1;
-      }
-
-      .roadmap-topic-link {
-        font-size: 0.7em;
-        color: #6b7280;
-        transition: color 0.15s ease;
-        flex-shrink: 0;
-      }
-
-      .roadmap-topic:hover .roadmap-topic-link {
-        color: #60a5fa;
-      }
-
-      @media (max-width: 768px) {
-        .roadmap-topics {
-          grid-template-columns: 1fr;
-          padding: 0 16px 16px 16px;
-        }
-        .roadmap-phase-header {
-          padding: 16px;
         }
       }
 
@@ -1401,9 +1257,13 @@
     <div class="right-column">
       <!-- Introduction Section -->
       <div class="intro-section">
-        <div class="intro-headline">Become an <span class="highlight-text">Android Hero</span></div>
+        <div class="intro-headline">Become an <span class="highlight-text">Android Hero</span> <svg class="android-robot-icon" width="48" height="48" viewBox="0 0 96 105" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.016 30.672C17.456 30.672 13.76 34.4 13.76 38.928V63.312C13.76 67.872 17.456 71.568 22.016 71.568C26.544 71.568 30.24 67.872 30.24 63.312V38.928C30.24 34.4 26.544 30.672 22.016 30.672Z" fill="#3DDC84"/><path d="M73.984 30.672C69.456 30.672 65.76 34.4 65.76 38.928V63.312C65.76 67.872 69.456 71.568 73.984 71.568C78.544 71.568 82.24 67.872 82.24 63.312V38.928C82.24 34.4 78.544 30.672 73.984 30.672Z" fill="#3DDC84"/><path d="M33.408 30.672V72.672C33.408 76.032 36.128 78.72 39.488 78.72H44.16V91.824C44.16 96.384 47.856 100.08 52.416 100.08C52.416 100.08 52.416 100.08 52.416 100.08C56.944 100.08 60.64 96.384 60.64 91.824V78.72H62.496V30.672H33.408Z" fill="#3DDC84"/><path d="M43.584 100.08C48.144 100.08 51.84 96.384 51.84 91.824V78.72H35.328V91.824C35.328 96.384 39.024 100.08 43.584 100.08Z" fill="#3DDC84"/><path d="M33.408 30.672H62.592C62.592 30.672 62.592 24.864 62.592 21.216C62.592 10.08 53.568 1.056 42.432 1.056C42.432 1.056 53.568 1.056 42.432 1.056C42.432 1.056 33.408 10.08 33.408 21.216V30.672Z" fill="#3DDC84"/><path d="M32.256 28.928H63.744C66.816 28.928 69.312 26.432 69.312 23.36V23.36C69.312 12.896 60.864 4.448 50.4 4.448H45.6C35.136 4.448 26.688 12.896 26.688 23.36V23.36C26.688 26.432 29.184 28.928 32.256 28.928Z" fill="#3DDC84"/><circle cx="39.36" cy="18.048" r="2.88" fill="white"/><circle cx="56.64" cy="18.048" r="2.88" fill="white"/><path d="M33.408 28.928H62.592V72.672C62.592 76.032 59.904 78.72 56.544 78.72H39.456C36.096 78.72 33.408 76.032 33.408 72.672V28.928Z" fill="#3DDC84"/><line x1="37.44" y1="5.76" x2="32.64" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/><line x1="58.56" y1="5.76" x2="63.36" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/></svg></div>
         <div class="intro-subtitle">No signups. No subscriptions. No tracking. Just free, open-source resources to help you grow as an Android engineer — forever.</div>
-        <div class="intro-author" style="margin-bottom: 36px;">By <a href="/" style="color: #60a5fa; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(96, 165, 250, 0.4); padding-bottom: 1px; transition: all 0.2s ease;">Mukul Jangra</a></div>
+        <div class="intro-author" style="margin-bottom: 24px;">By <a href="/" style="color: #60a5fa; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(96, 165, 250, 0.4); padding-bottom: 1px; transition: all 0.2s ease;">Mukul Jangra</a></div>
+
+        <div style="margin-bottom: 36px;">
+          <a href="/flashcards/" style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; font-size: 1rem; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(59,130,246,0.2);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(59,130,246,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 15px rgba(59,130,246,0.2)'">🧠 Test My Knowledge</a>
+        </div>
 
         <div class="feature-section-heading">What You'll Find Here</div>
         <div class="feature-section-sub">Everything you need to grow as an Android developer — all in one place.</div>
@@ -1411,7 +1271,7 @@
         <!-- Feature Cards - Row 1 -->
         <div class="feature-cards">
           <div class="feature-card">
-            <span class="feature-card-icon">📱</span>
+            <span class="feature-card-icon"><svg width="28" height="28" viewBox="0 0 96 105" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.016 30.672C17.456 30.672 13.76 34.4 13.76 38.928V63.312C13.76 67.872 17.456 71.568 22.016 71.568C26.544 71.568 30.24 67.872 30.24 63.312V38.928C30.24 34.4 26.544 30.672 22.016 30.672Z" fill="#3DDC84"/><path d="M73.984 30.672C69.456 30.672 65.76 34.4 65.76 38.928V63.312C65.76 67.872 69.456 71.568 73.984 71.568C78.544 71.568 82.24 67.872 82.24 63.312V38.928C82.24 34.4 78.544 30.672 73.984 30.672Z" fill="#3DDC84"/><path d="M33.408 30.672V72.672C33.408 76.032 36.128 78.72 39.488 78.72H44.16V91.824C44.16 96.384 47.856 100.08 52.416 100.08C52.416 100.08 52.416 100.08 52.416 100.08C56.944 100.08 60.64 96.384 60.64 91.824V78.72H62.496V30.672H33.408Z" fill="#3DDC84"/><path d="M43.584 100.08C48.144 100.08 51.84 96.384 51.84 91.824V78.72H35.328V91.824C35.328 96.384 39.024 100.08 43.584 100.08Z" fill="#3DDC84"/><path d="M32.256 28.928H63.744C66.816 28.928 69.312 26.432 69.312 23.36V23.36C69.312 12.896 60.864 4.448 50.4 4.448H45.6C35.136 4.448 26.688 12.896 26.688 23.36V23.36C26.688 26.432 29.184 28.928 32.256 28.928Z" fill="#3DDC84"/><circle cx="39.36" cy="18.048" r="2.88" fill="white"/><circle cx="56.64" cy="18.048" r="2.88" fill="white"/><path d="M33.408 28.928H62.592V72.672C62.592 76.032 59.904 78.72 56.544 78.72H39.456C36.096 78.72 33.408 76.032 33.408 72.672V28.928Z" fill="#3DDC84"/><line x1="37.44" y1="5.76" x2="32.64" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/><line x1="58.56" y1="5.76" x2="63.36" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/></svg></span>
             <div class="feature-card-title">Android & Kotlin Deep Dives</div>
             <p class="feature-card-desc">In-depth articles on Jetpack Compose, Coroutines, architecture patterns, and modern Android development.</p>
           </div>
@@ -1449,15 +1309,14 @@
       <div class="list-container">
         <!-- Tabs -->
         <div class="section-tabs">
-          <div class="section-tab active" data-tab="articles">Guides <span class="tab-count">{{ site.guides | size }}</span></div>
-          <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
+          <div class="section-tab active" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
           <div class="section-tab" data-tab="courses">Courses <span class="tab-count">{{ site.courses | size }}</span></div>
-          <div class="section-tab" data-tab="roadmap">Roadmap</div>
+          <div class="section-tab" data-tab="articles">Guides <span class="tab-count">{{ site.guides | size }}</span></div>
           <div class="section-tab" data-tab="resources">Resources</div>
         </div>
 
         <!-- Articles tab -->
-        <div class="tab-content active" id="tab-articles">
+        <div class="tab-content" id="tab-articles">
           <div class="category-chips">
             <div class="category-chip active" data-tag="all">All</div>
             {% assign all_tags = "" | split: "" %}
@@ -1500,7 +1359,7 @@
         </div>
 
         <!-- Interview Prep tab -->
-        <div class="tab-content" id="tab-interviews">
+        <div class="tab-content active" id="tab-interviews">
           <div class="interview-level-chips">
             <div class="category-chip level-chip active" data-itag="all">All</div>
             <div class="category-chip level-chip" data-itag="Technical_Round">Technical Round</div>
@@ -1543,11 +1402,6 @@
               <p class="empty-hint">Stay tuned — notes are coming soon!</p>
             </div>
           {% endif %}
-        </div>
-
-        <!-- Roadmap tab -->
-        <div class="tab-content" id="tab-roadmap">
-          {% include roadmap-tab.html %}
         </div>
 
         <!-- Courses tab -->
@@ -1636,7 +1490,7 @@
 
             // Update URL
             const url = new URL(window.location);
-            if (targetTab === 'articles') {
+            if (targetTab === 'interviews') {
               url.searchParams.delete('tab');
             } else {
               url.searchParams.set('tab', targetTab);

@@ -3,6 +3,7 @@ title: "Android Performance Mastery"
 layout: course
 description: "Profiling, memory management, startup optimization, rendering performance, network efficiency, and the micro-optimizations that make Android apps fast."
 icon: "⚡"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 4C8.477 4 4 8.477 4 14s4.477 10 10 10 10-4.477 10-10S19.523 4 14 4z" stroke="#f97316" stroke-width="1.8" fill="rgba(249,115,22,0.1)"/><path d="M14 8v4l3 3" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="1.5" fill="#f97316"/><path d="M8 20l2-2M20 20l-2-2M14 6v1M6 14h1M22 14h-1" stroke="#f97316" stroke-width="1.2" stroke-linecap="round"/></svg>'
 color: "#f97316"
 difficulty: "Intermediate to Expert"
 modules: 8

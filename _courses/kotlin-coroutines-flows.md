@@ -3,6 +3,7 @@ title: "Kotlin Coroutines & Flows"
 layout: course
 description: "Master structured concurrency, suspend functions, Flow operators, StateFlow, Channels, and exception handling for production Android apps."
 icon: "⚡"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><linearGradient id="coroutine-a" x1="0" x2="128" y1="128" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E44857"/><stop offset=".47" stop-color="#C711E1"/><stop offset="1" stop-color="#7F52FF"/></linearGradient><path fill="url(#coroutine-a)" d="M0 128L64 64 128 128zM0 0h128L64 64 0 128z"/><path d="M48 36l24 28-24 28" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M72 36l-24 28 24 28" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".5" transform="translate(8,0)"/></svg>'
 color: "#fbbf24"
 difficulty: "Intermediate to Expert"
 modules: 7
@@ -34,6 +35,7 @@ The building blocks of Kotlin's concurrency model. Coroutine builders, scopes, d
 - [Kotlin Structured Concurrency Guide](/guide/kotlin-structured-concurrency-guide/)
 - [Kotlin Dispatchers Guide](/guide/kotlin-dispatchers-guide/)
 - [Kotlin Suspend Functions Guide](/guide/kotlin-suspend-functions-guide/)
+- [Android Threading With Handler and Looper](/guide/android-threading-handler-looper/)
 
 ## Module 2: Coroutines Under the Hood
 

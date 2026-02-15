@@ -3,6 +3,7 @@ title: "Jetpack Compose Mastery"
 layout: course
 description: "Build modern Android UIs from scratch — declarative thinking, state management, side effects, custom layouts, animations, performance, and testing."
 icon: "🎨"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg"><path d="M36 0C16.118 0 0 16.118 0 36s16.118 36 36 36 36-16.118 36-36S55.882 0 36 0z" fill="#4285F4"/><path d="M44.5 20L27.5 37l8.5 8.5L53 28.5c1.5-1.5 1.5-3.5 0-5L49.5 20c-1.5-1.5-3.5-1.5-5 0z" fill="#3870B2"/><path d="M27.5 37l-8.5 8.5c-1.5 1.5-1.5 3.5 0 5L22.5 54c1.5 1.5 3.5 1.5 5 0L36 45.5z" fill="#fff"/><path d="M36 45.5L27.5 37l8.5-8.5z" fill="#fff" opacity=".5"/></svg>'
 color: "#60a5fa"
 difficulty: "Beginner to Expert"
 modules: 10
@@ -68,6 +69,7 @@ Compose Navigation, type-safe arguments, nested navigation graphs, deep links, a
 
 - [Compose Navigation Guide](/guide/compose-navigation-guide/)
 - [Navigation 3 — Compose-Native Navigation Rebuilt from Scratch](/guide/navigation-3-compose-rebuilt/)
+- [Android Navigation Component Guide](/guide/android-navigation-component-guide/)
 
 ## Module 6: Animation
 

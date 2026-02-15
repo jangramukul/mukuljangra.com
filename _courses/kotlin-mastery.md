@@ -3,6 +3,7 @@ title: "Kotlin Mastery"
 layout: course
 description: "Master Kotlin from fundamentals to advanced patterns — null safety, generics, DSLs, inline functions, and idiomatic Kotlin for production Android code."
 icon: "🟣"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><linearGradient id="kotlin-a" x1="0" x2="128" y1="128" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E44857"/><stop offset=".47" stop-color="#C711E1"/><stop offset="1" stop-color="#7F52FF"/></linearGradient><path fill="url(#kotlin-a)" d="M0 128L64 64 128 128zM0 0h128L64 64 0 128z"/></svg>'
 color: "#a78bfa"
 difficulty: "Beginner to Expert"
 modules: 8

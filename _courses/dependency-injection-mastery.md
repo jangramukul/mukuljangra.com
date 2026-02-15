@@ -3,6 +3,7 @@ title: "Dependency Injection Mastery"
 layout: course
 description: "DI principles, Hilt, Metro, KSP, multi-module DI, and the patterns that keep dependency graphs clean and testable."
 icon: "🔌"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="10" stroke="#f472b6" stroke-width="1.8" fill="rgba(244,114,182,0.1)"/><circle cx="14" cy="14" r="4" stroke="#f472b6" stroke-width="1.5" fill="rgba(244,114,182,0.2)"/><line x1="14" y1="4" x2="14" y2="10" stroke="#f472b6" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="24" stroke="#f472b6" stroke-width="1.5"/><line x1="4" y1="14" x2="10" y2="14" stroke="#f472b6" stroke-width="1.5"/><line x1="18" y1="14" x2="24" y2="14" stroke="#f472b6" stroke-width="1.5"/></svg>'
 color: "#f472b6"
 difficulty: "Intermediate to Expert"
 modules: 6

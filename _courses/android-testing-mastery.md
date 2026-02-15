@@ -3,6 +3,7 @@ title: "Android Testing Mastery"
 layout: course
 description: "Unit testing, integration testing, Compose testing, coroutine testing, and the testing strategies that catch real bugs without slowing you down."
 icon: "🧪"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4h8M11 4v8l-5 10a2 2 0 001.8 2.8h12.4A2 2 0 0022 22L17 12V4" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="rgba(167,139,250,0.1)"/><path d="M9 18h10" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="21" r="1" fill="#a78bfa"/><circle cx="16" cy="20" r="0.8" fill="#a78bfa"/></svg>'
 color: "#a78bfa"
 difficulty: "Intermediate to Expert"
 modules: 7

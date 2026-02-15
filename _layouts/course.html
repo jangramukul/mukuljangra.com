@@ -534,7 +534,11 @@
 
         <!-- Course Hero -->
         <div class="course-hero">
+          {% if page.icon_svg %}
+          <span class="course-icon" style="font-size: 48px; display: flex;">{{ page.icon_svg }}</span>
+          {% else %}
           <span class="course-icon">{{ page.icon }}</span>
+          {% endif %}
           <h1 class="course-title">{{ page.title }}</h1>
           <p class="course-description">{{ page.description }}</p>
           <div class="course-meta">

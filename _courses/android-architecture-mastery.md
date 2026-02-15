@@ -3,6 +3,7 @@ title: "Android Architecture Mastery"
 layout: course
 description: "Clean Architecture, MVVM, MVI, modularization, error handling, caching, and the principles that keep large Android codebases maintainable."
 icon: "🏗️"
+icon_svg: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="10" height="10" rx="2" stroke="#34d399" stroke-width="1.8" fill="rgba(52,211,153,0.15)"/><rect x="16" y="2" width="10" height="10" rx="2" stroke="#34d399" stroke-width="1.8" fill="rgba(52,211,153,0.15)"/><rect x="9" y="16" width="10" height="10" rx="2" stroke="#34d399" stroke-width="1.8" fill="rgba(52,211,153,0.15)"/><line x1="7" y1="12" x2="14" y2="16" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/><line x1="21" y1="12" x2="14" y2="16" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/></svg>'
 color: "#34d399"
 difficulty: "Intermediate to Expert"
 modules: 8
@@ -36,6 +37,7 @@ The principles behind every good architecture decision. Separation of concerns, 
 - [Common Architectural Principles](/guide/common-architectural-principles/)
 - [Understanding the Layers of Clean Architecture](/guide/layers-of-clean-architecture/)
 - [How to Choose the Right Architecture?](/guide/how-to-choose-architecture/)
+- [Understanding Android Activity Lifecycle](/guide/understanding-android-activity-lifecycle/)
 
 ## Module 2: Architecture Evolution
 
@@ -86,6 +88,8 @@ The practices that elevate a codebase from functional to excellent. API design, 
 - [API Design Best Practices Guide](/guide/api-design-best-practises/)
 - [Code Review Best Practises Guide](/guide/code-review-best-practises/)
 - [Writing Testable Code](/guide/writing-testable-code/)
+- [Logging and Observability Best Practises](/guide/logging-observability-best-practises/)
+- [Android WorkManager Guide](/guide/android-workmanager-guide/)
 
 ## Module 8: System Design
 
