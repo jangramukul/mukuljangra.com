@@ -133,117 +133,19 @@
   .quiz-chip-correct { color: #34d399; }
   .quiz-chip-wrong { color: #f87171; }
 
-  /* Card stack container */
-  .quiz-card-stack {
-    position: relative;
-    padding-bottom: 16px;
-  }
-
-  /* Stacked cards behind the main card */
-  .quiz-card-stack::before,
-  .quiz-card-stack::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0;
-    top: 12px; bottom: 0;
-    border-radius: 16px;
-    pointer-events: none;
-    transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* Bottom card in stack (3rd) */
-  .quiz-card-stack::before {
-    background: #0f172a;
-    border: 1px solid rgba(75, 85, 99, 0.35);
-    transform: translateY(12px) scaleX(0.91);
-    z-index: 1;
-  }
-
-  /* Middle card in stack (2nd) */
-  .quiz-card-stack::after {
-    background: #131c2e;
-    border: 1px solid rgba(75, 85, 99, 0.45);
-    transform: translateY(6px) scaleX(0.955);
-    z-index: 2;
-  }
-
-  /* Hide stack when few cards remain */
-  .quiz-card-stack.last-card::before,
-  .quiz-card-stack.last-card::after { opacity: 0; transform: translateY(0) scaleX(1); }
-  .quiz-card-stack.last-card { padding-bottom: 0; }
-  .quiz-card-stack.penultimate::before { opacity: 0; transform: translateY(0) scaleX(1); }
-  .quiz-card-stack.penultimate { padding-bottom: 8px; }
-
   .quiz-card {
-    background: rgba(17, 24, 39, 0.85);
-    border: 1px solid rgba(75, 85, 99, 0.4);
+    background: rgba(17, 24, 39, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.3);
     border-radius: 16px;
     padding: 36px;
     position: relative;
     overflow: hidden;
-    z-index: 3;
-    animation: quizCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: quizCardIn 0.35s ease;
   }
 
-  /* New card rises up from the stack */
   @keyframes quizCardIn {
-    0% {
-      opacity: 0;
-      transform: translateY(12px) scale(0.955);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  /* Card swipes out to the left */
-  @keyframes quizCardSwipeLeft {
-    0% {
-      opacity: 1;
-      transform: translateX(0) rotate(0deg);
-    }
-    100% {
-      opacity: 0;
-      transform: translateX(-120%) rotate(-8deg);
-    }
-  }
-
-  /* Card swipes out to the right */
-  @keyframes quizCardSwipeRight {
-    0% {
-      opacity: 1;
-      transform: translateX(0) rotate(0deg);
-    }
-    100% {
-      opacity: 0;
-      transform: translateX(120%) rotate(8deg);
-    }
-  }
-
-  .quiz-card-exit {
-    animation: quizCardSwipeLeft 0.4s cubic-bezier(0.55, 0, 0.85, 0.35) forwards;
-  }
-
-  /* Stack "pop" effect when top card exits */
-  .quiz-card-stack.stack-pop::after {
-    transform: translateY(0) scaleX(1);
-    background: rgba(17, 24, 39, 0.85);
-    border-color: rgba(75, 85, 99, 0.4);
-  }
-  .quiz-card-stack.stack-pop::before {
-    transform: translateY(6px) scaleX(0.955);
-    background: #131c2e;
-  }
-
-  /* Remaining cards count badge */
-  .quiz-stack-remaining {
-    text-align: center;
-    margin-top: 14px;
-    font-size: 1.1rem;
-    color: rgba(156, 163, 175, 0.5);
-    font-weight: 500;
-    letter-spacing: 0.5px;
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 
   .quiz-q-badges {
@@ -616,9 +518,6 @@
     .quiz-start h2 { font-size: 2rem; }
     .quiz-start p { font-size: 1.15rem; }
     .quiz-card { padding: 24px 20px; }
-    .quiz-card-stack { padding-bottom: 12px; }
-    .quiz-card-stack::before { transform: translateY(10px) scaleX(0.92); }
-    .quiz-card-stack::after { transform: translateY(5px) scaleX(0.96); }
     .quiz-q-text { font-size: 1.25rem; }
     .quiz-diff-options { flex-direction: column; align-items: center; }
     .quiz-diff-btn { width: 100%; max-width: 260px; }
@@ -674,10 +573,7 @@
       </div>
     </div>
 
-    <div class="quiz-card-stack" id="quiz-card-stack">
-      <div id="quiz-question-area"></div>
-    </div>
-    <div class="quiz-stack-remaining" id="quiz-stack-remaining"></div>
+    <div id="quiz-question-area"></div>
   </div>
 
   <!-- Results Screen -->
@@ -777,24 +673,6 @@
     return text;
   }
 
-  function updateStackState() {
-    var stack = document.getElementById('quiz-card-stack');
-    var remaining = qzQuestions.length - qzIdx - 1;
-    var badge = document.getElementById('quiz-stack-remaining');
-    if (remaining <= 0) {
-      stack.classList.add('last-card');
-      stack.classList.remove('penultimate');
-      badge.textContent = '';
-    } else if (remaining === 1) {
-      stack.classList.add('penultimate');
-      stack.classList.remove('last-card');
-      badge.textContent = remaining + ' card remaining';
-    } else {
-      stack.classList.remove('last-card', 'penultimate');
-      badge.textContent = remaining + ' cards remaining';
-    }
-  }
-
   function renderQ() {
     qzAnswered = false;
     var q = qzQuestions[qzIdx];
@@ -854,7 +732,6 @@
 
     html += '</div>';
     area.innerHTML = html;
-    updateStackState();
   }
 
   window.quizSelect = function(idx) {
@@ -919,22 +796,9 @@
   }
 
   window.quizNext = function() {
-    var card = document.getElementById('quiz-card');
-    var stack = document.getElementById('quiz-card-stack');
-    if (card) {
-      card.classList.add('quiz-card-exit');
-      stack.classList.add('stack-pop');
-      setTimeout(function() {
-        stack.classList.remove('stack-pop');
-        qzIdx++;
-        if (qzIdx >= qzQuestions.length) showResults();
-        else renderQ();
-      }, 350);
-    } else {
-      qzIdx++;
-      if (qzIdx >= qzQuestions.length) showResults();
-      else renderQ();
-    }
+    qzIdx++;
+    if (qzIdx >= qzQuestions.length) showResults();
+    else renderQ();
   };
 
   function showResults() {
