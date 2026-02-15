@@ -5230,5 +5230,909 @@
     "difficulty": "hard",
     "topic": "Android",
     "explanation": "Baseline Profiles can improve startup time by 30%+ and reduce jank by pre-compiling hot code paths."
+  },
+  {
+    "q": "What is the difference between `crossinline` and `noinline` in Kotlin?",
+    "type": "open",
+    "answer": "`crossinline` marks a lambda that cannot use non-local returns but can still be inlined into other execution contexts like object expressions. `noinline` prevents the lambda from being inlined entirely, so it can be stored, passed around, or used as a regular function object.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "`crossinline` is needed when the inline lambda is used inside another lambda or anonymous object where non-local returns would be ambiguous."
+  },
+  {
+    "q": "What does the `contract` block do in Kotlin, and when would you use it?",
+    "type": "open",
+    "answer": "Contracts allow functions to describe their behavior to the compiler for smarter type analysis. For example, a contract can tell the compiler that if a function returns, a certain parameter is not null, enabling smart casts after the call. They're used in stdlib functions like `require()`, `check()`, and `isNullOrEmpty()`.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Contracts are still experimental but are widely used internally in the Kotlin standard library."
+  },
+  {
+    "q": "Which Kotlin feature allows you to add new functions to existing classes without modifying their source code?",
+    "type": "mcq",
+    "options": [
+      "Delegation",
+      "Extension functions",
+      "Sealed classes",
+      "Type aliases"
+    ],
+    "answer": "Extension functions",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Extension functions are resolved statically at compile time and don't actually modify the class."
+  },
+  {
+    "q": "What is a `value class` (formerly inline class) in Kotlin, and what problem does it solve?",
+    "type": "open",
+    "answer": "A value class wraps a single value without runtime overhead by being inlined at compile time. It provides type safety without the cost of object allocation. For example, wrapping `Int` in `value class UserId(val id: Int)` prevents accidentally passing a raw Int where a UserId is expected.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Value classes must have exactly one val property in the constructor and cannot have init blocks with backing fields."
+  },
+  {
+    "q": "What is the output of: `listOf(1, 2, 3).fold(10) { acc, i -> acc + i }`?",
+    "type": "mcq",
+    "options": [
+      "6",
+      "10",
+      "16",
+      "13"
+    ],
+    "answer": "16",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "`fold` starts with initial value 10, then adds 1+2+3 = 6, resulting in 16."
+  },
+  {
+    "q": "What is the difference between `Sequence` and `Iterable` in Kotlin?",
+    "type": "open",
+    "answer": "Iterables process elements eagerly — each transformation creates a new collection. Sequences process elements lazily — transformations are applied one element at a time in a pipeline without intermediate collections. Sequences are more efficient for large collections with chained operations, while Iterables are better for small collections.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Sequences avoid creating intermediate lists, reducing memory allocations in chained operations like filter/map."
+  },
+  {
+    "q": "Which keyword is used to declare a Kotlin class that cannot be instantiated and may contain abstract members?",
+    "type": "mcq",
+    "options": [
+      "open",
+      "sealed",
+      "abstract",
+      "interface"
+    ],
+    "answer": "abstract",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "`abstract` classes can have both abstract and concrete members and cannot be instantiated directly."
+  },
+  {
+    "q": "How does Kotlin's `reified` type parameter work, and what is its limitation?",
+    "type": "open",
+    "answer": "The `reified` keyword allows access to the actual type parameter at runtime inside inline functions, enabling operations like `is T` checks and `T::class` references. It works because inline functions are copied to the call site, so the concrete type is known. The limitation is that `reified` can only be used with `inline` functions.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Without `reified`, generic type information is erased at runtime due to JVM type erasure."
+  },
+  {
+    "q": "What is the difference between `also`, `apply`, `let`, `run`, and `with` scope functions in Kotlin?",
+    "type": "open",
+    "answer": "`let` — receiver as `it`, returns lambda result. `run` — receiver as `this`, returns lambda result. `with` — like `run` but takes object as argument. `apply` — receiver as `this`, returns the receiver. `also` — receiver as `it`, returns the receiver. Use `apply`/`also` for configuration, `let`/`run` for transformations.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "The key differences are the context reference (`this` vs `it`) and the return value (receiver vs lambda result)."
+  },
+  {
+    "q": "What does the `by lazy` delegate do in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "Initializes the property immediately when the class loads",
+      "Initializes the property on first access and caches the result",
+      "Creates a mutable delegated property",
+      "Makes the property thread-unsafe for performance"
+    ],
+    "answer": "Initializes the property on first access and caches the result",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "By default, `lazy` is thread-safe (SYNCHRONIZED mode). Use `LazyThreadSafetyMode.NONE` when thread safety isn't needed."
+  },
+  {
+    "q": "What is a destructuring declaration in Kotlin and how is it implemented under the hood?",
+    "type": "open",
+    "answer": "Destructuring declarations let you unpack an object into multiple variables: `val (name, age) = person`. Under the hood, Kotlin calls `component1()`, `component2()`, etc. Data classes auto-generate these functions for their properties in declaration order. You can also define custom `componentN()` operator functions.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Destructuring works in variable declarations, for loops, and lambda parameters."
+  },
+  {
+    "q": "What is the difference between `object` declaration and `companion object` in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "There is no difference",
+      "object creates a standalone singleton; companion object is tied to a class and can access its private members",
+      "companion object is always lazy-initialized",
+      "object declaration cannot implement interfaces"
+    ],
+    "answer": "object creates a standalone singleton; companion object is tied to a class and can access its private members",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Companion objects are initialized when the containing class is loaded, similar to Java static initializers."
+  },
+  {
+    "q": "How does Kotlin handle null safety, and what is the difference between `!!` and `?.` operators?",
+    "type": "mcq",
+    "options": [
+      "Both throw NullPointerException on null values",
+      "`?.` safely returns null if the receiver is null; `!!` asserts non-null and throws NPE if null",
+      "`!!` is a safe call; `?.` throws an exception",
+      "They behave identically but `!!` is deprecated"
+    ],
+    "answer": "`?.` safely returns null if the receiver is null; `!!` asserts non-null and throws NPE if null",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Avoid `!!` in production code — prefer `?.`, `?:` (Elvis), or safe casts instead."
+  },
+  {
+    "q": "What are context receivers in Kotlin and what problem do they solve?",
+    "type": "open",
+    "answer": "Context receivers allow a function to require multiple receiver types without nesting. Instead of deeply nested `with` blocks, you declare `context(LoggingContext, DatabaseContext)` on a function, making members of both contexts available. This enables cleaner dependency injection at the function level and avoids the single-receiver limitation.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Context receivers are currently experimental and may change in future Kotlin releases."
+  },
+  {
+    "q": "What is the `sealed interface` in Kotlin and how does it differ from a `sealed class`?",
+    "type": "mcq",
+    "options": [
+      "There is no difference",
+      "Sealed interfaces allow multiple inheritance while sealed classes don't",
+      "Sealed interfaces cannot have properties",
+      "Sealed classes can be extended outside the module"
+    ],
+    "answer": "Sealed interfaces allow multiple inheritance while sealed classes don't",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "A class can implement multiple sealed interfaces but can only extend one sealed class, making sealed interfaces more flexible."
+  },
+  {
+    "q": "What is the difference between `coroutineScope` and `supervisorScope`?",
+    "type": "open",
+    "answer": "`coroutineScope` cancels all children when any child fails — it follows structured concurrency strictly. `supervisorScope` lets other children continue even if one fails — failures don't propagate to siblings. Use `supervisorScope` when child coroutines are independent, like parallel API calls where one failure shouldn't cancel the rest.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`supervisorScope` uses a SupervisorJob internally, while `coroutineScope` uses a regular Job."
+  },
+  {
+    "q": "What happens if you call `delay()` inside a `runBlocking` block?",
+    "type": "mcq",
+    "options": [
+      "It throws an exception because delay is not allowed in runBlocking",
+      "It suspends the coroutine but blocks the underlying thread",
+      "It suspends both the coroutine and releases the thread",
+      "It is ignored and execution continues immediately"
+    ],
+    "answer": "It suspends the coroutine but blocks the underlying thread",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`runBlocking` blocks the current thread to wait for completion, so while the coroutine suspends, the thread remains blocked."
+  },
+  {
+    "q": "What is `Dispatchers.Unconfined` and when should you use it?",
+    "type": "open",
+    "answer": "`Dispatchers.Unconfined` starts the coroutine in the caller's thread but after the first suspension point, it resumes in whatever thread the suspending function used. It's useful for coroutines that don't consume CPU time or update shared state. In practice, it's mainly used in testing or very specific scenarios.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Unconfined dispatcher is not recommended for general use as it can lead to unpredictable thread switching."
+  },
+  {
+    "q": "How does `ensureActive()` differ from `yield()` for checking coroutine cancellation?",
+    "type": "open",
+    "answer": "`ensureActive()` checks if the coroutine's Job is active and throws CancellationException if not. It does not suspend. `yield()` also checks for cancellation but additionally suspends the coroutine, giving other coroutines a chance to run on the same dispatcher. Use `yield()` in CPU-intensive loops; use `ensureActive()` for a lightweight cancellation check.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`isActive` is another option — it returns a boolean without throwing, useful for loop conditions."
+  },
+  {
+    "q": "What is the purpose of `CoroutineExceptionHandler`?",
+    "type": "mcq",
+    "options": [
+      "It catches all exceptions in any coroutine scope",
+      "It handles uncaught exceptions in root coroutines launched with `launch`",
+      "It replaces try-catch blocks in all coroutine code",
+      "It prevents coroutine cancellation on exceptions"
+    ],
+    "answer": "It handles uncaught exceptions in root coroutines launched with `launch`",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`CoroutineExceptionHandler` doesn't work with `async` because it surfaces exceptions through the Deferred result."
+  },
+  {
+    "q": "What is a `MutableSharedFlow` and how does it differ from `MutableStateFlow`?",
+    "type": "open",
+    "answer": "`MutableStateFlow` holds a single value, always has a current value (conflated), and emits only when the value changes (uses equality check). `MutableSharedFlow` can emit all values (no conflation by default), doesn't require an initial value, and supports replay and buffer configurations. Use StateFlow for state, SharedFlow for events.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "StateFlow is essentially a SharedFlow with replay=1 and distinctUntilChanged behavior."
+  },
+  {
+    "q": "What does `flowOn()` do in Kotlin Flows?",
+    "type": "mcq",
+    "options": [
+      "Changes the dispatcher for downstream operators",
+      "Changes the dispatcher for upstream operators (before flowOn)",
+      "Changes the dispatcher for the entire flow pipeline",
+      "Collects the flow on the specified dispatcher"
+    ],
+    "answer": "Changes the dispatcher for upstream operators (before flowOn)",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Collection always happens in the caller's context. Use `flowOn` to move emission/transformation to a different dispatcher."
+  },
+  {
+    "q": "What is the difference between `launch` and `async` coroutine builders?",
+    "type": "mcq",
+    "options": [
+      "launch returns a Deferred, async returns a Job",
+      "launch is for fire-and-forget; async returns a Deferred with a result",
+      "async blocks the thread; launch does not",
+      "They are identical but async is deprecated"
+    ],
+    "answer": "launch is for fire-and-forget; async returns a Deferred with a result",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Use `async` when you need a result. Call `await()` on the Deferred to get it. Exceptions in `async` are deferred until `await()`."
+  },
+  {
+    "q": "Explain the concept of structured concurrency in Kotlin coroutines.",
+    "type": "open",
+    "answer": "Structured concurrency ensures that coroutines follow a parent-child hierarchy through CoroutineScope. A parent coroutine won't complete until all children complete. If a parent is cancelled, all children are cancelled. If a child fails, the parent and siblings are cancelled (unless using SupervisorJob). This prevents coroutine leaks and ensures predictable lifecycle management.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Structured concurrency is enforced by requiring a CoroutineScope to launch coroutines, unlike GlobalScope which breaks this structure."
+  },
+  {
+    "q": "What is a `Channel` in Kotlin coroutines and what are its different types?",
+    "type": "open",
+    "answer": "A Channel is a hot stream for coroutine-to-coroutine communication, similar to a blocking queue. Types: `RENDEZVOUS` (capacity 0, sender suspends until receiver is ready), `BUFFERED` (default buffer size), `UNLIMITED` (unlimited buffer), `CONFLATED` (keeps only the latest value). Channels are useful for producer-consumer patterns between coroutines.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Prefer Flows over Channels for most reactive streams. Channels are better for point-to-point communication."
+  },
+  {
+    "q": "What does `collectLatest` do differently from `collect` on a Flow?",
+    "type": "mcq",
+    "options": [
+      "It collects only the first emission",
+      "It cancels the previous collection block when a new value is emitted",
+      "It skips duplicate values",
+      "It collects values on a background thread"
+    ],
+    "answer": "It cancels the previous collection block when a new value is emitted",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Useful for search-as-you-type scenarios where you want to cancel the previous search when the user types a new character."
+  },
+  {
+    "q": "How do you test coroutines that use `Dispatchers.Main` in unit tests?",
+    "type": "open",
+    "answer": "Use `Dispatchers.setMain(testDispatcher)` in `@Before` and `Dispatchers.resetMain()` in `@After` with `kotlinx-coroutines-test` library. Use `StandardTestDispatcher` for precise control over execution or `UnconfinedTestDispatcher` to run coroutines eagerly. Wrap test body in `runTest {}` which auto-advances virtual time.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`runTest` also handles `delay()` by advancing virtual time, making tests fast and deterministic."
+  },
+  {
+    "q": "What is the difference between `conflate()` and `buffer()` in Kotlin Flow?",
+    "type": "open",
+    "answer": "`buffer()` adds a buffer between producer and collector so they run concurrently — the producer doesn't wait for slow collection. `conflate()` is a special case of buffering where only the latest emitted value is kept when the collector is slow, dropping intermediate values. Use `conflate()` for UI state where only the latest value matters.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`conflate()` is equivalent to `buffer(CONFLATED)`. Both help handle backpressure in different ways."
+  },
+  {
+    "q": "What is `withContext` used for in coroutines?",
+    "type": "mcq",
+    "options": [
+      "To launch a new independent coroutine",
+      "To switch the coroutine's dispatcher without creating a new coroutine",
+      "To create a new CoroutineScope",
+      "To handle exceptions in coroutines"
+    ],
+    "answer": "To switch the coroutine's dispatcher without creating a new coroutine",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`withContext` is a suspending function that changes the context for a block of code and returns the result."
+  },
+  {
+    "q": "What is the `callbackFlow` builder and when would you use it?",
+    "type": "open",
+    "answer": "`callbackFlow` creates a Flow that bridges callback-based APIs into the coroutine world. It provides a `ProducerScope` with `trySend()` to emit values from callbacks. You must call `awaitClose {}` to keep the flow active and provide cleanup logic (like unregistering listeners). Common use cases include wrapping Firebase listeners, location updates, or sensor callbacks.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "`callbackFlow` is the recommended way to convert callback-based APIs to Flows. It's thread-safe unlike `channelFlow`."
+  },
+  {
+    "q": "What is the difference between `remember` and `rememberSaveable` in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "They are identical",
+      "remember survives recomposition; rememberSaveable also survives configuration changes and process death",
+      "rememberSaveable is for mutable state only",
+      "remember uses disk storage; rememberSaveable uses memory"
+    ],
+    "answer": "remember survives recomposition; rememberSaveable also survives configuration changes and process death",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "rememberSaveable uses the saved instance state mechanism, so values must be saveable (primitives, Parcelable, or custom Saver)."
+  },
+  {
+    "q": "What is `derivedStateOf` and when should you use it?",
+    "type": "open",
+    "answer": "`derivedStateOf` creates a state object that only triggers recomposition when its computed result changes, not when its inputs change. Use it when you have a state derived from other states that changes less frequently than its inputs. Example: filtering a list — the filtered result may stay the same even if unrelated state changes trigger recomposition.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Overusing `derivedStateOf` adds overhead. Only use it when the derived value changes less frequently than its dependencies."
+  },
+  {
+    "q": "How does Compose determine if a composable function needs to be recomposed?",
+    "type": "open",
+    "answer": "Compose tracks which State objects are read during composition. When a State value changes, only composables that read that State are marked for recomposition. Compose also skips recomposition of composable functions whose parameters haven't changed, using structural equality for stable types. Types are considered stable if they're primitives, strings, or annotated with @Stable/@Immutable.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "The Compose compiler generates code to compare parameters. Unstable parameters prevent skipping, causing unnecessary recompositions."
+  },
+  {
+    "q": "What is the purpose of `CompositionLocal` in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "To share data globally across all composables",
+      "To pass data implicitly down the composition tree without explicit parameters",
+      "To create local database queries",
+      "To store composable state locally"
+    ],
+    "answer": "To pass data implicitly down the composition tree without explicit parameters",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Examples include `LocalContext`, `LocalConfiguration`, and `LocalDensity`. Overuse of CompositionLocal makes code harder to follow."
+  },
+  {
+    "q": "What is the difference between `LazyColumn` and `Column` with `verticalScroll`?",
+    "type": "mcq",
+    "options": [
+      "There is no difference",
+      "LazyColumn only composes visible items; Column composes all items at once",
+      "Column is faster for large lists",
+      "LazyColumn doesn't support scrolling"
+    ],
+    "answer": "LazyColumn only composes visible items; Column composes all items at once",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "LazyColumn is the Compose equivalent of RecyclerView — it recycles composables as the user scrolls."
+  },
+  {
+    "q": "What is a `Side-effect` in Compose and name three side-effect APIs?",
+    "type": "open",
+    "answer": "A side-effect is work that escapes the scope of a composable function, like modifying external state, making network calls, or starting coroutines. Three key APIs: `LaunchedEffect` — runs a suspend function tied to composition lifecycle with keys. `DisposableEffect` — for effects that need cleanup (like registering/unregistering listeners). `SideEffect` — runs after every successful composition for non-suspend code.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Side-effects should be predictable and tied to composition lifecycle to avoid leaks."
+  },
+  {
+    "q": "What does `@Stable` annotation mean in Jetpack Compose?",
+    "type": "open",
+    "answer": "@Stable tells the Compose compiler that a type's public properties will notify Compose when they change (e.g., via mutableStateOf), or that instances will always return the same result for `equals()` for the same inputs. This allows Compose to safely skip recomposition when stable parameters haven't changed. All primitive types and String are inherently stable.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "@Immutable is stricter — it guarantees properties never change after construction. @Stable allows changes but requires notification."
+  },
+  {
+    "q": "How does `Modifier.graphicsLayer` differ from other modifiers for animations?",
+    "type": "mcq",
+    "options": [
+      "It only works with text composables",
+      "It applies transformations without triggering recomposition or relayout",
+      "It requires a CoroutineScope",
+      "It replaces all other modifiers"
+    ],
+    "answer": "It applies transformations without triggering recomposition or relayout",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "graphicsLayer modifies the drawing layer only, making it highly performant for alpha, scale, rotation, and translation animations."
+  },
+  {
+    "q": "What is the role of `Slot APIs` (content lambda) pattern in Compose?",
+    "type": "open",
+    "answer": "Slot APIs let a composable accept other composables as parameters via content lambdas instead of fixed data. For example, `Scaffold` has slots for `topBar`, `bottomBar`, `floatingActionButton`, and `content`. This makes components highly flexible and reusable — the parent defines the structure, the caller fills in the content.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Slot APIs follow the composition over inheritance principle, making Compose more flexible than View-based XML layouts."
+  },
+  {
+    "q": "What does `snapshotFlow` do in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "Takes a screenshot of the composable",
+      "Converts Compose State reads into a Kotlin Flow",
+      "Creates a snapshot of the composition tree",
+      "Saves the flow state to disk"
+    ],
+    "answer": "Converts Compose State reads into a Kotlin Flow",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Useful for observing Compose State in non-composable code, like inside LaunchedEffect to react to scroll position changes."
+  },
+  {
+    "q": "What is `movableContentOf` in Jetpack Compose?",
+    "type": "open",
+    "answer": "`movableContentOf` wraps a composable so its state is preserved when it moves to a different position in the composition tree. Without it, moving a composable results in disposal and recreation, losing all internal state. It's useful for shared element transitions or reordering items while preserving animation state.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "This is particularly useful for layout animations where items move between different parent composables."
+  },
+  {
+    "q": "How do you handle back press navigation in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "Override onBackPressed() in the composable",
+      "Use BackHandler composable to intercept system back presses",
+      "Use Modifier.onBackPress",
+      "Back press handling is not possible in Compose"
+    ],
+    "answer": "Use BackHandler composable to intercept system back presses",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "BackHandler uses OnBackPressedDispatcher under the hood and respects the lifecycle-aware back handling."
+  },
+  {
+    "q": "What is the difference between `Arrangement` and `Alignment` in Compose layouts?",
+    "type": "open",
+    "answer": "`Arrangement` controls how children are positioned along the main axis (how space is distributed — e.g., SpaceBetween, SpaceEvenly, Center). `Alignment` controls positioning along the cross axis (e.g., CenterVertically in a Row). In a Row, arrangement is horizontal and alignment is vertical; in a Column, it's the opposite.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Think of Arrangement as spacing policy and Alignment as gravity for the perpendicular direction."
+  },
+  {
+    "q": "What is `SubcomposeLayout` and when would you use it?",
+    "type": "open",
+    "answer": "`SubcomposeLayout` allows you to defer composition of some content until the measurement phase, so you can measure one part first and use its size to compose another part. Examples: `LazyColumn` uses it to compose only visible items. `BoxWithConstraints` uses it to provide constraints before composition. Use it when content depends on measurement results.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "SubcomposeLayout has higher overhead than regular Layout because it interleaves composition and measurement phases."
+  },
+  {
+    "q": "What is `produceState` in Compose and how does it work?",
+    "type": "mcq",
+    "options": [
+      "Creates a producer coroutine for Channels",
+      "Converts non-Compose state sources into Compose State within a composable",
+      "Produces random state values for testing",
+      "Creates a StateFlow from composable state"
+    ],
+    "answer": "Converts non-Compose state sources into Compose State within a composable",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "produceState launches a coroutine scoped to composition and lets you set a State value from suspend functions."
+  },
+  {
+    "q": "What is the difference between `Service` and `IntentService` in Android?",
+    "type": "mcq",
+    "options": [
+      "Service runs on a background thread; IntentService runs on the main thread",
+      "Service runs on the main thread by default; IntentService creates a worker thread automatically",
+      "IntentService is for bound services only",
+      "There is no difference; IntentService is just an alias"
+    ],
+    "answer": "Service runs on the main thread by default; IntentService creates a worker thread automatically",
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "IntentService is deprecated in favor of WorkManager for background work. It auto-stops after processing all intents."
+  },
+  {
+    "q": "Explain the difference between `commit()` and `apply()` on SharedPreferences.Editor.",
+    "type": "open",
+    "answer": "`commit()` writes data synchronously to disk and returns a boolean indicating success. `apply()` writes to memory immediately and asynchronously to disk without a return value. Prefer `apply()` for most cases as it doesn't block the calling thread. Use `commit()` only when you need to verify the write succeeded.",
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "Using `commit()` on the main thread can cause ANR if the write is slow. `apply()` avoids this issue."
+  },
+  {
+    "q": "What is `WorkManager` and when should you use it over `AlarmManager` or foreground services?",
+    "type": "open",
+    "answer": "WorkManager is for deferrable, guaranteed background work that must run even if the app exits or device restarts. It handles constraints (network, battery, charging), chaining, and backoff policies. Use AlarmManager for exact-time tasks (alarms/reminders). Use foreground services for immediate, user-noticeable work (music playback, navigation). WorkManager is the recommended API for most background tasks.",
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "WorkManager uses JobScheduler (API 23+), AlarmManager + BroadcastReceiver (below API 23) internally."
+  },
+  {
+    "q": "What are the different launch modes for an Activity in Android?",
+    "type": "open",
+    "answer": "Four launch modes: `standard` — new instance created every time. `singleTop` — reuses existing instance if it's on top of the stack (calls onNewIntent). `singleTask` — only one instance in the task, clears activities above it. `singleInstance` — like singleTask but the activity is the only one in its task. Set via `android:launchMode` in manifest or Intent flags.",
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "Prefer Intent flags over manifest launch modes for more flexible navigation control."
+  },
+  {
+    "q": "What is a `ContentProvider` and when would you use one?",
+    "type": "mcq",
+    "options": [
+      "To provide content to the UI layer",
+      "To share structured data between applications using a standard interface",
+      "To manage content on external storage",
+      "To provide dependency injection"
+    ],
+    "answer": "To share structured data between applications using a standard interface",
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "ContentProviders use URIs for data access and are also used by the system for contacts, media store, and settings."
+  },
+  {
+    "q": "How does `ViewModel` survive configuration changes like screen rotation?",
+    "type": "open",
+    "answer": "ViewModels are stored in a `ViewModelStore` associated with the Activity's `NonConfigurationInstances`, which is retained by the framework during configuration changes. When the Activity is recreated, the ViewModelStoreOwner retrieves the same ViewModelStore. The ViewModel is only cleared when the Activity is finished (not recreated), triggering `onCleared()`.",
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "This is why ViewModel must never hold references to Views, Activities, or Contexts — they outlive them during config changes."
+  },
+  {
+    "q": "What is the difference between `Serializable` and `Parcelable` in Android?",
+    "type": "mcq",
+    "options": [
+      "Serializable is faster because it uses reflection",
+      "Parcelable is Android-optimized and faster; Serializable uses reflection and is slower",
+      "They perform identically",
+      "Parcelable is deprecated in favor of Serializable"
+    ],
+    "answer": "Parcelable is Android-optimized and faster; Serializable uses reflection and is slower",
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "Use `@Parcelize` annotation from kotlin-parcelize plugin to auto-generate Parcelable implementation."
+  },
+  {
+    "q": "Explain the Android Binder IPC mechanism at a high level.",
+    "type": "open",
+    "answer": "Binder is Android's IPC mechanism for communication between processes. It uses kernel-level memory mapping for efficient data transfer (single copy instead of two). AIDL generates proxy/stub classes — the client calls the proxy, which marshals data into a Parcel, sends it via the Binder driver to the server process, which unmarshals and executes. System services like ActivityManager use Binder.",
+    "difficulty": "hard",
+    "topic": "Android Core",
+    "explanation": "Binder has a per-process thread pool (default 16 threads) and a 1MB transaction buffer limit."
+  },
+  {
+    "q": "What is `SavedStateHandle` in Android Architecture Components?",
+    "type": "mcq",
+    "options": [
+      "A handle to save files to external storage",
+      "A key-value map in ViewModel that survives process death via saved instance state",
+      "A database handle for Room",
+      "A mechanism to save state in SharedPreferences"
+    ],
+    "answer": "A key-value map in ViewModel that survives process death via saved instance state",
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "SavedStateHandle can also expose values as LiveData or StateFlow for reactive observation."
+  },
+  {
+    "q": "What are the restrictions on background work starting from Android 12 (API 31)?",
+    "type": "open",
+    "answer": "Android 12 restricts foreground service launches from the background — apps must use `WorkManager` for expedited work. Background apps can't start Activities. Exact alarms require `SCHEDULE_EXACT_ALARM` permission. Foreground service types must be declared in the manifest. The system can delay foreground service starts using `ForegroundServiceStartNotAllowedException`.",
+    "difficulty": "hard",
+    "topic": "Android Core",
+    "explanation": "Use `WorkManager.enqueue(OneTimeWorkRequest)` with `setExpedited()` as an alternative to foreground services from background."
+  },
+  {
+    "q": "What is the difference between MVI and MVVM architecture patterns?",
+    "type": "open",
+    "answer": "MVVM exposes multiple observable state streams from ViewModel; the View observes and reacts to each. MVI (Model-View-Intent) uses unidirectional data flow — the View sends Intents (user actions) to ViewModel, which produces a single immutable state object. MVI is more predictable and testable because state transitions are explicit, but can be verbose for simple screens.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "MVI naturally prevents inconsistent UI states since the entire screen state is represented by a single object."
+  },
+  {
+    "q": "What is the principle of 'separation of concerns' in Android app architecture?",
+    "type": "mcq",
+    "options": [
+      "Keep all code in Activities for simplicity",
+      "Divide the app into distinct layers (UI, domain, data) with clear responsibilities",
+      "Use only one architecture pattern throughout the app",
+      "Separate debug and release builds"
+    ],
+    "answer": "Divide the app into distinct layers (UI, domain, data) with clear responsibilities",
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "Google's recommended architecture has UI, Domain (optional), and Data layers, each with specific roles."
+  },
+  {
+    "q": "Explain the Repository pattern and its role in Android architecture.",
+    "type": "open",
+    "answer": "The Repository pattern abstracts data sources (network, database, cache) behind a single interface. ViewModels interact only with repositories, not directly with Retrofit/Room. Repositories decide whether to fetch from network or return cached data, handle data transformation, and expose data as Flows or suspend functions. This enables easy testing and swapping of data sources.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Each data type should have its own repository (e.g., UserRepository, ProductRepository) following single responsibility."
+  },
+  {
+    "q": "What is dependency injection and how does Hilt simplify it in Android?",
+    "type": "open",
+    "answer": "Dependency injection provides objects their dependencies externally instead of creating them internally. Hilt is built on Dagger and simplifies DI with predefined Android components (Application, Activity, ViewModel, etc.). Use `@HiltAndroidApp` on Application, `@AndroidEntryPoint` on Activities/Fragments, `@HiltViewModel` on ViewModels, and `@Inject` on constructors. Hilt generates the Dagger components automatically.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Hilt scopes (@Singleton, @ViewModelScoped, @ActivityScoped) control object lifecycles and prevent memory leaks."
+  },
+  {
+    "q": "What is the 'single source of truth' principle?",
+    "type": "mcq",
+    "options": [
+      "Use only one database in the app",
+      "Each piece of data should be owned and modified by exactly one data source",
+      "All data must come from the network",
+      "Use a single repository for all data types"
+    ],
+    "answer": "Each piece of data should be owned and modified by exactly one data source",
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "Typically the local database is the single source of truth, with network data synced to it."
+  },
+  {
+    "q": "How does the Clean Architecture 'dependency rule' apply to Android?",
+    "type": "open",
+    "answer": "The dependency rule states that source code dependencies must only point inward. The domain layer (use cases, entities) has no dependencies on outer layers. The data layer depends on domain interfaces. The presentation layer depends on domain. This means the domain layer doesn't know about Android, Room, Retrofit, or Compose — making it purely Kotlin and highly testable.",
+    "difficulty": "hard",
+    "topic": "Architecture",
+    "explanation": "Inner layers define interfaces (ports); outer layers provide implementations (adapters) — this is the ports and adapters pattern."
+  },
+  {
+    "q": "What is a `UseCase` (Interactor) in Clean Architecture, and is it always necessary?",
+    "type": "open",
+    "answer": "A UseCase encapsulates a single business operation (e.g., GetUserProfileUseCase). It contains business logic that doesn't belong in ViewModel or Repository. It's not always necessary — for simple CRUD operations that just pass data through, UseCases add unnecessary boilerplate. Use them when you have business logic, need to combine multiple repository calls, or want to reuse logic across ViewModels.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Google's architecture guide makes the domain layer optional — add UseCases only when they provide clear value."
+  },
+  {
+    "q": "What is the difference between `@Singleton` and `@ViewModelScoped` in Hilt?",
+    "type": "mcq",
+    "options": [
+      "They are the same scope",
+      "@Singleton lives for the app's lifetime; @ViewModelScoped lives for the ViewModel's lifetime",
+      "@ViewModelScoped is shared across all ViewModels",
+      "@Singleton is deprecated in favor of @ViewModelScoped"
+    ],
+    "answer": "@Singleton lives for the app's lifetime; @ViewModelScoped lives for the ViewModel's lifetime",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "@ViewModelScoped is useful for sharing dependencies between a ViewModel and its SavedStateHandle or assisted injected classes."
+  },
+  {
+    "q": "What is the Offline-First architecture approach?",
+    "type": "open",
+    "answer": "Offline-First means the app works fully from local data (Room/DataStore) and syncs with the server when connectivity is available. The local database is the single source of truth. Network responses are written to the database, and the UI observes the database via Flows. This provides instant loading, resilience to network issues, and consistent behavior offline.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Google's Now in Android app follows this pattern using Room + Retrofit with Repository-based synchronization."
+  },
+  {
+    "q": "What are `Navigation Components` in Android and how do they work with Compose?",
+    "type": "mcq",
+    "options": [
+      "A system for managing Activity transitions only",
+      "A framework for managing in-app navigation with a NavHost, NavGraph, and NavController",
+      "A library for animating navigation drawer",
+      "A replacement for Intent-based navigation"
+    ],
+    "answer": "A framework for managing in-app navigation with a NavHost, NavGraph, and NavController",
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "In Compose, use `NavHost` composable with `composable()` destinations and `navController.navigate()` for type-safe navigation."
+  },
+  {
+    "q": "What is the difference between `R8` and `ProGuard` in Android?",
+    "type": "mcq",
+    "options": [
+      "They are identical tools",
+      "R8 is Google's replacement that combines shrinking, desugaring, and dexing in one step; ProGuard only shrinks",
+      "ProGuard is faster than R8",
+      "R8 only works with Kotlin projects"
+    ],
+    "answer": "R8 is Google's replacement that combines shrinking, desugaring, and dexing in one step; ProGuard only shrinks",
+    "difficulty": "medium",
+    "topic": "Performance",
+    "explanation": "R8 uses ProGuard rules files but produces more optimized output by combining multiple build steps."
+  },
+  {
+    "q": "How do you detect and fix memory leaks in Android?",
+    "type": "open",
+    "answer": "Use LeakCanary — it automatically detects leaks in debug builds and shows the reference chain. Common causes: static references to Activity/Context, unregistered listeners, inner classes holding outer class references, Handler/Runnable leaks. Fix by using WeakReferences, unregistering in onDestroy, using ViewModel instead of retained Fragments, and preferring Application context for long-lived objects.",
+    "difficulty": "medium",
+    "topic": "Performance",
+    "explanation": "Android Studio's Memory Profiler also helps visualize heap allocations and find leaks in real-time."
+  },
+  {
+    "q": "What is `StrictMode` in Android and how does it help with performance?",
+    "type": "open",
+    "answer": "StrictMode is a developer tool that detects things done on the main thread that shouldn't be — disk reads/writes, network calls, and custom slow operations (ThreadPolicy). It also detects leaked SQLite cursors, leaked closeable objects, and Activity instance leaks (VmPolicy). Enable it in debug builds to catch performance issues early. It can log, crash, or flash the screen on violations.",
+    "difficulty": "medium",
+    "topic": "Performance",
+    "explanation": "Always disable StrictMode in release builds. It's purely a development-time diagnostic tool."
+  },
+  {
+    "q": "What is the impact of overdraw on Android rendering performance?",
+    "type": "mcq",
+    "options": [
+      "Overdraw has no impact on performance",
+      "Overdraw means pixels are drawn multiple times per frame, wasting GPU resources",
+      "Overdraw only affects CPU performance",
+      "Overdraw is a network-related issue"
+    ],
+    "answer": "Overdraw means pixels are drawn multiple times per frame, wasting GPU resources",
+    "difficulty": "easy",
+    "topic": "Performance",
+    "explanation": "Debug overdraw by enabling 'Show GPU Overdraw' in Developer Options. Aim for maximum 2x overdraw."
+  },
+  {
+    "q": "How does Android's RecyclerView `DiffUtil` improve list performance?",
+    "type": "open",
+    "answer": "DiffUtil calculates the minimal set of changes (inserts, removes, moves, updates) between two lists using Eugene Myers' difference algorithm. Instead of calling `notifyDataSetChanged()` which rebinds all items, it dispatches precise change events for smooth animations and minimal rebinding. `ListAdapter` wraps DiffUtil with async diff calculation on a background thread.",
+    "difficulty": "medium",
+    "topic": "Performance",
+    "explanation": "In Compose, LazyColumn handles diffs automatically when you provide stable keys via the `key` parameter."
+  },
+  {
+    "q": "What is the difference between `mockk` and `Mockito` in Kotlin testing?",
+    "type": "mcq",
+    "options": [
+      "They are identical libraries",
+      "MockK is designed for Kotlin with native support for coroutines, extension functions, and objects; Mockito is Java-first",
+      "Mockito supports Kotlin better than MockK",
+      "MockK is deprecated in favor of Mockito"
+    ],
+    "answer": "MockK is designed for Kotlin with native support for coroutines, extension functions, and objects; Mockito is Java-first",
+    "difficulty": "easy",
+    "topic": "Testing",
+    "explanation": "MockK supports mocking suspend functions, companion objects, and top-level functions natively."
+  },
+  {
+    "q": "What is a `Turbine` in the context of Kotlin Flow testing?",
+    "type": "open",
+    "answer": "Turbine is a testing library for Kotlin Flows that provides a simple API to test emissions. It collects Flow emissions and lets you assert them one by one with `awaitItem()`, check for completion with `awaitComplete()`, or errors with `awaitError()`. It also has `expectNoEvents()` for verifying no emissions occur. It integrates well with `runTest` and handles timeouts.",
+    "difficulty": "medium",
+    "topic": "Testing",
+    "explanation": "Turbine makes Flow testing readable: `flow.test { assertEquals(expected, awaitItem()); awaitComplete() }`."
+  },
+  {
+    "q": "What are `Compose UI tests` and how do you write them?",
+    "type": "open",
+    "answer": "Compose UI tests use `createComposeRule()` or `createAndroidComposeRule()` to set composable content and interact with it. Find nodes using `onNodeWithText()`, `onNodeWithTag()`, or `onNodeWithContentDescription()`. Perform actions with `performClick()`, `performTextInput()`. Assert with `assertIsDisplayed()`, `assertTextEquals()`. Use `testTag` modifier for reliable node finding.",
+    "difficulty": "medium",
+    "topic": "Testing",
+    "explanation": "Compose testing uses semantics tree, not the visual tree, making tests more resilient to UI changes."
+  },
+  {
+    "q": "What is the testing pyramid and how does it apply to Android?",
+    "type": "mcq",
+    "options": [
+      "More E2E tests, fewer unit tests",
+      "Equal distribution of all test types",
+      "More unit tests at the base, fewer integration tests in the middle, fewest E2E tests at the top",
+      "Only unit tests are needed"
+    ],
+    "answer": "More unit tests at the base, fewer integration tests in the middle, fewest E2E tests at the top",
+    "difficulty": "easy",
+    "topic": "Testing",
+    "explanation": "Unit tests (70%) are fast and cheap, integration tests (20%) verify component interaction, E2E tests (10%) cover critical user flows."
+  },
+  {
+    "q": "How do you test a ViewModel that depends on a Repository?",
+    "type": "open",
+    "answer": "Create a fake implementation of the Repository interface that returns controlled test data. Inject the fake into the ViewModel constructor. Use `runTest` for coroutine testing with `StandardTestDispatcher`. Assert ViewModel state changes after calling methods. For StateFlow, use Turbine or `first()` to capture emissions. Set `Dispatchers.Main` to test dispatcher using `Dispatchers.setMain()`.",
+    "difficulty": "medium",
+    "topic": "Testing",
+    "explanation": "Prefer fakes over mocks for repositories — they're simpler, faster, and test actual behavior."
+  },
+  {
+    "q": "What is certificate pinning in Android and how do you implement it?",
+    "type": "open",
+    "answer": "Certificate pinning ensures the app only trusts specific certificates, preventing MITM attacks even if a rogue CA issues a valid certificate. Implement via `network-security-config.xml` with `<pin-set>` containing SHA-256 pins, or programmatically with OkHttp's `CertificatePinner`. Always include a backup pin. Use `<pin-set expiration>` to set expiry dates to avoid bricking apps when certificates rotate.",
+    "difficulty": "hard",
+    "topic": "Security",
+    "explanation": "Certificate pinning can lock users out if certificates rotate unexpectedly. Always have a fallback strategy."
+  },
+  {
+    "q": "What is the Android Keystore system and when should you use it?",
+    "type": "mcq",
+    "options": [
+      "A replacement for SharedPreferences",
+      "A hardware-backed system for generating and storing cryptographic keys securely",
+      "A key-value database",
+      "A system for storing API keys in the manifest"
+    ],
+    "answer": "A hardware-backed system for generating and storing cryptographic keys securely",
+    "difficulty": "medium",
+    "topic": "Security",
+    "explanation": "Keys in Android Keystore can be bound to device security (biometrics, lock screen) and never leave the secure hardware."
+  },
+  {
+    "q": "How does `EncryptedSharedPreferences` work in Android?",
+    "type": "open",
+    "answer": "EncryptedSharedPreferences from the Jetpack Security library encrypts both keys and values. Keys are encrypted with a deterministic encryption scheme (AES256-SIV) and values with AES256-GCM. The master key is stored in Android Keystore. Use it for storing sensitive data like tokens. Initialize with `MasterKey.Builder` and `EncryptedSharedPreferences.create()`.",
+    "difficulty": "medium",
+    "topic": "Security",
+    "explanation": "EncryptedSharedPreferences is slower than regular SharedPreferences due to encryption overhead. Use it only for sensitive data."
+  },
+  {
+    "q": "What is the `network-security-config.xml` file used for in Android?",
+    "type": "mcq",
+    "options": [
+      "Configuring WiFi settings",
+      "Defining network security policies like trusted CAs, certificate pinning, and cleartext traffic rules",
+      "Setting up network request timeouts",
+      "Managing VPN configurations"
+    ],
+    "answer": "Defining network security policies like trusted CAs, certificate pinning, and cleartext traffic rules",
+    "difficulty": "easy",
+    "topic": "Security",
+    "explanation": "Starting Android 9, cleartext HTTP traffic is blocked by default. Use network-security-config to allow specific domains."
+  },
+  {
+    "q": "What are the best practices for storing secrets (API keys) in an Android app?",
+    "type": "open",
+    "answer": "Never hardcode secrets in source code or resources. Options: Use `local.properties` (excluded from VCS) with BuildConfig fields — but they're in the APK. Better: Use the NDK with native code to obfuscate keys. Best: Don't store secrets client-side at all — proxy API calls through your own backend. For tokens, use EncryptedSharedPreferences or Android Keystore. Always assume the APK can be decompiled.",
+    "difficulty": "hard",
+    "topic": "Security",
+    "explanation": "Tools like `apktool` and `jadx` can easily decompile APKs. No client-side storage is truly secure."
+  },
+  {
+    "q": "What is the difference between `api` and `implementation` dependency configurations in Gradle?",
+    "type": "mcq",
+    "options": [
+      "They are identical",
+      "`implementation` keeps dependencies internal; `api` exposes them to dependent modules",
+      "`api` is only for Android libraries",
+      "`implementation` is deprecated in favor of `api`"
+    ],
+    "answer": "`implementation` keeps dependencies internal; `api` exposes them to dependent modules",
+    "difficulty": "easy",
+    "topic": "Gradle",
+    "explanation": "Using `implementation` reduces build times because changes don't trigger recompilation of dependent modules."
+  },
+  {
+    "q": "What is a Gradle Version Catalog and how do you set it up?",
+    "type": "open",
+    "answer": "A Version Catalog centralizes dependency declarations in a `libs.versions.toml` file under the `gradle/` directory. It defines versions, libraries, bundles, and plugins in a type-safe way. Access dependencies in build files as `libs.library.name`. It provides IDE autocompletion, central version management, and makes dependency updates easier across multi-module projects.",
+    "difficulty": "medium",
+    "topic": "Gradle",
+    "explanation": "Version Catalogs are the recommended approach since Gradle 7.0, replacing ext blocks and buildSrc constants."
+  },
+  {
+    "q": "What are Gradle build scans and how do they help optimize build performance?",
+    "type": "open",
+    "answer": "Build scans are detailed reports of a Gradle build generated by `--scan` flag. They show task execution timeline, configuration time, dependency resolution, cache hit rates, and build environment details. Use them to identify slow tasks, configuration bottlenecks, and cache misses. Scans are hosted on ge.gradle.org or a private Gradle Enterprise server.",
+    "difficulty": "medium",
+    "topic": "Gradle",
+    "explanation": "Build scans can reveal that configuration phase takes longer than execution, pointing to plugin or script issues."
+  },
+  {
+    "q": "What is the purpose of `buildSrc` and Gradle convention plugins in multi-module projects?",
+    "type": "open",
+    "answer": "`buildSrc` is a special directory automatically compiled and available on the classpath of all build scripts. It's used to share build logic, custom tasks, and plugins across modules. Convention plugins (in `build-logic/` or `buildSrc`) define reusable build configurations like 'android-library-convention' applied to all library modules. They reduce copy-paste in build.gradle files.",
+    "difficulty": "hard",
+    "topic": "Gradle",
+    "explanation": "Convention plugins pattern is preferred over buildSrc for large projects as changes don't invalidate all build caches."
+  },
+  {
+    "q": "What does `gradle.properties` file configure?",
+    "type": "mcq",
+    "options": [
+      "Only project dependencies",
+      "JVM args, project-wide properties, Gradle features (parallel, caching, daemon settings)",
+      "Only Android SDK versions",
+      "Only plugin versions"
+    ],
+    "answer": "JVM args, project-wide properties, Gradle features (parallel, caching, daemon settings)",
+    "difficulty": "easy",
+    "topic": "Gradle",
+    "explanation": "Common settings: org.gradle.jvmargs, org.gradle.parallel, org.gradle.caching, android.useAndroidX."
+  },
+  {
+    "q": "What is Gradle's build cache and how does it improve build times?",
+    "type": "open",
+    "answer": "Gradle's build cache stores task outputs keyed by task inputs. When inputs haven't changed, outputs are restored from cache instead of re-executing. Local cache is in `~/.gradle/caches`. Remote cache can be shared across CI and team members via Gradle Enterprise. Enable with `org.gradle.caching=true`. It's most effective for compilation and test tasks across branches.",
+    "difficulty": "medium",
+    "topic": "Gradle",
+    "explanation": "Build cache can reduce CI build times by 30-50% when switching branches or running the same build on different machines."
   }
 ]
