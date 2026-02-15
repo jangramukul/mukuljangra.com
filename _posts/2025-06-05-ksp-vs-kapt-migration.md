@@ -1,6 +1,7 @@
 ---
 title: KSP vs KAPT — Why You Should Migrate Today
 layout: post
+sequence: 48
 categories: post
 tags:
   - Kotlin

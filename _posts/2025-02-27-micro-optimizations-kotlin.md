@@ -1,6 +1,7 @@
 ---
 title: Micro-Optimizations in Kotlin — What Actually Matters
 layout: post
+sequence: 61
 categories: post
 tags:
   - Kotlin

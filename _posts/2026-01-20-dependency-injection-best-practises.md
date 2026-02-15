@@ -1,6 +1,7 @@
 ---
 title: Dependency Injection Best Practices Guide
 layout: post
+sequence: 74
 categories: post
 tags:
   - Android

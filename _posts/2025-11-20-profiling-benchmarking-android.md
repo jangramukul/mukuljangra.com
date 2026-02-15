@@ -1,6 +1,7 @@
 ---
 title: Profiling and Benchmarking Android Apps
 layout: post
+sequence: 62
 categories: post
 tags:
   - Android

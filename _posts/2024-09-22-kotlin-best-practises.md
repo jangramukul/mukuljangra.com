@@ -1,6 +1,7 @@
 ---
 title: Kotlin Best Practises Guide
 layout: post
+sequence: 13
 categories: post
 tags:
   - Android

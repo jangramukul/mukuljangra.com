@@ -1,6 +1,7 @@
 ---
 title: ViewModel Events as State Are an Antipattern
 layout: post
+sequence: 42
 categories: post
 tags:
   - Android

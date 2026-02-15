@@ -1,6 +1,7 @@
 ---
 title: The Complete Guide to Working in an Engineering Team
 layout: post
+sequence: 83
 categories: post
 tags:
   - Android

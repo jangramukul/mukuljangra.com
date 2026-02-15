@@ -1,6 +1,7 @@
 ---
 title: Follow Right Architecture Patterns Naming
 layout: post
+sequence: 18
 categories: post
 tags:
   - Android

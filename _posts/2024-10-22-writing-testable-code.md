@@ -1,6 +1,7 @@
 ---
 title: How To Write Testable Code?
 layout: post
+sequence: 41
 categories: post
 tags:
   - Android

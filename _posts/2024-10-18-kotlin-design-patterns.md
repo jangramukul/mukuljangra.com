@@ -1,6 +1,7 @@
 ---
 title: Design Patterns Guide in Kotlin
 layout: post
+sequence: 12
 categories: post
 tags:
   - Kotlin

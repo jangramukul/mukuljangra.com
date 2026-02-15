@@ -1,6 +1,7 @@
 ---
 title: Android Navigation Component Guide
 layout: post
+sequence: 23
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Compose Side Effects Guide
 layout: post
+sequence: 35
 categories: post
 tags:
   - Jetpack Compose

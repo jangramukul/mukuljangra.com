@@ -1,6 +1,7 @@
 ---
 title: Introduction to Clean Architecture
 layout: post
+sequence: 15
 categories: post
 tags:
   - Android

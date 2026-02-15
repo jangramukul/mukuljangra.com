@@ -1,6 +1,7 @@
 ---
 title: Mobile System Design Guide
 layout: post
+sequence: 45
 categories: post
 tags:
   - Android

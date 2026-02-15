@@ -1,6 +1,7 @@
 ---
 title: Compose Beyond The UI?
 layout: post
+sequence: 54
 categories: post
 tags:
   - Android

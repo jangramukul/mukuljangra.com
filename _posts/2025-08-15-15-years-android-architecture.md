@@ -1,6 +1,7 @@
 ---
 title: 15 Years of Android Architecture — From MVC to Compose Presenters
 layout: post
+sequence: 20
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Do You Still Need ViewModel in Compose?
 layout: post
+sequence: 44
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Application Level Best Practises Guide
 layout: post
+sequence: 27
 categories: post
 tags:
   - Android

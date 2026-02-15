@@ -1,6 +1,7 @@
 ---
 title: Bitmap and Image Loading Performance
 layout: post
+sequence: 65
 categories: post
 tags:
   - Android

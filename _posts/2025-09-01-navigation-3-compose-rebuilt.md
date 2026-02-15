@@ -1,6 +1,7 @@
 ---
 title: Navigation 3 — Compose-Native Navigation Rebuilt from Scratch
 layout: post
+sequence: 53
 categories: post
 tags:
   - Android

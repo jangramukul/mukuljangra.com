@@ -1,6 +1,7 @@
 ---
 title: Kotlin Coroutines Exception Handling
 layout: post
+sequence: 29
 categories: post
 tags:
   - Kotlin Coroutines

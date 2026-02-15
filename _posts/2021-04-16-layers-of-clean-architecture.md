@@ -1,6 +1,7 @@
 ---
 title: Understanding the Layers of Clean Architecture
 layout: post
+sequence: 17
 categories: post
 tags:
   - Android

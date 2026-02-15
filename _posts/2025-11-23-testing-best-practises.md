@@ -1,6 +1,7 @@
 ---
 title: Testing Best Practises Guide
 layout: post
+sequence: 57
 categories: post
 tags:
   - Android

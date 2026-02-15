@@ -1,6 +1,7 @@
 ---
 title: Kotlin Generics Deep Dive
 layout: post
+sequence: 8
 categories: post
 tags:
   - Kotlin

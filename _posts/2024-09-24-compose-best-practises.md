@@ -1,6 +1,7 @@
 ---
 title: Jetpack Compose Best Practises Guide
 layout: post
+sequence: 38
 categories: post
 tags:
   - Android

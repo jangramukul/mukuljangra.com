@@ -1,6 +1,7 @@
 ---
 title: Gradle Build Process Guide
 layout: post
+sequence: 3
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Kotlin's Rich Error Handling — Beyond Exceptions
 layout: post
+sequence: 11
 categories: post
 tags:
   - Kotlin

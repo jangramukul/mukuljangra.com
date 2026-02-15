@@ -1,6 +1,7 @@
 ---
 title: Understanding Android Activity Lifecycle
 layout: post
+sequence: 1
 categories: post
 tags:
   - Android

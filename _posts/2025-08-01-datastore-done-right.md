@@ -1,6 +1,7 @@
 ---
 title: DataStore Done Right — Replacing SharedPreferences
 layout: post
+sequence: 22
 categories: post
 tags:
   - Android

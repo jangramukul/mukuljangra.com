@@ -1,6 +1,7 @@
 ---
 title: How To Cache In Android?
 layout: post
+sequence: 58
 categories: post
 tags:
   - Android

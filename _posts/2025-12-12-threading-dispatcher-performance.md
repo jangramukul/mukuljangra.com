@@ -1,6 +1,7 @@
 ---
 title: Threading and Dispatcher Performance in Android
 layout: post
+sequence: 68
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Defusing the Compose BOM
 layout: post
+sequence: 39
 categories: post
 tags:
   - Android

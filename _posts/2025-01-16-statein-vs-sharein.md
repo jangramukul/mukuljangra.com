@@ -1,6 +1,7 @@
 ---
 title: stateIn vs shareIn — When to Use Which and Why
 layout: post
+sequence: 31
 categories: post
 tags:
   - Kotlin

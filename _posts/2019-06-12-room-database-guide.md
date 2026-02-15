@@ -1,6 +1,7 @@
 ---
 title: Room Database Guide
 layout: post
+sequence: 21
 categories: post
 tags:
   - Android

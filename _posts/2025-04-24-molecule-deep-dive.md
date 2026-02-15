@@ -1,6 +1,7 @@
 ---
 title: Molecule Deep Dive — Compose Runtime Without the UI
 layout: post
+sequence: 52
 categories: post
 tags:
   - Android

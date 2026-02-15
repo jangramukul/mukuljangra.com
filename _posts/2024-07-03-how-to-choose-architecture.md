@@ -1,6 +1,7 @@
 ---
 title: How to Choose the Right Architecture?
 layout: post
+sequence: 19
 categories: post
 tags:
   - Architecture

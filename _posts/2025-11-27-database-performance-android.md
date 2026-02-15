@@ -1,6 +1,7 @@
 ---
 title: Database Performance in Android
 layout: post
+sequence: 67
 categories: post
 tags:
   - Android

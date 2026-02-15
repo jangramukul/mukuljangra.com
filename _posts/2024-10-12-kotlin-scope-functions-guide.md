@@ -1,6 +1,7 @@
 ---
 title: Kotlin Scope Functions Guide
 layout: post
+sequence: 7
 categories: post
 tags:
   - Kotlin

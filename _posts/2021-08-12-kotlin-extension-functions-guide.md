@@ -1,6 +1,7 @@
 ---
 title: Kotlin Extension Functions Guide
 layout: post
+sequence: 5
 categories: post
 tags:
   - Kotlin

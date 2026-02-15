@@ -1,6 +1,7 @@
 ---
 title: Android Threading With Handler and Looper
 layout: post
+sequence: 2
 categories: post
 tags:
   - Android

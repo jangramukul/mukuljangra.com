@@ -1,6 +1,7 @@
 ---
 title: From Dagger to Metro — A Migration Story
 layout: post
+sequence: 47
 categories: post
 tags:
   - Android

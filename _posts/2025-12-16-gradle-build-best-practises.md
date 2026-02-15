@@ -1,6 +1,7 @@
 ---
 title: Gradle Build Best Practises Guide
 layout: post
+sequence: 78
 categories: post
 tags:
   - Android

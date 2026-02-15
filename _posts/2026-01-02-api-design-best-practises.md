@@ -1,6 +1,7 @@
 ---
 title: API Design Best Practices Guide
 layout: post
+sequence: 77
 categories: post
 tags:
   - Kotlin

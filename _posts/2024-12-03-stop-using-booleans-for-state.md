@@ -1,6 +1,7 @@
 ---
 title: Stop Using Booleans for State
 layout: post
+sequence: 10
 categories: post
 tags:
   - Kotlin

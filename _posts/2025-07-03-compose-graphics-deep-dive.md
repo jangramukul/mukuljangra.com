@@ -1,6 +1,7 @@
 ---
 title: Compose Graphics Deep Dive — Custom Drawing and Shape Detection
 layout: post
+sequence: 50
 categories: post
 tags:
   - Android

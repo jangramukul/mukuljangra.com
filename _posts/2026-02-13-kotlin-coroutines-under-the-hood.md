@@ -1,6 +1,7 @@
 ---
 title: Kotlin Coroutines Under the Hood
 layout: post
+sequence: 28
 categories: post
 tags:
   - Kotlin

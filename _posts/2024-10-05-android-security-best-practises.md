@@ -1,6 +1,7 @@
 ---
 title: Android Security Best Practises Guide
 layout: post
+sequence: 72
 categories: post
 tags:
   - Android

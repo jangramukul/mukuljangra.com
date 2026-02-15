@@ -1004,6 +1004,21 @@
         font-weight: 800;
       }
 
+      .guide-number {
+        flex-direction: column;
+      }
+
+      .guide-number .guide-num {
+        font-size: 0.95em;
+        font-weight: 800;
+      }
+
+      #tab-articles .list-post-icon {
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
+        border: 1px solid rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+      }
+
       #tab-interviews .list-post-icon {
         background: none;
         border-color: transparent;
@@ -1466,17 +1481,12 @@
             {% endfor %}
           </div>
           <div class="articles-grid">
-          {% for post in site.posts %}
+          {% assign sorted_posts = site.posts | sort: 'sequence' %}
+          {% for post in sorted_posts %}
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
+              <div class="list-post-icon guide-number">
+                <span class="guide-num">{{ post.sequence }}</span>
               </div>
               <div class="list-post-content">
                 <h2>{{ post.title }}</h2>

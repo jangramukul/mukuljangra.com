@@ -1,6 +1,7 @@
 ---
 title: Memory Management and Leak Prevention in Android
 layout: post
+sequence: 64
 categories: post
 tags:
   - Android

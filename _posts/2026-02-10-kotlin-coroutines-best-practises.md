@@ -1,6 +1,7 @@
 ---
 title: Kotlin Coroutines Best Practices Guide
 layout: post
+sequence: 33
 categories: post
 tags:
   - Kotlin

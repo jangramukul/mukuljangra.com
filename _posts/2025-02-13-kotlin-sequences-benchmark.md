@@ -1,6 +1,7 @@
 ---
 title: Should You Use Kotlin Sequences? The Benchmark Says No
 layout: post
+sequence: 60
 categories: post
 tags:
   - Kotlin

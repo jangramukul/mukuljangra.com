@@ -1,6 +1,7 @@
 ---
 title: Baseline Profiles and R8 Optimization Guide
 layout: post
+sequence: 71
 categories: post
 tags:
   - Android

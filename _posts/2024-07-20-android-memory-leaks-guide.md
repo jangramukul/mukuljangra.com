@@ -1,6 +1,7 @@
 ---
 title: Android Memory Leaks Guide
 layout: post
+sequence: 59
 categories: post
 tags:
   - Android

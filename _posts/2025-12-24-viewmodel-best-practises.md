@@ -1,6 +1,7 @@
 ---
 title: ViewModel Best Practises Guide
 layout: post
+sequence: 73
 categories: post
 tags:
   - Android

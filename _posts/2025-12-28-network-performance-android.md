@@ -1,6 +1,7 @@
 ---
 title: Network Performance Optimization in Android
 layout: post
+sequence: 66
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Modularization Basics Guide
 layout: post
+sequence: 40
 categories: post
 tags:
   - Android

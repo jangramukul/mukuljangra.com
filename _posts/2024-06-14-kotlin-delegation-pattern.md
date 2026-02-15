@@ -1,6 +1,7 @@
 ---
 title: Kotlin Delegation Pattern Guide
 layout: post
+sequence: 9
 categories: post
 tags:
   - Kotlin

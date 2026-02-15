@@ -1,6 +1,7 @@
 ---
 title: What's the main purpose of DI?
 layout: post
+sequence: 14
 categories: post
 tags:
   - Android

@@ -1,6 +1,7 @@
 ---
 title: Kotlin Sealed Classes Guide
 layout: post
+sequence: 6
 categories: post
 tags:
   - Kotlin

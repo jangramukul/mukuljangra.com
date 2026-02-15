@@ -1,6 +1,7 @@
 ---
 title: Compose Animation APIs Guide
 layout: post
+sequence: 36
 categories: post
 tags:
   - Android

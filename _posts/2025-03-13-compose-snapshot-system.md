@@ -1,6 +1,7 @@
 ---
 title: Compose Snapshot System Under the Hood
 layout: post
+sequence: 49
 categories: post
 tags:
   - Android

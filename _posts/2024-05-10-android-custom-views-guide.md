@@ -1,6 +1,7 @@
 ---
 title: Android Custom Views Guide
 layout: post
+sequence: 26
 categories: post
 tags:
   - Android

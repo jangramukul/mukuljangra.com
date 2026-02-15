@@ -1,6 +1,7 @@
 ---
 title: Modularization Best Practices Guide
 layout: post
+sequence: 76
 categories: post
 tags:
   - Android

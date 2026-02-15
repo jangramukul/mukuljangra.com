@@ -1,6 +1,7 @@
 ---
 title: Code Review Best Practises Guide
 layout: post
+sequence: 80
 categories: post
 tags:
   - Android

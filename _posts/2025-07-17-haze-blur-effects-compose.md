@@ -1,6 +1,7 @@
 ---
 title: Haze — Building Blur Effects in Compose
 layout: post
+sequence: 51
 categories: post
 tags:
   - Android

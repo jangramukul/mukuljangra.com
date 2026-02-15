@@ -1,6 +1,7 @@
 ---
 title: Metro — Next Generation Dependency Injection for Android
 layout: post
+sequence: 46
 categories: post
 tags:
   - Android

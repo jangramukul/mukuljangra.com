@@ -1,6 +1,7 @@
 ---
 title: Android App Startup Performance Guide
 layout: post
+sequence: 63
 categories: post
 tags:
   - Android

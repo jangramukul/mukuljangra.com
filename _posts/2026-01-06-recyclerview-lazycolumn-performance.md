@@ -1,6 +1,7 @@
 ---
 title: RecyclerView and LazyColumn Performance Guide
 layout: post
+sequence: 69
 categories: post
 tags:
   - Android

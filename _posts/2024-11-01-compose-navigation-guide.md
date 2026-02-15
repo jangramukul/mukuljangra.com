@@ -1,6 +1,7 @@
 ---
 title: Compose Navigation Guide
 layout: post
+sequence: 37
 categories: post
 tags:
   - Android

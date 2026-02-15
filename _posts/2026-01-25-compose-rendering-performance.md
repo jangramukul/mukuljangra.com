@@ -1,6 +1,7 @@
 ---
 title: Compose Rendering Performance Deep Dive
 layout: post
+sequence: 70
 categories: post
 tags:
   - Android

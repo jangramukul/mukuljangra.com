@@ -1,6 +1,7 @@
 ---
 title: Android Deep Links and App Links Guide
 layout: post
+sequence: 24
 categories: post
 tags:
   - Android

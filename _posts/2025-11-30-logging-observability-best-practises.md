@@ -1,6 +1,7 @@
 ---
 title: Logging And Observability Best Practises Guide
 layout: post
+sequence: 79
 categories: post
 tags:
   - Android

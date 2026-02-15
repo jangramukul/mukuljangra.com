@@ -1,6 +1,7 @@
 ---
 title: Common Architectural Principles Guide
 layout: post
+sequence: 16
 categories: post
 tags:
   - Android

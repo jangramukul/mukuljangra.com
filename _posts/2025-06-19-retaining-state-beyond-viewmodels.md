@@ -1,6 +1,7 @@
 ---
 title: Retaining State Beyond ViewModels with Circuit
 layout: post
+sequence: 43
 categories: post
 tags:
   - Android

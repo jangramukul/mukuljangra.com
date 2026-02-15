@@ -1,6 +1,7 @@
 ---
 title: Kotlin Null Safety Guide
 layout: post
+sequence: 4
 categories: post
 tags:
   - Kotlin

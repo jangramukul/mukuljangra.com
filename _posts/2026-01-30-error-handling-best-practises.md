@@ -1,6 +1,7 @@
 ---
 title: Error Handling Best Practices Guide
 layout: post
+sequence: 75
 categories: post
 tags:
   - Kotlin

@@ -1,6 +1,7 @@
 ---
 title: Compose Layouts and Modifiers Guide
 layout: post
+sequence: 34
 categories: post
 tags:
   - Android
