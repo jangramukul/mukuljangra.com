@@ -110,15 +110,22 @@
 
   .quiz-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #34d399);
+    background: linear-gradient(135deg, #7F52FF, #E44857, #0095D5, #7F52FF, #E44857);
+    background-size: 300% 300%;
     border-radius: 4px;
     transition: width 0.4s ease;
+    animation: gradient-flow 4s ease infinite;
+  }
+
+  @keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
   .quiz-score-chips {
     display: flex;
     gap: 20px;
-    margin-top: 12px;
     font-size: 1.35rem;
     font-weight: 600;
   }
@@ -146,6 +153,7 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 18px;
+    padding-top: 40px;
   }
 
   .quiz-q-topic {
@@ -367,19 +375,21 @@
   .quiz-explanation strong { color: #60a5fa; font-weight: 600; }
 
   .quiz-actions {
+    position: absolute;
+    top: 16px;
+    right: 16px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 28px;
+    gap: 8px;
+    z-index: 2;
   }
 
   .quiz-restart-mid {
-    padding: 16px 36px;
+    padding: 8px 16px;
     border: 1px solid rgba(75, 85, 99, 0.3);
-    border-radius: 12px;
-    background: transparent;
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.8);
     color: #9ca3af;
-    font-size: 1.25rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -392,12 +402,12 @@
   }
 
   .quiz-next-btn {
-    padding: 16px 36px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: #fff;
-    font-size: 1.25rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -517,9 +527,9 @@
     .quiz-self-rate { flex-direction: column; }
     .quiz-option { font-size: 1.1rem; }
     .quiz-q-code { font-size: 0.95rem; }
-    .quiz-actions { flex-direction: column-reverse; gap: 12px; }
-    .quiz-actions .quiz-next-btn { width: 100%; }
-    .quiz-actions .quiz-restart-mid { width: 100%; text-align: center; }
+    .quiz-actions { top: 12px; right: 12px; }
+    .quiz-actions .quiz-next-btn { font-size: 0.8rem; padding: 6px 12px; }
+    .quiz-actions .quiz-restart-mid { font-size: 0.8rem; padding: 6px 12px; }
   }
 </style>
 
@@ -529,7 +539,7 @@
   <!-- Start Screen -->
   <div id="quiz-start" class="quiz-start">
     <h2>🧠 Quiz</h2>
-    <p>100 questions from Android, Kotlin, Compose, Coroutines, Architecture and more.<br>Pick a difficulty and challenge yourself.</p>
+    <p><span id="quiz-total-count"></span> questions from Android, Kotlin, Compose, Coroutines, Architecture and more.<br>Pick a difficulty and challenge yourself.</p>
 
     <div class="quiz-diff-label">Select Difficulty</div>
     <div class="quiz-diff-options">
@@ -555,23 +565,17 @@
     <div class="quiz-progress">
       <div class="quiz-progress-header">
         <span id="quiz-counter">Question 1 of 100</span>
-        <span id="quiz-score">Score: 0</span>
+        <div class="quiz-score-chips">
+          <span class="quiz-chip-correct">✓ <span id="quiz-correct">0</span></span>
+          <span class="quiz-chip-wrong">✗ <span id="quiz-wrong">0</span></span>
+        </div>
       </div>
       <div class="quiz-progress-bg">
         <div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%"></div>
       </div>
-      <div class="quiz-score-chips">
-        <span class="quiz-chip-correct">✓ <span id="quiz-correct">0</span></span>
-        <span class="quiz-chip-wrong">✗ <span id="quiz-wrong">0</span></span>
-      </div>
     </div>
 
     <div id="quiz-question-area"></div>
-
-    <div class="quiz-actions">
-      <button class="quiz-restart-mid" onclick="quizRestart()">↺ Restart</button>
-      <button class="quiz-next-btn quiz-hidden" id="quiz-next-btn" onclick="quizNext()">Next →</button>
-    </div>
   </div>
 
   <!-- Results Screen -->
@@ -587,11 +591,33 @@
   var qzWrong = 0;
   var qzDiff = null;
   var qzAnswered = false;
-  var QUIZ_SIZE = 100;
+
+  // Web Audio API sound for correct answer
+  var audioCtx = null;
+  function playCorrectSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1); // G5
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.4);
+    } catch(e) {}
+  }
 
   fetch('/static/quiz-questions.json')
     .then(function(r) { return r.json(); })
-    .then(function(data) { qzAll = data; })
+    .then(function(data) {
+      qzAll = data;
+      var countEl = document.getElementById('quiz-total-count');
+      if (countEl) countEl.textContent = data.length;
+    })
     .catch(function(e) { console.error('Failed to load questions:', e); });
 
   window.quizSelectDiff = function(diff) {
@@ -616,7 +642,7 @@
     if (qzDiff !== 'all') {
       pool = qzAll.filter(function(q) { return q.difficulty === qzDiff; });
     }
-    qzQuestions = shuffle(pool).slice(0, QUIZ_SIZE);
+    qzQuestions = shuffle(pool);
     var diffOrder = { easy: 0, medium: 1, hard: 2 };
     qzQuestions.sort(function(a, b) { return (diffOrder[a.difficulty] || 0) - (diffOrder[b.difficulty] || 0); });
     qzIdx = 0;
@@ -673,11 +699,9 @@
     var q = qzQuestions[qzIdx];
     var total = qzQuestions.length;
     document.getElementById('quiz-counter').textContent = 'Question ' + (qzIdx + 1) + ' of ' + total;
-    document.getElementById('quiz-score').textContent = 'Score: ' + qzCorrect + '/' + qzIdx;
     document.getElementById('quiz-correct').textContent = qzCorrect;
     document.getElementById('quiz-wrong').textContent = qzWrong;
     document.getElementById('quiz-progress-fill').style.width = ((qzIdx / total) * 100) + '%';
-    document.getElementById('quiz-next-btn').classList.add('quiz-hidden');
 
     var area = document.getElementById('quiz-question-area');
     var letters = ['A', 'B', 'C', 'D'];
@@ -698,6 +722,10 @@
     var codeBlock = codeStr ? '<pre class="quiz-q-code">' + highlightCode(codeStr) + '</pre>' : '';
 
     var html = '<div class="quiz-card" id="quiz-card">' +
+      '<div class="quiz-actions">' +
+      '<button class="quiz-restart-mid" onclick="quizRestart()">↺ Restart</button>' +
+      '<button class="quiz-next-btn quiz-hidden" id="quiz-next-btn" onclick="quizNext()">Next →</button>' +
+      '</div>' +
       '<div class="quiz-q-badges">' +
       '<span class="quiz-q-topic">' + q.topic + '</span>' +
       '<span class="quiz-q-diff ' + q.difficulty + '">' + q.difficulty + '</span>' +
@@ -738,6 +766,7 @@
     if (idx === q.answer) {
       qzCorrect++;
       card.classList.add('quiz-card-correct');
+      playCorrectSound();
       spawnConfetti(card);
     } else {
       qzWrong++;
@@ -763,7 +792,7 @@
   window.quizRate = function(knew) {
     if (qzAnswered) return;
     qzAnswered = true;
-    if (knew) { qzCorrect++; spawnConfetti(document.getElementById('quiz-card')); }
+    if (knew) { qzCorrect++; playCorrectSound(); spawnConfetti(document.getElementById('quiz-card')); }
     else { qzWrong++; }
     document.querySelectorAll('.quiz-rate-btn').forEach(function(b) { b.style.pointerEvents = 'none'; b.style.opacity = '0.5'; });
     var q = qzQuestions[qzIdx];
@@ -778,7 +807,6 @@
   };
 
   function updateScoreDisplay() {
-    document.getElementById('quiz-score').textContent = 'Score: ' + qzCorrect + '/' + (qzIdx + 1);
     document.getElementById('quiz-correct').textContent = qzCorrect;
     document.getElementById('quiz-wrong').textContent = qzWrong;
   }

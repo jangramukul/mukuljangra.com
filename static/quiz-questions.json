@@ -6,12 +6,12 @@
       "Only onPause is called",
       "The Activity is destroyed and recreated",
       "The ViewModel is destroyed",
-      "Nothing \u2014 Compose handles it automatically"
+      "Nothing — Compose handles it automatically"
     ],
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "Rotation is a configuration change. The system calls onPause \u2192 onStop \u2192 onSaveInstanceState \u2192 onDestroy \u2192 onCreate \u2192 onStart \u2192 onRestoreInstanceState \u2192 onResume."
+    "explanation": "Rotation is a configuration change. The system calls onPause → onStop → onSaveInstanceState → onDestroy → onCreate → onStart → onRestoreInstanceState → onResume."
   },
   {
     "q": "What is the difference between `commit()` and `apply()` in SharedPreferences?",
@@ -137,7 +137,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Architecture",
-    "explanation": "SRP states that a class should have one responsibility \u2014 one reason to change. This promotes maintainable, testable code."
+    "explanation": "SRP states that a class should have one responsibility — one reason to change. This promotes maintainable, testable code."
   },
   {
     "q": "In Clean Architecture, which layer defines the Repository interface?",
@@ -151,7 +151,7 @@
     "answer": 2,
     "difficulty": "easy",
     "topic": "Architecture",
-    "explanation": "The domain layer defines the Repository interface. The data layer implements it. This is dependency inversion \u2014 inner layers define contracts, outer layers provide implementations."
+    "explanation": "The domain layer defines the Repository interface. The data layer implements it. This is dependency inversion — inner layers define contracts, outer layers provide implementations."
   },
   {
     "q": "What is a memory leak in Android?",
@@ -263,7 +263,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
-    "explanation": "withContext switches the coroutine to a different dispatcher, runs the block, and returns the result \u2014 all without creating a new coroutine."
+    "explanation": "withContext switches the coroutine to a different dispatcher, runs the block, and returns the result — all without creating a new coroutine."
   },
   {
     "q": "What is recomposition in Jetpack Compose?",
@@ -291,7 +291,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Jetpack Compose",
-    "explanation": "LaunchedEffect runs a suspend function when a composable enters composition and cancels it when the composable leaves. It's keyed \u2014 changing the key restarts it."
+    "explanation": "LaunchedEffect runs a suspend function when a composable enters composition and cancels it when the composable leaves. It's keyed — changing the key restarts it."
   },
   {
     "q": "What is `StateFlow` in Kotlin?",
@@ -305,7 +305,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
-    "explanation": "StateFlow is a hot Flow that always has a current value. It's similar to LiveData but built on coroutines. It conflates \u2014 only the latest value is delivered."
+    "explanation": "StateFlow is a hot Flow that always has a current value. It's similar to LiveData but built on coroutines. It conflates — only the latest value is delivered."
   },
   {
     "q": "What is the difference between `val` and `var` in Kotlin?",
@@ -319,7 +319,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "val declares a read-only (immutable) reference \u2014 it cannot be reassigned. var declares a mutable reference. Note: val objects themselves can still be mutable."
+    "explanation": "val declares a read-only (immutable) reference — it cannot be reassigned. var declares a mutable reference. Note: val objects themselves can still be mutable."
   },
   {
     "q": "What happens during process death on Android?",
@@ -327,7 +327,7 @@
     "options": [
       "Only the current Activity is destroyed",
       "ViewModel data is preserved",
-      "The entire process is killed \u2014 all in-memory data is lost",
+      "The entire process is killed — all in-memory data is lost",
       "The app restarts from the launcher"
     ],
     "answer": 2,
@@ -361,7 +361,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Architecture",
-    "explanation": "@Provides is for when you need code to create an instance. @Binds maps an interface to an implementation \u2014 it generates less code than @Provides."
+    "explanation": "@Provides is for when you need code to create an instance. @Binds maps an interface to an implementation — it generates less code than @Provides."
   },
   {
     "q": "What will this code print?",
@@ -419,7 +419,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "With a regular Job, a child failure cancels the parent and all siblings. SupervisorJob isolates failures \u2014 one child failing doesn't affect others."
+    "explanation": "With a regular Job, a child failure cancels the parent and all siblings. SupervisorJob isolates failures — one child failing doesn't affect others."
   },
   {
     "q": "What is `derivedStateOf` in Compose?",
@@ -475,7 +475,7 @@
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
-    "explanation": "The Slot Table is a gap buffer that stores the entire composition tree \u2014 composable calls, parameters, remembered values, and state. It's updated in-place during recomposition."
+    "explanation": "The Slot Table is a gap buffer that stores the entire composition tree — composable calls, parameters, remembered values, and state. It's updated in-place during recomposition."
   },
   {
     "q": "What is the output (`runBlocking {`)?",
@@ -513,7 +513,7 @@
       "It crashes with a NetworkOnMainThread exception",
       "It blocks the main thread if the flow performs blocking operations",
       "It automatically switches to Dispatchers.IO",
-      "Nothing \u2014 Flows are always asynchronous"
+      "Nothing — Flows are always asynchronous"
     ],
     "answer": 1,
     "difficulty": "medium",
@@ -575,7 +575,7 @@
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "Eagerly starts upstream immediately and never cancels. WhileSubscribed(5000) starts on first collector and cancels 5 seconds after the last collector disappears \u2014 good for surviving configuration changes."
+    "explanation": "Eagerly starts upstream immediately and never cancels. WhileSubscribed(5000) starts on first collector and cancels 5 seconds after the last collector disappears — good for surviving configuration changes."
   },
   {
     "q": "What happens when an uncaught exception occurs in a coroutine launched with `launch`?",
@@ -598,7 +598,7 @@
       "Got: OK",
       "Err: OK",
       "...",
-      "Compilation error \u2014 missing else"
+      "Compilation error — missing else"
     ],
     "answer": 0,
     "difficulty": "easy",
@@ -645,14 +645,14 @@
   {
     "q": "What is `Dispatchers.Unconfined` and why is it a trap?",
     "type": "open",
-    "answer": "Dispatchers.Unconfined starts in the caller's thread but resumes in whatever thread the suspending function resumes in. This makes behavior unpredictable \u2014 your code might start on the main thread and resume on an IO thread. For tests, use EmptyCoroutineContext or UnconfinedTestDispatcher instead.",
+    "answer": "Dispatchers.Unconfined starts in the caller's thread but resumes in whatever thread the suspending function resumes in. This makes behavior unpredictable — your code might start on the main thread and resume on an IO thread. For tests, use EmptyCoroutineContext or UnconfinedTestDispatcher instead.",
     "difficulty": "hard",
     "topic": "Kotlin Coroutines"
   },
   {
     "q": "What is the conflation problem when testing StateFlow?",
     "type": "open",
-    "answer": "StateFlow conflates \u2014 it only keeps the latest value. If a ViewModel emits Loading \u2192 Success rapidly, a test collecting the StateFlow might only see Success, missing the Loading state. Turbine helps by collecting values eagerly, but you still need to use UnconfinedTestDispatcher or yield() to ensure intermediate states are captured.",
+    "answer": "StateFlow conflates — it only keeps the latest value. If a ViewModel emits Loading → Success rapidly, a test collecting the StateFlow might only see Success, missing the Loading state. Turbine helps by collecting values eagerly, but you still need to use UnconfinedTestDispatcher or yield() to ensure intermediate states are captured.",
     "difficulty": "hard",
     "topic": "Kotlin Coroutines"
   },
@@ -674,7 +674,7 @@
   {
     "q": "Why does ViewModel survive configuration changes but not process death?",
     "type": "open",
-    "answer": "ViewModel is stored in ViewModelStore, which is retained through NonConfigurationInstances during config changes \u2014 the process stays alive, just the Activity is recreated. During process death, the entire Linux process is killed. ViewModelStore and all its ViewModels are gone. Only the Bundle from onSaveInstanceState survives because the system stores it outside the process.",
+    "answer": "ViewModel is stored in ViewModelStore, which is retained through NonConfigurationInstances during config changes — the process stays alive, just the Activity is recreated. During process death, the entire Linux process is killed. ViewModelStore and all its ViewModels are gone. Only the Bundle from onSaveInstanceState survives because the system stores it outside the process.",
     "difficulty": "medium",
     "topic": "Android Core"
   },
@@ -733,7 +733,7 @@
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
-    "explanation": "graphicsLayer creates a render layer. State reads inside it only trigger the Drawing phase \u2014 Composition and Layout are skipped, which is a key performance optimization."
+    "explanation": "graphicsLayer creates a render layer. State reads inside it only trigger the Drawing phase — Composition and Layout are skipped, which is a key performance optimization."
   },
   {
     "q": "What is the key difference between `flatMapLatest` and `flatMapConcat` in Flow?",
@@ -752,7 +752,7 @@
   {
     "q": "What is stability in Jetpack Compose and why does it matter?",
     "type": "open",
-    "answer": "Stability determines whether Compose can skip recomposition of a composable. A type is stable if its public properties are immutable (val) and all their types are also stable. Stable parameters enable Compose to compare previous and current values \u2014 if they're equal, the composable is skipped. Unstable types (like List, Map, or classes with var properties) force recomposition every time. Mark classes with @Stable or @Immutable to tell Compose they're safe to skip.",
+    "answer": "Stability determines whether Compose can skip recomposition of a composable. A type is stable if its public properties are immutable (val) and all their types are also stable. Stable parameters enable Compose to compare previous and current values — if they're equal, the composable is skipped. Unstable types (like List, Map, or classes with var properties) force recomposition every time. Mark classes with @Stable or @Immutable to tell Compose they're safe to skip.",
     "difficulty": "hard",
     "topic": "Jetpack Compose"
   },
@@ -761,7 +761,7 @@
     "type": "mcq",
     "options": [
       "Prints \"done\" then \"caught: fail\"",
-      "Prints \"caught: fail\" \u2014 the second launch is cancelled",
+      "Prints \"caught: fail\" — the second launch is cancelled",
       "Crashes the app",
       "Prints \"done\" only"
     ],
@@ -774,7 +774,7 @@
   {
     "q": "Explain the difference between `coroutineScope` and `supervisorScope`.",
     "type": "open",
-    "answer": "coroutineScope cancels all children when any child fails and rethrows the exception. supervisorScope isolates child failures \u2014 if one child throws, other children continue running. Use coroutineScope for all-or-nothing operations (parallel API calls that all need to succeed). Use supervisorScope when children are independent (firing multiple analytics events).",
+    "answer": "coroutineScope cancels all children when any child fails and rethrows the exception. supervisorScope isolates child failures — if one child throws, other children continue running. Use coroutineScope for all-or-nothing operations (parallel API calls that all need to succeed). Use supervisorScope when children are independent (firing multiple analytics events).",
     "difficulty": "medium",
     "topic": "Kotlin Coroutines"
   },
@@ -833,12 +833,12 @@
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
-    "explanation": "LaunchedEffect launches a coroutine for async work. DisposableEffect is for non-suspend setup/cleanup \u2014 register a listener in the body, unregister in onDispose."
+    "explanation": "LaunchedEffect launches a coroutine for async work. DisposableEffect is for non-suspend setup/cleanup — register a listener in the body, unregister in onDispose."
   },
   {
     "q": "How does Compose know which composables to recompose when state changes?",
     "type": "open",
-    "answer": "The Snapshot System tracks which State objects each composable reads during composition. When a State value changes, Compose looks up all composables that read it and schedules them for recomposition. This is automatic \u2014 you don't register listeners. The tracking happens at the Snapshot level using thread-local read observers.",
+    "answer": "The Snapshot System tracks which State objects each composable reads during composition. When a State value changes, Compose looks up all composables that read it and schedules them for recomposition. This is automatic — you don't register listeners. The tracking happens at the Snapshot level using thread-local read observers.",
     "difficulty": "hard",
     "topic": "Jetpack Compose"
   },
@@ -854,12 +854,12 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "Value classes wrap a single value and are erased at compile time \u2014 the wrapper object is eliminated, using the underlying type directly. Useful for type-safe wrappers without allocation cost."
+    "explanation": "Value classes wrap a single value and are erased at compile time — the wrapper object is eliminated, using the underlying type directly. Useful for type-safe wrappers without allocation cost."
   },
   {
     "q": "What is the problem with using `Boolean` for UI state?",
     "type": "open",
-    "answer": "Multiple booleans create impossible state combinations \u2014 isLoading=true AND isError=true simultaneously. This leads to bugs where the UI shows conflicting states. Use a sealed class instead: sealed class UiState { object Loading, data class Success(data), data class Error(msg) }. This makes invalid states unrepresentable.",
+    "answer": "Multiple booleans create impossible state combinations — isLoading=true AND isError=true simultaneously. This leads to bugs where the UI shows conflicting states. Use a sealed class instead: sealed class UiState { object Loading, data class Success(data), data class Error(msg) }. This makes invalid states unrepresentable.",
     "difficulty": "medium",
     "topic": "Architecture",
     "code": "data class UiState(\n    val isLoading: Boolean = false,\n    val isError: Boolean = false,\n    val data: List<Item>? = null\n)"
@@ -947,7 +947,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Testing",
-    "explanation": "TestDispatcher controls virtual time \u2014 you can advance time, run pending tasks, and make coroutine execution deterministic without waiting for real delays."
+    "explanation": "TestDispatcher controls virtual time — you can advance time, run pending tasks, and make coroutine execution deterministic without waiting for real delays."
   },
   {
     "q": "What is the difference between `StandardTestDispatcher` and `UnconfinedTestDispatcher`?",
@@ -961,7 +961,7 @@
     "answer": 0,
     "difficulty": "hard",
     "topic": "Testing",
-    "explanation": "StandardTestDispatcher queues coroutines \u2014 you advance time manually. UnconfinedTestDispatcher runs coroutines eagerly until the first suspension point."
+    "explanation": "StandardTestDispatcher queues coroutines — you advance time manually. UnconfinedTestDispatcher runs coroutines eagerly until the first suspension point."
   },
   {
     "q": "What is the output (`val list = mutableListOf(1, 2, 3)`)?",
@@ -1004,14 +1004,14 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "onPause \u2014 Activity may still be partially visible (multi-window, dialog). onStop \u2014 Activity is completely hidden. Release heavy resources in onStop, lightweight ones in onPause."
+    "explanation": "onPause — Activity may still be partially visible (multi-window, dialog). onStop — Activity is completely hidden. Release heavy resources in onStop, lightweight ones in onPause."
   },
   {
     "q": "What is the dependency rule in Clean Architecture?",
     "type": "mcq",
     "options": [
       "All dependencies must use Hilt",
-      "Inner layers cannot reference outer layers \u2014 dependencies point inward only",
+      "Inner layers cannot reference outer layers — dependencies point inward only",
       "Every class must have at most 3 dependencies",
       "Dependencies must be declared in a separate module"
     ],
@@ -1025,7 +1025,7 @@
     "type": "mcq",
     "options": [
       "Shows a working counter that increments",
-      "Always shows 'Count: 0' \u2014 count resets on every recomposition",
+      "Always shows 'Count: 0' — count resets on every recomposition",
       "Crashes at runtime",
       "Shows 'Count: 1' and stops updating"
     ],
@@ -1119,7 +1119,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "flowOn changes the context of the upstream Flow \u2014 emissions and transformations above flowOn run on the specified dispatcher. It doesn't affect the collector's context."
+    "explanation": "flowOn changes the context of the upstream Flow — emissions and transformations above flowOn run on the specified dispatcher. It doesn't affect the collector's context."
   },
   {
     "q": "What is a `Channel` in Kotlin coroutines?",
@@ -1147,7 +1147,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "Extension functions let you add new functions to existing classes without inheritance or modification. They're resolved statically \u2014 compiled to static methods with the receiver as the first parameter."
+    "explanation": "Extension functions let you add new functions to existing classes without inheritance or modification. They're resolved statically — compiled to static methods with the receiver as the first parameter."
   },
   {
     "q": "What is the Liskov Substitution Principle?",
@@ -1253,7 +1253,7 @@
     "answer": 0,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "object declares a singleton. companion object is a singleton tied to a class \u2014 it can access private members and serves as a container for factory methods and constants."
+    "explanation": "object declares a singleton. companion object is a singleton tied to a class — it can access private members and serves as a container for factory methods and constants."
   },
   {
     "q": "What is Network Security Config in Android?",
@@ -1367,12 +1367,12 @@
     "answer": 0,
     "difficulty": "medium",
     "topic": "Jetpack Compose",
-    "explanation": "collectAsStateWithLifecycle respects the lifecycle \u2014 it stops collecting when the lifecycle is below the minimum state (STARTED by default). collectAsState keeps collecting even in background."
+    "explanation": "collectAsStateWithLifecycle respects the lifecycle — it stops collecting when the lifecycle is below the minimum state (STARTED by default). collectAsState keeps collecting even in background."
   },
   {
     "q": "What is variance in Kotlin generics? Explain `in` and `out`.",
     "type": "open",
-    "answer": "`out` is covariance \u2014 the type parameter is only produced (returned), never consumed. Producer<out T> means Producer<Dog> is a subtype of Producer<Animal>. `in` is contravariance \u2014 the type parameter is only consumed (accepted as parameter), never produced. Consumer<in T> means Consumer<Animal> is a subtype of Consumer<Dog>. Remember: 'out' = produce, 'in' = consume.",
+    "answer": "`out` is covariance — the type parameter is only produced (returned), never consumed. Producer<out T> means Producer<Dog> is a subtype of Producer<Animal>. `in` is contravariance — the type parameter is only consumed (accepted as parameter), never produced. Consumer<in T> means Consumer<Animal> is a subtype of Consumer<Dog>. Remember: 'out' = produce, 'in' = consume.",
     "difficulty": "hard",
     "topic": "Kotlin"
   },
@@ -1417,7 +1417,7 @@
     "answer": 0,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "Lists evaluate each operation eagerly, creating intermediate collections. Sequences evaluate lazily \u2014 each element passes through the entire chain before the next element is processed."
+    "explanation": "Lists evaluate each operation eagerly, creating intermediate collections. Sequences evaluate lazily — each element passes through the entire chain before the next element is processed."
   },
   {
     "q": "What does `@Stable` annotation do in Compose?",
@@ -1445,7 +1445,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Android Core",
-    "explanation": "WorkManager handles background work that needs guaranteed execution \u2014 syncing data, uploading logs, processing images. Work survives app kill and device reboot."
+    "explanation": "WorkManager handles background work that needs guaranteed execution — syncing data, uploading logs, processing images. Work survives app kill and device reboot."
   },
   {
     "q": "What is R8 in Android?",
@@ -1459,7 +1459,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Performance",
-    "explanation": "R8 is Google's replacement for ProGuard. It shrinks unused code, optimizes bytecode, and obfuscates class/method names \u2014 all in one step during the build."
+    "explanation": "R8 is Google's replacement for ProGuard. It shrinks unused code, optimizes bytecode, and obfuscates class/method names — all in one step during the build."
   },
   {
     "q": "What keyword is used to declare a read-only variable in Kotlin?",
@@ -1867,7 +1867,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin Coroutines",
-    "explanation": "GlobalScope breaks structured concurrency \u2014 coroutines launched in it aren't tied to any lifecycle and can leak."
+    "explanation": "GlobalScope breaks structured concurrency — coroutines launched in it aren't tied to any lifecycle and can leak."
   },
   {
     "q": "What is a `sealed class` used for in Kotlin?",
@@ -2151,14 +2151,14 @@
     "answer": 1,
     "difficulty": "hard",
     "topic": "Kotlin Coroutines",
-    "explanation": "CONFLATED capacity keeps only the most recent value, dropping older undelivered values \u2014 the receiver always gets the latest."
+    "explanation": "CONFLATED capacity keeps only the most recent value, dropping older undelivered values — the receiver always gets the latest."
   },
   {
     "q": "What is the problem with this ViewModel code?",
     "type": "mcq",
     "options": [
       "No issue",
-      "Memory leak \u2014 storing Activity context in ViewModel outlives the Activity",
+      "Memory leak — storing Activity context in ViewModel outlives the Activity",
       "Compilation error",
       "Thread safety issue"
     ],
@@ -2397,7 +2397,7 @@
     "type": "mcq",
     "options": [
       "Android Null Reference",
-      "Application Not Responding \u2014 triggered when main thread is blocked for 5+ seconds",
+      "Application Not Responding — triggered when main thread is blocked for 5+ seconds",
       "Android Network Request",
       "Automatic Null Recovery"
     ],
@@ -2628,7 +2628,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin Coroutines",
-    "explanation": "launch starts a coroutine that doesn't return a result \u2014 it's fire-and-forget, returning only a Job."
+    "explanation": "launch starts a coroutine that doesn't return a result — it's fire-and-forget, returning only a Job."
   },
   {
     "q": "What is Gradle in Android development?",
@@ -2887,15 +2887,15 @@
     "q": "What is the Clean Architecture layers order from inside out?",
     "type": "mcq",
     "options": [
-      "UI \u2192 Data \u2192 Domain",
-      "Domain \u2192 Data \u2192 UI",
-      "Domain \u2192 Presentation \u2192 Data",
-      "Data \u2192 Domain \u2192 Presentation"
+      "UI → Data → Domain",
+      "Domain → Data → UI",
+      "Domain → Presentation → Data",
+      "Data → Domain → Presentation"
     ],
     "answer": 2,
     "difficulty": "medium",
     "topic": "Architecture",
-    "explanation": "Clean Architecture: Domain (innermost, no dependencies) \u2192 Presentation \u2192 Data (outermost, implements domain interfaces)."
+    "explanation": "Clean Architecture: Domain (innermost, no dependencies) → Presentation → Data (outermost, implements domain interfaces)."
   },
   {
     "q": "What is `SideEffect` used for in Compose?",
@@ -3022,7 +3022,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "takeIf returns the receiver if the predicate is true, or null otherwise \u2014 useful for conditional chains."
+    "explanation": "takeIf returns the receiver if the predicate is true, or null otherwise — useful for conditional chains."
   },
   {
     "q": "What is a foreground Service in Android?",
@@ -3148,7 +3148,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "also uses `it` as the context object and returns the original object \u2014 commonly used for side effects like logging."
+    "explanation": "also uses `it` as the context object and returns the original object — commonly used for side effects like logging."
   },
   {
     "q": "What does `catch` operator do on a Flow?",
@@ -3255,7 +3255,7 @@
     "type": "mcq",
     "options": [
       "It works fine",
-      "It throws IllegalStateException \u2014 flow is context-preserving",
+      "It throws IllegalStateException — flow is context-preserving",
       "It switches the dispatcher",
       "It buffers the emission"
     ],
@@ -3725,7 +3725,7 @@
     "answer": 1,
     "difficulty": "easy",
     "topic": "Kotlin",
-    "explanation": "Lambda expressions are anonymous functions treated as values \u2014 they can be passed to and returned from functions."
+    "explanation": "Lambda expressions are anonymous functions treated as values — they can be passed to and returned from functions."
   },
   {
     "q": "What is `ContentProvider` used for in Android?",
@@ -3843,7 +3843,7 @@
     "q": "What is `ADB` in Android development?",
     "type": "mcq",
     "options": [
-      "Android Debug Bridge \u2014 a command-line tool for communicating with devices",
+      "Android Debug Bridge — a command-line tool for communicating with devices",
       "Android Data Backup",
       "App Deployment Builder",
       "Android Design Blueprint"
@@ -3907,7 +3907,7 @@
     "answer": 1,
     "difficulty": "medium",
     "topic": "Kotlin",
-    "explanation": "Value classes wrap a single value without runtime overhead \u2014 the wrapper is eliminated at compile time while providing type safety."
+    "explanation": "Value classes wrap a single value without runtime overhead — the wrapper is eliminated at compile time while providing type safety."
   },
   {
     "q": "What does `repeatOnLifecycle` do?",
@@ -4320,7 +4320,7 @@
     "type": "mcq",
     "options": [
       "A dispatcher without limits",
-      "Starts in the caller's thread but resumes in whatever thread the suspension resumes on \u2014 use only for tests or specific non-UI scenarios",
+      "Starts in the caller's thread but resumes in whatever thread the suspension resumes on — use only for tests or specific non-UI scenarios",
       "The fastest dispatcher",
       "A dispatcher for unconfined types"
     ],
@@ -4383,7 +4383,7 @@
     "answer": 1,
     "difficulty": "hard",
     "topic": "Jetpack Compose",
-    "explanation": "The Slot Table is Compose's internal data structure \u2014 a gap buffer array storing composition groups, state, and node references."
+    "explanation": "The Slot Table is Compose's internal data structure — a gap buffer array storing composition groups, state, and node references."
   },
   {
     "q": "What does `nothing` type represent in Kotlin?",
@@ -4566,5 +4566,669 @@
     "difficulty": "hard",
     "topic": "Kotlin Coroutines",
     "explanation": "WhileSubscribed(5000) keeps sharing active for 5s after the last subscriber leaves, bridging configuration changes without restarting upstream."
+  },
+  {
+    "q": "What does the `lateinit` keyword do in Kotlin?",
+    "type": "open",
+    "answer": "It allows declaring a non-null var property without initializing it at declaration time, deferring initialization to later.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "lateinit is used for properties that will be initialized before use but can't be set in the constructor, like dependency injection."
+  },
+  {
+    "q": "What is the purpose of `AndroidManifest.xml`?",
+    "type": "open",
+    "answer": "It declares app components, permissions, hardware/software features, and metadata required by the Android system.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "The manifest provides essential information about the app to the Android build tools, OS, and Google Play."
+  },
+  {
+    "q": "What is a `ViewModel` in Android?",
+    "type": "open",
+    "answer": "A lifecycle-aware class that stores and manages UI-related data, surviving configuration changes like screen rotation.",
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "ViewModel separates UI data from Activity/Fragment lifecycle, preventing data loss on configuration changes."
+  },
+  {
+    "q": "What does `remember` do in Jetpack Compose?",
+    "type": "open",
+    "answer": "It stores a value in the Composition so it survives recompositions, preventing the value from being re-initialized each time.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Without remember, values would be reset on every recomposition, losing state."
+  },
+  {
+    "q": "What are the four main Android components?",
+    "type": "open",
+    "answer": "Activity, Service, BroadcastReceiver, and ContentProvider.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "These are the building blocks of Android apps, each serving a different purpose and having its own lifecycle."
+  },
+  {
+    "q": "What is a `suspend` function in Kotlin?",
+    "type": "open",
+    "answer": "A function that can be paused and resumed later without blocking the thread, used with coroutines.",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "suspend functions can only be called from other suspend functions or coroutine builders like launch/async."
+  },
+  {
+    "q": "What does `@Composable` annotation mean?",
+    "type": "open",
+    "answer": "It marks a function as a Compose UI function that can emit UI elements and participate in recomposition.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "The Compose compiler plugin processes @Composable functions specially to enable the declarative UI model."
+  },
+  {
+    "q": "What is an `Intent` in Android?",
+    "type": "open",
+    "answer": "A messaging object used to request an action from another app component, either explicit (specific component) or implicit (action-based).",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "Intents are used to start activities, services, and deliver broadcasts."
+  },
+  {
+    "q": "What is `LiveData` in Android?",
+    "type": "open",
+    "answer": "An observable data holder class that is lifecycle-aware, meaning it only updates observers that are in an active lifecycle state.",
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "LiveData respects the lifecycle of Activities and Fragments, avoiding memory leaks and crashes."
+  },
+  {
+    "q": "What is a `sealed class` in Kotlin?",
+    "type": "open",
+    "answer": "A class that restricts its subclasses to be defined within the same file, enabling exhaustive when expressions.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Sealed classes are useful for representing restricted class hierarchies, like UI states or result types."
+  },
+  {
+    "q": "What is the purpose of `Modifier` in Jetpack Compose?",
+    "type": "open",
+    "answer": "Modifier is used to decorate or augment composables with behavior like padding, size, click handling, and layout.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Modifiers are chained and applied in order, making them a powerful and flexible way to style UI."
+  },
+  {
+    "q": "What is `Gradle` in Android development?",
+    "type": "open",
+    "answer": "An automated build system that compiles code, manages dependencies, generates APKs/AABs, and runs tests.",
+    "difficulty": "easy",
+    "topic": "Gradle",
+    "explanation": "Android Studio uses Gradle as its build system with Kotlin DSL or Groovy for build scripts."
+  },
+  {
+    "q": "What is a `Fragment` in Android?",
+    "type": "open",
+    "answer": "A reusable portion of UI that has its own lifecycle and can be added/removed from an Activity at runtime.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "Fragments enable modular UI design and are managed by FragmentManager within an Activity."
+  },
+  {
+    "q": "What is a `RecyclerView`?",
+    "type": "open",
+    "answer": "A flexible, efficient view for displaying large scrollable lists by recycling item views as they scroll off screen.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "RecyclerView uses ViewHolder pattern and LayoutManager for efficient list rendering."
+  },
+  {
+    "q": "What is the purpose of `StateFlow` in Kotlin?",
+    "type": "open",
+    "answer": "A hot Flow that holds a single current value and emits updates to collectors, similar to LiveData but part of coroutines.",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "StateFlow always has a value, is thread-safe, and integrates well with Compose via collectAsState()."
+  },
+  {
+    "q": "What is View Binding in Android?",
+    "type": "open",
+    "answer": "A feature that generates binding classes for XML layouts, providing type-safe references to views without findViewById.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "View Binding eliminates null pointer exceptions and type casting errors when accessing views."
+  },
+  {
+    "q": "What is the `when` expression in Kotlin?",
+    "type": "open",
+    "answer": "A replacement for switch-case that supports pattern matching, ranges, type checks, and can be used as an expression returning a value.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "when is more powerful than switch — it can match any condition, not just constants."
+  },
+  {
+    "q": "What is `Dispatchers.IO` used for?",
+    "type": "open",
+    "answer": "A coroutine dispatcher optimized for offloading blocking I/O tasks like network requests, file operations, and database queries.",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Dispatchers.IO uses a shared pool of threads designed for blocking operations, separate from the main thread."
+  },
+  {
+    "q": "What is a `SharedPreferences` in Android?",
+    "type": "open",
+    "answer": "A key-value storage mechanism for persisting small amounts of primitive data across app sessions.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "SharedPreferences stores data in XML files and is suitable for simple settings, not large datasets."
+  },
+  {
+    "q": "What is the `apply` scope function in Kotlin?",
+    "type": "open",
+    "answer": "A scope function that executes a block on an object and returns the object itself, using `this` as the receiver.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "apply is commonly used for object configuration: val view = TextView(context).apply { text = \"Hello\" }"
+  },
+  {
+    "q": "What is `rememberSaveable` in Compose?",
+    "type": "open",
+    "answer": "Like remember, but also saves and restores the value across configuration changes and process death.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "rememberSaveable uses the saved instance state mechanism, so data persists through rotation and background kill."
+  },
+  {
+    "q": "What is a `coroutineScope` builder?",
+    "type": "open",
+    "answer": "A suspend function that creates a new coroutine scope and waits for all child coroutines to complete before returning.",
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "coroutineScope enables structured concurrency — if any child fails, all siblings are cancelled."
+  },
+  {
+    "q": "What does `companion object` do in Kotlin?",
+    "type": "open",
+    "answer": "It defines a singleton object inside a class, providing static-like members that can be accessed via the class name.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Unlike Java static, companion object is a real object that can implement interfaces and have extension functions."
+  },
+  {
+    "q": "What is Navigation Component in Android?",
+    "type": "open",
+    "answer": "A Jetpack library that handles fragment transactions, deep links, back stack, and safe argument passing between destinations.",
+    "difficulty": "easy",
+    "topic": "Android",
+    "explanation": "Navigation Component uses a nav graph to define the app's navigation structure visually."
+  },
+  {
+    "q": "What is a `LaunchedEffect` in Compose?",
+    "type": "open",
+    "answer": "A side-effect handler that launches a coroutine when the composable enters the composition, keyed by its parameters.",
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "LaunchedEffect is used for one-time operations or operations that should restart when keys change."
+  },
+  {
+    "q": "What is an `extension function` in Kotlin?",
+    "type": "open",
+    "answer": "A function added to an existing class without modifying its source code, called as if it were a member of that class.",
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Extension functions are resolved statically at compile time and don't actually modify the class."
+  },
+  {
+    "q": "Explain the difference between `StateFlow` and `SharedFlow`.",
+    "type": "open",
+    "answer": "StateFlow always holds a current value and replays the latest to new collectors. SharedFlow has no initial value and supports configurable replay and buffer overflow strategies.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "StateFlow is a specialized SharedFlow with replay=1 and distinctUntilChanged behavior built in."
+  },
+  {
+    "q": "How does Jetpack Compose determine when to recompose?",
+    "type": "open",
+    "answer": "Compose tracks State reads during composition. When a read State value changes, only the composable functions that read that State are scheduled for recomposition.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "This is called smart recomposition — Compose uses a slot table to track dependencies."
+  },
+  {
+    "q": "What is the difference between `launch` and `async` coroutine builders?",
+    "type": "open",
+    "answer": "launch returns a Job and is fire-and-forget (no result). async returns a Deferred<T> which can be awaited for a result. async is for concurrent computations that return values.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Use launch for side effects, async when you need the result of a concurrent computation."
+  },
+  {
+    "q": "Explain the concept of reified type parameters in Kotlin.",
+    "type": "open",
+    "answer": "Reified type parameters preserve generic type information at runtime in inline functions, enabling operations like `is T` checks and `T::class` that are normally erased.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Only inline functions can have reified type parameters because the function body is inlined at call sites."
+  },
+  {
+    "q": "What is the difference between `cold` and `hot` flows?",
+    "type": "open",
+    "answer": "Cold flows (Flow) don't produce values until collected and create a new stream per collector. Hot flows (StateFlow, SharedFlow) produce values regardless of collectors and share the stream.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Cold flows are like lazy sequences, while hot flows are like live event streams."
+  },
+  {
+    "q": "How does `derivedStateOf` work in Compose?",
+    "type": "open",
+    "answer": "It creates a State that derives its value from other State objects, only recomputing when the inputs actually change, reducing unnecessary recompositions.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Use derivedStateOf when a calculation depends on frequently changing state but produces the same result most of the time."
+  },
+  {
+    "q": "What is Hilt and how does it relate to Dagger?",
+    "type": "open",
+    "answer": "Hilt is a dependency injection library built on top of Dagger that simplifies DI setup in Android with predefined components, scopes, and annotations like @HiltViewModel and @AndroidEntryPoint.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Hilt reduces Dagger boilerplate by auto-generating components tied to Android lifecycle classes."
+  },
+  {
+    "q": "Explain the MVVM architecture pattern in Android.",
+    "type": "open",
+    "answer": "Model holds data/business logic, View (Activity/Fragment/Composable) displays UI and observes ViewModel, ViewModel exposes UI state and handles user actions without referencing the View.",
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "MVVM enables testable, lifecycle-aware code where the ViewModel survives configuration changes."
+  },
+  {
+    "q": "What is the difference between `Dispatchers.Main` and `Dispatchers.Default`?",
+    "type": "open",
+    "answer": "Dispatchers.Main runs on the Android main/UI thread for UI updates. Dispatchers.Default uses a shared thread pool sized to CPU cores for CPU-intensive computations.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Use Main for UI work, Default for heavy computation, and IO for blocking I/O operations."
+  },
+  {
+    "q": "How does `snapshotFlow` work in Compose?",
+    "type": "open",
+    "answer": "It converts Compose State reads into a Flow, emitting a new value whenever the read State objects change, bridging Compose state with coroutines Flow.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "snapshotFlow enables reactive side effects based on Compose state changes within coroutine-based APIs."
+  },
+  {
+    "q": "What is ProGuard/R8 and why is it important?",
+    "type": "open",
+    "answer": "R8 (successor to ProGuard) is a code shrinker, optimizer, and obfuscator that removes unused code, optimizes bytecode, and renames classes/methods to reduce APK size and make reverse-engineering harder.",
+    "difficulty": "medium",
+    "topic": "Android",
+    "explanation": "R8 runs during release builds and can significantly reduce APK size while also improving runtime performance."
+  },
+  {
+    "q": "Explain the concept of back pressure in Kotlin Flow.",
+    "type": "open",
+    "answer": "Back pressure occurs when a Flow producer emits values faster than the collector can process them. Operators like buffer(), conflate(), and collectLatest() handle this by buffering, dropping, or cancelling.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "By default, Flow is sequential — the producer suspends until the collector processes each value."
+  },
+  {
+    "q": "What is `CompositionLocal` in Jetpack Compose?",
+    "type": "open",
+    "answer": "A mechanism to pass data implicitly down the composition tree without explicitly passing it as parameters, similar to React Context.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "CompositionLocal is useful for theming, localization, and providing dependencies that many composables need."
+  },
+  {
+    "q": "What is the difference between `viewModelScope` and `lifecycleScope`?",
+    "type": "open",
+    "answer": "viewModelScope is tied to ViewModel's lifecycle and cancelled when ViewModel is cleared. lifecycleScope is tied to Activity/Fragment lifecycle and cancelled when they're destroyed.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Use viewModelScope for operations that should survive configuration changes, lifecycleScope for UI-specific work."
+  },
+  {
+    "q": "How does Room database handle migrations?",
+    "type": "open",
+    "answer": "Room uses Migration objects that define SQL statements to transform the database schema from one version to another. Auto-migrations can be generated for simple schema changes.",
+    "difficulty": "medium",
+    "topic": "Android",
+    "explanation": "Without proper migrations, Room throws an IllegalStateException or destroys and recreates the database."
+  },
+  {
+    "q": "What is the purpose of `DisposableEffect` in Compose?",
+    "type": "open",
+    "answer": "It runs setup code when entering composition and cleanup code (via onDispose) when leaving, useful for registering/unregistering listeners and releasing resources.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "DisposableEffect is the Compose equivalent of onStart/onStop or subscribe/unsubscribe patterns."
+  },
+  {
+    "q": "Explain inline classes (value classes) in Kotlin.",
+    "type": "open",
+    "answer": "Value classes wrap a single value with zero runtime overhead — the wrapper is eliminated at compile time, providing type safety without allocation cost.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Declared with @JvmInline value class, they're useful for domain-specific types like UserId(val id: String)."
+  },
+  {
+    "q": "What is WorkManager and when should you use it?",
+    "type": "open",
+    "answer": "A Jetpack library for scheduling deferrable, guaranteed background work that persists across app restarts and device reboots. Use for tasks like syncing data, uploading logs, or periodic cleanup.",
+    "difficulty": "medium",
+    "topic": "Android",
+    "explanation": "WorkManager chooses the best implementation (JobScheduler, AlarmManager, etc.) based on API level."
+  },
+  {
+    "q": "How do you handle process death in Android?",
+    "type": "open",
+    "answer": "Save UI state in onSaveInstanceState/SavedStateHandle, persist critical data to disk (Room, DataStore), and restore in onCreate. Use rememberSaveable in Compose.",
+    "difficulty": "medium",
+    "topic": "Android",
+    "explanation": "Process death occurs when the system kills the app in the background. The OS preserves the back stack but not in-memory state."
+  },
+  {
+    "q": "Explain the concept of side effects in Jetpack Compose.",
+    "type": "open",
+    "answer": "Side effects are operations that affect state outside the composable function scope, like network calls, logging, or navigation. Compose provides LaunchedEffect, SideEffect, and DisposableEffect to handle them safely.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Side effects must be managed carefully because composables can be recomposed at any time."
+  },
+  {
+    "q": "What is `Channel` in Kotlin coroutines and how does it differ from Flow?",
+    "type": "open",
+    "answer": "Channel is a hot, one-time delivery mechanism where each value is received by exactly one consumer (fan-out). Flow is cold and multicast — each collector gets all values independently.",
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Use Channel for one-time events (navigation, snackbar), Flow for observable state streams."
+  },
+  {
+    "q": "What is the purpose of `Scaffold` in Jetpack Compose?",
+    "type": "open",
+    "answer": "Scaffold provides a Material Design layout structure with slots for TopAppBar, BottomBar, FloatingActionButton, Drawer, and Snackbar, handling their positioning and interactions.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Scaffold manages the visual layout and provides SnackbarHost for showing snackbars."
+  },
+  {
+    "q": "Explain the difference between `object` declaration and `companion object` in Kotlin.",
+    "type": "open",
+    "answer": "object declaration creates a standalone singleton. companion object is a singleton inside a class, accessed via the class name, and can have a name and implement interfaces.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "There's exactly one instance of each. companion object members look like static members from Java code."
+  },
+  {
+    "q": "How does Kotlin's delegation pattern work with `by`?",
+    "type": "open",
+    "answer": "The `by` keyword delegates interface implementation or property access to another object. Class delegation forwards method calls; property delegation uses getValue/setValue operators.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Common property delegates include lazy, observable, vetoable, and map-backed properties."
+  },
+  {
+    "q": "What is `collectAsState()` in Compose?",
+    "type": "open",
+    "answer": "An extension function that collects a Flow or StateFlow and represents its latest emitted value as a Compose State, triggering recomposition on new emissions.",
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "It bridges the reactive Flow world with Compose's state system, typically used in composable functions observing ViewModel state."
+  },
+  {
+    "q": "What is the difference between `Serializable` and `Parcelable` in Android?",
+    "type": "open",
+    "answer": "Serializable uses reflection for serialization (slower, more garbage). Parcelable requires manual implementation but is much faster and optimized for Android IPC. Kotlin parcelize plugin generates Parcelable code.",
+    "difficulty": "medium",
+    "topic": "Android",
+    "explanation": "Always prefer Parcelable for Android IPC (Intents, Bundles). Use @Parcelize annotation for easy implementation."
+  },
+  {
+    "q": "Explain `crossinline` and `noinline` in Kotlin.",
+    "type": "open",
+    "answer": "crossinline prevents non-local returns from a lambda passed to an inline function. noinline prevents a lambda parameter from being inlined, allowing it to be stored or passed around.",
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "These modifiers control lambda behavior in inline functions for safety and flexibility."
+  },
+  {
+    "q": "Explain how Compose's slot table and gap buffer work internally.",
+    "type": "open",
+    "answer": "Compose stores composition data in a linear slot table using a gap buffer. During recomposition, the gap moves to the current write position, enabling efficient insertions and deletions. Each composable's data (state, parameters, children) occupies contiguous slots.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "The gap buffer avoids copying the entire array on changes — only the gap needs to move, similar to text editors."
+  },
+  {
+    "q": "How does Kotlin's coroutine suspension work at the bytecode level?",
+    "type": "open",
+    "answer": "The compiler transforms suspend functions into a state machine using Continuation Passing Style (CPS). Each suspension point becomes a state. The function receives a Continuation parameter and uses a switch-like structure to resume at the correct state.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "The generated state machine stores local variables in the Continuation object's fields to survive across suspensions."
+  },
+  {
+    "q": "Explain the Compose compiler's role and what it generates.",
+    "type": "open",
+    "answer": "The Compose compiler plugin transforms @Composable functions to include a $composer parameter, generates group markers for the slot table, adds comparison logic for skipping unchanged composables, and creates restart lambdas for recomposition.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "It also handles remember, key, and other intrinsics, and generates code for smart recomposition and positional memoization."
+  },
+  {
+    "q": "What is a CoroutineExceptionHandler and how does exception propagation work in structured concurrency?",
+    "type": "open",
+    "answer": "CoroutineExceptionHandler catches uncaught exceptions in coroutines. In structured concurrency, exceptions propagate up: child failure cancels the parent (and siblings) unless SupervisorJob is used. CancellationException is special — it only cancels the current coroutine without propagating up.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Only root coroutines (launch at top scope) can install CoroutineExceptionHandler. async stores exceptions in the Deferred."
+  },
+  {
+    "q": "Explain how Android's Looper, Handler, and MessageQueue work together.",
+    "type": "open",
+    "answer": "Looper runs an infinite loop pulling Messages from a MessageQueue. Handler posts Messages/Runnables to a specific Looper's queue. The main thread has a Looper by default. Each thread can have at most one Looper. Messages are processed sequentially in FIFO order with support for delayed messages via uptimeMillis.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "This is the foundation of Android's threading model. HandlerThread creates a thread with its own Looper."
+  },
+  {
+    "q": "How does Kotlin's type system handle variance (in/out) and how does it differ from Java's wildcards?",
+    "type": "open",
+    "answer": "Kotlin uses declaration-site variance: `out` (covariant, producer) and `in` (contravariant, consumer). out T means the class only produces T (like Java's ? extends T). in T means it only consumes T (like Java's ? super T). Use-site variance is also supported via type projections.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Declaration-site variance is more concise than Java's use-site wildcards and less error-prone."
+  },
+  {
+    "q": "Explain how Android's memory management and garbage collection impact app performance.",
+    "type": "open",
+    "answer": "Android uses ART with concurrent, generational GC. Young generation uses copying collector, old generation uses concurrent mark-sweep. Excessive allocations cause GC pauses, leading to jank. Large bitmaps can cause OOM. Memory leaks (holding Activity references) prevent GC from reclaiming memory.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Use Memory Profiler to detect leaks and allocation spikes. Avoid allocations in onDraw() and tight loops."
+  },
+  {
+    "q": "How does Compose's stability system determine if a type is stable or unstable?",
+    "type": "open",
+    "answer": "A type is stable if: all public properties are immutable (val) and of stable types, or the type is annotated @Stable/@Immutable. Unstable types prevent smart recomposition skipping. Collections like List are considered unstable because they could be MutableList at runtime.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "Use Compose compiler reports to identify unstable parameters. Wrap mutable collections in @Immutable wrapper classes."
+  },
+  {
+    "q": "Explain Kotlin's contract DSL and how it helps the compiler.",
+    "type": "open",
+    "answer": "Contracts provide guarantees to the compiler about function behavior: callsInPlace specifies how many times a lambda runs (enabling val initialization in lambdas), returns/implies tells the compiler about smart casting after function calls.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "stdlib functions like require, check, and run use contracts. Custom contracts are experimental."
+  },
+  {
+    "q": "How does Android's process priority and OOM killer work?",
+    "type": "open",
+    "answer": "Android assigns oom_adj scores to processes. Foreground activities get highest priority, visible/service processes get medium, cached/empty processes get lowest. When memory is low, the OOM killer terminates processes with highest oom_adj scores first.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Foreground services elevate process priority. WorkManager handles background work that survives process death."
+  },
+  {
+    "q": "Explain how inline functions work at the bytecode level and their performance implications.",
+    "type": "open",
+    "answer": "The compiler copies the inline function's body directly into call sites, eliminating function call overhead and object allocation for lambdas. However, this increases bytecode size. Lambda parameters are also inlined, enabling non-local returns. Non-inlined lambdas still create anonymous class instances.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Inline is beneficial for higher-order functions with lambda parameters. Avoid inlining large functions."
+  },
+  {
+    "q": "What is the Compose Snapshot system and how does it enable concurrent reads/writes?",
+    "type": "open",
+    "answer": "The Snapshot system provides isolated, versioned views of mutable state. Each snapshot sees a consistent view. Writes in one snapshot don't affect others until applied. This enables safe concurrent composition on different threads and supports conflict detection via merge policies.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "MutableSnapshot creates an isolated copy-on-write view. GlobalSnapshot is the shared root snapshot."
+  },
+  {
+    "q": "Explain how Kotlin Flow operators like `flatMapLatest` handle cancellation internally.",
+    "type": "open",
+    "answer": "flatMapLatest cancels the previous inner Flow collector when a new value arrives from the upstream. It uses coroutine cancellation internally — each inner collection runs in a separate coroutine that gets cancelled via Job.cancel() when the upstream emits again.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "This is useful for search-as-you-type where you only want results from the latest query."
+  },
+  {
+    "q": "How does Android's Binder IPC mechanism work?",
+    "type": "open",
+    "answer": "Binder provides efficient cross-process communication using shared memory. It maps a buffer into both process address spaces, avoiding data copying. AIDL generates proxy/stub classes. The Binder driver in the kernel manages transactions, thread pools, and reference counting.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Binder is the foundation of Android's IPC — Activities, Services, ContentProviders all use it."
+  },
+  {
+    "q": "Explain the difference between `SupervisorJob` and regular `Job` in coroutine exception handling.",
+    "type": "open",
+    "answer": "A regular Job propagates child failures upward, cancelling the parent and all siblings. SupervisorJob only cancels the failing child — other children continue running. This enables independent child coroutines that don't affect each other.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "supervisorScope creates a scope with SupervisorJob. Use it when child failures should be handled individually."
+  },
+  {
+    "q": "How does R8 full mode differ from compatibility mode and what are the implications?",
+    "type": "open",
+    "answer": "R8 full mode applies more aggressive optimizations: it doesn't preserve all -keep rules from Proguard, removes more unused code, devirtualizes more calls, and can break reflection-based code. Compatibility mode is safer but produces larger APKs.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Full mode is enabled with android.enableR8.fullMode=true. Test thoroughly as it may break serialization or reflection."
+  },
+  {
+    "q": "Explain how Jetpack Compose handles animations internally with the `Animatable` API.",
+    "type": "open",
+    "answer": "Animatable wraps a state value and drives changes via coroutines. animateTo() launches a coroutine that updates the value each frame using AnimationSpec (spring, tween, etc.). The frame clock synchronizes with display refresh. Compose observes the state changes and recomposes accordingly.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "Spring animations use a physics simulation. Tween uses easing curves. All animations are cancellable and interruptible."
+  },
+  {
+    "q": "How does Kotlin's type erasure interact with reified types and inline functions?",
+    "type": "open",
+    "answer": "JVM erases generic types at runtime, so List<String> becomes List. Reified type parameters in inline functions avoid erasure because the function body is copied to call sites with concrete types substituted. This enables runtime type checks (is T), class references (T::class), and generic factory patterns.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Without reified, you'd need to pass Class<T> explicitly. Reified only works with inline functions."
+  },
+  {
+    "q": "Explain how the Android Jetpack Paging 3 library handles data loading internally.",
+    "type": "open",
+    "answer": "Paging 3 uses PagingSource for single-source loading and RemoteMediator for network+database. PageFetcher creates a Flow of PagingData. PagerState manages loaded pages in a linked list. Transformations are applied via PagingData operators. UI uses LazyPagingItems in Compose or PagingDataAdapter in RecyclerView.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Paging handles prepend/append/refresh load states, retries, and cache invalidation automatically."
+  },
+  {
+    "q": "What is the movable content API in Jetpack Compose and when would you use it?",
+    "type": "open",
+    "answer": "movableContentOf creates content that preserves its state (including remember values and node identity) when moved to a different location in the composition tree. Useful for drag-and-drop, reordering animations, and shared element transitions.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "Without movable content, moving a composable destroys and recreates its state at the new position."
+  },
+  {
+    "q": "Explain how Kotlin Multiplatform's expect/actual mechanism works.",
+    "type": "open",
+    "answer": "expect declares an API in common code without implementation. actual provides platform-specific implementations. The compiler verifies that every expect has a matching actual. This enables shared business logic with platform-specific implementations for things like file I/O, networking, and UI.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "expect/actual works for classes, functions, properties, and annotations. It's resolved at compile time, not runtime."
+  },
+  {
+    "q": "How does Android's ART ahead-of-time compilation differ from Dalvik's JIT?",
+    "type": "open",
+    "answer": "ART uses AOT compilation during install to convert DEX bytecode to native machine code, reducing runtime overhead. Since Android 7, ART uses a hybrid approach: JIT for initial runs with profiling, then AOT compilation of hot methods during idle/charging. This balances install time, storage, and performance.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Profile-guided compilation (PGO) focuses AOT on frequently used code paths for optimal performance."
+  },
+  {
+    "q": "Explain the internal workings of Kotlin's delegation mechanism at the bytecode level.",
+    "type": "open",
+    "answer": "For class delegation (class A : B by impl), the compiler generates forwarding methods in A that call impl's methods. For property delegation (by lazy), the compiler creates a delegate field and replaces get/set with delegate.getValue/setValue calls. The $delegate field is stored alongside the property.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Class delegation avoids inheritance while achieving code reuse. Property delegation enables reusable property patterns."
+  },
+  {
+    "q": "How does Compose's Layout system differ from Android's traditional View measure/layout?",
+    "type": "open",
+    "answer": "Compose uses single-pass measurement — each child is measured exactly once (no remeasuring allowed). Layout uses Constraints (min/max width/height) instead of MeasureSpec. intrinsic measurements handle cases needing pre-measurement. SubcomposeLayout enables measuring based on available space.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "Single-pass measurement eliminates the O(2^n) worst case of nested RelativeLayouts in the View system."
+  },
+  {
+    "q": "Explain how `context receivers` work in Kotlin and their use cases.",
+    "type": "open",
+    "answer": "Context receivers allow functions to require multiple receiver contexts without inheritance. They're declared with context(A, B) and make members of A and B available in the function body. Use cases include DSL design, dependency injection, and combining capabilities.",
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Context receivers solve the diamond problem of needing multiple this contexts. Currently experimental in Kotlin."
+  },
+  {
+    "q": "How does Android handle multi-process architecture and what are the implications?",
+    "type": "open",
+    "answer": "Android can run app components in separate processes via android:process in manifest. Each process has its own VM, memory, and Application instance. SharedPreferences, singletons, and static state are NOT shared. IPC via Binder/AIDL/ContentProvider is needed for inter-process communication.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Multi-process is used for isolation (WebView), memory management, and crash containment."
+  },
+  {
+    "q": "Explain how Kotlin's coroutine cancellation is cooperative and its implications.",
+    "type": "open",
+    "answer": "Cancellation sets the job's state to Cancelling and throws CancellationException at the next suspension point. CPU-bound code must check isActive or use yield() to be cancellable. finally blocks run even during cancellation. withContext(NonCancellable) prevents cancellation in cleanup code.",
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Non-cooperative cancellation (like Thread.stop) is dangerous. Cooperative cancellation ensures resources are cleaned up properly."
+  },
+  {
+    "q": "How does the Compose compiler generate code for `remember` with keys?",
+    "type": "open",
+    "answer": "remember with keys generates comparison code that checks if keys changed since last composition. If keys match, the cached value is returned from the slot table. If any key differs, the calculation lambda re-executes and the new value replaces the old slot. The compiler uses positional memoization — the slot position is determined by source location.",
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "This is why calling composables in different orders (conditionals) can cause issues — slot positions shift."
+  },
+  {
+    "q": "Explain how Gradle's configuration avoidance and lazy APIs improve build performance.",
+    "type": "open",
+    "answer": "Configuration avoidance defers task creation and configuration until actually needed using Provider<T> and TaskProvider. register() instead of create() for tasks, named() instead of getByName(). This avoids configuring tasks for unused build variants, reducing configuration phase time significantly.",
+    "difficulty": "hard",
+    "topic": "Gradle",
+    "explanation": "In large projects, configuration avoidance can reduce configuration time by 50%+ by skipping unused task setup."
+  },
+  {
+    "q": "How does Baseline Profiles improve Android app startup and runtime performance?",
+    "type": "open",
+    "answer": "Baseline Profiles provide a list of classes and methods to AOT compile during install, avoiding JIT compilation at runtime. They're generated using Macrobenchmark library by exercising critical user journeys. Cloud Profiles aggregate data across devices. The profile is shipped in the AAB/APK as baseline.prof.",
+    "difficulty": "hard",
+    "topic": "Android",
+    "explanation": "Baseline Profiles can improve startup time by 30%+ and reduce jank by pre-compiling hot code paths."
   }
 ]

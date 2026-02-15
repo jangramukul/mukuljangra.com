@@ -228,20 +228,6 @@
         margin: 0;
       }
 
-      .feature-card-premium {
-        border-color: rgba(255, 215, 0, 0.4);
-        background-color: rgba(255, 215, 0, 0.05);
-      }
-
-      .feature-card-premium:hover {
-        border-color: rgba(255, 215, 0, 0.7);
-        background-color: rgba(255, 215, 0, 0.08);
-      }
-
-      .feature-card-premium .feature-card-title {
-        color: #FFD700;
-      }
-
       @media (max-width: 768px) {
         .feature-cards,
         .feature-cards-row2 {
@@ -353,6 +339,11 @@
       .section-tab.active[data-tab="quiz"] {
         color: #34d399;
         border-bottom-color: #34d399;
+      }
+
+      .section-tab.active[data-tab="quiz"] .tab-count {
+        background-color: rgba(52, 211, 153, 0.15);
+        color: #34d399;
       }
 
       /* Courses grid */
@@ -1277,32 +1268,32 @@
             <p class="feature-card-desc">In-depth articles on Jetpack Compose, Coroutines, architecture patterns, and modern Android development.</p>
           </div>
           <div class="feature-card">
-            <span class="feature-card-icon">📬</span>
-            <div class="feature-card-title">Weekly Newsletter</div>
-            <p class="feature-card-desc">Stay updated with curated new releases, API changes, docs, and what's happening in the Android ecosystem — every week.</p>
+            <span class="feature-card-icon">📚</span>
+            <div class="feature-card-title">Structured Courses</div>
+            <p class="feature-card-desc">Step-by-step learning paths covering Kotlin, Compose, Architecture, and more — organized for steady progress.</p>
           </div>
           <div class="feature-card">
-            <span class="feature-card-icon">🎯</span>
-            <div class="feature-card-title">Interview Preparation</div>
-            <p class="feature-card-desc">Coding challenges, system design tips, and practice questions to help you ace your next Android engineering interview.</p>
+            <span class="feature-card-icon">🧠</span>
+            <div class="feature-card-title">Quiz & Flashcards</div>
+            <p class="feature-card-desc">Test your knowledge with hundreds of questions across easy, medium, and hard levels — learn by doing.</p>
           </div>
         </div>
         <!-- Feature Cards - Row 2 -->
         <div class="feature-cards-row2">
           <div class="feature-card">
+            <span class="feature-card-icon">🎯</span>
+            <div class="feature-card-title">Interview Preparation</div>
+            <p class="feature-card-desc">Coding challenges, system design tips, and practice questions to help you ace your next Android engineering interview.</p>
+          </div>
+          <div class="feature-card">
+            <span class="feature-card-icon">📬</span>
+            <div class="feature-card-title">Weekly Newsletter</div>
+            <p class="feature-card-desc">Stay updated with curated new releases, API changes, docs, and what's happening in the Android ecosystem — every week.</p>
+          </div>
+          <div class="feature-card">
             <span class="feature-card-icon">🔓</span>
             <div class="feature-card-title">100% Free & Open Source</div>
             <p class="feature-card-desc">No signups, no tracking, no subscriptions, no paywalls. All content is free forever and the source code is fully open.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-card-icon">🛡️</span>
-            <div class="feature-card-title">Privacy First</div>
-            <p class="feature-card-desc">Zero analytics, zero cookies, zero data collection. Learn without being watched — your privacy is respected here.</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-card-icon">👑</span>
-            <div class="feature-card-title">Forever Free Premium Content</div>
-            <p class="feature-card-desc">Deep dives, interview guides, and exclusive content that other platforms charge for — yours forever, no strings attached.</p>
           </div>
         </div>
       </div>
@@ -1312,8 +1303,8 @@
         <div class="section-tabs">
           <div class="section-tab active" data-tab="courses">Courses <span class="tab-count">{{ site.courses | size }}</span></div>
           <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
+          <div class="section-tab" data-tab="quiz">Quiz 🧠 <span class="tab-count" id="quiz-tab-count"></span></div>
           <div class="section-tab" data-tab="articles">Guides <span class="tab-count">{{ site.guides | size }}</span></div>
-          <div class="section-tab" data-tab="quiz">Quiz</div>
           <div class="section-tab" data-tab="resources">Resources</div>
         </div>
 
@@ -1594,6 +1585,15 @@
             document.getElementById('rsection-' + this.dataset.rsection).classList.add('active');
           });
         });
+
+        // Populate quiz tab count
+        fetch('/static/quiz-questions.json')
+          .then(r => r.json())
+          .then(data => {
+            var countEl = document.getElementById('quiz-tab-count');
+            if (countEl) countEl.textContent = data.length;
+          })
+          .catch(() => {});
 
       });
     </script>
