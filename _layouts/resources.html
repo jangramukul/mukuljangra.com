@@ -350,6 +350,11 @@
         color: #a78bfa;
       }
 
+      .section-tab.active[data-tab="quiz"] {
+        color: #34d399;
+        border-bottom-color: #34d399;
+      }
+
       /* Courses grid */
       .courses-grid {
         display: grid;
@@ -1259,11 +1264,7 @@
       <div class="intro-section">
         <div class="intro-headline">Become an <span class="highlight-text">Android Hero</span> <svg class="android-robot-icon" width="48" height="48" viewBox="0 0 96 105" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.016 30.672C17.456 30.672 13.76 34.4 13.76 38.928V63.312C13.76 67.872 17.456 71.568 22.016 71.568C26.544 71.568 30.24 67.872 30.24 63.312V38.928C30.24 34.4 26.544 30.672 22.016 30.672Z" fill="#3DDC84"/><path d="M73.984 30.672C69.456 30.672 65.76 34.4 65.76 38.928V63.312C65.76 67.872 69.456 71.568 73.984 71.568C78.544 71.568 82.24 67.872 82.24 63.312V38.928C82.24 34.4 78.544 30.672 73.984 30.672Z" fill="#3DDC84"/><path d="M33.408 30.672V72.672C33.408 76.032 36.128 78.72 39.488 78.72H44.16V91.824C44.16 96.384 47.856 100.08 52.416 100.08C52.416 100.08 52.416 100.08 52.416 100.08C56.944 100.08 60.64 96.384 60.64 91.824V78.72H62.496V30.672H33.408Z" fill="#3DDC84"/><path d="M43.584 100.08C48.144 100.08 51.84 96.384 51.84 91.824V78.72H35.328V91.824C35.328 96.384 39.024 100.08 43.584 100.08Z" fill="#3DDC84"/><path d="M33.408 30.672H62.592C62.592 30.672 62.592 24.864 62.592 21.216C62.592 10.08 53.568 1.056 42.432 1.056C42.432 1.056 53.568 1.056 42.432 1.056C42.432 1.056 33.408 10.08 33.408 21.216V30.672Z" fill="#3DDC84"/><path d="M32.256 28.928H63.744C66.816 28.928 69.312 26.432 69.312 23.36V23.36C69.312 12.896 60.864 4.448 50.4 4.448H45.6C35.136 4.448 26.688 12.896 26.688 23.36V23.36C26.688 26.432 29.184 28.928 32.256 28.928Z" fill="#3DDC84"/><circle cx="39.36" cy="18.048" r="2.88" fill="white"/><circle cx="56.64" cy="18.048" r="2.88" fill="white"/><path d="M33.408 28.928H62.592V72.672C62.592 76.032 59.904 78.72 56.544 78.72H39.456C36.096 78.72 33.408 76.032 33.408 72.672V28.928Z" fill="#3DDC84"/><line x1="37.44" y1="5.76" x2="32.64" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/><line x1="58.56" y1="5.76" x2="63.36" y2="0.96" stroke="#3DDC84" stroke-width="2.4" stroke-linecap="round"/></svg></div>
         <div class="intro-subtitle">No signups. No subscriptions. No tracking. Just free, open-source resources to help you grow as an Android engineer — forever.</div>
-        <div class="intro-author" style="margin-bottom: 24px;">By <a href="/" style="color: #60a5fa; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(96, 165, 250, 0.4); padding-bottom: 1px; transition: all 0.2s ease;">Mukul Jangra</a></div>
-
-        <div style="margin-bottom: 36px;">
-          <a href="/flashcards/" style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; font-size: 1rem; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(59,130,246,0.2);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 25px rgba(59,130,246,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 15px rgba(59,130,246,0.2)'">🧠 Test My Knowledge</a>
-        </div>
+        <div class="intro-author" style="margin-bottom: 36px;">By <a href="/" style="color: #60a5fa; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(96, 165, 250, 0.4); padding-bottom: 1px; transition: all 0.2s ease;">Mukul Jangra</a></div>
 
         <div class="feature-section-heading">What You'll Find Here</div>
         <div class="feature-section-sub">Everything you need to grow as an Android developer — all in one place.</div>
@@ -1312,6 +1313,7 @@
           <div class="section-tab active" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
           <div class="section-tab" data-tab="courses">Courses <span class="tab-count">{{ site.courses | size }}</span></div>
           <div class="section-tab" data-tab="articles">Guides <span class="tab-count">{{ site.guides | size }}</span></div>
+          <div class="section-tab" data-tab="quiz">🧠 Quiz</div>
           <div class="section-tab" data-tab="resources">Resources</div>
         </div>
 
@@ -1410,6 +1412,10 @@
         </div>
 
         <!-- Resources tab -->
+        <div class="tab-content" id="tab-quiz">
+          {% include quiz-tab.html %}
+        </div>
+
         <div class="tab-content" id="tab-resources">
           {% include resources-tab.html %}
         </div>
