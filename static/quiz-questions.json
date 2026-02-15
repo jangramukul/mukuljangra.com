@@ -2587,5 +2587,1060 @@
     "difficulty": "medium",
     "topic": "Android Core",
     "explanation": "SavedStateHandle allows ViewModel to read and write data to the saved instance state bundle, surviving process death."
+  },
+  {
+    "q": "Which keyword creates a mutable variable in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "val",
+      "var",
+      "let",
+      "mut"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "var declares a mutable variable whose value can be reassigned."
+  },
+  {
+    "q": "What does `Intent` do in Android?",
+    "type": "mcq",
+    "options": [
+      "Stores data",
+      "A messaging object used to request actions from other components",
+      "Creates UI layouts",
+      "Manages threads"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "Intent is a messaging object used to start activities, services, or deliver broadcasts."
+  },
+  {
+    "q": "Which layout composable stacks children vertically?",
+    "type": "mcq",
+    "options": [
+      "Row",
+      "Box",
+      "Column",
+      "LazyList"
+    ],
+    "answer": 2,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Column places its children vertically, one below another."
+  },
+  {
+    "q": "What does `delay()` do in a coroutine?",
+    "type": "mcq",
+    "options": [
+      "Blocks the thread",
+      "Suspends the coroutine without blocking the thread",
+      "Stops the coroutine permanently",
+      "Delays the next line by blocking"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "delay() suspends the coroutine for a specified time without blocking the underlying thread."
+  },
+  {
+    "q": "What is a Fragment in Android?",
+    "type": "mcq",
+    "options": [
+      "A piece of UI code",
+      "A reusable portion of UI within an Activity",
+      "A layout file",
+      "A background service"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "A Fragment represents a reusable portion of an Activity's UI with its own lifecycle."
+  },
+  {
+    "q": "What does `when` replace in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "if-else",
+      "switch statement",
+      "for loop",
+      "try-catch"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "when is Kotlin's replacement for Java's switch statement, with more powerful matching capabilities."
+  },
+  {
+    "q": "Which function creates a scrollable vertical list in Compose?",
+    "type": "mcq",
+    "options": [
+      "Column",
+      "RecyclerView",
+      "LazyColumn",
+      "ScrollView"
+    ],
+    "answer": 2,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "LazyColumn efficiently renders only visible items in a scrollable vertical list, similar to RecyclerView."
+  },
+  {
+    "q": "What is `LiveData` used for?",
+    "type": "mcq",
+    "options": [
+      "Database queries",
+      "Lifecycle-aware observable data holder",
+      "Network requests",
+      "Thread management"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "LiveData is a lifecycle-aware observable that only updates active observers, preventing memory leaks."
+  },
+  {
+    "q": "What does the `it` keyword refer to in a lambda?",
+    "type": "mcq",
+    "options": [
+      "The class instance",
+      "The implicit single parameter of the lambda",
+      "The return value",
+      "The outer scope"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "When a lambda has a single parameter, you can omit the declaration and use `it` to refer to it."
+  },
+  {
+    "q": "Which coroutine builder is used for fire-and-forget tasks?",
+    "type": "mcq",
+    "options": [
+      "async",
+      "launch",
+      "runBlocking",
+      "withContext"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "launch starts a coroutine that doesn't return a result \u2014 it's fire-and-forget, returning only a Job."
+  },
+  {
+    "q": "What is Gradle in Android development?",
+    "type": "mcq",
+    "options": [
+      "A UI framework",
+      "A build automation tool",
+      "A testing library",
+      "A version control system"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Gradle",
+    "explanation": "Gradle is the build system used in Android to compile, package, and manage dependencies."
+  },
+  {
+    "q": "What does `Modifier.padding()` do in Compose?",
+    "type": "mcq",
+    "options": [
+      "Adds margin outside",
+      "Adds space inside the composable's bounds",
+      "Changes font size",
+      "Adds border"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "padding() adds space inside the composable's layout bounds, similar to CSS padding."
+  },
+  {
+    "q": "What is a `companion object` in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "A design pattern",
+      "An object tied to a class, similar to static members in Java",
+      "A singleton class",
+      "A nested interface"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "companion object allows you to define members that belong to the class itself, accessed without an instance."
+  },
+  {
+    "q": "What is the purpose of `onPause()` in Activity lifecycle?",
+    "type": "mcq",
+    "options": [
+      "Activity is destroyed",
+      "Activity is partially visible, losing focus",
+      "Activity is fully hidden",
+      "Activity is created"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "onPause() is called when the Activity is partially obscured or losing focus, like when a dialog appears."
+  },
+  {
+    "q": "What does `Text()` do in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "Creates an input field",
+      "Displays a read-only text label",
+      "Creates a button",
+      "Formats strings"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Text() is the basic Composable for displaying text content on screen."
+  },
+  {
+    "q": "Which scope function uses `it` and returns the lambda result?",
+    "type": "mcq",
+    "options": [
+      "apply",
+      "also",
+      "let",
+      "run"
+    ],
+    "answer": 2,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "let uses `it` as the context object and returns the lambda's result."
+  },
+  {
+    "q": "What is Dependency Injection?",
+    "type": "mcq",
+    "options": [
+      "Injecting code at runtime",
+      "Providing dependencies from outside rather than creating them inside a class",
+      "A testing technique",
+      "A security vulnerability"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "DI provides objects their dependencies externally, improving testability and decoupling."
+  },
+  {
+    "q": "What does `Flow` represent in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "A UI animation",
+      "An asynchronous stream of values emitted sequentially",
+      "A thread pool",
+      "A network connection"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Flow is a cold asynchronous stream that emits values sequentially, similar to sequences but with suspend support."
+  },
+  {
+    "q": "Which Compose function makes a button?",
+    "type": "mcq",
+    "options": [
+      "Clickable()",
+      "Button()",
+      "TouchArea()",
+      "Pressable()"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Button() is the standard Material Design button composable in Jetpack Compose."
+  },
+  {
+    "q": "What does `toString()` return on a data class?",
+    "type": "mcq",
+    "options": [
+      "Memory address",
+      "A string with class name and all property values",
+      "Empty string",
+      "Class name only"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "Data classes auto-generate toString() showing the class name and all declared properties."
+  },
+  {
+    "q": "What is the Repository pattern?",
+    "type": "mcq",
+    "options": [
+      "A git workflow",
+      "An abstraction layer between data sources and the rest of the app",
+      "A UI pattern",
+      "A database schema"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Architecture",
+    "explanation": "Repository provides a clean API for data access, abstracting whether data comes from network, database, or cache."
+  },
+  {
+    "q": "What does `forEach` do in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "Creates a new list",
+      "Iterates over each element executing the given action",
+      "Filters elements",
+      "Transforms elements"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin",
+    "explanation": "forEach iterates through each element in the collection and executes the given lambda."
+  },
+  {
+    "q": "What triggers recomposition in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "User scrolling",
+      "A change in State that a composable reads",
+      "Calling invalidate()",
+      "Timer expiry"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Jetpack Compose",
+    "explanation": "Recomposition is triggered when a State object that a composable function reads changes its value."
+  },
+  {
+    "q": "What is a coroutine in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "A thread",
+      "A lightweight concurrent unit that can suspend without blocking threads",
+      "A callback",
+      "A handler"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Coroutines are lightweight concurrency primitives that can suspend execution without blocking the thread."
+  },
+  {
+    "q": "What does `SharedPreferences` store?",
+    "type": "mcq",
+    "options": [
+      "Large files",
+      "Small key-value pairs of primitive data types",
+      "SQL databases",
+      "Images"
+    ],
+    "answer": 1,
+    "difficulty": "easy",
+    "topic": "Android Core",
+    "explanation": "SharedPreferences stores small amounts of primitive data as key-value pairs in an XML file."
+  },
+  {
+    "q": "What is the difference between `map` and `flatMap` in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "map transforms each element; flatMap transforms and flattens nested collections",
+      "flatMap is faster",
+      "map returns a Set"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "map transforms each element 1-to-1. flatMap transforms each element to a collection and flattens all results into a single list."
+  },
+  {
+    "q": "What does `viewModelScope` automatically do?",
+    "type": "mcq",
+    "options": [
+      "Nothing special",
+      "Cancels all coroutines when the ViewModel is cleared",
+      "Runs on IO thread",
+      "Persists across process death"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "viewModelScope automatically cancels all its coroutines when onCleared() is called on the ViewModel."
+  },
+  {
+    "q": "What is state hoisting in Jetpack Compose?",
+    "type": "mcq",
+    "options": [
+      "Moving state to a database",
+      "Moving state up to a caller to make a composable stateless",
+      "Caching state in memory",
+      "Hoisting UI elements"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "State hoisting moves state ownership to the caller, making the composable stateless and reusable."
+  },
+  {
+    "q": "What does this print?",
+    "type": "mcq",
+    "options": [
+      "hello",
+      "HELLO",
+      "Hello",
+      "hELLO"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "The let block transforms the string to uppercase and returns that result.",
+    "code": "val result = \"hello\".let { it.uppercase() }\nprintln(result)"
+  },
+  {
+    "q": "What is the Clean Architecture layers order from inside out?",
+    "type": "mcq",
+    "options": [
+      "UI \u2192 Data \u2192 Domain",
+      "Domain \u2192 Data \u2192 UI",
+      "Domain \u2192 Presentation \u2192 Data",
+      "Data \u2192 Domain \u2192 Presentation"
+    ],
+    "answer": 2,
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "Clean Architecture: Domain (innermost, no dependencies) \u2192 Presentation \u2192 Data (outermost, implements domain interfaces)."
+  },
+  {
+    "q": "What is `SideEffect` used for in Compose?",
+    "type": "mcq",
+    "options": [
+      "Creating animations",
+      "Publishing Compose state to non-Compose code on every successful recomposition",
+      "Handling errors",
+      "Managing navigation"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "SideEffect runs after every successful recomposition, useful for syncing Compose state with external systems."
+  },
+  {
+    "q": "What does `buffer()` do on a Flow?",
+    "type": "mcq",
+    "options": [
+      "Stores all values in memory",
+      "Runs collector concurrently with emitter using a buffer",
+      "Limits emission rate",
+      "Creates a replay cache"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "buffer() allows the emitter and collector to run concurrently by buffering emissions, improving throughput."
+  },
+  {
+    "q": "What is the difference between `abstract class` and `interface` in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "Abstract class can have state and constructors; interface can have default implementations but no state",
+      "Interface is faster",
+      "Abstract class supports multiple inheritance"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "Abstract classes can hold state (properties with backing fields) and constructors. Interfaces can have default method implementations but no state."
+  },
+  {
+    "q": "What does `@InstallIn(SingletonComponent::class)` mean in Hilt?",
+    "type": "mcq",
+    "options": [
+      "Creates a singleton instance",
+      "The module's bindings are available app-wide with application lifecycle",
+      "Installs on a single device",
+      "Runs once at startup"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "@InstallIn(SingletonComponent) scopes the Hilt module's dependencies to the application lifecycle."
+  },
+  {
+    "q": "What is the purpose of `AnimatedVisibility` in Compose?",
+    "type": "mcq",
+    "options": [
+      "Makes composables invisible",
+      "Animates the appearance and disappearance of content",
+      "Creates parallax effects",
+      "Fades the screen"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "AnimatedVisibility animates content entering and exiting the composition with configurable enter/exit transitions."
+  },
+  {
+    "q": "What does `combine` do with multiple Flows?",
+    "type": "mcq",
+    "options": [
+      "Merges into one sequential flow",
+      "Emits a new value whenever any of the combined flows emit, using latest values from all",
+      "Concatenates flows",
+      "Zips element by element"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "combine emits whenever any source Flow emits, combining the latest value from each Flow."
+  },
+  {
+    "q": "What does this code print?",
+    "type": "mcq",
+    "options": [
+      "[1, 2, 3]",
+      "[2, 3]",
+      "[1, 2]",
+      "[1, 3]"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "drop(1) skips the first element and returns the rest of the list.",
+    "code": "val list = listOf(1, 2, 3)\nprintln(list.drop(1))"
+  },
+  {
+    "q": "What is a `BroadcastReceiver` in Android?",
+    "type": "mcq",
+    "options": [
+      "A radio receiver",
+      "A component that listens for and responds to system-wide broadcast events",
+      "A network socket",
+      "A push notification handler"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "BroadcastReceiver listens for system or app broadcast intents like battery low, boot completed, etc."
+  },
+  {
+    "q": "What is the purpose of `Scaffold` in Compose?",
+    "type": "mcq",
+    "options": [
+      "Builds a scaffold structure",
+      "Provides Material Design layout structure with slots for app bar, FAB, drawer, etc.",
+      "Creates a loading skeleton",
+      "Manages navigation"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Scaffold implements the basic Material Design visual layout, providing slots for TopAppBar, BottomBar, FAB, Drawer, and content."
+  },
+  {
+    "q": "What does `takeIf` do in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "Takes first element",
+      "Returns the object if the predicate is true, otherwise null",
+      "Takes elements from a list",
+      "Throws if condition fails"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "takeIf returns the receiver if the predicate is true, or null otherwise \u2014 useful for conditional chains."
+  },
+  {
+    "q": "What is a foreground Service in Android?",
+    "type": "mcq",
+    "options": [
+      "A service with a UI",
+      "A service that shows a persistent notification and has higher priority against being killed",
+      "A service running on the main thread",
+      "A service visible to users"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "Foreground services perform operations noticeable to the user, must show a notification, and are less likely to be killed."
+  },
+  {
+    "q": "What does `zip` do with two Flows?",
+    "type": "mcq",
+    "options": [
+      "Compresses data",
+      "Pairs elements from two flows one-to-one, completing when either completes",
+      "Merges all elements",
+      "Alternates elements"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "zip pairs elements from two flows positionally. It waits for both flows to emit and completes when either flow completes."
+  },
+  {
+    "q": "What is the purpose of a UseCase class in Clean Architecture?",
+    "type": "mcq",
+    "options": [
+      "A test case",
+      "Encapsulates a single business logic operation",
+      "A UI controller",
+      "A data mapper"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Architecture",
+    "explanation": "UseCase (or Interactor) encapsulates one piece of business logic, keeping the domain layer clean and testable."
+  },
+  {
+    "q": "What does `Modifier.fillMaxWidth()` do?",
+    "type": "mcq",
+    "options": [
+      "Sets width to screen width",
+      "Makes the composable occupy the maximum available width from its parent",
+      "Stretches content",
+      "Sets a fixed width"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "fillMaxWidth() makes the composable take up all available horizontal space from its parent."
+  },
+  {
+    "q": "What is `runCatching` in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "Runs code and catches all errors",
+      "Executes a block and wraps the result in Result<T>, catching any Throwable",
+      "A testing utility",
+      "A coroutine builder"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "runCatching executes the block, returning Result.success with the value or Result.failure with the caught throwable."
+  },
+  {
+    "q": "What does `lifecycleScope` provide?",
+    "type": "mcq",
+    "options": [
+      "A scope for background threads",
+      "A CoroutineScope tied to the lifecycle of an Activity or Fragment",
+      "A scope for UI testing",
+      "A scope for database operations"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "lifecycleScope is a CoroutineScope that automatically cancels coroutines when the lifecycle owner is destroyed."
+  },
+  {
+    "q": "What is the difference between implicit and explicit Intents?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "Explicit targets a specific component; implicit declares a general action for the system to resolve",
+      "Implicit is faster",
+      "Explicit works across apps"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Android Core",
+    "explanation": "Explicit intents specify the exact component. Implicit intents declare an action and let the system find matching components."
+  },
+  {
+    "q": "What is `Box` composable used for in Compose?",
+    "type": "mcq",
+    "options": [
+      "Creates a container with border",
+      "Stacks children on top of each other (z-axis)",
+      "Groups items horizontally",
+      "Creates a scrollable area"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Jetpack Compose",
+    "explanation": "Box stacks its children on top of each other, similar to FrameLayout in the View system."
+  },
+  {
+    "q": "What does `also` scope function do?",
+    "type": "mcq",
+    "options": [
+      "Returns lambda result",
+      "Executes a block with `it` as context and returns the original object",
+      "Same as let",
+      "Chains method calls"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin",
+    "explanation": "also uses `it` as the context object and returns the original object \u2014 commonly used for side effects like logging."
+  },
+  {
+    "q": "What does `catch` operator do on a Flow?",
+    "type": "mcq",
+    "options": [
+      "Catches all exceptions globally",
+      "Catches upstream exceptions and can emit recovery values",
+      "Catches downstream errors",
+      "Retries the flow"
+    ],
+    "answer": 1,
+    "difficulty": "medium",
+    "topic": "Kotlin Coroutines",
+    "explanation": "catch catches exceptions from upstream operators only. It can emit recovery values or rethrow."
+  },
+  {
+    "q": "What does this code print?",
+    "type": "mcq",
+    "options": [
+      "1, 2, 3",
+      "3 only",
+      "Nothing, it suspends forever",
+      "1, 3"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "collectLatest cancels the previous collection when a new value arrives. Since delay(200) > emission interval, only the last value (3) completes processing.",
+    "code": "flowOf(1, 2, 3).collectLatest { value ->\n    delay(200)\n    println(value)\n}"
+  },
+  {
+    "q": "What is the difference between `remember` with a key and without?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "With a key, the value is recalculated when the key changes; without, it persists for the composition lifetime",
+      "Key version is slower",
+      "Without key survives process death"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "remember(key) resets and recalculates the cached value when the key changes. Without a key, it keeps the initial value."
+  },
+  {
+    "q": "What does this output?",
+    "type": "mcq",
+    "options": [
+      "[a, b, c]",
+      "[A, B, C]",
+      "[(a, A), (b, B), (c, C)]",
+      "Map(a=A, b=B, c=C)"
+    ],
+    "answer": 0,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "associateWith creates a Map with original elements as keys. `.keys` returns just the keys as a Set which prints like a list.",
+    "code": "val result = listOf(\"a\", \"b\", \"c\")\n    .associateWith { it.uppercase() }\n    .keys\nprintln(result)"
+  },
+  {
+    "q": "How does `supervisorScope` differ from `coroutineScope`?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "In supervisorScope, child failure doesn't cancel other children",
+      "supervisorScope runs on a different thread",
+      "coroutineScope is deprecated"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "supervisorScope uses SupervisorJob internally so one child's failure doesn't propagate to siblings, unlike coroutineScope."
+  },
+  {
+    "q": "What is the purpose of `movableContentOf` in Compose?",
+    "type": "mcq",
+    "options": [
+      "Enables drag-and-drop",
+      "Preserves state of composable content when it moves in the tree",
+      "Creates animations",
+      "Moves content to another screen"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "movableContentOf wraps composable content so its state is preserved even when it's moved to a different position in the composition tree."
+  },
+  {
+    "q": "What does `inline` function modifier do at the bytecode level?",
+    "type": "mcq",
+    "options": [
+      "Makes function faster",
+      "Copies the function body and lambda bodies into call sites, avoiding function object allocation",
+      "Creates an inline class",
+      "Inlines the return type"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "inline copies the function body into every call site, eliminating the overhead of function object creation for lambdas."
+  },
+  {
+    "q": "What is the effect of calling `emit()` from a different CoroutineContext in a flow builder?",
+    "type": "mcq",
+    "options": [
+      "It works fine",
+      "It throws IllegalStateException \u2014 flow is context-preserving",
+      "It switches the dispatcher",
+      "It buffers the emission"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Flow preserves its context. Emitting from a different context (e.g., inside withContext) throws IllegalStateException. Use channelFlow instead."
+  },
+  {
+    "q": "What is the Compose Compiler's role in stability?",
+    "type": "mcq",
+    "options": [
+      "Checks for null safety",
+      "Analyzes types to determine if composable parameters are stable for skipping recomposition",
+      "Compiles Kotlin to native",
+      "Optimizes layout rendering"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "The Compose compiler infers stability of types. Stable parameters allow the compiler to skip recomposition when values haven't changed."
+  },
+  {
+    "q": "What does this print?",
+    "type": "mcq",
+    "options": [
+      "1",
+      "null",
+      "Exception",
+      "0"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "getOrNull returns null for out-of-bounds index instead of throwing.",
+    "code": "val list = listOf(1, 2, 3)\nprintln(list.getOrNull(5))"
+  },
+  {
+    "q": "What is the difference between `stateIn` with `SharingStarted.Eagerly` vs `Lazily`?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "Eagerly starts immediately; Lazily starts on first collector",
+      "Lazily is deprecated",
+      "Eagerly uses more memory"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Eagerly starts collecting upstream immediately. Lazily starts only when the first subscriber appears and never stops."
+  },
+  {
+    "q": "What does `@Stable` annotation promise in Compose?",
+    "type": "mcq",
+    "options": [
+      "The class won't crash",
+      "equals will consistently return the same result for same instances, and Compose will be notified of changes",
+      "The API won't change",
+      "The class is thread-safe"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "@Stable promises that equals is consistent, changes will notify composition, and all public properties are stable."
+  },
+  {
+    "q": "What is the purpose of `CoroutineExceptionHandler`?",
+    "type": "mcq",
+    "options": [
+      "Replaces try-catch",
+      "Catches uncaught exceptions from root coroutines launched with launch",
+      "Handles all exceptions globally",
+      "Logs exceptions to a file"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "CoroutineExceptionHandler catches uncaught exceptions in root coroutines using launch. It doesn't work with async (use try-catch on await)."
+  },
+  {
+    "q": "What does `vararg` do in Kotlin?",
+    "type": "mcq",
+    "options": [
+      "Creates a variable argument list",
+      "Allows passing a variable number of arguments as an Array",
+      "Makes a variable argument mutable",
+      "Creates variadic types"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "vararg lets a function accept a variable number of arguments, which are accessed as an Array inside the function."
+  },
+  {
+    "q": "What is Layout Inspector used for?",
+    "type": "mcq",
+    "options": [
+      "Inspecting XML layouts",
+      "Examining the runtime UI hierarchy, properties, and recomposition counts in Compose",
+      "Editing layouts visually",
+      "Generating layout code"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Performance",
+    "explanation": "Layout Inspector shows the live view/composition hierarchy, property values, and recomposition counts for debugging UI issues."
+  },
+  {
+    "q": "What is the difference between `viewModel()` and `hiltViewModel()` in Compose?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "hiltViewModel() creates ViewModels with Hilt-injected dependencies",
+      "viewModel() is deprecated",
+      "hiltViewModel() is faster"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Architecture",
+    "explanation": "hiltViewModel() creates ViewModels that have their dependencies injected by Hilt. viewModel() uses the default ViewModelProvider.Factory."
+  },
+  {
+    "q": "What does `channelFlow` provide over regular `flow`?",
+    "type": "mcq",
+    "options": [
+      "Better performance",
+      "Allows emitting from different coroutines/contexts concurrently",
+      "More operators",
+      "Type safety"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "channelFlow uses a Channel internally, allowing concurrent emissions from multiple coroutines and different contexts."
+  },
+  {
+    "q": "What is the purpose of `Modifier.semantics` in Compose?",
+    "type": "mcq",
+    "options": [
+      "Adds styling",
+      "Provides accessibility information and enables testing matchers",
+      "Adds meaning to variable names",
+      "Validates input"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "semantics {} adds accessibility info for screen readers and provides semantic properties for UI testing with assertions."
+  },
+  {
+    "q": "What problem does `distinctUntilChanged` solve on a Flow?",
+    "type": "mcq",
+    "options": [
+      "Removes duplicates from a list",
+      "Skips consecutive repeated emissions, only emitting when the value actually changes",
+      "Sorts values",
+      "Filters null values"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "distinctUntilChanged filters out consecutive duplicate emissions, useful for avoiding unnecessary processing of unchanged values."
+  },
+  {
+    "q": "What does `expect`/`actual` do in Kotlin Multiplatform?",
+    "type": "mcq",
+    "options": [
+      "Testing assertions",
+      "Declares platform-agnostic API (expect) with platform-specific implementations (actual)",
+      "Error handling",
+      "Async/await pattern"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "expect declares the API in common code; actual provides platform-specific implementations in each target (JVM, iOS, JS)."
+  },
+  {
+    "q": "What is Compose's approach to theming via MaterialTheme?",
+    "type": "mcq",
+    "options": [
+      "XML themes",
+      "Provides colors, typography, and shapes via CompositionLocal that all child composables can access",
+      "CSS styling",
+      "Runtime theme switching"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "MaterialTheme uses CompositionLocal to provide theming values implicitly down the tree, accessible via MaterialTheme.colorScheme, typography, shapes."
+  },
+  {
+    "q": "What happens when you call `cancel()` on a coroutine Job?",
+    "type": "mcq",
+    "options": [
+      "Immediate termination",
+      "Sets cancellation flag; the coroutine must check for cancellation at suspension points to actually stop",
+      "Throws an exception on the calling thread",
+      "Nothing happens"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin Coroutines",
+    "explanation": "Cancellation is cooperative. cancel() sets a flag and throws CancellationException at the next suspension point. CPU-bound code must check isActive."
+  },
+  {
+    "q": "What is the impact of using `List<MutableState<T>>` vs `SnapshotStateList<T>` in Compose?",
+    "type": "mcq",
+    "options": [
+      "No difference",
+      "SnapshotStateList notifies Compose of structural changes (add/remove); List<MutableState> only tracks individual item changes",
+      "SnapshotStateList is slower",
+      "List<MutableState> uses less memory"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "SnapshotStateList triggers recomposition for add/remove/reorder. A regular List of MutableState only tracks value changes of existing items."
+  },
+  {
+    "q": "What is the purpose of `@Keep` annotation in ProGuard/R8?",
+    "type": "mcq",
+    "options": [
+      "Keeps the file in version control",
+      "Prevents the annotated class/method from being removed or renamed during shrinking/obfuscation",
+      "Keeps the value in memory",
+      "Prevents garbage collection"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Security",
+    "explanation": "@Keep tells ProGuard/R8 to not remove or rename the annotated element, essential for reflection-dependent code."
+  },
+  {
+    "q": "What is a `Sequence` advantage over `List` for chained operations?",
+    "type": "mcq",
+    "options": [
+      "Sequences are faster for small collections",
+      "Sequences process elements lazily one-by-one, avoiding intermediate collection creation",
+      "Sequences are thread-safe",
+      "Sequences support more operations"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Kotlin",
+    "explanation": "Sequences evaluate lazily, processing each element through the entire chain before moving to the next, avoiding intermediate List allocations."
+  },
+  {
+    "q": "What does `rememberCoroutineScope()` return in Compose?",
+    "type": "mcq",
+    "options": [
+      "A GlobalScope",
+      "A CoroutineScope tied to the composition that cancels when the composable leaves",
+      "A viewModelScope",
+      "An IO scope"
+    ],
+    "answer": 1,
+    "difficulty": "hard",
+    "topic": "Jetpack Compose",
+    "explanation": "rememberCoroutineScope provides a CoroutineScope bound to the composition point. It cancels when the composable is removed."
   }
 ]
