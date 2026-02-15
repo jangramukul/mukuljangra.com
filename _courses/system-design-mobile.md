@@ -10058,18 +10058,132 @@ This circuit breaker tracks comprehensive metrics including a sliding window fai
 
 A chat app is the gold standard of mobile system design interviews because it touches every major pattern: real-time data with WebSocket, offline support with local persistence, pagination for message history, optimistic updates for instant send feedback, sync for multi-device consistency, and complex state management for message status tracking (sending → sent → delivered → read).
 
-The architecture has three data paths. The primary path is WebSocket for live messages — a persistent bidirectional connection that delivers messages with sub-second latency. The fallback path is REST for message history — when the user scrolls up to load older messages or when the app needs to catch up after a reconnection gap. The offline path is the write queue — messages typed while offline are persisted locally and synced when connectivity returns.
+The architecture has three data paths. The primary path is WebSocket for live messages — a persistent bidirectional connection that delivers messages with sub-second latency. The fallback path is REST for message history — when the user scrolls up to load older messages or when the app needs to catch up after a reconnection gap. The offline path is the write queue — messages typed while offline are persisted locally and synced when connectivity returns. Each path has its own failure modes: WebSocket connections drop on network transitions, REST calls can timeout during history loads, and queued messages need deduplication when they finally sync.
 
-The data model requires careful thought. Each message has a client-generated UUID (so it can be created offline), a chat ID, the message body, a sender ID, a timestamp, and a status field. The status field drives the UI: SENDING (queued locally, not yet confirmed), SENT (server acknowledged receipt), DELIVERED (recipient's device received it), and READ (recipient viewed it). Status updates flow backward through the WebSocket — the server pushes delivery and read receipts as events.
+The data model requires careful thought. Each message has a client-generated UUID (so it can be created offline), a chat ID, the message body, a sender ID, a timestamp, and a status field. The status field drives the UI: SENDING (queued locally, not yet confirmed), SENT (server acknowledged receipt), DELIVERED (recipient's device received it), and READ (recipient viewed it). Status updates flow backward through the WebSocket — the server pushes delivery and read receipts as events. Storing the message entity in Room with an `@Upsert` annotation prevents duplicates when the same message arrives via both the optimistic insert and the WebSocket echo.
 
 The key design decision is optimistic insertion. When the user taps send, the message is immediately inserted into Room with status SENDING. The UI shows it instantly in the chat. The WebSocket send happens asynchronously. If it succeeds, the status updates to SENT. If it fails (offline or error), the message stays in the local database with SENDING status and is queued for retry. The user never waits for the network to see their own message.
 
+WebSocket connection management is one of the trickiest parts of a chat architecture. The connection must survive activity recreation, handle network transitions gracefully, and reconnect with an exponential backoff strategy. When the app comes back online after a disconnection, it needs to perform a "catch-up" — fetching all messages that arrived while the socket was down. This is done by sending the timestamp of the last received message and getting all newer messages via REST. Without this catch-up mechanism, users would miss messages that arrived during the offline window.
+
+```kotlin
+class ChatWebSocketManager(
+    private val okHttpClient: OkHttpClient,
+    private val tokenProvider: TokenProvider,
+) {
+    private var webSocket: WebSocket? = null
+    private val _events = MutableSharedFlow<ChatEvent>(replay = 0)
+    val events: SharedFlow<ChatEvent> = _events.asSharedFlow()
+    private var retryCount = 0
+
+    fun connect() {
+        val request = Request.Builder()
+            .url("wss://api.example.com/chat")
+            .addHeader("Authorization", "Bearer ${tokenProvider.getToken()}")
+            .build()
+
+        webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                val event = Json.decodeFromString<ChatEvent>(text)
+                _events.tryEmit(event)
+                retryCount = 0
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                scheduleReconnect()
+            }
+
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                webSocket.close(1000, null)
+                scheduleReconnect()
+            }
+        })
+    }
+
+    private fun scheduleReconnect() {
+        val delayMs = (1000L * (1 shl retryCount.coerceAtMost(5)))
+            .coerceAtMost(30_000L)
+        retryCount++
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(delayMs)
+            connect()
+        }
+    }
+
+    fun disconnect() {
+        webSocket?.close(1000, "User disconnected")
+        webSocket = null
+    }
+}
+```
+
+Typing indicators add a layer of real-time state that is intentionally ephemeral — you never persist typing status to the database. When a user starts typing, a "typing" event is sent through the WebSocket. The recipient's UI shows "User is typing..." with a timeout that clears the indicator after a few seconds of inactivity. The sender side debounces the typing events so rapid keystrokes do not flood the socket. This is a fire-and-forget pattern where delivery is not guaranteed and that is perfectly acceptable because a missed typing indicator has zero impact on data integrity.
+
+```kotlin
+class TypingIndicatorManager(
+    private val webSocket: ChatWebSocketManager,
+) {
+    private val typingJobs = mutableMapOf<String, Job>()
+    private var lastTypingSent = 0L
+
+    fun onUserTyping(chatId: String, scope: CoroutineScope) {
+        val now = System.currentTimeMillis()
+        // Debounce: send at most once every 3 seconds
+        if (now - lastTypingSent < 3000) return
+        lastTypingSent = now
+
+        webSocket.sendTypingEvent(chatId)
+    }
+
+    fun onRemoteUserTyping(userId: String, chatId: String, scope: CoroutineScope,
+                           onTyping: (Boolean) -> Unit) {
+        typingJobs[userId]?.cancel()
+        onTyping(true)
+
+        typingJobs[userId] = scope.launch {
+            delay(4000) // Clear after 4 seconds of no typing event
+            onTyping(false)
+        }
+    }
+}
+```
+
+The message queue handles offline sends with ordering guarantees and deduplication. Messages must be sent in the order they were composed — a user expects message A to appear before message B if they typed A first. The queue processes messages sequentially, waiting for server acknowledgment before sending the next. Each message carries the client-generated UUID, and the server uses this UUID for deduplication. If the server already has a message with that UUID, it returns a success response without creating a duplicate, making the entire send operation idempotent.
+
+```kotlin
+class MessageSyncQueue(
+    private val queueDao: SyncQueueDao,
+    private val webSocket: ChatWebSocketManager,
+    private val messageDao: MessageDao,
+) {
+    suspend fun processQueue() {
+        val pendingMessages = queueDao.getPendingMessages()
+            .sortedBy { it.createdAt }
+
+        for (queued in pendingMessages) {
+            try {
+                webSocket.sendAndAwaitAck(queued.toPayload())
+                messageDao.updateStatus(queued.messageId, MessageStatus.SENT)
+                queueDao.remove(queued.id)
+            } catch (e: Exception) {
+                // Stop processing — maintain order guarantee
+                messageDao.updateStatus(queued.messageId, MessageStatus.FAILED)
+                break
+            }
+        }
+    }
+}
+```
+
+The chat repository ties all these components together. It coordinates between the WebSocket manager, the local database, the message queue, and the REST API for history. The repository exposes a single `Flow` of messages that the UI observes. Whether a message arrives from the WebSocket, from history loading, or from an optimistic insert, it flows through Room and the UI updates automatically. This single source of truth pattern means the UI never has to merge data from multiple streams — it just observes the database.
+
 ```kotlin
 class ChatRepository(
-    private val webSocket: ChatWebSocket,
+    private val webSocket: ChatWebSocketManager,
     private val dao: MessageDao,
-    private val syncQueue: OfflineWriteQueue,
+    private val syncQueue: MessageSyncQueue,
     private val connectivityMonitor: ConnectivityMonitor,
+    private val api: ChatApi,
 ) {
     fun observeMessages(chatId: String): Flow<List<Message>> =
         dao.observeMessages(chatId).map { entities ->
@@ -10085,48 +10199,29 @@ class ChatRepository(
             status = MessageStatus.SENDING,
             timestamp = System.currentTimeMillis(),
         )
-
-        // Optimistic insert — shows immediately in UI
         dao.insert(message.toEntity())
 
         if (connectivityMonitor.state.value.isConnected) {
             try {
-                webSocket.send(message.toWebSocketPayload())
+                webSocket.sendAndAwaitAck(message.toPayload())
                 dao.updateStatus(message.id, MessageStatus.SENT)
             } catch (e: Exception) {
-                syncQueue.enqueue(WriteOperation.SendMessage(message))
+                syncQueue.enqueue(message)
             }
         } else {
-            syncQueue.enqueue(WriteOperation.SendMessage(message))
+            syncQueue.enqueue(message)
         }
     }
 
-    // Load older messages via REST pagination
     suspend fun loadHistory(chatId: String, beforeMessageId: String) {
-        val response = api.getMessages(
-            chatId = chatId,
-            before = beforeMessageId,
-            limit = 30,
-        )
+        val response = api.getMessages(chatId, before = beforeMessageId, limit = 30)
         dao.insertAll(response.messages.map { it.toEntity() })
     }
 
-    // Handle incoming WebSocket events
-    fun handleWebSocketEvent(event: ChatEvent) {
-        when (event) {
-            is ChatEvent.NewMessage -> {
-                dao.upsert(event.message.toEntity())
-            }
-            is ChatEvent.MessageDelivered -> {
-                dao.updateStatus(event.messageId, MessageStatus.DELIVERED)
-            }
-            is ChatEvent.MessageRead -> {
-                dao.updateStatus(event.messageId, MessageStatus.READ)
-            }
-            is ChatEvent.UserTyping -> {
-                // Update typing indicator in UI state
-            }
-        }
+    suspend fun catchUpAfterReconnect(chatId: String) {
+        val lastMessage = dao.getLatestMessage(chatId)
+        val missedMessages = api.getMessagesSince(chatId, since = lastMessage?.timestamp ?: 0)
+        dao.upsertAll(missedMessages.map { it.toEntity() })
     }
 }
 
@@ -10140,17 +10235,62 @@ sealed class ChatEvent {
 }
 ```
 
+#### Common Mistakes
+
+The most frequent mistake is not handling WebSocket reconnection properly. Developers connect the socket when the screen opens and assume it stays alive. In practice, sockets drop constantly — when the user switches from WiFi to cellular, when the device enters Doze mode, or when the server deploys a new version. Without an exponential backoff reconnection strategy and a catch-up mechanism, users silently miss messages. Always track the timestamp of the last received event and fetch missed messages via REST after reconnection.
+
+Another common mistake is using server-generated message IDs instead of client-generated UUIDs. If the client waits for the server to assign an ID before displaying the message, the user experiences a visible delay on every send. Worse, if the network request to create the message fails, the client has no way to retry without risking duplicates because it cannot distinguish "the server never received it" from "the server received it but the response was lost." Client-generated UUIDs solve both problems — the message is displayed immediately with its final ID, and retries are inherently idempotent.
+
+A third mistake is sending typing indicators on every keystroke. This floods the WebSocket with events and creates visible flickering in the recipient's UI as the typing indicator rapidly toggles on and off. Always debounce typing events — send at most one event every two to three seconds, and clear the indicator on the recipient side after a timeout of four to five seconds. Typing indicators are best-effort and lossy by design.
+
 **Key takeaway:** A chat app combines WebSocket for real-time delivery, REST for history pagination, offline queue for send reliability, and optimistic insertion for instant UI feedback. Message status tracking (sending → sent → delivered → read) drives the UI through Room's reactive queries.
 
 ### Lesson 10.2: Design a Social Media Feed
 
-A social media feed is a read-heavy system with specific challenges: massive scroll performance, mixed media types (text, images, video), complex engagement interactions (like, comment, share, bookmark), and real-time-ish updates without the overhead of WebSocket. The architectural decisions differ significantly from a chat app because the data access pattern is different — feeds are append-only, read-heavy, and tolerance for staleness is higher.
+A social media feed is a read-heavy system with specific challenges: massive scroll performance, mixed media types (text, images, video), complex engagement interactions (like, comment, share, bookmark), and real-time-ish updates without the overhead of WebSocket. The architectural decisions differ significantly from a chat app because the data access pattern is different — feeds are append-only, read-heavy, and tolerance for staleness is higher. Users expect buttery smooth scrolling through hundreds of items, which means every millisecond of frame time matters and lazy loading must be carefully orchestrated.
 
-The pagination strategy must be cursor-based, not page-number-based. New posts are constantly being added to the feed. If the user is on page 3 and a new post is added, page-number pagination would shift all items, causing duplicates or skipped posts. Cursor-based pagination anchors to a specific post ID, providing stable results regardless of insertions. The RemoteMediator pattern with Room gives offline pagination — the user can scroll through previously loaded feed items without network, and new pages are fetched and persisted as they scroll.
+The pagination strategy must be cursor-based, not page-number-based. New posts are constantly being added to the feed. If the user is on page 3 and a new post is added, page-number pagination would shift all items, causing duplicates or skipped posts. Cursor-based pagination anchors to a specific post ID, providing stable results regardless of insertions. The RemoteMediator pattern with Room gives offline pagination — the user can scroll through previously loaded feed items without network, and new pages are fetched and persisted as they scroll. The `maxSize` configuration in `PagingConfig` is critical for memory management — without it, the in-memory list grows unbounded as the user scrolls, eventually causing out-of-memory crashes on long browsing sessions.
 
-Engagement actions (like, bookmark) use optimistic updates exclusively. When the user taps the like button, the local count increments instantly and the heart animates immediately. The API call happens in the background. If it fails, the like is rolled back. This pattern makes the feed feel responsive even on slow connections. For comments, the approach is similar: the comment appears instantly in the local list with a "sending" indicator, and updates to "sent" when the server confirms.
+```kotlin
+class FeedRemoteMediator(
+    private val api: FeedApi,
+    private val dao: FeedDao,
+    private val database: AppDatabase,
+) : RemoteMediator<Int, FeedItemEntity>() {
 
-Image loading is a critical performance concern. Use Coil or Glide with aggressive memory and disk caching. Prefetch images for the next page of items before the user scrolls to them. Use appropriate image sizes — request thumbnails for the feed, full-resolution only when the user taps to view. Consider placeholder images with blur hashes (a compact representation of the image's color distribution) that load instantly while the real image downloads.
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, FeedItemEntity>,
+    ): MediatorResult {
+        val cursor = when (loadType) {
+            LoadType.REFRESH -> null
+            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+            LoadType.APPEND -> {
+                val lastItem = state.lastItemOrNull()
+                    ?: return MediatorResult.Success(endOfPaginationReached = true)
+                lastItem.id
+            }
+        }
+
+        return try {
+            val response = api.getFeed(cursor = cursor, limit = 20)
+
+            database.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    dao.clearAll()
+                }
+                dao.insertAll(response.posts.map { it.toEntity() })
+            }
+
+            MediatorResult.Success(endOfPaginationReached = response.posts.isEmpty())
+        } catch (e: Exception) {
+            MediatorResult.Error(e)
+        }
+    }
+}
+```
+
+Engagement actions (like, bookmark) use optimistic updates exclusively. When the user taps the like button, the local count increments instantly and the heart animates immediately. The API call happens in the background. If it fails, the like is rolled back. This pattern makes the feed feel responsive even on slow connections. For comments, the approach is similar: the comment appears instantly in the local list with a "sending" indicator, and updates to "sent" when the server confirms. The unlike operation mirrors the like — it decrements the count optimistically and rolls back on failure. Both operations should use a mutex or atomic check to prevent race conditions when the user taps rapidly.
 
 ```kotlin
 class FeedRepository(
@@ -10171,36 +10311,90 @@ class FeedRepository(
         pagingData.map { it.toDomain() }
     }
 
-    suspend fun likePost(postId: String) {
-        // Optimistic update
-        dao.incrementLikeCount(postId)
-        dao.setLiked(postId, true)
-
-        try {
-            api.likePost(postId)
-        } catch (e: Exception) {
-            // Rollback on failure
+    suspend fun toggleLike(postId: String, currentlyLiked: Boolean) {
+        if (currentlyLiked) {
             dao.decrementLikeCount(postId)
             dao.setLiked(postId, false)
+            try {
+                api.unlikePost(postId)
+            } catch (e: Exception) {
+                dao.incrementLikeCount(postId)
+                dao.setLiked(postId, true)
+            }
+        } else {
+            dao.incrementLikeCount(postId)
+            dao.setLiked(postId, true)
+            try {
+                api.likePost(postId)
+            } catch (e: Exception) {
+                dao.decrementLikeCount(postId)
+                dao.setLiked(postId, false)
+            }
         }
     }
 
-    suspend fun bookmarkPost(postId: String) {
-        dao.setBookmarked(postId, true)
+    suspend fun bookmarkPost(postId: String, currentlyBookmarked: Boolean) {
+        dao.setBookmarked(postId, !currentlyBookmarked)
         try {
-            api.bookmarkPost(postId)
+            if (currentlyBookmarked) api.unbookmarkPost(postId)
+            else api.bookmarkPost(postId)
         } catch (e: Exception) {
-            dao.setBookmarked(postId, false)
+            dao.setBookmarked(postId, currentlyBookmarked)
         }
     }
 }
+```
 
-// Feed item supports multiple content types
+Image loading is a critical performance concern. Use Coil or Glide with aggressive memory and disk caching. Prefetch images for the next page of items before the user scrolls to them. Use appropriate image sizes — request thumbnails for the feed, full-resolution only when the user taps to view. Consider placeholder images with blur hashes (a compact representation of the image's color distribution) that load instantly while the real image downloads. For video posts, never autoplay with audio — autoplay muted videos only when they are at least 50% visible in the viewport, and pause them immediately when they scroll out of view to conserve bandwidth and battery.
+
+```kotlin
+class FeedImagePrefetcher(
+    private val context: Context,
+    private val imageLoader: ImageLoader,
+) {
+    fun prefetchImages(items: List<FeedItem>) {
+        items.forEach { item ->
+            when (val content = item.content) {
+                is FeedContent.ImagePost -> {
+                    content.imageUrls.take(1).forEach { url ->
+                        val request = ImageRequest.Builder(context)
+                            .data(url)
+                            .size(FEED_THUMBNAIL_WIDTH, FEED_THUMBNAIL_HEIGHT)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build()
+                        imageLoader.enqueue(request)
+                    }
+                }
+                is FeedContent.VideoPost -> {
+                    val request = ImageRequest.Builder(context)
+                        .data(content.thumbnailUrl)
+                        .size(FEED_THUMBNAIL_WIDTH, FEED_THUMBNAIL_HEIGHT)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
+                else -> { /* No prefetch needed */ }
+            }
+        }
+    }
+
+    companion object {
+        private const val FEED_THUMBNAIL_WIDTH = 1080
+        private const val FEED_THUMBNAIL_HEIGHT = 1080
+    }
+}
+```
+
+The data model must support polymorphic content types while keeping the Room entity flat. A sealed interface for `FeedContent` gives type-safe rendering in Compose, but Room cannot store sealed interfaces directly. The solution is a flat entity with a `contentType` discriminator column and nullable fields for each content variant. The mapping layer converts between the flat entity and the rich domain model. This keeps the database simple and the domain model expressive.
+
+```kotlin
 sealed interface FeedContent {
     data class TextPost(val text: String) : FeedContent
-    data class ImagePost(val text: String?, val imageUrls: List<String>, val blurHashes: List<String>) : FeedContent
-    data class VideoPost(val text: String?, val videoUrl: String, val thumbnailUrl: String, val durationMs: Long) : FeedContent
-    data class SharedPost(val text: String?, val originalPost: FeedItem) : FeedContent
+    data class ImagePost(val text: String?, val imageUrls: List<String>,
+                         val blurHashes: List<String>) : FeedContent
+    data class VideoPost(val text: String?, val videoUrl: String,
+                         val thumbnailUrl: String, val durationMs: Long) : FeedContent
+    data class SharedPost(val text: String?, val originalPostId: String) : FeedContent
 }
 
 data class FeedItem(
@@ -10215,22 +10409,55 @@ data class FeedItem(
     val isBookmarked: Boolean,
     val createdAt: Long,
 )
+
+fun FeedItemEntity.toDomain(): FeedItem = FeedItem(
+    id = id,
+    authorId = authorId,
+    authorName = authorName,
+    authorAvatarUrl = authorAvatarUrl,
+    content = when (contentType) {
+        "text" -> FeedContent.TextPost(text = body.orEmpty())
+        "image" -> FeedContent.ImagePost(
+            text = body,
+            imageUrls = imageUrls.orEmpty(),
+            blurHashes = blurHashes.orEmpty(),
+        )
+        "video" -> FeedContent.VideoPost(
+            text = body,
+            videoUrl = videoUrl.orEmpty(),
+            thumbnailUrl = thumbnailUrl.orEmpty(),
+            durationMs = durationMs ?: 0L,
+        )
+        "shared" -> FeedContent.SharedPost(text = body, originalPostId = originalPostId.orEmpty())
+        else -> FeedContent.TextPost(text = body.orEmpty())
+    },
+    likeCount = likeCount,
+    commentCount = commentCount,
+    isLiked = isLiked,
+    isBookmarked = isBookmarked,
+    createdAt = createdAt,
+)
 ```
+
+Pull-to-refresh is the primary mechanism for getting new content, supplemented by periodic polling when the app is in the foreground. When the user pulls to refresh, the RemoteMediator performs a `REFRESH` load type, clearing stale data and inserting the latest posts. A subtle but important detail is showing a "new posts available" banner instead of automatically scrolling the user to the top — if the user is reading a post mid-scroll, yanking them to the top is a terrible experience. Let them tap the banner to scroll up when they are ready.
+
+#### Common Mistakes
+
+The most common mistake in feed design is not setting `maxSize` in `PagingConfig`. Without a cap, the loaded pages accumulate in memory as the user scrolls through hundreds of posts. On a device with limited RAM, this causes increasing GC pressure, frame drops, and eventually an `OutOfMemoryError`. Set `maxSize` to roughly ten times `pageSize` — this means the system keeps around 200 items in memory and drops the oldest pages as new ones load.
+
+Another frequent error is performing the like/unlike API call on the main thread or blocking the UI until the server responds. Engagement actions must be fire-and-forget from the user's perspective. The optimistic update happens synchronously in the database, the UI reacts instantly via the `Flow`, and the network call runs in a background coroutine. If developers skip the optimistic update and wait for the server response, the like button feels sluggish — a 200ms delay is noticeable and a 2-second delay on slow networks is unacceptable.
+
+A third mistake is loading full-resolution images in the feed. A 4000x3000 pixel image consumes 48MB of memory when decoded. If five such images are visible simultaneously, that is 240MB — enough to crash most devices. Always request size-appropriate thumbnails from the CDN using URL parameters (for example `?w=1080&q=80`) and reserve full-resolution loading for the detail view where only one image is displayed at a time.
 
 **Key takeaway:** A feed uses cursor-based pagination with RemoteMediator for offline scroll, optimistic updates for engagement actions, and aggressive image caching with prefetching. Tolerance for data staleness is higher than chat, so pull-to-refresh and periodic polling are sufficient — no WebSocket needed.
 
 ### Lesson 10.3: Design an E-Commerce App
 
-An e-commerce app presents unique system design challenges: the cart must work offline, checkout must be idempotent to prevent double charges, search must be fast and paginated, inventory accuracy must be balanced against UX (showing "out of stock" after the user added it to cart is frustrating), and the entire purchase flow must handle failures gracefully without losing the user's intent.
+An e-commerce app presents unique system design challenges: the cart must work offline, checkout must be idempotent to prevent double charges, search must be fast and paginated, inventory accuracy must be balanced against UX (showing "out of stock" after the user added it to cart is frustrating), and the entire purchase flow must handle failures gracefully without losing the user's intent. The stakes are higher than in social or content apps because failures directly cost money — a lost order means lost revenue, and a duplicate order means a customer support nightmare.
 
-The cart is local-first with server sync. Users can add items, change quantities, and remove items entirely offline. The cart is persisted in Room with items, quantities, selected variants (size, color), and applied coupons. When connectivity is available, the cart syncs with the server for price validation and inventory checks. The server cart is authoritative for pricing — the local cart can show estimated prices, but the checkout flow always validates against server-calculated totals to prevent price manipulation.
-
-Checkout is the most critical flow and must handle a specific dangerous scenario: the user taps "Place Order," the network request goes out but the response times out. The server processed the order, but the client doesn't know. The user taps "Place Order" again. Without idempotency protection, they now have two identical orders. The fix is an idempotency key — a UUID generated per checkout attempt. The server stores this key with the order. If the same key arrives again, the server returns the existing order instead of creating a duplicate.
-
-Search uses a standalone PagingSource (not RemoteMediator, since search results don't need offline persistence). Input is debounced to avoid firing on every keystroke. Recent searches are cached locally for instant repeat searches. Search suggestions come from a separate lightweight API call with aggressive client-side caching.
+The cart is local-first with server sync. Users can add items, change quantities, and remove items entirely offline. The cart is persisted in Room with items, quantities, selected variants (size, color), and applied coupons. When connectivity is available, the cart syncs with the server for price validation and inventory checks. The server cart is authoritative for pricing — the local cart can show estimated prices, but the checkout flow always validates against server-calculated totals to prevent price manipulation. The sync strategy is merge-based: the client sends its local cart state, and the server responds with the authoritative cart that reflects current prices, applied promotions, and inventory availability.
 
 ```kotlin
-// Local-first cart with server sync
 class CartRepository(
     private val cartDao: CartDao,
     private val api: CartApi,
@@ -10240,44 +10467,69 @@ class CartRepository(
         .map { items -> Cart(items.map { it.toDomain() }) }
 
     suspend fun addToCart(product: Product, quantity: Int, variant: ProductVariant?) {
-        // Optimistic local insert
-        cartDao.upsertItem(CartItemEntity(
-            productId = product.id,
-            name = product.name,
-            price = product.price,
-            quantity = quantity,
-            variantId = variant?.id,
-            variantLabel = variant?.label,
-            imageUrl = product.thumbnailUrl,
-        ))
+        val existing = cartDao.getItem(product.id, variant?.id)
+        if (existing != null) {
+            cartDao.updateQuantity(existing.id, existing.quantity + quantity)
+        } else {
+            cartDao.insert(CartItemEntity(
+                productId = product.id,
+                name = product.name,
+                price = product.price,
+                quantity = quantity,
+                variantId = variant?.id,
+                variantLabel = variant?.label,
+                imageUrl = product.thumbnailUrl,
+            ))
+        }
 
-        // Sync with server if online
         if (connectivityMonitor.state.value.isConnected) {
-            try {
-                api.addToCart(product.id, quantity, variant?.id)
-            } catch (e: Exception) {
-                // Cart stays local — will sync later
-            }
+            try { api.addToCart(product.id, quantity, variant?.id) }
+            catch (_: Exception) { /* Will sync later */ }
         }
     }
 
-    suspend fun syncCart() {
+    suspend fun updateQuantity(itemId: String, newQuantity: Int) {
+        if (newQuantity <= 0) {
+            cartDao.removeItem(itemId)
+        } else {
+            cartDao.updateQuantity(itemId, newQuantity)
+        }
+    }
+
+    suspend fun syncCart(): CartSyncResult {
         val localItems = cartDao.getAllItems()
         val serverCart = api.syncCart(localItems.map { it.toSyncRequest() })
-
-        // Server is authoritative for pricing
         cartDao.replaceAll(serverCart.items.map { it.toEntity() })
+
+        val priceChanges = serverCart.priceChanges
+        val unavailable = serverCart.unavailableItems
+        return CartSyncResult(priceChanges, unavailable)
     }
 }
 
-// Idempotent checkout — prevents double orders
+data class CartSyncResult(
+    val priceChanges: List<PriceChange>,
+    val unavailableItems: List<String>,
+)
+
+data class PriceChange(
+    val productId: String,
+    val oldPrice: Long,
+    val newPrice: Long,
+)
+```
+
+Checkout is the most critical flow and must handle a specific dangerous scenario: the user taps "Place Order," the network request goes out but the response times out. The server processed the order, but the client doesn't know. The user taps "Place Order" again. Without idempotency protection, they now have two identical orders. The fix is an idempotency key — a UUID generated per checkout attempt. The server stores this key with the order. If the same key arrives again, the server returns the existing order instead of creating a duplicate. The idempotency key must be generated once and reused across retries of the same checkout attempt, but a new key must be generated if the user modifies the cart and tries again.
+
+```kotlin
 class CheckoutRepository(
     private val api: CheckoutApi,
     private val cartDao: CartDao,
+    private val checkoutStateDao: CheckoutStateDao,
 ) {
     suspend fun placeOrder(cart: Cart, paymentMethod: PaymentMethod): OrderResult {
-        // Generate idempotency key ONCE per checkout attempt
         val idempotencyKey = UUID.randomUUID().toString()
+        checkoutStateDao.saveCheckoutAttempt(idempotencyKey, cart.toSnapshot())
 
         return try {
             val order = retryWithBackoff(
@@ -10291,6 +10543,7 @@ class CheckoutRepository(
                 )
             }
             cartDao.clearCart()
+            checkoutStateDao.clearCheckoutAttempt()
             OrderResult.Success(order)
         } catch (e: HttpException) {
             when (e.code()) {
@@ -10301,6 +10554,18 @@ class CheckoutRepository(
         } catch (e: IOException) {
             OrderResult.NetworkError(e)
         }
+    }
+
+    suspend fun recoverPendingCheckout(): OrderResult? {
+        val pending = checkoutStateDao.getPendingCheckout() ?: return null
+        return try {
+            val order = api.getOrderByIdempotencyKey(pending.idempotencyKey)
+            if (order != null) {
+                cartDao.clearCart()
+                checkoutStateDao.clearCheckoutAttempt()
+                OrderResult.Success(order)
+            } else null
+        } catch (_: Exception) { null }
     }
 }
 
@@ -10313,43 +10578,185 @@ sealed class OrderResult {
 }
 ```
 
+Search uses a standalone PagingSource (not RemoteMediator, since search results don't need offline persistence). Input is debounced to avoid firing on every keystroke. Recent searches are cached locally for instant repeat searches. Search suggestions come from a separate lightweight API call with aggressive client-side caching. The debounce window should be around 300 milliseconds — short enough to feel responsive but long enough to avoid unnecessary network calls while the user is still typing. Cancellation is equally important: when the user types a new character, the previous search request should be cancelled immediately to prevent stale results from arriving after fresh ones.
+
+```kotlin
+class ProductSearchRepository(
+    private val api: SearchApi,
+    private val recentSearchDao: RecentSearchDao,
+) {
+    fun searchProducts(query: String): Flow<PagingData<Product>> = Pager(
+        config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+        pagingSourceFactory = { ProductSearchPagingSource(api, query) },
+    ).flow
+
+    suspend fun getSuggestions(query: String): List<String> {
+        if (query.length < 2) return emptyList()
+        return try {
+            api.getSuggestions(query, limit = 8)
+        } catch (_: Exception) {
+            recentSearchDao.getMatchingSearches("%$query%")
+        }
+    }
+
+    suspend fun saveRecentSearch(query: String) {
+        recentSearchDao.insert(RecentSearchEntity(query = query, timestamp = System.currentTimeMillis()))
+        recentSearchDao.trimToLimit(20)
+    }
+
+    fun getRecentSearches(): Flow<List<String>> =
+        recentSearchDao.observeRecent(limit = 10).map { entities ->
+            entities.map { it.query }
+        }
+}
+
+class ProductSearchPagingSource(
+    private val api: SearchApi,
+    private val query: String,
+) : PagingSource<String, Product>() {
+
+    override suspend fun load(params: LoadParams<String>): LoadResult<String, Product> {
+        return try {
+            val response = api.search(
+                query = query,
+                cursor = params.key,
+                limit = params.loadSize,
+            )
+            LoadResult.Page(
+                data = response.products,
+                prevKey = null,
+                nextKey = response.nextCursor,
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<String, Product>): String? = null
+}
+```
+
+Inventory display requires a deliberate staleness strategy. Showing exact real-time inventory counts is impractical and unnecessary for most products. Instead, use coarse availability indicators: "In Stock," "Low Stock" (fewer than 5 remaining), and "Out of Stock." Fetch inventory status when the product detail screen loads, and re-validate at checkout time. The product listing page can tolerate stale inventory data from the cache, but the checkout flow must always validate against the server. When inventory becomes unavailable between add-to-cart and checkout, show a clear conflict resolution UI that lets the user remove the unavailable item or choose an alternative rather than silently failing the entire order.
+
+The checkout flow itself should be modeled as a state machine with distinct steps: cart review, shipping address selection, payment method selection, order summary confirmation, and order placement. Each step validates its prerequisites before allowing progression. The state machine prevents the user from reaching the payment step without a valid shipping address, and it prevents the order placement step from firing without confirmed totals. Persisting the checkout state locally means the user can leave and return without losing progress — the app recovers their position in the checkout flow on next launch.
+
+```kotlin
+sealed class CheckoutStep {
+    data class CartReview(val cart: Cart) : CheckoutStep()
+    data class ShippingAddress(val cart: Cart, val addresses: List<Address>) : CheckoutStep()
+    data class PaymentMethod(val cart: Cart, val address: Address,
+                             val methods: List<PaymentMethod>) : CheckoutStep()
+    data class OrderSummary(val cart: Cart, val address: Address,
+                            val payment: PaymentMethod, val total: OrderTotal) : CheckoutStep()
+    data class Placing(val idempotencyKey: String) : CheckoutStep()
+    data class Completed(val order: Order) : CheckoutStep()
+    data class Failed(val error: OrderResult, val lastStep: CheckoutStep) : CheckoutStep()
+}
+
+class CheckoutStateMachine {
+    private val _step = MutableStateFlow<CheckoutStep>(CheckoutStep.CartReview(Cart.empty()))
+    val step: StateFlow<CheckoutStep> = _step.asStateFlow()
+
+    fun selectAddress(address: Address) {
+        val current = _step.value
+        if (current is CheckoutStep.ShippingAddress) {
+            _step.value = CheckoutStep.PaymentMethod(
+                cart = current.cart,
+                address = address,
+                methods = emptyList(),
+            )
+        }
+    }
+
+    fun selectPayment(payment: PaymentMethod) {
+        val current = _step.value
+        if (current is CheckoutStep.PaymentMethod) {
+            _step.value = CheckoutStep.OrderSummary(
+                cart = current.cart,
+                address = current.address,
+                payment = payment,
+                total = calculateTotal(current.cart),
+            )
+        }
+    }
+
+    fun onOrderFailed(error: OrderResult) {
+        val current = _step.value
+        _step.value = CheckoutStep.Failed(error = error, lastStep = current)
+    }
+}
+```
+
+#### Common Mistakes
+
+The most dangerous mistake in e-commerce is allowing automatic retries on payment endpoints. If a payment API call times out and the retry interceptor automatically resends it, the user could be charged twice. Payment and order-placement endpoints must be excluded from automatic retry logic. Instead, use an idempotency key and let the user manually retry with a clear "Try Again" button. The idempotency key ensures the server deduplicates the request regardless of how many times it arrives.
+
+Another common mistake is trusting client-side prices. If the client sends the price to the server as part of the order request, a malicious user can modify the request to pay less. The server must always calculate the total from its own product catalog using the product IDs and quantities from the request. The client-displayed price is for UX only — it is never used as the source of truth for billing.
+
+A third mistake is not handling inventory conflicts gracefully at checkout. When a product goes out of stock between the time the user added it to their cart and the time they tap "Place Order," many apps simply show a generic error message. Instead, the server should return a structured 409 response that identifies exactly which items are unavailable and what alternatives exist. The client then shows a targeted conflict resolution UI rather than forcing the user to start the entire checkout process over.
+
 **Key takeaway:** E-commerce apps require local-first carts with server sync for pricing, idempotency keys for checkout to prevent double orders, and careful error handling for inventory conflicts and payment failures. The server is always authoritative for pricing; the client handles optimistic display.
 
 ### Lesson 10.4: Design a Media Player App
 
-A media player (music or video streaming) presents system design challenges centered on buffering strategy, download management for offline playback, playlist state management across sessions, and background playback with media session integration. Unlike CRUD apps where data is small, media apps deal with large binary payloads that require streaming, progressive download, and careful memory management.
+A media player (music or video streaming) presents system design challenges centered on buffering strategy, download management for offline playback, playlist state management across sessions, and background playback with media session integration. Unlike CRUD apps where data is small, media apps deal with large binary payloads that require streaming, progressive download, and careful memory management. The player must also integrate with the Android media framework — lock screen controls, notification media controls, Bluetooth metadata, and audio focus handling are all required for a production-quality experience.
 
-The buffering strategy has three modes: streaming (play as data arrives, buffer ahead by 30-60 seconds), progressive download (download the file while playing, keeping a larger buffer ahead), and full download (download completely before playing, required for offline). The player should adapt between these modes based on network quality — on fast WiFi, progressive download provides the best experience; on slow cellular, aggressive buffering with lower quality prevents stalling.
-
-Offline download management requires tracking download state per track (not started, downloading, paused, completed, failed), managing disk space (total downloads can't exceed a configurable limit), and supporting partial downloads that can be resumed after interruption. Downloads use WorkManager for reliability — a download that starts on WiFi continues even if the app is killed, resuming from the last downloaded byte using HTTP Range headers.
+The buffering strategy has three modes: streaming (play as data arrives, buffer ahead by 30-60 seconds), progressive download (download the file while playing, keeping a larger buffer ahead), and full download (download completely before playing, required for offline). The player should adapt between these modes based on network quality — on fast WiFi, progressive download provides the best experience; on slow cellular, aggressive buffering with lower quality prevents stalling. ExoPlayer (now Media3) handles most of this automatically through its `LoadControl` configuration, but you need to tune the buffer parameters based on your content type. Short-form video needs smaller buffers with faster start times, while long-form music streaming benefits from larger ahead buffers to prevent interruptions.
 
 ```kotlin
-class MediaPlayerRepository(
-    private val api: MediaApi,
+class AdaptivePlayerFactory {
+    fun createPlayer(context: Context, networkType: NetworkType): ExoPlayer {
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                /* minBufferMs = */ when (networkType) {
+                    NetworkType.WIFI -> 15_000
+                    NetworkType.CELLULAR -> 30_000
+                    NetworkType.OFFLINE -> 0
+                },
+                /* maxBufferMs = */ when (networkType) {
+                    NetworkType.WIFI -> 60_000
+                    NetworkType.CELLULAR -> 120_000
+                    NetworkType.OFFLINE -> 0
+                },
+                /* bufferForPlaybackMs = */ 2_500,
+                /* bufferForPlaybackAfterRebufferMs = */ 5_000,
+            )
+            .build()
+
+        return ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .setUsage(C.USAGE_MEDIA)
+                    .build(),
+                /* handleAudioFocus = */ true,
+            )
+            .build()
+    }
+}
+
+enum class NetworkType { WIFI, CELLULAR, OFFLINE }
+```
+
+Offline download management requires tracking download state per track (not started, downloading, paused, completed, failed), managing disk space (total downloads can't exceed a configurable limit), and supporting partial downloads that can be resumed after interruption. Downloads use WorkManager for reliability — a download that starts on WiFi continues even if the app is killed, resuming from the last downloaded byte using HTTP Range headers. The download manager must also handle license management for DRM-protected content, where the offline license has an expiration window and must be renewed periodically even when the content itself is already downloaded.
+
+```kotlin
+class DownloadManager(
     private val downloadDao: DownloadDao,
-    private val mediaCache: MediaCache,
+    private val storageManager: StorageManager,
 ) {
-    // Stream with adaptive buffering
-    fun getMediaSource(trackId: String): MediaSource {
-        // Check for offline download first
-        val localFile = downloadDao.getCompletedDownload(trackId)?.filePath
-        if (localFile != null) {
-            return ProgressiveMediaSource.Factory(FileDataSource.Factory())
-                .createMediaSource(MediaItem.fromUri(Uri.parse(localFile)))
+    suspend fun downloadTrack(track: Track): Result<Unit> {
+        val availableSpace = storageManager.getAvailableBytes()
+        val requiredSpace = track.fileSize + STORAGE_BUFFER_BYTES
+
+        if (availableSpace < requiredSpace) {
+            return Result.failure(InsufficientStorageException(
+                required = requiredSpace,
+                available = availableSpace,
+            ))
         }
 
-        // Stream from network with caching
-        val cacheDataSourceFactory = CacheDataSource.Factory()
-            .setCache(mediaCache.simpleCache)
-            .setUpstreamDataSourceFactory(DefaultHttpDataSource.Factory())
-            .setCacheWriteDataSinkFactory(CacheDataSink.Factory().setFragmentSize(Long.MAX_VALUE))
-
-        return ProgressiveMediaSource.Factory(cacheDataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(api.getStreamUrl(trackId)))
-    }
-
-    // Download for offline playback
-    suspend fun downloadTrack(track: Track) {
         downloadDao.insert(DownloadEntity(
             trackId = track.id,
             title = track.title,
@@ -10360,10 +10767,14 @@ class MediaPlayerRepository(
         ))
 
         val request = OneTimeWorkRequestBuilder<MediaDownloadWorker>()
-            .setInputData(workDataOf("trackId" to track.id))
+            .setInputData(workDataOf(
+                "trackId" to track.id,
+                "url" to track.streamUrl,
+                "fileSize" to track.fileSize,
+            ))
             .setConstraints(
                 Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.UNMETERED)
+                    .setRequiredNetworkType(androidx.work.NetworkType.UNMETERED)
                     .setRequiresStorageNotLow(true)
                     .build()
             )
@@ -10374,12 +10785,23 @@ class MediaPlayerRepository(
             ExistingWorkPolicy.KEEP,
             request,
         )
+        return Result.success(Unit)
+    }
+
+    suspend fun removeDownload(trackId: String) {
+        val download = downloadDao.getDownload(trackId) ?: return
+        download.filePath?.let { File(it).delete() }
+        downloadDao.delete(trackId)
     }
 
     fun observeDownloads(): Flow<List<DownloadState>> =
         downloadDao.observeAll().map { entities ->
             entities.map { it.toDomain() }
         }
+
+    companion object {
+        private const val STORAGE_BUFFER_BYTES = 50 * 1024 * 1024L // 50MB buffer
+    }
 }
 
 data class DownloadState(
@@ -10392,20 +10814,212 @@ data class DownloadState(
 enum class DownloadStatus { QUEUED, DOWNLOADING, PAUSED, COMPLETED, FAILED }
 ```
 
+The media source resolver determines whether to play from a local file, the streaming cache, or the network. This decision must be transparent to the player — ExoPlayer receives a `MediaSource` regardless of where the data comes from. The resolver checks for a completed offline download first, then checks the streaming cache for recently played content, and finally falls back to network streaming. This layered approach means that a track the user played yesterday might still be in the cache and plays instantly without a network request, even if it was never explicitly downloaded.
+
+```kotlin
+class MediaSourceResolver(
+    private val downloadDao: DownloadDao,
+    private val mediaCache: SimpleCache,
+    private val httpDataSourceFactory: DefaultHttpDataSource.Factory,
+    private val api: MediaApi,
+) {
+    fun resolve(trackId: String): MediaSource {
+        // Layer 1: Check for completed offline download
+        val localFile = downloadDao.getCompletedDownloadSync(trackId)?.filePath
+        if (localFile != null) {
+            return ProgressiveMediaSource.Factory(FileDataSource.Factory())
+                .createMediaSource(MediaItem.fromUri(Uri.parse(localFile)))
+        }
+
+        // Layer 2: Stream with cache (recently played tracks may be cached)
+        val cacheDataSourceFactory = CacheDataSource.Factory()
+            .setCache(mediaCache)
+            .setUpstreamDataSourceFactory(httpDataSourceFactory)
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+        val streamUrl = api.getStreamUrlSync(trackId)
+        return ProgressiveMediaSource.Factory(cacheDataSourceFactory)
+            .createMediaSource(MediaItem.fromUri(streamUrl))
+    }
+}
+```
+
+Playlist and playback state management must survive process death and configuration changes. The current playlist, the index of the currently playing track, the playback position within that track, the shuffle mode, and the repeat mode all need to be persisted. When the user relaunches the app, playback should resume exactly where it left off. This state is persisted in Room (not SharedPreferences, because it includes the full playlist which can be large) and restored when the media service starts. The `MediaSessionService` pattern from Media3 handles the Android media framework integration, but you still need to manage the playlist state yourself.
+
+```kotlin
+class PlaybackStateRepository(
+    private val dao: PlaybackStateDao,
+) {
+    suspend fun saveState(player: ExoPlayer) {
+        dao.upsert(PlaybackStateEntity(
+            id = "current",
+            trackId = player.currentMediaItem?.mediaId.orEmpty(),
+            positionMs = player.currentPosition,
+            playlistJson = Json.encodeToString(
+                player.mediaItems().map { it.mediaId }
+            ),
+            currentIndex = player.currentMediaItemIndex,
+            shuffleEnabled = player.shuffleModeEnabled,
+            repeatMode = player.repeatMode,
+            updatedAt = System.currentTimeMillis(),
+        ))
+    }
+
+    suspend fun restoreState(player: ExoPlayer, resolver: MediaSourceResolver) {
+        val state = dao.getState("current") ?: return
+        val trackIds: List<String> = Json.decodeFromString(state.playlistJson)
+
+        val mediaSources = trackIds.map { resolver.resolve(it) }
+        player.setMediaSources(mediaSources, state.currentIndex, state.positionMs)
+        player.shuffleModeEnabled = state.shuffleEnabled
+        player.repeatMode = state.repeatMode
+        player.prepare()
+    }
+
+    private fun ExoPlayer.mediaItems(): List<MediaItem> {
+        return (0 until mediaItemCount).map { getMediaItemAt(it) }
+    }
+}
+```
+
+Audio focus handling is essential for a well-behaved media app. When another app starts playing audio (a phone call, a navigation instruction, a notification sound), your player must respond appropriately — pause for phone calls, duck volume for navigation instructions, and resume after transient interruptions. ExoPlayer handles audio focus automatically when you set `handleAudioFocus = true` in the `AudioAttributes` builder, but you need to understand what happens under the hood to debug issues. The player requests audio focus before playing and releases it when pausing. If focus is lost transiently (a notification sound), playback pauses and resumes automatically. If focus is lost permanently (another music app starts), playback stops and does not resume.
+
+#### Common Mistakes
+
+The most common mistake is not configuring the streaming cache with a maximum size. Without a size limit, the cache grows unbounded as the user plays different tracks, eventually consuming all available disk space. Always set an `LeastRecentlyUsedCacheEvictor` with a reasonable size limit — 100MB to 500MB depending on your app's target audience. The evictor automatically removes the least recently played content when the cache exceeds its limit.
+
+Another frequent mistake is not handling the download-to-stream transition gracefully. If a user starts downloading a track and then taps play before the download is complete, many implementations either block playback until the download finishes or stream a separate copy from the network. The correct approach is to play from the partially downloaded file while the download continues — ExoPlayer's cache system supports this natively if both the download and the player share the same `SimpleCache` instance.
+
+A third mistake is persisting playback state too infrequently. If the app only saves state when the user explicitly pauses, a force-kill or crash loses the user's position in a two-hour podcast. Save playback state periodically — every 10 to 15 seconds during active playback — using a coroutine timer that writes to Room. This ensures the user never loses more than a few seconds of position when the app is unexpectedly killed.
+
 **Key takeaway:** Media player design centers on buffering strategy (stream, progressive, full download), offline download management with WorkManager for reliability, and adaptive quality based on network conditions. Always check for offline downloads before streaming, and use ExoPlayer's cache for recently played content.
 
 ### Lesson 10.5: Design a Maps and Navigation App
 
-A maps application is one of the most complex mobile system designs because it combines real-time location tracking, tile-based map rendering, route calculation with turn-by-turn navigation, offline map support, and points of interest (POI) search. The architectural challenge is managing the interplay between continuous location updates, map tile caching, and route state — all while keeping the UI responsive and battery consumption reasonable.
+A maps application is one of the most complex mobile system designs because it combines real-time location tracking, tile-based map rendering, route calculation with turn-by-turn navigation, offline map support, and points of interest (POI) search. The architectural challenge is managing the interplay between continuous location updates, map tile caching, and route state — all while keeping the UI responsive and battery consumption reasonable. Maps also have a uniquely spatial data model where every query is bounded by geographic coordinates, making traditional database indexing patterns insufficient.
 
-Map tile management follows a multi-level cache strategy. The map is divided into tiles at different zoom levels. Tiles are fetched from the network and cached aggressively in a disk cache because map tiles change infrequently. The cache key is (zoom level, x tile coordinate, y tile coordinate). Prefetching loads tiles adjacent to the current viewport so panning feels instant. For offline maps, the user selects a region and the app downloads all tiles at multiple zoom levels for that area — this can be hundreds of megabytes for a city.
+Map tile management follows a multi-level cache strategy. The map is divided into tiles at different zoom levels. Tiles are fetched from the network and cached aggressively in a disk cache because map tiles change infrequently. The cache key is (zoom level, x tile coordinate, y tile coordinate). Prefetching loads tiles adjacent to the current viewport so panning feels instant. For offline maps, the user selects a region and the app downloads all tiles at multiple zoom levels for that area — this can be hundreds of megabytes for a city. The tile cache must use an LRU eviction policy with a generous size limit because map tiles are small individually (typically 10-50KB each) but accumulate to gigabytes over time as the user explores different areas.
+
+```kotlin
+class TileCacheManager(
+    private val diskCache: DiskLruCache,
+    private val tileApi: TileApi,
+) {
+    private val memoryCache = LruCache<TileKey, Bitmap>(MEMORY_CACHE_SIZE)
+
+    suspend fun getTile(zoom: Int, x: Int, y: Int): Bitmap {
+        val key = TileKey(zoom, x, y)
+
+        // Layer 1: Memory cache
+        memoryCache.get(key)?.let { return it }
+
+        // Layer 2: Disk cache
+        val diskEntry = diskCache.get(key.toCacheKey())
+        if (diskEntry != null) {
+            val bitmap = BitmapFactory.decodeStream(diskEntry.getInputStream(0))
+            memoryCache.put(key, bitmap)
+            return bitmap
+        }
+
+        // Layer 3: Network fetch
+        val tileBytes = tileApi.fetchTile(zoom, x, y)
+        val bitmap = BitmapFactory.decodeByteArray(tileBytes, 0, tileBytes.size)
+        memoryCache.put(key, bitmap)
+        saveToDisk(key, tileBytes)
+        return bitmap
+    }
+
+    fun prefetchAdjacentTiles(zoom: Int, centerX: Int, centerY: Int, scope: CoroutineScope) {
+        val adjacentOffsets = listOf(-1, 0, 1)
+        scope.launch(Dispatchers.IO) {
+            for (dx in adjacentOffsets) {
+                for (dy in adjacentOffsets) {
+                    if (dx == 0 && dy == 0) continue
+                    launch { getTile(zoom, centerX + dx, centerY + dy) }
+                }
+            }
+        }
+    }
+
+    private fun saveToDisk(key: TileKey, bytes: ByteArray) {
+        val editor = diskCache.edit(key.toCacheKey()) ?: return
+        editor.newOutputStream(0).use { it.write(bytes) }
+        editor.commit()
+    }
+
+    companion object {
+        private const val MEMORY_CACHE_SIZE = 100
+    }
+}
+
+data class TileKey(val zoom: Int, val x: Int, val y: Int) {
+    fun toCacheKey(): String = "${zoom}_${x}_$y"
+}
+```
 
 Location tracking must balance accuracy with battery consumption. GPS provides the most accurate location but drains battery quickly. Network-based location is less accurate but much more power-efficient. The app should use high-accuracy mode during active navigation (GPS with frequent updates) and switch to low-power mode when the user is just browsing the map. The `FusedLocationProviderClient` handles this automatically based on the priority you set, but you still need to manage the lifecycle — stop updates when the app is backgrounded (unless actively navigating), use passive updates to opportunistically get location from other apps' requests, and degrade gracefully when location permission is denied.
 
-Route calculation and turn-by-turn navigation require maintaining a navigation state machine that tracks: current position on the route, distance and time to next maneuver, ETA to destination, whether the user has deviated from the route (requiring re-routing), and upcoming road alerts. The state machine receives location updates and route data as inputs and emits navigation instructions as outputs. Re-routing should be triggered when the user is more than a configurable distance (usually 50-100 meters) from the nearest point on the planned route.
+```kotlin
+class LocationTracker(
+    private val fusedLocationClient: FusedLocationProviderClient,
+) {
+    private val _location = MutableStateFlow<LatLng?>(null)
+    val location: StateFlow<LatLng?> = _location.asStateFlow()
+
+    private var locationCallback: LocationCallback? = null
+
+    fun startTracking(priority: LocationPriority, intervalMs: Long): Flow<LatLng> = callbackFlow {
+        val request = LocationRequest.Builder(
+            when (priority) {
+                LocationPriority.HIGH_ACCURACY -> Priority.PRIORITY_HIGH_ACCURACY
+                LocationPriority.BALANCED -> Priority.PRIORITY_BALANCED_POWER_ACCURACY
+                LocationPriority.LOW_POWER -> Priority.PRIORITY_LOW_POWER
+            },
+            intervalMs,
+        ).setMinUpdateDistanceMeters(
+            when (priority) {
+                LocationPriority.HIGH_ACCURACY -> 5f
+                LocationPriority.BALANCED -> 50f
+                LocationPriority.LOW_POWER -> 200f
+            }
+        ).build()
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    val latLng = LatLng(location.latitude, location.longitude)
+                    _location.value = latLng
+                    trySend(latLng)
+                }
+            }
+        }
+
+        fusedLocationClient.requestLocationUpdates(
+            request, locationCallback!!, Looper.getMainLooper()
+        )
+
+        awaitClose { stopTracking() }
+    }
+
+    fun stopTracking() {
+        locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
+        locationCallback = null
+    }
+
+    suspend fun getLastKnownLocation(): LatLng? {
+        return fusedLocationClient.lastLocation.await()?.let {
+            LatLng(it.latitude, it.longitude)
+        }
+    }
+}
+
+enum class LocationPriority { HIGH_ACCURACY, BALANCED, LOW_POWER }
+```
+
+Route calculation and turn-by-turn navigation require maintaining a navigation state machine that tracks: current position on the route, distance and time to next maneuver, ETA to destination, whether the user has deviated from the route (requiring re-routing), and upcoming road alerts. The state machine receives location updates and route data as inputs and emits navigation instructions as outputs. Re-routing should be triggered when the user is more than a configurable distance (usually 50-100 meters) from the nearest point on the planned route. The navigation state machine must also handle edge cases like U-turns, arriving at the destination, and the user manually selecting a different route mid-navigation.
 
 ```kotlin
-class NavigationRepository(
+class NavigationEngine(
     private val routeApi: RouteApi,
     private val locationTracker: LocationTracker,
 ) {
@@ -10416,10 +11030,7 @@ class NavigationRepository(
         val currentLocation = locationTracker.getLastKnownLocation()
             ?: throw LocationUnavailableException()
 
-        val route = routeApi.getRoute(
-            origin = currentLocation,
-            destination = destination,
-        )
+        val route = routeApi.getRoute(origin = currentLocation, destination = destination)
 
         _navigationState.value = NavigationState.Navigating(
             route = route,
@@ -10428,13 +11039,10 @@ class NavigationRepository(
             etaSeconds = route.totalDurationSeconds,
         )
 
-        // Start high-accuracy location tracking
         locationTracker.startTracking(
             priority = LocationPriority.HIGH_ACCURACY,
             intervalMs = 1000,
-        ).collect { location ->
-            updateNavigation(location, route)
-        }
+        ).collect { location -> updateNavigation(location, route) }
     }
 
     private suspend fun updateNavigation(location: LatLng, route: Route) {
@@ -10444,7 +11052,6 @@ class NavigationRepository(
         val distanceFromRoute = location.distanceTo(nearestPoint)
 
         if (distanceFromRoute > REROUTE_THRESHOLD_METERS) {
-            // User deviated — request new route
             _navigationState.value = NavigationState.Rerouting
             val newRoute = routeApi.getRoute(
                 origin = location,
@@ -10457,8 +11064,15 @@ class NavigationRepository(
                 etaSeconds = newRoute.totalDurationSeconds,
             )
         } else {
-            // Update position on route
             val updatedStep = findCurrentStep(location, route)
+            val remainingDistance = calculateRemainingDistance(location, route)
+
+            if (remainingDistance < ARRIVAL_THRESHOLD_METERS) {
+                _navigationState.value = NavigationState.Arrived
+                locationTracker.stopTracking()
+                return
+            }
+
             _navigationState.value = currentState.copy(
                 currentStepIndex = updatedStep.index,
                 distanceToNextManeuver = updatedStep.distanceToEnd,
@@ -10467,8 +11081,14 @@ class NavigationRepository(
         }
     }
 
+    fun stopNavigation() {
+        _navigationState.value = NavigationState.Idle
+        locationTracker.stopTracking()
+    }
+
     companion object {
         private const val REROUTE_THRESHOLD_METERS = 75.0
+        private const val ARRIVAL_THRESHOLD_METERS = 30.0
     }
 }
 
@@ -10485,21 +11105,188 @@ sealed class NavigationState {
 }
 ```
 
+Geofencing enables location-triggered actions without continuous GPS tracking. Instead of polling the user's location every second, you register geographic regions with the system, and Android notifies your app when the user enters or exits a region. This is dramatically more battery-efficient than continuous tracking. Common use cases include reminding the user about a task when they arrive at a specific location, sending a notification when they are near a point of interest, or automatically switching navigation modes when they enter a parking garage. The geofence API has a limit of 100 active geofences per app, so you need to dynamically manage which geofences are registered based on the user's current area.
+
+```kotlin
+class GeofenceManager(
+    private val geofencingClient: GeofencingClient,
+    private val pendingIntentFactory: GeofencePendingIntentFactory,
+) {
+    fun registerGeofences(pois: List<PointOfInterest>) {
+        val geofences = pois.take(MAX_GEOFENCES).map { poi ->
+            Geofence.Builder()
+                .setRequestId(poi.id)
+                .setCircularRegion(poi.latitude, poi.longitude, poi.radiusMeters)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(
+                    Geofence.GEOFENCE_TRANSITION_ENTER or
+                    Geofence.GEOFENCE_TRANSITION_EXIT
+                )
+                .build()
+        }
+
+        val request = GeofencingRequest.Builder()
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .addGeofences(geofences)
+            .build()
+
+        geofencingClient.addGeofences(request, pendingIntentFactory.create())
+    }
+
+    fun updateGeofencesForRegion(
+        center: LatLng,
+        radiusKm: Double,
+        allPois: List<PointOfInterest>,
+    ) {
+        geofencingClient.removeGeofences(pendingIntentFactory.create())
+
+        val nearbyPois = allPois.filter { poi ->
+            center.distanceTo(LatLng(poi.latitude, poi.longitude)) < radiusKm * 1000
+        }
+        registerGeofences(nearbyPois)
+    }
+
+    companion object {
+        private const val MAX_GEOFENCES = 100
+    }
+}
+
+data class PointOfInterest(
+    val id: String,
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val radiusMeters: Float,
+    val category: String,
+)
+```
+
+Offline maps require bulk downloading of tiles for a user-selected region. The download is a long-running operation that must survive app kills, so it uses WorkManager with progress reporting. The user selects a bounding box on the map and a range of zoom levels to download. The app calculates the total number of tiles required, estimates the download size, and asks the user to confirm before starting. During the download, progress is reported through the WorkManager's `setProgress` API, which the UI observes to show a progress bar. The downloaded region is stored in a metadata table so the app knows which areas are available offline and can show an appropriate indicator on the map.
+
+#### Common Mistakes
+
+The most common mistake in maps apps is requesting high-accuracy location updates continuously, even when the user is just browsing the map without navigating. GPS at one-second intervals drains the battery by 5-10% per hour. Switch to `PRIORITY_BALANCED_POWER_ACCURACY` or `PRIORITY_LOW_POWER` when the user is idle, and only escalate to `PRIORITY_HIGH_ACCURACY` during active navigation. Use `setMinUpdateDistanceMeters` to prevent location callbacks when the user has not moved meaningfully.
+
+Another frequent mistake is not implementing tile prefetching. When the user pans the map, tiles outside the current viewport need to load. Without prefetching, every pan reveals gray placeholder tiles that fill in over several hundred milliseconds, creating a visually jarring experience. Prefetch one ring of tiles around the current viewport so that small panning movements feel instant. For zoom level changes, prefetch tiles at the adjacent zoom levels as well.
+
+A third mistake is not debouncing re-routing during navigation. If the GPS signal is noisy (common in urban canyons between tall buildings), the user's reported position can briefly jump 100 meters from the route and then snap back. Without debouncing, this triggers an unnecessary re-route request on every GPS jitter. Require the user to be off-route for at least three consecutive location updates before triggering a re-route, which filters out GPS noise while still catching genuine deviations within a few seconds.
+
 **Key takeaway:** Maps apps combine tile caching (multi-level disk cache with prefetching), adaptive location tracking (high accuracy during navigation, low power otherwise), and navigation state machines (position tracking, deviation detection, re-routing). Offline maps require bulk tile downloads for selected regions.
 
 ### Lesson 10.6: Putting It All Together — The Pattern Catalog
 
-Every real-world system design is a combination of the patterns covered in this course. No single pattern solves everything. The art of system design is knowing which patterns to combine for your specific use case. Here's a quick reference for mapping features to patterns.
+Every real-world system design is a combination of the patterns covered in this course. No single pattern solves everything. The art of system design is knowing which patterns to combine for your specific use case, and making deliberate tradeoff decisions rather than defaulting to the most complex solution. The pattern catalog is a decision framework — given a set of feature requirements, it tells you which architectural patterns to reach for and which to avoid. In interviews, this systematic mapping is what separates a senior engineer from someone who just knows the theory.
 
-For any feature that needs to work offline, use the SSOT pattern with Room as the source of truth, NetworkBoundResource for the read path, and an offline write queue for the write path. For any list that's too long to fetch in one call, use Paging 3 with RemoteMediator for offline pagination or a standalone PagingSource for network-only pagination. For any data that's read frequently, use the three-layer cache (memory → disk → network) with appropriate TTL for each layer.
+The first decision axis is the data access pattern: is the feature read-heavy or write-heavy? Read-heavy features like feeds, product catalogs, and article lists benefit from aggressive caching with the three-layer cache strategy (memory, disk, network) and cursor-based pagination. Write-heavy features like chat, collaborative editing, and form submissions need optimistic updates, offline write queues, and conflict resolution strategies. Most features are a mix, but understanding which direction the feature leans determines which patterns get priority in your architecture.
 
-For real-time features (chat, live scores, collaborative editing), use WebSocket with the database as the write-through cache — events flow from WebSocket to Room, and the UI observes Room. For features with engagement actions (like, bookmark, follow), use optimistic updates with rollback. For multi-device features (notes, settings, cart), use pull-based sync with Last Write Wins conflict resolution. For critical mutations (payments, orders), use idempotency keys and disable automatic retries.
+```kotlin
+enum class DataAccessPattern { READ_HEAVY, WRITE_HEAVY, BALANCED }
 
-For large apps with multiple teams, use feature-based modularization with dependency inversion through contract interfaces. For API surfaces consumed by other teams or modules, use value classes, sealed interfaces, and default parameters for type safety and evolution. For networking, use a single shared OkHttpClient with per-use-case variants, exponential backoff with jitter for retries, and circuit breakers for non-critical services.
+fun determineDataAccessPattern(
+    readFrequency: RequestFrequency,
+    writeFrequency: RequestFrequency,
+): DataAccessPattern = when {
+    readFrequency == RequestFrequency.HIGH &&
+        writeFrequency == RequestFrequency.LOW -> DataAccessPattern.READ_HEAVY
+    writeFrequency == RequestFrequency.HIGH &&
+        readFrequency == RequestFrequency.LOW -> DataAccessPattern.WRITE_HEAVY
+    else -> DataAccessPattern.BALANCED
+}
 
-The most important skill isn't knowing any individual pattern — it's recognizing which combination of patterns solves a specific problem with the right tradeoffs for your constraints. Every design decision has a cost. The best engineers don't build perfect systems — they build systems with the right set of imperfections for their specific context.
+enum class RequestFrequency { LOW, MEDIUM, HIGH }
 
-The pattern catalog below maps common mobile features to their recommended pattern combinations:
+fun recommendReadPatterns(pattern: DataAccessPattern): List<String> = when (pattern) {
+    DataAccessPattern.READ_HEAVY -> listOf(
+        "Three-layer cache (memory → disk → network)",
+        "Cursor-based pagination with RemoteMediator",
+        "Aggressive prefetching and cache warming",
+        "Stale-while-revalidate for fast initial loads",
+    )
+    DataAccessPattern.WRITE_HEAVY -> listOf(
+        "Optimistic updates with rollback",
+        "Offline write queue with ordering guarantees",
+        "Conflict resolution (LWW or merge)",
+        "Room SSOT with reactive Flow observation",
+    )
+    DataAccessPattern.BALANCED -> listOf(
+        "Room SSOT with NetworkBoundResource",
+        "Optimistic updates for user actions",
+        "Moderate caching with TTL-based invalidation",
+        "Pull-based sync with delta updates",
+    )
+}
+```
+
+The second decision axis is connectivity tolerance. Some features must work fully offline (notes, cart, downloaded content), some need graceful degradation (feed shows cached items but cannot load new ones), and some are inherently online-only (search, live video, payment processing). For fully offline features, you need the complete offline-first stack: Room as the single source of truth, NetworkBoundResource for the read path, an offline write queue for the write path, and a sync strategy for reconciliation when connectivity returns. For graceful degradation, you cache the most recent data and show it with a staleness indicator. For online-only features, you need clear error states and retry mechanisms but no local persistence.
+
+```kotlin
+sealed class ConnectivityRequirement {
+    data object FullyOffline : ConnectivityRequirement()
+    data object GracefulDegradation : ConnectivityRequirement()
+    data object OnlineOnly : ConnectivityRequirement()
+}
+
+fun recommendConnectivityPatterns(
+    requirement: ConnectivityRequirement,
+): List<String> = when (requirement) {
+    ConnectivityRequirement.FullyOffline -> listOf(
+        "Room as single source of truth",
+        "NetworkBoundResource for read path",
+        "Offline write queue for write path",
+        "WorkManager for background sync",
+        "Conflict resolution strategy",
+    )
+    ConnectivityRequirement.GracefulDegradation -> listOf(
+        "Room cache with TTL-based staleness",
+        "Show cached data with freshness indicator",
+        "Pull-to-refresh for manual sync",
+        "ConnectivityMonitor for adaptive behavior",
+    )
+    ConnectivityRequirement.OnlineOnly -> listOf(
+        "Retry with exponential backoff and jitter",
+        "Circuit breaker for failing endpoints",
+        "Clear error states with retry action",
+        "Request deduplication for concurrent calls",
+    )
+}
+```
+
+The third decision axis is data freshness. Real-time features (chat, live scores, collaborative editing) need WebSocket or Server-Sent Events with the database as a write-through cache — events flow from the server push channel to Room, and the UI observes Room. Near-real-time features (social feed, notifications) use periodic polling or pull-to-refresh, typically refreshing every 30-60 seconds in the foreground. Eventually consistent features (settings sync, analytics, logs) can use WorkManager for periodic background sync with windows measured in minutes or hours. The key insight is that most features do not need real-time updates even if stakeholders initially ask for them — polling every 30 seconds is indistinguishable from real-time for most content feeds.
+
+```kotlin
+sealed class FreshnessRequirement {
+    data object RealTime : FreshnessRequirement()
+    data class NearRealTime(val intervalSeconds: Long) : FreshnessRequirement()
+    data class EventuallyConsistent(val intervalMinutes: Long) : FreshnessRequirement()
+}
+
+fun recommendFreshnessPatterns(
+    requirement: FreshnessRequirement,
+): List<String> = when (requirement) {
+    FreshnessRequirement.RealTime -> listOf(
+        "WebSocket with write-through Room cache",
+        "Event deduplication by server-assigned ID",
+        "Reconnection with catch-up via REST",
+        "Typing indicators and presence (fire-and-forget)",
+    )
+    is FreshnessRequirement.NearRealTime -> listOf(
+        "Pull-to-refresh with periodic polling",
+        "Stale-while-revalidate cache strategy",
+        "Conditional requests with ETag/Last-Modified",
+        "New content banner (don't auto-scroll)",
+    )
+    is FreshnessRequirement.EventuallyConsistent -> listOf(
+        "WorkManager periodic sync",
+        "Delta sync with server timestamps",
+        "Last Write Wins conflict resolution",
+        "Batch operations for efficiency",
+    )
+}
+```
+
+For any feature that involves critical mutations — payments, order placement, account deletion — the pattern set is fundamentally different from regular CRUD operations. Critical mutations must never be retried automatically because a retry could mean a duplicate charge. They must use idempotency keys so the server can deduplicate requests that arrive multiple times. They must disable optimistic updates because showing "Order Placed" before the server confirms is dangerous. And they must provide clear, actionable error states that distinguish between "the request failed and nothing happened" (safe to retry) and "the request might have succeeded but we lost the response" (check order history before retrying).
+
+For any list that is too long to fetch in one call, use Paging 3 with RemoteMediator for offline pagination or a standalone PagingSource for network-only pagination. For any data that is read frequently, use the three-layer cache (memory → disk → network) with appropriate TTL for each layer. For large apps with multiple teams, use feature-based modularization with dependency inversion through contract interfaces. For API surfaces consumed by other teams or modules, use value classes, sealed interfaces, and default parameters for type safety and evolution. For networking, use a single shared OkHttpClient with per-use-case variants, exponential backoff with jitter for retries, and circuit breakers for non-critical services.
 
 ```kotlin
 data class PatternCatalog(
@@ -10548,7 +11335,17 @@ val catalog = listOf(
 )
 ```
 
-In interviews, the pattern catalog becomes your cheat sheet. When the interviewer says "design a food delivery app," you mentally map each feature: restaurant list (offline-first list), search (standalone PagingSource), cart (local-first with sync), order tracking (SSE real-time), checkout (critical mutation with idempotency key). This systematic mapping demonstrates that you can decompose any problem into well-understood patterns.
+In interviews, the pattern catalog becomes your cheat sheet. When the interviewer says "design a food delivery app," you mentally map each feature: restaurant list (offline-first list with cursor pagination), search (standalone PagingSource with debouncing), cart (local-first with server sync), order tracking (SSE or polling for real-time updates), checkout (critical mutation with idempotency key), and order history (RemoteMediator with offline access). This systematic mapping demonstrates that you can decompose any problem into well-understood patterns. The interviewer is not looking for you to invent novel solutions — they want to see that you recognize which battle-tested patterns solve each sub-problem and that you understand the tradeoffs.
+
+The most important skill is not knowing any individual pattern — it is recognizing which combination of patterns solves a specific problem with the right tradeoffs for your constraints. Every design decision has a cost. Adding offline support adds complexity in sync and conflict resolution. Adding real-time updates adds WebSocket lifecycle management. Adding pagination adds cursor tracking and cache invalidation complexity. The best engineers do not build perfect systems — they build systems with the right set of imperfections for their specific context, and they can articulate why they chose each tradeoff.
+
+#### Common Mistakes
+
+The most common mistake in system design interviews is over-engineering. Candidates add WebSocket to every feature, implement CRDT-based conflict resolution for simple settings sync, or build a custom pagination framework when Paging 3 handles the use case perfectly. Start with the simplest pattern that satisfies the requirements and only add complexity when a specific constraint demands it. If the interviewer asks about real-time updates for a product catalog, the correct answer is usually "polling every 60 seconds" — not "WebSocket with event sourcing."
+
+Another frequent mistake is treating all mutations the same. Liking a post and placing an order are both write operations, but they require fundamentally different patterns. Likes use optimistic updates with rollback because a failed like has minimal consequences. Orders use idempotency keys with server-confirmed UI because a failed order could mean a duplicate charge. In your interview, explicitly call out why you are choosing different patterns for different mutation types — this demonstrates nuanced understanding.
+
+A third mistake is not discussing the tradeoffs of your chosen patterns. Every pattern has costs. Offline-first means you need sync and conflict resolution. Optimistic updates mean you need rollback logic and can show temporarily incorrect data. Cursor pagination means you cannot jump to arbitrary pages. When you present your design, proactively mention what you are giving up with each pattern choice. This shows the interviewer that you understand the full picture, not just the happy path.
 
 **Key takeaway:** Real-world system design is about combining patterns — offline-first + pagination + caching + retry + conflict resolution. No single pattern solves everything. The art is knowing which patterns to combine for your specific use case, and being honest about the tradeoffs each combination introduces.
 
