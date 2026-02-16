@@ -212,6 +212,23 @@
   color: #fbf1c7 !important;
 }
 
+[data-reading-theme="gruvbox"] .content.post h2 {
+  color: #fabd2f !important;
+}
+
+[data-reading-theme="gruvbox"] .content.post h3 {
+  color: #b8bb26 !important;
+}
+
+[data-reading-theme="gruvbox"] .content.post h4 {
+  color: #83a598 !important;
+}
+
+[data-reading-theme="gruvbox"] .content.post strong,
+[data-reading-theme="gruvbox"] .content.post b {
+  color: #fe8019;
+}
+
 [data-reading-theme="gruvbox"] .content.post p,
 [data-reading-theme="gruvbox"] .content.post li {
   color: #d5c4a1;
