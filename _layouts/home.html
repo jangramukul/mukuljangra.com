@@ -79,18 +79,7 @@
       }
 
       .intro-headline .highlight-text {
-        background: linear-gradient(135deg, #7F52FF, #E44857, #0095D5, #7F52FF, #E44857);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: gradient-flow 4s ease infinite;
-      }
-
-      @keyframes gradient-flow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        color: #ffffff;
       }
 
       .intro-tagline {
@@ -856,23 +845,7 @@
 
         <!-- Blog tab -->
         <div class="tab-content active" id="tab-blog">
-          <div class="category-chips">
-            <div class="category-chip active" data-tag="all">All</div>
-            {% assign all_tags = "" | split: "" %}
-            {% for post in site.articles %}
-              {% unless post.tags contains "Book" %}
-              {% for tag in post.tags %}
-                {% unless all_tags contains tag %}
-                  {% assign all_tags = all_tags | push: tag %}
-                {% endunless %}
-              {% endfor %}
-              {% endunless %}
-            {% endfor %}
-            {% assign sorted_tags = all_tags | sort %}
-            {% for tag in sorted_tags %}
-              <div class="category-chip" data-tag="{{ tag | replace: ' ', '_' }}">{{ tag }}</div>
-            {% endfor %}
-          </div>
+
           <div class="articles-grid">
           {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
           {% for post in sorted_articles %}
@@ -882,13 +855,7 @@
               <div class="list-post-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
               <div class="list-post-content">
                 <h2>{{ post.title }}</h2>
-                {% if post.tags.size > 0 %}
-                <div class="list-post-tags">
-                  {% for tag in post.tags %}
-                  <span class="list-post-tag">{{ tag }}</span>
-                  {% endfor %}
-                </div>
-                {% endif %}
+
                 <div class="date">{{ post.date | date:"%A, %B %d, %Y" }}</div>
                 <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
               </div>
