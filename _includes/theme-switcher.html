@@ -1,0 +1,79 @@
+<!-- Theme Switcher -->
+<div class="theme-switcher">
+  <button class="theme-switcher-btn" id="theme-toggle" aria-label="Change reading theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </button>
+  <div class="theme-dropdown" id="theme-dropdown">
+    <button class="theme-option active" data-reading-theme="default">
+      <span class="theme-swatch" data-theme="default"></span>
+      Default
+    </button>
+    <button class="theme-option" data-reading-theme="warm-dark">
+      <span class="theme-swatch" data-theme="warm-dark"></span>
+      Warm Dark
+    </button>
+    <button class="theme-option" data-reading-theme="gruvbox">
+      <span class="theme-swatch" data-theme="gruvbox"></span>
+      Gruvbox
+    </button>
+    <button class="theme-option" data-reading-theme="nord">
+      <span class="theme-swatch" data-theme="nord"></span>
+      Nord
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toggle = document.getElementById('theme-toggle');
+  var dropdown = document.getElementById('theme-dropdown');
+  var options = document.querySelectorAll('.theme-option');
+
+  // Restore saved theme
+  var saved = localStorage.getItem('reading-theme') || 'default';
+  applyTheme(saved);
+
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  options.forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      var theme = this.dataset.readingTheme;
+      applyTheme(theme);
+      localStorage.setItem('reading-theme', theme);
+      dropdown.classList.remove('open');
+    });
+  });
+
+  document.addEventListener('click', function() {
+    dropdown.classList.remove('open');
+  });
+
+  dropdown.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+
+  function applyTheme(theme) {
+    if (theme === 'default') {
+      document.documentElement.removeAttribute('data-reading-theme');
+    } else {
+      document.documentElement.setAttribute('data-reading-theme', theme);
+    }
+    options.forEach(function(opt) {
+      opt.classList.toggle('active', opt.dataset.readingTheme === theme);
+    });
+  }
+})();
+</script>
