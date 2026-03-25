@@ -284,22 +284,23 @@
 
       .list-post {
         padding: 16px 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
         background: transparent;
         border-radius: 0;
-        border-top: none;
-        border-left: none;
-        border-right: none;
+        border: none;
         cursor: pointer;
         transition: background 0.15s ease;
-        display: block;
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
       }
 
       .list-post:hover {
         background: rgba(0, 229, 208, 0.02);
       }
 
-      /* Title — matches .subsection-title from resources */
+      /* Title */
       .list-post h2 {
         font-family: 'Space Mono', monospace;
         font-size: 0.9em;
@@ -307,10 +308,11 @@
         color: #00E5D0;
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        margin: 0 0 6px 0;
+        margin: 0;
         border: none !important;
         padding: 0;
         line-height: 1.4;
+        flex: 1;
       }
 
       .list-post h2 a {
@@ -318,35 +320,26 @@
         text-decoration: none !important;
       }
 
-      /* Excerpt — matches .question-list li from resources */
-      .list-post-excerpt {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.95em;
-        color: #6b7280;
-        line-height: 1.7;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .list-post-excerpt::before {
-        content: '→ ';
-        color: rgba(0, 229, 208, 0.4);
+      /* Date */
+      .list-post .date {
         font-family: 'Space Mono', monospace;
-        font-size: 0.9em;
+        font-size: 0.72em;
+        color: #374151;
+        white-space: nowrap;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+        display: block;
       }
 
-      .list-post:hover .list-post-excerpt {
-        color: #d1d5db;
+      .list-post:hover .date {
+        color: #6b7280;
       }
 
       /* Hide unused elements */
+      .list-post-excerpt,
       .list-post-icon,
       .list-post-tags,
       .list-post-tag,
-      .list-post .date,
       .list-post-content {
         display: none;
       }
@@ -775,9 +768,9 @@
         <h1 class="intro-headline">Mukul Jangra</h1>
         <div class="intro-tagline">{{ site.site_tagline }}</div>
         <div class="contact-links">
-          <a href="{{ site.site_github }}" rel="noopener" class="contact-link" title="GitHub">⬡ GitHub</a>
+          <a href="{{ site.site_github }}" rel="noopener" class="contact-link" title="GitHub">GitHub</a>
           <span class="link-divider">·</span>
-          <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link" title="Mastodon">⬡ Mastodon</a>
+          <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link" title="Mastodon">Mastodon</a>
           <span class="link-divider">·</span>
           <a href="/resources" class="contact-link contact-link-golden">Interview Prep →</a>
         </div>
@@ -801,7 +794,7 @@
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">
               <h2>{{ post.title }}</h2>
-              <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
+              <div class="date">{{ post.date | date:"%b %Y" }}</div>
             </article>
           </a>
           {% endunless %}
