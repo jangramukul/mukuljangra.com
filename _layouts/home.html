@@ -797,76 +797,11 @@
           font-size: 0.68em;
         }
       }
-      /* ── Aurora blob background ── */
-      .aurora-container {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 0;
-        pointer-events: none;
-        overflow: hidden;
-      }
-
-      .aurora-blob {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(80px);
-        will-change: transform;
-        opacity: 0;
-        animation: blobFadeIn 1.5s ease forwards;
-      }
-
-      @keyframes blobFadeIn {
-        to { opacity: 1; }
-      }
-
-      .aurora-blob-1 {
-        width: 700px; height: 700px;
-        background: radial-gradient(circle, rgba(0,229,208,0.28) 0%, rgba(0,180,170,0.10) 50%, transparent 70%);
-        top: -200px; left: -150px;
-        animation: blobFadeIn 2s ease forwards, blob1Move 18s ease-in-out infinite alternate;
-      }
-      .aurora-blob-2 {
-        width: 600px; height: 600px;
-        background: radial-gradient(circle, rgba(0,150,255,0.18) 0%, rgba(0,100,200,0.07) 50%, transparent 70%);
-        top: 60vh; right: -100px;
-        animation: blobFadeIn 2.5s ease forwards, blob2Move 22s ease-in-out infinite alternate;
-      }
-      .aurora-blob-3 {
-        width: 500px; height: 500px;
-        background: radial-gradient(circle, rgba(0,229,208,0.15) 0%, rgba(100,0,255,0.06) 50%, transparent 70%);
-        top: 30vh; left: 40%;
-        animation: blobFadeIn 3s ease forwards, blob3Move 26s ease-in-out infinite alternate;
-      }
-
-      @keyframes blob1Move {
-        0%   { transform: translate(0px, 0px) scale(1); }
-        33%  { transform: translate(80px, 60px) scale(1.08); }
-        66%  { transform: translate(-40px, 120px) scale(0.95); }
-        100% { transform: translate(60px, -80px) scale(1.05); }
-      }
-      @keyframes blob2Move {
-        0%   { transform: translate(0px, 0px) scale(1); }
-        33%  { transform: translate(-100px, -60px) scale(1.1); }
-        66%  { transform: translate(60px, -120px) scale(0.92); }
-        100% { transform: translate(-80px, 80px) scale(1.06); }
-      }
-      @keyframes blob3Move {
-        0%   { transform: translate(0px, 0px) scale(1); }
-        33%  { transform: translate(60px, -80px) scale(1.12); }
-        66%  { transform: translate(-80px, 60px) scale(0.96); }
-        100% { transform: translate(40px, 100px) scale(1.04); }
-      }
-
     </style>
   </head>
   <body>
     {% include site-nav.html cta_url="/resources" cta_text="Interview Prep →" %}
     <div class="gradient-bg"></div>
-    <div class="aurora-container">
-      <div class="aurora-blob aurora-blob-1"></div>
-      <div class="aurora-blob aurora-blob-2"></div>
-      <div class="aurora-blob aurora-blob-3"></div>
-    </div>
     <div class="main-background"></div>
     <div class="right-column">
       <!-- Introduction Section -->
