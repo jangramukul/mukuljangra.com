@@ -21,27 +21,6 @@
   pointer-events: none;
 }
 
-/* Film grain overlay — applied globally */
-.grain-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  opacity: 0.045;
-  pointer-events: none;
-  z-index: 9997;
-  animation: grainShift 0.4s steps(1) infinite;
-}
-
-@keyframes grainShift {
-  0%   { background-position: 0px 0px; }
-  25%  { background-position: 110px 40px; }
-  50%  { background-position: 40px 110px; }
-  75%  { background-position: 160px 160px; }
-  100% { background-position: 0px 0px; }
-}
-
 /* Twinkling stars */
 .star-subtle {
   position: absolute;
