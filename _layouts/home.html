@@ -258,115 +258,16 @@
         gap: 8px;
       }
 
-      /* Blog post cards */
-      .list-post {
-        margin-bottom: 0;
-        padding: 20px 24px;
-        width: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 16px;
-        transition: all 0.2s ease;
-        border-radius: 0;
-        background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        cursor: pointer;
-        height: 100%;
-      }
-
-      .list-post:hover {
-        background-color: rgba(0, 229, 208, 0.04);
-        border-color: rgba(0, 229, 208, 0.4);
-      }
-
-      .list-post-icon {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 0;
-        background: rgba(0, 229, 208, 0.06);
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #00E5D0;
-        font-size: 16px;
-      }
-
-      .list-post-content {
-        flex: 1;
-        min-width: 0;
+      /* Blog list — lostastronaut.space numbered row style */
+      .articles-grid {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-      }
-
-      .list-post h2 {
-        font-family: 'Inter', -apple-system, sans-serif;
-        font-size: 1em;
-        margin: 0;
-        border: none !important;
-        padding: 0;
-        font-weight: 600;
-        line-height: 1.4;
-        color: #d1d5db;
-      }
-
-      .list-post h2 a {
-        color: inherit !important;
-        text-decoration: none !important;
-      }
-
-      .list-post h2 a:hover {
-        color: inherit !important;
-        text-decoration: none !important;
-      }
-
-      .list-post-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 4px;
-      }
-
-      .list-post-tag {
-        padding: 2px 8px;
-        border-radius: 0;
-        font-size: 0.68em;
-        font-weight: 700;
-        font-family: 'Space Mono', monospace;
-        border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.04);
-        color: #6b7280;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-
-      .list-post .date {
-        color: #374151;
-        font-size: 0.75em;
-        white-space: nowrap;
-        font-family: 'Space Mono', 'Courier New', monospace;
-        letter-spacing: 0.04em;
-      }
-
-      .list-post-excerpt {
-        color: #6b7280;
-        font-size: 0.82em;
-        line-height: 1.6;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
       }
 
       .list-post-link {
         text-decoration: none !important;
         color: inherit !important;
-        display: flex;
+        display: block;
       }
 
       .list-post-link:hover,
@@ -376,8 +277,83 @@
         color: inherit !important;
       }
 
-      .list-post-link:hover .list-post h2 {
+      .list-post-link.hidden {
+        display: none;
+      }
+
+      .list-post {
+        display: grid;
+        grid-template-columns: 60px 1fr 1fr;
+        align-items: center;
+        gap: 0 40px;
+        padding: 28px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        background: transparent;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .list-post:last-child {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .list-post:hover {
+        background: transparent;
+        opacity: 0.75;
+      }
+
+      /* Number column */
+      .list-post-num {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.85em;
+        color: #00E5D0;
+        letter-spacing: 0.05em;
+        font-weight: 400;
+      }
+
+      /* Title column */
+      .list-post h2 {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.9em;
+        margin: 0;
+        border: none !important;
+        padding: 0;
+        font-weight: 700;
+        line-height: 1.3;
         color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .list-post h2 a {
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+
+      /* Excerpt column */
+      .list-post-excerpt {
+        color: #6b7280;
+        font-size: 0.82em;
+        line-height: 1.6;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-family: 'Inter', sans-serif;
+      }
+
+      /* Hide unused elements */
+      .list-post-icon,
+      .list-post-tags,
+      .list-post-tag,
+      .list-post .date,
+      .list-post-content {
+        display: none;
       }
 
       .list-post-link.hidden {
@@ -829,17 +805,15 @@
 
           <div class="articles-grid">
           {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
+          {% assign post_index = 0 %}
           {% for post in sorted_articles %}
           {% unless post.tags contains "Book" %}
+          {% assign post_index = post_index | plus: 1 %}
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E5D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-              <div class="list-post-content">
-                <h2>{{ post.title }}</h2>
-
-                <div class="date">{{ post.date | date:"%A, %B %d, %Y" }}</div>
-                <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
-              </div>
+              <div class="list-post-num">{% if post_index < 10 %}0{{ post_index }}{% else %}{{ post_index }}{% endif %}</div>
+              <h2>{{ post.title }}</h2>
+              <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 20 }}</p>
             </article>
           </a>
           {% endunless %}
