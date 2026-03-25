@@ -56,21 +56,23 @@
 .nav-cta {
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.72em;
-  color: #00E5D0;
-  border: 1px solid rgba(0, 229, 208, 0.5);
-  padding: 7px 16px;
+  color: #000000;
+  background: #00E5D0;
+  border: none;
+  padding: 8px 18px;
   text-decoration: none;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   transition: all 0.2s ease;
+  border-radius: 0;
+  font-weight: 700;
 }
 
 .nav-cta:hover {
-  background: rgba(0, 229, 208, 0.08);
-  color: #00E5D0;
-  border-color: #00E5D0;
+  background: #7ffff4;
+  color: #000000;
   text-decoration: none;
-  box-shadow: 0 0 12px rgba(0, 229, 208, 0.2);
+  box-shadow: 0 0 18px rgba(0, 229, 208, 0.4);
 }
 
 /* Shared layout */
