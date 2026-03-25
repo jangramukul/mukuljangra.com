@@ -60,7 +60,7 @@
       }
       
       .content.post {
-        font-size: 18px;
+        font-size: 20px;
         line-height: 1.8;
         margin: 0 auto;
         color: var(--text-color);
@@ -99,7 +99,7 @@
         font-size: 1.35em;
         margin-top: 2em;
         margin-bottom: 0.8em;
-        color: #ffffff;
+        color: #00E5D0;
         border-left: 2px solid #00E5D0;
         padding: 4px 0 4px 14px;
         border-bottom: none;
@@ -117,8 +117,8 @@
         font-size: 1.1em;
         margin-top: 1.8em;
         margin-bottom: 0.8em;
-        color: #d1d5db;
-        border-left: 2px solid rgba(0, 229, 208, 0.4);
+        color: #00E5D0;
+        border-left: 2px solid rgba(0, 229, 208, 0.5);
         padding: 2px 0 2px 12px;
         border-bottom: none;
         border-image: none;
@@ -133,8 +133,8 @@
         font-size: 0.95em;
         margin-top: 1.5em;
         margin-bottom: 0.8em;
-        color: #9ca3af;
-        border-left: 1px solid rgba(0, 229, 208, 0.25);
+        color: rgba(0, 229, 208, 0.7);
+        border-left: 1px solid rgba(0, 229, 208, 0.3);
         padding: 1px 0 1px 10px;
         border-bottom: none;
         border-image: none;
@@ -254,14 +254,16 @@
       }
 
       .content.post blockquote {
-        border-left: 2px solid rgba(0, 229, 208, 0.4);
-        padding-left: 1em;
-        color: var(--blockquote-color);
+        border-left: 3px solid #00E5D0;
+        border-right: none;
+        border-top: none;
+        border-bottom: none;
+        padding: 12px 0 12px 20px;
+        color: #9ca3af;
         border-radius: 0;
         background-color: rgba(0, 229, 208, 0.03);
-        padding: 12px 16px 12px 16px;
-        overflow: hidden;
-        font-size: 1em;
+        font-style: italic;
+        margin: 1.5em 0;
       }
 
       .content.post a {
@@ -292,13 +294,13 @@
         align-items: center;
         width: auto;
         height: 34px;
-        background-color: transparent;
+        background-color: #00E5D0;
         border-radius: 0;
         text-decoration: none;
-        color: #4b5563;
+        color: #000000;
         font-size: 0.75em;
         transition: all 0.2s ease;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: none;
         line-height: 1;
         padding: 0 16px;
         font-family: 'Space Mono', monospace;
@@ -309,9 +311,9 @@
       }
       
       .back-button:hover {
-        background-color: rgba(0, 229, 208, 0.06);
-        color: #00E5D0;
-        border-color: rgba(0, 229, 208, 0.4);
+        background-color: #7ffff4;
+        color: #000000;
+        box-shadow: 0 0 18px rgba(0, 229, 208, 0.4);
       }
       
       .back-button .nav-arrow {
@@ -391,12 +393,12 @@
         padding: 0 !important;
         text-decoration: none !important;
         font-size: 2.4em !important;
-        color: #ffffff !important;
+        color: #00E5D0 !important;
         font-family: 'Space Mono', 'Courier New', monospace !important;
         font-weight: 700 !important;
-        text-transform: none !important;
+        text-transform: uppercase !important;
         line-height: 1.1 !important;
-        letter-spacing: 0.02em !important;
+        letter-spacing: 0.04em !important;
       }
       
       h2.post-title {
@@ -408,11 +410,11 @@
         padding: 0 !important;
         text-decoration: none !important;
         display: block !important;
-        color: #ffffff !important;
+        color: #00E5D0 !important;
         position: static !important;
         font-size: 2.4em !important;
-        text-transform: none !important;
-        letter-spacing: 0.02em !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
       }
       
       h2.post-title::before,
