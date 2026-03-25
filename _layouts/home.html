@@ -258,41 +258,34 @@
         gap: 8px;
       }
 
-      /* Blog post cards */
+      /* Blog post cards — space/terminal style */
       .list-post {
         margin-bottom: 0;
-        padding: 20px 24px;
+        padding: 18px 24px;
         width: 100%;
         box-sizing: border-box;
         display: flex;
         flex-direction: row;
         align-items: flex-start;
-        gap: 16px;
+        gap: 20px;
         transition: all 0.2s ease;
         border-radius: 0;
         background-color: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.05);
+        border-left: 2px solid rgba(0, 229, 208, 0.25);
         cursor: pointer;
         height: 100%;
       }
 
       .list-post:hover {
         background-color: rgba(0, 229, 208, 0.04);
-        border-color: rgba(0, 229, 208, 0.4);
+        border-color: rgba(255, 255, 255, 0.08);
+        border-left-color: #00E5D0;
+        box-shadow: -4px 0 20px rgba(0, 229, 208, 0.08);
       }
 
       .list-post-icon {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 0;
-        background: rgba(0, 229, 208, 0.06);
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #00E5D0;
-        font-size: 16px;
+        display: none;
       }
 
       .list-post-content {
@@ -311,7 +304,7 @@
         padding: 0;
         font-weight: 600;
         line-height: 1.4;
-        color: #d1d5db;
+        color: #e5e7eb;
       }
 
       .list-post h2 a {
@@ -345,11 +338,12 @@
       }
 
       .list-post .date {
-        color: #374151;
-        font-size: 0.75em;
+        color: rgba(0, 229, 208, 0.5);
+        font-size: 0.7em;
         white-space: nowrap;
         font-family: 'Space Mono', 'Courier New', monospace;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       .list-post-excerpt {
