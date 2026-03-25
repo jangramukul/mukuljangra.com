@@ -80,33 +80,44 @@
         line-height: 1.05;
         margin-bottom: 24px;
         position: relative;
-        animation: glitch 4s ease-in-out infinite;
+        animation: glitch 3s linear infinite;
       }
 
       @keyframes glitch {
-        0%, 88%, 100% {
+        0%, 55%, 100% {
           text-shadow: none;
           transform: none;
+          opacity: 1;
         }
-        89% {
+        57% {
+          text-shadow: -4px 0 #00E5D0, 4px 0 #ff3366;
+          transform: translate(3px, 0);
+          opacity: 0.9;
+        }
+        60% {
+          text-shadow: 4px 0 #00E5D0, -4px 0 #ff3366;
+          transform: translate(-3px, 0);
+          opacity: 0.85;
+        }
+        63% {
+          text-shadow: none;
+          transform: translate(2px, -1px);
+          opacity: 1;
+        }
+        66% {
           text-shadow: -3px 0 #00E5D0, 3px 0 #ff3366;
-          transform: translate(2px, 0);
+          transform: translate(-2px, 1px);
+          opacity: 0.9;
         }
-        90% {
-          text-shadow: 3px 0 #00E5D0, -3px 0 #ff3366;
-          transform: translate(-2px, 0);
-        }
-        91% {
-          text-shadow: none;
-          transform: none;
-        }
-        92% {
-          text-shadow: -1px 0 #00E5D0;
+        69% {
+          text-shadow: 2px 0 #00E5D0;
           transform: translate(1px, 0);
+          opacity: 1;
         }
-        93% {
+        72% {
           text-shadow: none;
           transform: none;
+          opacity: 1;
         }
       }
 
