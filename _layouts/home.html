@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" type="text/css">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
+    <link rel="stylesheet" href="/static/nav.css" type="text/css">
     <link rel="stylesheet" href="/static/syntax.css" type="text/css">
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
@@ -46,89 +47,6 @@
 
       a, a:focus { transition: color .2s ease; color: var(--link-color); }
       a:hover, a:active { color: var(--link-color-hover); }
-
-      /* Fixed top navigation */
-      .site-nav {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 56px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 40px;
-        z-index: 1000;
-        border-bottom: 1px solid rgba(0, 229, 208, 0.08);
-        background: rgba(0, 0, 0, 0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-
-      .nav-logo {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.85em;
-        font-weight: 700;
-        color: #ffffff;
-        text-decoration: none;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-      }
-
-      .nav-logo:hover {
-        color: #00E5D0;
-        text-decoration: none;
-      }
-
-      .nav-right {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-      }
-
-      .nav-link {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.72em;
-        color: #6b7280;
-        text-decoration: none;
-        letter-spacing: 0.08em;
-        transition: color 0.2s ease;
-        text-transform: uppercase;
-      }
-
-      .nav-link:hover {
-        color: #00E5D0;
-        text-decoration: none;
-      }
-
-      .nav-cta {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.72em;
-        color: #00E5D0;
-        border: 1px solid rgba(0, 229, 208, 0.5);
-        padding: 7px 16px;
-        text-decoration: none;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-      }
-
-      .nav-cta:hover {
-        background: rgba(0, 229, 208, 0.08);
-        color: #00E5D0;
-        border-color: #00E5D0;
-        text-decoration: none;
-        box-shadow: 0 0 12px rgba(0, 229, 208, 0.2);
-      }
-
-      .right-column {
-        width: 100%;
-        flex: 1;
-        padding: 40px;
-        background-color: transparent;
-        max-width: 1200px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-      }
 
       .content {
         max-width: 1000px;
@@ -819,25 +737,7 @@
         color: #1f2937;
       }
 
-      @media (max-width: 768px) {
-        .site-nav {
-          padding: 0 20px;
-          height: 50px;
-        }
-        .nav-logo {
-          font-size: 0.75em;
-        }
-        .nav-right {
-          gap: 12px;
-        }
-        .nav-link {
-          font-size: 0.62em;
-        }
-        .nav-cta {
-          font-size: 0.62em;
-          padding: 5px 10px;
-        }
-        .right-column {
+      @media (max-width: 768px) {        .right-column {
           padding: 20px;
         }
         .list-container {
@@ -900,14 +800,7 @@
     </style>
   </head>
   <body>
-    <nav class="site-nav">
-      <a href="/" class="nav-logo">Mukul Jangra</a>
-      <div class="nav-right">
-        <a href="{{ site.site_github }}" class="nav-link" rel="noopener">GitHub</a>
-        <a href="{{ site.site_mastodon }}" class="nav-link" rel="me noopener">Mastodon</a>
-        <a href="/resources" class="nav-cta">Interview Prep →</a>
-      </div>
-    </nav>
+    {% include site-nav.html cta_url="/resources" cta_text="Interview Prep →" %}
     <div class="gradient-bg"></div>
     <div class="main-background"></div>
     <div class="right-column">

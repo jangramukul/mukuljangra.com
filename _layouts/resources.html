@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" type="text/css">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
+    <link rel="stylesheet" href="/static/nav.css" type="text/css">
     <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
     <meta name="theme-color" content="#000000">
@@ -32,64 +33,6 @@
 
       a, a:focus { transition: color .2s ease; color: #00E5D0; }
       a:hover, a:active { color: #7ffff4; }
-
-      .site-nav {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 56px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 40px;
-        z-index: 1000;
-        border-bottom: 1px solid rgba(0, 229, 208, 0.08);
-        background: rgba(0, 0, 0, 0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-
-      .nav-logo {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.85em;
-        font-weight: 700;
-        color: #ffffff;
-        text-decoration: none;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-      }
-      .nav-logo:hover { color: #00E5D0; text-decoration: none; }
-
-      .nav-right { display: flex; align-items: center; gap: 24px; }
-
-      .nav-link {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.72em;
-        color: #6b7280;
-        text-decoration: none;
-        letter-spacing: 0.08em;
-        transition: color 0.2s ease;
-        text-transform: uppercase;
-      }
-      .nav-link:hover { color: #00E5D0; text-decoration: none; }
-
-      .nav-cta {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.72em;
-        color: #00E5D0;
-        border: 1px solid rgba(0, 229, 208, 0.5);
-        padding: 7px 16px;
-        text-decoration: none;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-      }
-      .nav-cta:hover {
-        background: rgba(0, 229, 208, 0.08);
-        color: #00E5D0;
-        border-color: #00E5D0;
-        text-decoration: none;
-        box-shadow: 0 0 12px rgba(0, 229, 208, 0.2);
-      }
 
       .right-column {
         width: 100%;
@@ -138,44 +81,6 @@
         margin-bottom: 28px;
         color: #6b7280;
         max-width: 600px;
-      }
-
-      .section-nav {
-        position: sticky;
-        top: 56px;
-        z-index: 100;
-        background: rgba(0,0,0,0.95);
-        backdrop-filter: blur(12px);
-        padding: 12px 0;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: none;
-      }
-      .section-nav::-webkit-scrollbar { display: none; }
-      .section-nav-inner {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 8px;
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 40px;
-      }
-      .section-nav-link {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.68em;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #4b5563;
-        text-decoration: none;
-        padding: 5px 12px;
-        border: 1px solid rgba(255,255,255,0.06);
-        transition: all 0.2s ease;
-        white-space: nowrap;
-      }
-      .section-nav-link:hover {
-        color: #00E5D0;
-        border-color: rgba(0,229,208,0.3);
-        text-decoration: none;
       }
 
       .section-block {
@@ -270,16 +175,8 @@
       }
 
       @media (max-width: 768px) {
-        .site-nav { padding: 0 20px; height: 50px; }
-        .nav-logo { font-size: 0.75em; }
-        .nav-right { gap: 12px; }
-        .nav-link { font-size: 0.62em; }
-        .nav-cta { font-size: 0.62em; padding: 5px 10px; }
-        .right-column { padding: 20px; }
         .intro-headline { font-size: 2.2em; }
         .intro-section { padding: 80px 0 16px 0; }
-        .section-nav { padding: 10px 0; }
-        .section-nav-inner { padding: 0 20px; }
         .section-title { font-size: 1.1em; }
         .subsection-title { font-size: 0.78em; }
         .question-list li { font-size: 1em; padding: 11px 10px; }
@@ -288,14 +185,7 @@
   </head>
   <body>
 
-    <nav class="site-nav">
-      <a href="/" class="nav-logo">Mukul Jangra</a>
-      <div class="nav-right">
-        <a href="{{ site.site_github }}" class="nav-link" rel="noopener">GitHub</a>
-        <a href="{{ site.site_mastodon }}" class="nav-link" rel="me noopener">Mastodon</a>
-        <a href="/" class="nav-cta">Blog →</a>
-      </div>
-    </nav>
+    {% include site-nav.html cta_url="/" cta_text="Blog →" %}
 
     <div class="right-column">
       <div class="intro-section">
@@ -305,19 +195,6 @@
       </div>
     </div>
 
-    <div class="section-nav">
-      <div class="section-nav-inner">
-        <a href="#android-platform" class="section-nav-link">Android Platform</a>
-        <a href="#kotlin" class="section-nav-link">Kotlin</a>
-        <a href="#coroutines-flows" class="section-nav-link">Coroutines &amp; Flows</a>
-        <a href="#jetpack-compose" class="section-nav-link">Jetpack Compose</a>
-        <a href="#architecture" class="section-nav-link">Architecture</a>
-        <a href="#dsa" class="section-nav-link">DSA</a>
-        <a href="#system-design" class="section-nav-link">System Design</a>
-        <a href="#behavioral" class="section-nav-link">Behavioral</a>
-        <a href="#coding-tests" class="section-nav-link">Coding Tests</a>
-      </div>
-    </div>
 
     <div class="right-column">
       <div class="content">
