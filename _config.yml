@@ -31,10 +31,6 @@ collections:
     output: true
     permalink: /:title/
 
-  interviews:
-    output: true
-    permalink: /interview/:title/
-
   newsletters:
     output: true
     permalink: /newsletter/:title/

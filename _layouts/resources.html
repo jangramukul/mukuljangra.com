@@ -4,27 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ site.site_name }}</title>
+    <title>Interview Prep — {{ site.site_name }}</title>
     <link rel="icon" type="image/svg+xml" href="/static/android-robot.svg">
-    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" type="text/css">
-    <link rel="stylesheet" href="/static/app.css" type="text/css">
-    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
-    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" type="text/css">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
+    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
-    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/newsletter.xml" title="Weekly Newsletter" />
     <meta name="theme-color" content="#000000">
-    <style type="text/css">
+    <style>
       :root {
         --background-color: #000000;
         --text-color: #e5e7eb;
-        --sidebar-bg: #0a0a0a;
-        --code-bg: #0d0d0d;
-        --blockquote-color: #6b7280;
-        --blockquote-border: rgba(0, 229, 208, 0.35);
-        --link-color: #00E5D0;
-        --link-color-hover: #7ffff4;
         --accent: #00E5D0;
         --accent-dim: rgba(0, 229, 208, 0.15);
         --accent-border: rgba(0, 229, 208, 0.3);
@@ -36,16 +26,12 @@
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        position: relative;
-        display: flex;
-        flex-direction: column;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
 
-      a, a:focus { transition: color .2s ease; color: var(--link-color); }
-      a:hover, a:active { color: var(--link-color-hover); }
+      a, a:focus { transition: color .2s ease; color: #00E5D0; }
+      a:hover, a:active { color: #7ffff4; }
 
-      /* Fixed top navigation */
       .site-nav {
         position: fixed;
         top: 0; left: 0; right: 0;
@@ -70,14 +56,9 @@
         letter-spacing: 0.18em;
         text-transform: uppercase;
       }
-
       .nav-logo:hover { color: #00E5D0; text-decoration: none; }
 
-      .nav-right {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-      }
+      .nav-right { display: flex; align-items: center; gap: 24px; }
 
       .nav-link {
         font-family: 'Space Mono', 'Courier New', monospace;
@@ -88,7 +69,6 @@
         transition: color 0.2s ease;
         text-transform: uppercase;
       }
-
       .nav-link:hover { color: #00E5D0; text-decoration: none; }
 
       .nav-cta {
@@ -102,7 +82,6 @@
         text-transform: uppercase;
         transition: all 0.2s ease;
       }
-
       .nav-cta:hover {
         background: rgba(0, 229, 208, 0.08);
         color: #00E5D0;
@@ -122,17 +101,13 @@
         z-index: 1;
       }
 
-      .content {
-        max-width: 1000px;
-        margin: 0 auto;
-      }
+      .content { max-width: 1000px; margin: 0 auto; }
 
-      /* Hero section */
       .intro-section {
-        padding: 130px 0 32px 0;
+        padding: 130px 0 24px 0;
         text-align: left;
         max-width: 1000px;
-        margin: 0 auto 24px;
+        margin: 0 auto 15px;
       }
 
       .hero-eyebrow {
@@ -159,285 +134,121 @@
         font-family: 'Inter', -apple-system, sans-serif;
         font-size: 1.05em;
         line-height: 1.7;
-        margin-bottom: 16px;
+        margin-bottom: 28px;
         color: #6b7280;
         max-width: 600px;
       }
 
-      .intro-author {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.78em;
-        color: #374151;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 0;
+      .section-nav {
+        position: sticky;
+        top: 56px;
+        z-index: 100;
+        background: rgba(0,0,0,0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding: 12px 0;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
       }
-
-      .intro-author a {
+      .section-nav::-webkit-scrollbar { display: none; }
+      .section-nav-inner {
+        display: inline-flex;
+        gap: 8px;
+        padding: 0 40px;
+      }
+      .section-nav-link {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.68em;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #4b5563;
+        text-decoration: none;
+        padding: 5px 12px;
+        border: 1px solid rgba(255,255,255,0.06);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .section-nav-link:hover {
         color: #00E5D0;
+        border-color: rgba(0,229,208,0.3);
         text-decoration: none;
       }
 
-      .intro-author a:hover {
-        color: #7ffff4;
+      .section-block {
+        margin-top: 72px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255,255,255,0.05);
       }
-
-      /* List container */
-      .list-container {
-        margin: 0 auto;
-        padding: 0;
-        max-width: 1000px;
+      .section-block:first-of-type {
+        margin-top: 32px;
+        border-top: none;
       }
-
-      /* Articles list styles (used by interviews) */
-      .articles-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .list-post {
-        margin-bottom: 0;
-        padding: 20px 24px;
-        width: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 16px;
-        transition: all 0.2s ease;
-        border-radius: 0;
-        background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        cursor: pointer;
-        height: 100%;
-      }
-
-      .list-post:hover {
-        background-color: rgba(0, 229, 208, 0.04);
-        border-color: rgba(0, 229, 208, 0.4);
-      }
-
-      .list-post-icon {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 0;
-        background: rgba(0, 229, 208, 0.06);
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #00E5D0;
-        font-size: 16px;
-      }
-
-      .list-post-content {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .list-post h2 {
-        font-family: 'Inter', sans-serif;
-        font-size: 1em;
-        margin: 0;
-        border: none !important;
-        padding: 0;
-        font-weight: 600;
-        line-height: 1.4;
-        color: #d1d5db;
-      }
-
-      .list-post h2 a { color: inherit !important; text-decoration: none !important; }
-      .list-post h2 a:hover { color: inherit !important; text-decoration: none !important; }
-
-      .list-post-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 4px;
-      }
-
-      .list-post-tag {
-        padding: 2px 8px;
-        border-radius: 0;
-        font-size: 0.68em;
-        font-weight: 700;
+      .section-title {
         font-family: 'Space Mono', monospace;
-        border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.04);
-        color: #6b7280;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-
-      .list-post .date {
-        color: #374151;
-        font-size: 0.75em;
-        white-space: nowrap;
-        font-family: 'Space Mono', monospace;
-        letter-spacing: 0.04em;
-      }
-
-      .list-post-excerpt {
-        color: #6b7280;
-        font-size: 0.82em;
-        line-height: 1.6;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .list-post-link {
-        text-decoration: none !important;
-        color: inherit !important;
-        display: flex;
-      }
-
-      .list-post-link:hover,
-      .list-post-link:focus,
-      .list-post-link:active {
-        text-decoration: none !important;
-        color: inherit !important;
-      }
-
-      .list-post-link:hover .list-post h2 { color: #ffffff; }
-      .list-post-link.hidden { display: none; }
-
-      /* Category chips */
-      .category-chips, .interview-level-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 24px;
-      }
-
-      .category-chip {
-        padding: 4px 14px;
-        border-radius: 0;
-        font-size: 0.75em;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-family: 'Space Mono', 'Courier New', monospace;
+        font-size: 1.4em;
         font-weight: 700;
-        border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.04);
-        color: #6b7280;
+        color: #ffffff;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        user-select: none;
+        margin-bottom: 32px;
+        padding-left: 14px;
+        border-left: 3px solid #00E5D0;
       }
-
-      .category-chip:hover { filter: brightness(1.4); border-color: currentColor; }
-      .category-chip.active { border-color: currentColor; filter: brightness(1.2); }
-
-      /* Interview posts */
-      .interviews-list {
+      .subsection-title {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.85em;
+        font-weight: 700;
+        color: #00E5D0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 36px;
+        margin-bottom: 16px;
+      }
+      .question-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 8px 0;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-      }
-
-      #tab-interviews .list-post {
-        background-color: rgba(255, 255, 255, 0.02);
-        border-color: rgba(255, 255, 255, 0.05);
-      }
-
-      #tab-interviews .list-post:hover {
-        border-color: rgba(255, 215, 0, 0.35);
-        background-color: rgba(255, 215, 0, 0.03);
-      }
-
-      .interview-number {
-        flex-direction: column;
         gap: 0;
-        background: rgba(255, 215, 0, 0.08);
-        border-color: rgba(255, 215, 0, 0.2);
       }
-
-      .interview-number .day-label {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.55em;
+      .question-list li {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.92em;
         color: #6b7280;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        line-height: 1;
+        line-height: 1.6;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        transition: color 0.15s ease;
       }
-
-      .interview-number .day-num {
-        font-family: 'Space Mono', monospace;
-        font-size: 1em;
-        font-weight: 700;
-        color: #FFD700;
-        line-height: 1;
-      }
-
-      .interview-card-desc {
-        color: #6b7280;
-        font-size: 0.82em;
-        line-height: 1.5;
-        margin: 0;
-      }
-
-      #tab-interviews .list-post-content h2 {
+      .question-list li:hover {
         color: #d1d5db;
-        font-weight: 600;
+        background: rgba(0,229,208,0.02);
       }
-
-      #tab-interviews .list-post-icon {
-        background: rgba(255, 215, 0, 0.08);
-        border-color: rgba(255, 215, 0, 0.2);
-      }
-
-      /* Empty state */
-      .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #374151;
+      .question-list li::before {
+        content: '→ ';
+        color: rgba(0,229,208,0.4);
         font-family: 'Space Mono', monospace;
-      }
-
-      .empty-state p {
         font-size: 0.9em;
-        margin-bottom: 8px;
-        letter-spacing: 0.05em;
-      }
-
-      .empty-state .empty-hint {
-        font-size: 0.8em;
-        color: #1f2937;
       }
 
       /* Stars */
       .star-subtle {
         position: absolute;
+        background: #ffffff;
+        border-radius: 50%;
         width: 2px;
         height: 2px;
-        background: rgba(255, 255, 255, 0.5);
-        border-radius: 50%;
-        animation: twinkle linear infinite;
+        opacity: 0.3;
+        animation: twinkle 4s ease-in-out infinite alternate;
       }
-
-      .star-subtle.sm {
-        width: 1px;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.35);
-      }
-
-      .star-subtle.lg {
-        width: 3px;
-        height: 3px;
-        background: rgba(255, 255, 255, 0.6);
-      }
+      .star-subtle.sm { width: 1px; height: 1px; opacity: 0.2; }
+      .star-subtle.lg { width: 3px; height: 3px; opacity: 0.4; }
 
       @keyframes twinkle {
-        0%, 100% { opacity: 0.2; }
-        50% { opacity: 1; }
+        from { opacity: 0.1; }
+        to { opacity: 0.5; }
       }
 
       @media (max-width: 768px) {
@@ -447,32 +258,17 @@
         .nav-link { font-size: 0.62em; }
         .nav-cta { font-size: 0.62em; padding: 5px 10px; }
         .right-column { padding: 20px; }
-        .list-container { padding: 0; max-width: 100%; }
-        .content { padding: 0; max-width: 100%; }
-        .intro-section { padding: 80px 0 20px 0; margin: 0 auto 16px; }
         .intro-headline { font-size: 2.2em; }
-        .intro-tagline { max-width: 100%; }
-        .list-post { padding: 16px; }
-        .list-post-icon { width: 34px; height: 34px; min-width: 34px; font-size: 14px; }
-        .list-post h2 { font-size: 0.88em; }
-        .interviews-list { grid-template-columns: repeat(2, 1fr); }
-      }
-
-      @media (max-width: 480px) {
-        .interviews-list { grid-template-columns: 1fr; }
+        .intro-section { padding: 80px 0 16px 0; }
+        .section-nav { padding: 10px 0; }
+        .section-nav-inner { padding: 0 20px; }
+        .section-title { font-size: 1.1em; }
+        .subsection-title { font-size: 0.78em; }
+        .question-list li { font-size: 0.88em; padding: 9px 10px; }
       }
     </style>
   </head>
   <body>
-    <nav class="site-nav">
-      <a href="/" class="nav-logo">Mukul Jangra</a>
-      <div class="nav-right">
-        <a href="{{ site.site_github }}" class="nav-link" rel="noopener">GitHub</a>
-        <a href="{{ site.site_mastodon }}" class="nav-link" rel="me noopener">Mastodon</a>
-        <a href="/" class="nav-cta">Blog →</a>
-      </div>
-    </nav>
-    <div class="gradient-bg"></div>
     <div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;pointer-events:none;overflow:hidden;">
       <div class="star-subtle" style="left:8%;top:12%;animation-delay:0.2s;animation-duration:3.5s"></div>
       <div class="star-subtle" style="left:22%;top:20%;animation-delay:1.8s;animation-duration:4.2s"></div>
@@ -515,150 +311,1766 @@
       <div class="star-subtle" style="left:77%;top:42%;animation-delay:2.3s;animation-duration:4.3s"></div>
       <div class="star-subtle" style="left:98%;top:72%;animation-delay:1.9s;animation-duration:4.8s"></div>
     </div>
-    <div class="main-background"></div>
+
+    <nav class="site-nav">
+      <a href="/" class="nav-logo">Mukul Jangra</a>
+      <div class="nav-right">
+        <a href="{{ site.site_github }}" class="nav-link" rel="noopener">GitHub</a>
+        <a href="{{ site.site_mastodon }}" class="nav-link" rel="me noopener">Mastodon</a>
+        <a href="/" class="nav-cta">Blog →</a>
+      </div>
+    </nav>
+
     <div class="right-column">
       <div class="intro-section">
-        <div class="hero-eyebrow">// Learn Android Development</div>
-        <h1 class="intro-headline">Android<br>Engineering</h1>
-        <div class="intro-tagline">Free resources to help you grow as an Android engineer — no signups, no paywalls, forever.</div>
-        <div class="intro-author">By <a href="/">Mukul Jangra</a></div>
-      </div>
-
-      <div class="list-container">
-        <!-- Interview Prep tab -->
-        <div class="tab-content active" id="tab-interviews">
-          <div class="interview-level-chips">
-            <div class="category-chip level-chip active" data-itag="all">All</div>
-            <div class="category-chip level-chip" data-itag="Technical_Round">Technical Round</div>
-            <div class="category-chip level-chip" data-itag="DSA_Round">DSA Round</div>
-            <div class="category-chip level-chip" data-itag="System_Design_Round">System Design Round</div>
-            <div class="category-chip level-chip" data-itag="Architecture_Round">Architecture Round</div>
-            <div class="category-chip level-chip" data-itag="Behavioral_Round">Behavioral Round</div>
-            <div class="category-chip level-chip" data-itag="Coding_Test">Coding Test</div>
-          </div>
-          {% assign interviews = site.interviews | sort: 'sequence' %}
-          {% if interviews.size > 0 %}
-          <div class="interviews-list">
-          {% for interview in interviews %}
-          <a href="{{ interview.url }}" class="list-post-link interview-post-link" data-level="{{ interview.level }}" data-seq="{{ interview.sequence }}" data-tags="{{ interview.tags | join: '|' }}">
-            <article class="list-post">
-              <div class="list-post-icon interview-number">
-                <span class="day-label">Day</span>
-                <span class="day-num">{{ interview.sequence }}</span>
-              </div>
-              <div class="list-post-content">
-                <h2>{{ interview.title }}</h2>
-                {% if interview.description %}
-                <p class="interview-card-desc">{{ interview.description }}</p>
-                {% endif %}
-                {% if interview.tags.size > 0 %}
-                <div class="list-post-tags">
-                  {% for tag in interview.tags %}
-                  <span class="list-post-tag">{{ tag }}</span>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-            </article>
-          </a>
-          {% endfor %}
-          </div>
-          {% else %}
-            <div class="empty-state">
-              <p>No interview prep notes yet.</p>
-              <p class="empty-hint">Stay tuned — notes are coming soon!</p>
-            </div>
-          {% endif %}
-        </div>
-
+        <div class="hero-eyebrow">// Android Interview Prep</div>
+        <h1 class="intro-headline">Interview<br>Questions</h1>
+        <div class="intro-tagline">900+ questions across Android, Kotlin, Compose, Architecture, DSA, System Design, Behavioral, and Coding Tests. Questions only — no answers.</div>
       </div>
     </div>
+
+    <div class="section-nav">
+      <div class="section-nav-inner">
+        <a href="#android-platform" class="section-nav-link">Android Platform</a>
+        <a href="#kotlin" class="section-nav-link">Kotlin</a>
+        <a href="#coroutines-flows" class="section-nav-link">Coroutines &amp; Flows</a>
+        <a href="#jetpack-compose" class="section-nav-link">Jetpack Compose</a>
+        <a href="#architecture" class="section-nav-link">Architecture</a>
+        <a href="#dsa" class="section-nav-link">DSA</a>
+        <a href="#system-design" class="section-nav-link">System Design</a>
+        <a href="#behavioral" class="section-nav-link">Behavioral</a>
+        <a href="#coding-tests" class="section-nav-link">Coding Tests</a>
+      </div>
+    </div>
+
+    <div class="right-column">
+      <div class="content">
+      <div class="section-block" id="android-platform">
+        <div class="section-title">Android Platform</div>
+        <div class="subsection-title">Activity &amp;amp; Fragment Lifecycle</div>
+        <ul class="question-list">
+          <li>Walk me through the Activity lifecycle callbacks and what each one is meant for.</li>
+          <li>What happens when the user rotates the device?</li>
+          <li>What is the difference between onSaveInstanceState and onRestoreInstanceState?</li>
+          <li>How does ViewModel survive configuration changes?</li>
+          <li>What happens when Activity A starts Activity B? Walk through the callback order.</li>
+          <li>What happens during process death? How is it different from a configuration change?</li>
+          <li>What&#x27;s the difference between ViewModel and SavedStateHandle?</li>
+          <li>List the Fragment lifecycle callbacks. How do they differ from Activity?</li>
+          <li>What is viewLifecycleOwner in a Fragment and why does it matter?</li>
+          <li>Why should Fragments only use the default no-argument constructor?</li>
+          <li>Why do I call setContentView() only in onCreate?</li>
+          <li>Explain onNewIntent. When is it called?</li>
+          <li>When does onDestroy get called without onPause and onStop?</li>
+          <li>How does multi-window mode affect the lifecycle?</li>
+          <li>How does ViewModel scoping work?</li>
+          <li>What are lifecycle-aware components?</li>
+          <li>Can a Fragment&#x27;s lifecycle state exceed its host Activity&#x27;s state?</li>
+          <li>What is the Fragment Result API?</li>
+          <li>What is setRetainInstance(true) and why is it deprecated?</li>
+          <li>What is ProcessLifecycleOwner?</li>
+          <li>What&#x27;s the difference between FragmentTransaction add() and replace()?</li>
+          <li>How do you test Activity lifecycle behavior?</li>
+        </ul>
+        <div class="subsection-title">Android Components</div>
+        <ul class="question-list">
+          <li>What are the four core Android components?</li>
+          <li>What is the Service lifecycle?</li>
+          <li>What are the three types of Services in Android?</li>
+          <li>What is the difference between `startService()` and `bindService()`?</li>
+          <li>Services run on the main thread — what does that mean?</li>
+          <li>What does `onStartCommand()` return and what do the return values mean?</li>
+          <li>When should you use Service vs WorkManager?</li>
+          <li>What are the Foreground Service requirements on modern Android?</li>
+          <li>What is the `AndroidManifest.xml` and what must be declared in it?</li>
+          <li>What is a Broadcast Receiver and how do you register one?</li>
+          <li>What changed with implicit broadcast restrictions in Android 8.0+?</li>
+          <li>What is a Content Provider and when would you use one?</li>
+          <li>What is `android:exported` and why does it matter?</li>
+          <li>Explain Application Context vs Activity Context.</li>
+          <li>What is the Binder mechanism and how does IPC work?</li>
+          <li>What is AIDL and when would you use it over Messenger?</li>
+          <li>What is FileProvider and why is it needed?</li>
+          <li>What happened to `LocalBroadcastManager` and what replaced it?</li>
+          <li>What is an Intent and what are the types?</li>
+          <li>What are PendingIntents and when do you use them?</li>
+          <li>What are ordered broadcasts vs normal broadcasts?</li>
+        </ul>
+        <div class="subsection-title">Intents, Launch Modes &amp;amp; Navigation</div>
+        <ul class="question-list">
+          <li>What is an Intent in Android?</li>
+          <li>What&#x27;s the difference between explicit and implicit intents?</li>
+          <li>What are the four launch modes?</li>
+          <li>What is an Intent Filter and how does the system match them?</li>
+          <li>How do you pass data between Activities using intents?</li>
+          <li>Parcelable vs Serializable — when do you use which?</li>
+          <li>What is a PendingIntent?</li>
+          <li>How do Intent flags interact with manifest launch modes?</li>
+          <li>What happens inside onNewIntent()?</li>
+          <li>What&#x27;s the difference between `setData()` and `putExtra()`?</li>
+          <li>What are FLAG_IMMUTABLE and FLAG_MUTABLE?</li>
+          <li>What is task affinity?</li>
+          <li>What is a Sticky Intent? Is it still relevant?</li>
+          <li>What is the difference between deep links and App Links?</li>
+          <li>Walk through the back stack behavior for each launch mode.</li>
+          <li>What happens when you use FLAG_ACTIVITY_CLEAR_TOP with standard launch mode?</li>
+          <li>What security concerns exist with implicit intents and PendingIntents?</li>
+          <li>What is singleInstancePerTask?</li>
+          <li>How do you handle deep links in a single-Activity architecture?</li>
+          <li>What is a deferred deep link?</li>
+          <li>How does `android:exported` affect intent delivery?</li>
+          <li>What&#x27;s the difference between `FLAG_ACTIVITY_NEW_TASK` and `FLAG_ACTIVITY_CLEAR_TASK`?</li>
+        </ul>
+        <div class="subsection-title">Views, RecyclerView &amp;amp; Custom UI</div>
+        <ul class="question-list">
+          <li>What is the ViewHolder pattern, and why is it mandatory in RecyclerView?</li>
+          <li>Walk through the three key methods of `RecyclerView.Adapter`.</li>
+          <li>What are the three phases of the View rendering pipeline?</li>
+          <li>What is the difference between `invalidate()` and `requestLayout()`?</li>
+          <li>What is `DiffUtil` and why should you use it instead of `notifyDataSetChanged()`?</li>
+          <li>What is the difference between `DiffUtil`, `AsyncListDiffer`, and `ListAdapter`?</li>
+          <li>Explain how RecyclerView&#x27;s view recycling mechanism works internally.</li>
+          <li>How do you handle multiple view types in RecyclerView?</li>
+          <li>What&#x27;s the difference between RecyclerView and the old ListView?</li>
+          <li>What are the three built-in LayoutManagers, and when would you use each?</li>
+          <li>What does `onMeasure()` do, and what are the three MeasureSpec modes?</li>
+          <li>Explain the touch event dispatch mechanism — `dispatchTouchEvent`, `onInterceptTouchEvent`, and `onTouchEvent`.</li>
+          <li>What&#x27;s the 16ms frame budget, and what happens when you exceed it?</li>
+          <li>What is overdraw, and how do you detect and reduce it?</li>
+          <li>How do you flatten a view hierarchy and why does it matter?</li>
+          <li>What is `RecycledViewPool` and how can you share it between nested RecyclerViews?</li>
+          <li>How do you resolve touch conflicts between a parent ScrollView and a child RecyclerView?</li>
+          <li>What is `ItemDecoration` and how does it work?</li>
+          <li>How does `ItemAnimator` work in RecyclerView?</li>
+          <li>When would you create a custom View, and what&#x27;s the difference between extending `View` vs `ViewGroup`?</li>
+          <li>What is `ViewStub` and when would you use it?</li>
+          <li>What is `SnapHelper` in RecyclerView and how does it work?</li>
+          <li>What is hardware acceleration and what are its limitations?</li>
+        </ul>
+        <div class="subsection-title">Threading &amp;amp; Background Work</div>
+        <ul class="question-list">
+          <li>What is the main thread in Android and why can&#x27;t you block it?</li>
+          <li>What is an ANR and how do you diagnose it?</li>
+          <li>What are Handler, Looper, and MessageQueue?</li>
+          <li>What is WorkManager and when should you use it?</li>
+          <li>What is the difference between WorkManager, AlarmManager, and foreground services?</li>
+          <li>What are the different types of work requests in WorkManager?</li>
+          <li>What is the difference between Worker, CoroutineWorker, and ListenableWorker?</li>
+          <li>What happens to WorkManager tasks when the device reboots?</li>
+          <li>What is Doze mode and how does it affect background work?</li>
+          <li>How did background work restrictions evolve across Android versions?</li>
+          <li>What are the foreground service type requirements in Android 14?</li>
+          <li>What is HandlerThread and when would you use it?</li>
+          <li>What is Expedited Work in WorkManager?</li>
+          <li>How would you handle a long-running upload that survives process death?</li>
+          <li>How does WorkManager decide which scheduling mechanism to use?</li>
+          <li>How does MessageQueue work at the native level?</li>
+          <li>What is the difference between a Service and an IntentService?</li>
+          <li>How do you prevent duplicate work in WorkManager?</li>
+          <li>What are the exact alarm restrictions in Android 12+?</li>
+          <li>How do you observe WorkManager progress and status from the UI?</li>
+          <li>How do you reduce battery drain from background work?</li>
+        </ul>
+        <div class="subsection-title">Storage &amp;amp; Data Persistence</div>
+        <ul class="question-list">
+          <li>What are the main options for persisting data on Android?</li>
+          <li>What is SharedPreferences and how does it work internally?</li>
+          <li>What is the difference between commit() and apply() in SharedPreferences?</li>
+          <li>What are the problems with SharedPreferences that led to DataStore?</li>
+          <li>What is Jetpack DataStore and how does it differ from SharedPreferences?</li>
+          <li>What is the difference between Preferences DataStore and Proto DataStore?</li>
+          <li>How would you choose between SharedPreferences, DataStore, Room, and file storage?</li>
+          <li>What are the three main components of Room?</li>
+          <li>How does Room enforce main-thread safety?</li>
+          <li>How do Room database migrations work?</li>
+          <li>What is the @Transaction annotation in Room?</li>
+          <li>How do you handle custom types in Room with TypeConverter?</li>
+          <li>How do you model relationships in Room?</li>
+          <li>What is the difference between internal storage and external storage?</li>
+          <li>What is scoped storage?</li>
+          <li>How do you share files between apps?</li>
+          <li>What is a Content Provider?</li>
+          <li>How does EncryptedSharedPreferences work?</li>
+          <li>What are database indexes in Room?</li>
+          <li>How does Room&#x27;s compile-time SQL verification work?</li>
+          <li>What is Write-Ahead Logging (WAL) in SQLite?</li>
+          <li>How do you test Room databases?</li>
+          <li>What is the Storage Access Framework (SAF)?</li>
+          <li>When should you normalize vs denormalize a database schema?</li>
+        </ul>
+        <div class="subsection-title">Networking &amp;amp; API Communication</div>
+        <ul class="question-list">
+          <li>What is the difference between OkHttp and Retrofit?</li>
+          <li>How does a network request flow through OkHttp and Retrofit?</li>
+          <li>What are OkHttp interceptors? What&#x27;s the difference between application and network interceptors?</li>
+          <li>How do you handle authentication tokens and token refresh in the network layer?</li>
+          <li>What HTTP caching strategies exist, and how does OkHttp handle them?</li>
+          <li>What is certificate pinning and why would you use it?</li>
+          <li>What is the Network Security Configuration?</li>
+          <li>How does Retrofit&#x27;s suspend function support work under the hood?</li>
+          <li>What is the difference between `enqueue()` and `execute()` in OkHttp?</li>
+          <li>How does OkHttp&#x27;s connection pooling work?</li>
+          <li>Walk through OkHttp&#x27;s built-in interceptor chain in order.</li>
+          <li>What&#x27;s the difference between Gson, Moshi, and kotlinx.serialization?</li>
+          <li>What is the difference between short polling, long polling, and WebSocket?</li>
+          <li>What is the difference between WebSocket and Server-Sent Events (SSE)?</li>
+          <li>REST vs GraphQL — when would you choose each on mobile?</li>
+          <li>How do you handle network connectivity changes and offline scenarios?</li>
+          <li>What is the difference between JSON and Protocol Buffers?</li>
+          <li>How would you implement retry with exponential backoff?</li>
+          <li>How does Retrofit&#x27;s converter system work?</li>
+          <li>How would you implement request deduplication?</li>
+          <li>What is HTTP/2 and why does it matter for mobile?</li>
+          <li>What is an unmetered network constraint and how does it affect background work?</li>
+        </ul>
+        <div class="subsection-title">Notifications, Permissions &amp;amp; Security</div>
+        <ul class="question-list">
+          <li>What are the different types of permissions in Android?</li>
+          <li>Walk through the runtime permission request flow. What are the edge cases?</li>
+          <li>What are notification channels and why do they matter?</li>
+          <li>How does Firebase Cloud Messaging (FCM) work?</li>
+          <li>What is the difference between data messages and notification messages in FCM?</li>
+          <li>What is the POST_NOTIFICATIONS permission introduced in Android 13?</li>
+          <li>What is the Android Keystore and why should you use it?</li>
+          <li>What is EncryptedSharedPreferences and when would you use it?</li>
+          <li>How would you implement a secure authentication flow in an Android app?</li>
+          <li>What security considerations apply when storing and transmitting user data?</li>
+          <li>How does certificate pinning protect against man-in-the-middle attacks?</li>
+          <li>How does the BiometricPrompt API work on Android?</li>
+          <li>What is the difference between OAuth 2.0, JWT, and session-based authentication?</li>
+          <li>What are the common WebView security vulnerabilities?</li>
+          <li>What is the difference between Keychain and Keystore?</li>
+          <li>What are the differences between AES, RSA, and SHA?</li>
+          <li>How do notification actions, direct reply, and bundled notifications work?</li>
+          <li>How does FCM topic messaging work?</li>
+          <li>What is Play Integrity API and when would you use it?</li>
+          <li>What is StrongBox and how does it relate to the Keystore?</li>
+          <li>What happens when a user revokes a permission while the app is running?</li>
+          <li>How does the network security config work in Android?</li>
+          <li>How do you securely store API keys in an Android app?</li>
+        </ul>
+        <div class="subsection-title">Memory Management &amp;amp; Performance</div>
+        <ul class="question-list">
+          <li>What is a memory leak in Android?</li>
+          <li>How does garbage collection work on Android?</li>
+          <li>Why does an Android app lag?</li>
+          <li>What are the common causes of `OutOfMemoryError`?</li>
+          <li>How do you handle large bitmaps efficiently?</li>
+          <li>How would you profile and fix a janky RecyclerView?</li>
+          <li>How do you measure and optimize app startup time?</li>
+          <li>What is `onTrimMemory()` and how do you respond to it?</li>
+          <li>What is overdraw and how do you reduce it?</li>
+          <li>What is StrictMode?</li>
+          <li>Is it possible to force garbage collection in Android?</li>
+          <li>What is LruCache and how does it work?</li>
+          <li>What is the difference between `ARGB_8888` and `RGB_565`?</li>
+          <li>What is R8 and how does it affect performance?</li>
+          <li>What is the difference between ART and Dalvik?</li>
+          <li>What are baseline profiles?</li>
+          <li>What is `inBitmap` and how does bitmap pooling work?</li>
+          <li>What is the difference between `invalidate()` and `requestLayout()`?</li>
+          <li>How does LeakCanary detect memory leaks?</li>
+          <li>What is Macrobenchmark and how does it differ from Microbenchmark?</li>
+          <li>How does hardware acceleration affect rendering?</li>
+          <li>How would you reduce APK size?</li>
+        </ul>
+        <div class="subsection-title">Gradle &amp;amp; Build System</div>
+        <ul class="question-list">
+          <li>What is the difference between `implementation`, `api`, and `compileOnly` dependency configurations?</li>
+          <li>What are the three phases of a Gradle build?</li>
+          <li>What are build types and product flavors, and how do they combine?</li>
+          <li>What is the difference between `build.gradle.kts` at the project level vs the module level?</li>
+          <li>How does the Android build process work from source code to APK?</li>
+          <li>What is the difference between APK and Android App Bundle (AAB)?</li>
+          <li>What is the Gradle wrapper and why should you use it?</li>
+          <li>What is the difference between KSP and KAPT?</li>
+          <li>How does signing work in Android?</li>
+          <li>What are version catalogs and why are they used?</li>
+          <li>What is `buildConfigField` and how does it differ from `resValue`?</li>
+          <li>What is Multidex and why was it needed?</li>
+          <li>What is the Gradle daemon and how does it speed up builds?</li>
+          <li>What are the main strategies for reducing build time in a large Android project?</li>
+          <li>How does Gradle&#x27;s build cache work?</li>
+          <li>What is the Configuration Cache and how does it differ from the Build Cache?</li>
+          <li>What are convention plugins and why are they better than `buildSrc`?</li>
+          <li>What is R8 and how does it differ from ProGuard?</li>
+          <li>How would you set up a CI/CD pipeline for an Android project?</li>
+          <li>How do you handle dependency conflicts in Gradle?</li>
+          <li>What is `settings.gradle.kts` and what does `dependencyResolutionManagement` do?</li>
+          <li>What is the difference between `includeBuild` and `include` in settings?</li>
+        </ul>
+        <div class="subsection-title">Android Internals &amp;amp; Process Management</div>
+        <ul class="question-list">
+          <li>What is ART and how does it differ from Dalvik?</li>
+          <li>What is the difference between cold start, warm start, and hot start?</li>
+          <li>What is the app startup sequence from tap to first frame?</li>
+          <li>What is an ANR and what are the thresholds?</li>
+          <li>What are the most common causes of ANRs?</li>
+          <li>What is the Zygote process?</li>
+          <li>What is the Application class and when is it initialized?</li>
+          <li>What is the process importance hierarchy?</li>
+          <li>How does Android handle process death and restoration?</li>
+          <li>What is Binder IPC?</li>
+          <li>What is a DEX file?</li>
+          <li>What is Multidex and why is it needed?</li>
+          <li>How does `ContentProvider` initialization affect app startup?</li>
+          <li>What is AIDL and how is it different from Messenger?</li>
+          <li>What is the Low Memory Killer?</li>
+          <li>What is the `oom_adj_score` and how is it assigned?</li>
+          <li>What is ActivityThread and what role does it play?</li>
+          <li>What happens internally when you call `startActivity()`?</li>
+          <li>How does Zygote preloading work under the hood?</li>
+          <li>What is the Binder thread pool and what happens when it&#x27;s exhausted?</li>
+          <li>What is profile-guided optimization in ART?</li>
+          <li>What is `android:process` and what are the implications of using a separate process?</li>
+          <li>How does the DEX file layout affect startup performance?</li>
+          <li>What is the 16 KB page size change in Android 15?</li>
+        </ul>
+        <div class="subsection-title">App Links, Deep Links &amp;amp; Navigation</div>
+        <ul class="question-list">
+          <li>What is a deep link in Android?</li>
+          <li>What are the three types of deep links on Android?</li>
+          <li>What is the difference between a deep link and an App Link?</li>
+          <li>How do you set up a basic deep link intent filter?</li>
+          <li>How do you read data from an incoming deep link?</li>
+          <li>What is the Digital Asset Links file and where does it go?</li>
+          <li>How do you configure an App Link in the manifest?</li>
+          <li>What changed with deep link behavior on Android 12?</li>
+          <li>How does Android verify App Links at install time?</li>
+          <li>What happens when App Link verification fails?</li>
+          <li>What happens when multiple `&lt;data&gt;` elements are in the same intent filter?</li>
+          <li>What is the difference between `pathPrefix`, `path`, and `pathPattern`?</li>
+          <li>What is a custom URI scheme and what are its limitations?</li>
+          <li>How do you test deep links during development?</li>
+          <li>How do deep links work with the Navigation component?</li>
+          <li>What is the difference between explicit and implicit deep links in the Navigation component?</li>
+          <li>How does deep link handling differ in Compose navigation?</li>
+          <li>How do you handle deep links that require authentication?</li>
+          <li>What are deferred deep links and how do they work?</li>
+          <li>How do you handle deep links in multi-module navigation?</li>
+          <li>What is `DomainVerificationManager` and when would you use it?</li>
+          <li>How do you support deep links across product flavors with different package names?</li>
+        </ul>
+        <div class="subsection-title">Sensors, Camera &amp;amp; Hardware APIs</div>
+        <ul class="question-list">
+          <li>What is CameraX and how does it differ from Camera2?</li>
+          <li>How do you set up a camera preview using CameraX?</li>
+          <li>What location permissions does Android require?</li>
+          <li>What is the Fused Location Provider and why use it over raw GPS?</li>
+          <li>How does the BiometricPrompt API work?</li>
+          <li>What are the three categories of sensors in Android?</li>
+          <li>How do you access sensor data in Android?</li>
+          <li>What is the difference between the accelerometer and the gyroscope?</li>
+          <li>What is the difference between Bluetooth Classic and BLE?</li>
+          <li>How does Android handle location in the background?</li>
+          <li>What is geofencing in Android?</li>
+          <li>What is the CameraX ImageAnalysis use case?</li>
+          <li>What is the difference between MediaPlayer and ExoPlayer?</li>
+          <li>How would you implement a step counter?</li>
+          <li>How does the sensor sampling rate work?</li>
+          <li>What is NFC and how is it used in Android?</li>
+          <li>How do you handle BLE communication — scanning, connecting, and reading data?</li>
+          <li>What is the proximity sensor used for?</li>
+          <li>How do you filter noisy sensor data?</li>
+          <li>What are the Camera2 API&#x27;s core concepts?</li>
+          <li>How do you check if a sensor is available before using it?</li>
+          <li>What permissions are needed for Bluetooth on modern Android?</li>
+          <li>What is the ACTIVITY_RECOGNITION permission?</li>
+        </ul>
+        <div class="subsection-title">Accessibility &amp;amp; Localization</div>
+        <ul class="question-list">
+          <li>What is accessibility in Android and why does it matter?</li>
+          <li>What is contentDescription and when should I use it?</li>
+          <li>What are content description best practices?</li>
+          <li>What is TalkBack and how does it work?</li>
+          <li>What is the minimum touch target size recommended by Android?</li>
+          <li>What is the difference between importantForAccessibility and contentDescription = null?</li>
+          <li>What is color contrast ratio and how does it affect accessibility?</li>
+          <li>How do I handle localization using string resources?</li>
+          <li>What is RTL support and how do I implement it?</li>
+          <li>How do I handle plurals in string resources?</li>
+          <li>How do I handle formatting differences across locales?</li>
+          <li>What is the difference between a crash and an ANR, and how do I debug each?</li>
+          <li>What are Android vitals?</li>
+          <li>What is StrictMode and how does it help with app quality?</li>
+          <li>How do I test accessibility on Android?</li>
+          <li>How do semantics work in Jetpack Compose for accessibility?</li>
+          <li>How do I merge and clear semantics in Compose?</li>
+          <li>What are live regions and custom accessibility actions?</li>
+          <li>How does per-app language selection work?</li>
+          <li>How does crash reporting work under the hood?</li>
+          <li>What are app quality guidelines and how do they differ from core vitals?</li>
+          <li>What is AccessibilityDelegate and when would I use it?</li>
+          <li>How do I handle dynamic text sizing for accessibility?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="kotlin">
+        <div class="section-title">Kotlin</div>
+        <div class="subsection-title">Basics &amp;amp; Type System</div>
+        <ul class="question-list">
+          <li>What is the difference between val and var?</li>
+          <li>How does null safety work in Kotlin?</li>
+          <li>What is the difference between == and === in Kotlin?</li>
+          <li>What are smart casts in Kotlin?</li>
+          <li>What is the difference between as and as? for casting?</li>
+          <li>Explain Kotlin&#x27;s type hierarchy — Any, Unit, and Nothing.</li>
+          <li>What is the difference between Any and Any? in the type hierarchy?</li>
+          <li>What is a data class and what methods does it generate?</li>
+          <li>How do copy() and componentN() work in data classes?</li>
+          <li>What is the difference between sealed class and enum class?</li>
+          <li>What is the difference between sealed class and sealed interface?</li>
+          <li>What is a value class and when would you use it?</li>
+          <li>Explain the object keyword — singleton, companion object, and anonymous object.</li>
+          <li>What is the difference between lateinit and lazy?</li>
+          <li>How does lateinit work under the hood?</li>
+          <li>What is const val and how is it different from val?</li>
+          <li>What is the difference between companion object and top-level functions?</li>
+          <li>What is a typealias and how is it different from a value class?</li>
+          <li>What is the String Pool on the JVM and how does it affect Kotlin string comparisons?</li>
+        </ul>
+        <div class="subsection-title">Functions &amp;amp; Scope Functions</div>
+        <ul class="question-list">
+          <li>What is a higher-order function?</li>
+          <li>What is a lambda expression? What does `it` mean?</li>
+          <li>What is the difference between a lambda and an anonymous function?</li>
+          <li>What are the five scope functions and how do they differ?</li>
+          <li>When should you use let vs apply vs also?</li>
+          <li>What is the difference between run and with?</li>
+          <li>What is an extension function?</li>
+          <li>How are extension functions resolved — statically or dynamically?</li>
+          <li>Can you write an extension function on a nullable type?</li>
+          <li>What is an infix function?</li>
+          <li>What is an inline function and why does it matter for performance?</li>
+          <li>What is a reified type parameter and why does it require inline?</li>
+          <li>What is non-local return in inline functions?</li>
+          <li>What are crossinline and noinline?</li>
+          <li>What is the tailrec modifier?</li>
+          <li>What is a function reference and when is it better than a lambda?</li>
+          <li>What is the difference between T.() -&gt; Unit and (T) -&gt; Unit as a function type?</li>
+          <li>How do scope functions behave with nullable receivers?</li>
+          <li>When should you NOT use inline functions?</li>
+          <li>What happens under the hood when you pass a lambda to a non-inline higher-order function?</li>
+        </ul>
+        <div class="subsection-title">Collections, Sequences &amp;amp; Functional Patterns</div>
+        <ul class="question-list">
+          <li>What is the difference between List and MutableList in Kotlin?</li>
+          <li>What does map do, and how is it different from flatMap?</li>
+          <li>What is the difference between fold and reduce?</li>
+          <li>Explain groupBy and associateBy. When do you use each?</li>
+          <li>What do partition, chunked, and windowed do?</li>
+          <li>What is destructuring in Kotlin and how does it work?</li>
+          <li>What is operator overloading in Kotlin?</li>
+          <li>What is the by keyword in Kotlin? What are property delegates?</li>
+          <li>Explain Sequence vs Iterable. When does using a Sequence matter?</li>
+          <li>What are intermediate and terminal operations on a Sequence?</li>
+          <li>What is the difference between Sequence and Flow?</li>
+          <li>How does lazy delegation work internally?</li>
+          <li>How do observable and vetoable delegates work?</li>
+          <li>How do you write a custom property delegate?</li>
+          <li>Explain class delegation with the by keyword.</li>
+          <li>How does the order of collection operations affect performance?</li>
+          <li>How do you transform a Map using Kotlin&#x27;s collection functions?</li>
+          <li>What does buildList do and why is it useful?</li>
+          <li>What is the difference between associate, associateBy, and associateWith?</li>
+        </ul>
+        <div class="subsection-title">Generics, Variance &amp;amp; Reified Types</div>
+        <ul class="question-list">
+          <li>What are generics in Kotlin and why do we need them?</li>
+          <li>What is type erasure and how does it affect generics?</li>
+          <li>What does covariance mean? Explain the out keyword.</li>
+          <li>What does contravariance mean? Explain the in keyword.</li>
+          <li>What is the PECS principle and how does it apply in Kotlin?</li>
+          <li>How does variance work with MutableList vs List?</li>
+          <li>What is the difference between star projection and a generic type?</li>
+          <li>What are generic constraints and the where clause?</li>
+          <li>What is the difference between declaration-site and use-site variance?</li>
+          <li>What is the reified keyword and why does it require inline?</li>
+          <li>Can you use reified with classes?</li>
+          <li>How does Nothing type work in generics?</li>
+          <li>What are the differences between Class&lt;T&gt;, KClass&lt;T&gt;, and reified T?</li>
+          <li>Explain type projection with a real example.</li>
+          <li>What happens when you combine multiple generic constraints with variance?</li>
+        </ul>
+        <div class="subsection-title">Kotlin Under the Hood</div>
+        <ul class="question-list">
+          <li>How does Kotlin compile to JVM bytecode?</li>
+          <li>What happens to a data class at the bytecode level?</li>
+          <li>How does a companion object compile?</li>
+          <li>What does @JvmStatic actually do?</li>
+          <li>What does @JvmField do?</li>
+          <li>What is @JvmOverloads and when is it needed?</li>
+          <li>How does Kotlin&#x27;s null safety work at the bytecode level?</li>
+          <li>How does a sealed class compile?</li>
+          <li>What is the difference between sealed class and sealed interface at the bytecode level?</li>
+          <li>How does the suspend function CPS transformation work?</li>
+          <li>How does the compiler turn a suspend function into a state machine?</li>
+          <li>How do inline functions work at the bytecode level?</li>
+          <li>How does a lambda compile to bytecode?</li>
+          <li>What is SAM conversion and how does it work?</li>
+          <li>How does the when expression compile?</li>
+          <li>How does the delegation pattern compile?</li>
+          <li>How do inline value classes work at the bytecode level?</li>
+          <li>How does property delegation compile?</li>
+          <li>What is @JvmName and when would you use it?</li>
+          <li>How does a coroutine suspension point differ from a regular function call in bytecode?</li>
+        </ul>
+        <div class="subsection-title">Contracts, DSLs &amp;amp; Advanced Patterns</div>
+        <ul class="question-list">
+          <li>What is the Result type in Kotlin?</li>
+          <li>How do sealed classes help with error handling?</li>
+          <li>How does Result compare to sealed classes for error handling?</li>
+          <li>What is class delegation and how does it differ from inheritance?</li>
+          <li>What is interface delegation and the Decorator pattern?</li>
+          <li>What is a DSL in Kotlin and what makes it possible?</li>
+          <li>What is @DslMarker and why is it important?</li>
+          <li>How do you build a type-safe builder?</li>
+          <li>What are Kotlin contracts and what problem do they solve?</li>
+          <li>What does callsInPlace do in a contract?</li>
+          <li>What does returns implies do?</li>
+          <li>What are context receivers (context parameters)?</li>
+          <li>What are the limitations of Kotlin contracts?</li>
+          <li>How do sealed hierarchies work with exhaustive when expressions?</li>
+          <li>How does the delegation pattern compare to dependency injection?</li>
+          <li>How do scope functions relate to DSL building?</li>
+          <li>What are inline value classes and when would you use them?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="coroutines-flows">
+        <div class="section-title">Kotlin Coroutines &amp;amp; Flows</div>
+        <div class="subsection-title">Coroutines Basics</div>
+        <ul class="question-list">
+          <li>What are Kotlin Coroutines and why use them over threads?</li>
+          <li>What is a suspend function?</li>
+          <li>What is a CoroutineScope?</li>
+          <li>What is the difference between launch and async?</li>
+          <li>What are Dispatchers? Explain each one.</li>
+          <li>What is withContext and when do you use it?</li>
+          <li>What is structured concurrency?</li>
+          <li>What is a Job and what are its lifecycle states?</li>
+          <li>What is the difference between join and cancel on a Job?</li>
+          <li>What is SupervisorJob and how is it different from a regular Job?</li>
+          <li>What is the difference between coroutineScope and supervisorScope?</li>
+          <li>What is CoroutineContext and what does it contain?</li>
+          <li>What is runBlocking and when should you use it?</li>
+          <li>How does viewModelScope work internally?</li>
+          <li>What is Dispatchers.Main.immediate and how is it different from Dispatchers.Main?</li>
+          <li>What is the difference between GlobalScope and a custom CoroutineScope?</li>
+          <li>How do you run two suspend functions in parallel?</li>
+          <li>Can you call a suspend function from a regular function?</li>
+          <li>How does structured concurrency prevent coroutine leaks?</li>
+        </ul>
+        <div class="subsection-title">Coroutines Advanced</div>
+        <ul class="question-list">
+          <li>How does exception handling work in coroutines?</li>
+          <li>How do exceptions propagate in a coroutine hierarchy?</li>
+          <li>How does coroutine cancellation work? What does &quot;cooperative cancellation&quot; mean?</li>
+          <li>What is the difference between ensureActive() and yield()?</li>
+          <li>What happens when you cancel a coroutine doing CPU-intensive work with no suspension points?</li>
+          <li>What is NonCancellable and when would you use it?</li>
+          <li>What is CPS transformation and how does the compiler handle suspend functions?</li>
+          <li>How does the compiler generate a state machine for suspend functions?</li>
+          <li>What is Mutex and how is it different from synchronized?</li>
+          <li>What is Semaphore and how does it differ from Mutex?</li>
+          <li>Explain Channel types — Rendezvous, Buffered, Conflated, and Unlimited.</li>
+          <li>How does the select expression work?</li>
+          <li>What is suspendCoroutine and when do you use it?</li>
+          <li>What is suspendCancellableCoroutine and how does it differ?</li>
+          <li>How do you convert a multi-shot callback API into a Flow?</li>
+          <li>How does withContext actually switch threads?</li>
+          <li>What is the difference between coroutineScope and supervisorScope for exception handling?</li>
+        </ul>
+        <div class="subsection-title">Cold Flows &amp;amp; Operators</div>
+        <ul class="question-list">
+          <li>What is a Flow and why is it called &quot;cold&quot;?</li>
+          <li>What are the different ways to create a Flow?</li>
+          <li>What are terminal operators?</li>
+          <li>What are intermediate operators? How do map, filter, and transform work?</li>
+          <li>How do take, zip, combine, and merge differ?</li>
+          <li>What does flowOn do and why is it important?</li>
+          <li>What is onStart and onCompletion?</li>
+          <li>How does the catch operator work?</li>
+          <li>How do retry and retryWhen work?</li>
+          <li>What is the difference between buffer and conflate?</li>
+          <li>What are the buffer overflow strategies?</li>
+          <li>How does debounce work?</li>
+          <li>What does distinctUntilChanged do?</li>
+          <li>Explain flatMapConcat, flatMapMerge, and flatMapLatest.</li>
+          <li>What happens if you throw an exception inside the collect block?</li>
+          <li>What is the execution order when chaining flow operators?</li>
+        </ul>
+        <div class="subsection-title">Hot Flows, StateFlow &amp;amp; SharedFlow</div>
+        <ul class="question-list">
+          <li>What is the difference between a cold flow and a hot flow?</li>
+          <li>What is StateFlow and how does it differ from SharedFlow?</li>
+          <li>What are MutableSharedFlow and MutableStateFlow?</li>
+          <li>When would you use SharedFlow instead of StateFlow?</li>
+          <li>What does the replay parameter in SharedFlow do?</li>
+          <li>What is callbackFlow?</li>
+          <li>What is channelFlow and how does it differ from callbackFlow?</li>
+          <li>What are the SharingStarted strategies?</li>
+          <li>What is the difference between stateIn and shareIn?</li>
+          <li>How do you safely collect flows in an Activity or Fragment?</li>
+          <li>What is flowWithLifecycle?</li>
+          <li>What is collectAsStateWithLifecycle in Compose?</li>
+          <li>How does SharedFlow handle backpressure?</li>
+          <li>How does WhileSubscribed(5_000) survive configuration changes?</li>
+          <li>How do you handle one-shot events like navigation using flows?</li>
+          <li>What is the difference between conflate() and collectLatest?</li>
+          <li>What converts a cold flow to hot when using stateIn inside a ViewModel?</li>
+          <li>What is the subscriptionCount property on SharedFlow?</li>
+          <li>Can you create a custom SharingStarted strategy?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="jetpack-compose">
+        <div class="section-title">Jetpack Compose</div>
+        <div class="subsection-title">Fundamentals &amp;amp; Thinking in Compose</div>
+        <ul class="question-list">
+          <li>What is Jetpack Compose?</li>
+          <li>What is a @Composable function?</li>
+          <li>What is the difference between declarative and imperative UI?</li>
+          <li>How does Compose differ from the XML View system?</li>
+          <li>What does &quot;composition over inheritance&quot; mean in Compose?</li>
+          <li>What is Composition in Compose?</li>
+          <li>What is recomposition?</li>
+          <li>What happens during initial composition vs recomposition?</li>
+          <li>What are the three phases of Compose?</li>
+          <li>What is @Preview and how does it work?</li>
+          <li>What is the difference between remember and mutableStateOf?</li>
+          <li>How does remember work internally?</li>
+          <li>Why does Compose use functions instead of classes for UI components?</li>
+          <li>What is the role of the Compose compiler plugin?</li>
+          <li>What is the difference between Compose Runtime and Compose UI?</li>
+          <li>How does Compose decide to skip a composable during recomposition?</li>
+          <li>What is positional memoization?</li>
+          <li>What is the slot table?</li>
+          <li>How does the Compose compiler transform @Composable functions at bytecode level?</li>
+          <li>Can composable functions run in parallel?</li>
+        </ul>
+        <div class="subsection-title">State Management</div>
+        <ul class="question-list">
+          <li>What is state in Jetpack Compose?</li>
+          <li>How do you retain data in composable functions?</li>
+          <li>What is mutableStateOf and how does it work?</li>
+          <li>What is the difference between remember and rememberSaveable?</li>
+          <li>How do you save custom objects with rememberSaveable?</li>
+          <li>What is state hoisting in Compose?</li>
+          <li>What is unidirectional data flow (UDF) in Compose?</li>
+          <li>What are mutableStateListOf and mutableStateMapOf?</li>
+          <li>What is derivedStateOf and when should you use it?</li>
+          <li>How does derivedStateOf differ from computing a value in the composable body?</li>
+          <li>What is snapshotFlow and when do you use it?</li>
+          <li>What is the difference between collectAsStateWithLifecycle and collectAsState?</li>
+          <li>When should you use a ViewModel vs a state holder class?</li>
+          <li>How should you structure state in a ViewModel for Compose?</li>
+          <li>What is the difference between using State vs StateFlow in a ViewModel?</li>
+          <li>How does state restoration work after process death?</li>
+          <li>How does the snapshot system work under the hood?</li>
+          <li>What is the right way to expose one-time events from ViewModel to UI?</li>
+          <li>How do you handle text field state efficiently in Compose?</li>
+          <li>What happens if you forget to wrap mutableStateOf with remember?</li>
+          <li>What happens to remember state when a composable leaves and re-enters the composition?</li>
+          <li>What is StateFlow and how does it differ from LiveData?</li>
+          <li>What is the difference between UI state and data state?</li>
+          <li>What is SharedFlow and when do you use it instead of StateFlow?</li>
+          <li>What is state hoisting in Compose?</li>
+          <li>What is the single state object pattern?</li>
+          <li>What is SavedStateHandle and why do you need it?</li>
+          <li>How does process death differ from configuration changes?</li>
+          <li>How does stateIn work and what is the right SharingStarted strategy?</li>
+          <li>When should you use multiple flows instead of a single state object?</li>
+          <li>How does Redux-style state management (MVI) work in Android?</li>
+          <li>What is a state machine and how do you implement one in Android?</li>
+          <li>How does the Compose snapshot system relate to state management?</li>
+          <li>How do you handle state restoration after process death in Compose?</li>
+          <li>What is unidirectional data flow and why does it matter for state management?</li>
+          <li>What is derivedStateOf and when should you use it?</li>
+        </ul>
+        <div class="subsection-title">Side Effects &amp;amp; Lifecycle</div>
+        <ul class="question-list">
+          <li>What is a side effect in Compose?</li>
+          <li>What is the Compose lifecycle?</li>
+          <li>What is LaunchedEffect and when do you use it?</li>
+          <li>What is DisposableEffect and how is it different from LaunchedEffect?</li>
+          <li>What is SideEffect and when do you use it?</li>
+          <li>What is the difference between rememberCoroutineScope and LaunchedEffect?</li>
+          <li>What is rememberUpdatedState and why is it needed?</li>
+          <li>What is the difference between LaunchedEffect(Unit) and LaunchedEffect(true)?</li>
+          <li>What is produceState?</li>
+          <li>What is snapshotFlow?</li>
+          <li>How does the Compose lifecycle relate to the Activity lifecycle?</li>
+          <li>How do you handle one-time events like navigation and snackbars?</li>
+          <li>How does Compose handle effects during configuration changes?</li>
+          <li>What is the key() composable and when do you need it?</li>
+          <li>How do multiple LaunchedEffects work in the same composable?</li>
+          <li>What happens when you call effects conditionally?</li>
+          <li>How does process death affect Compose state?</li>
+          <li>What is movableContentOf and how does it interact with lifecycle?</li>
+          <li>What is the difference between collectAsState and collectAsStateWithLifecycle?</li>
+          <li>What is the order of execution between SideEffect, LaunchedEffect, and DisposableEffect?</li>
+          <li>How do you handle back press events in Compose?</li>
+        </ul>
+        <div class="subsection-title">Recomposition, Stability &amp;amp; Performance</div>
+        <ul class="question-list">
+          <li>What is recomposition?</li>
+          <li>What triggers recomposition?</li>
+          <li>What is smart recomposition?</li>
+          <li>What is the stability system in Compose?</li>
+          <li>What is the difference between @Stable and @Immutable?</li>
+          <li>Why are collections like List&lt;&gt; considered unstable by default?</li>
+          <li>How does Compose handle interfaces for stability?</li>
+          <li>Why should I use viewModel::onClick instead of { viewModel.onClick() } in composables?</li>
+          <li>How does Compose compare parameters to decide whether to skip recomposition?</li>
+          <li>What is positional memoization?</li>
+          <li>What is donut-hole skipping?</li>
+          <li>What is strong skipping mode?</li>
+          <li>What are the common performance mistakes with recomposition?</li>
+          <li>How does the Compose runtime handle recomposition scheduling?</li>
+          <li>How do I use graphicsLayer for performance?</li>
+          <li>What is the slot table and how does Compose use it?</li>
+          <li>How do I use the Compose compiler reports to diagnose stability issues?</li>
+          <li>How do I debug recomposition issues in a running app?</li>
+          <li>What is the stability configuration file?</li>
+          <li>What is movableContentOf?</li>
+          <li>How does derivedStateOf help reduce unnecessary recompositions?</li>
+        </ul>
+        <div class="subsection-title">Layouts, Modifiers &amp;amp; Custom Drawing</div>
+        <ul class="question-list">
+          <li>What is the difference between Row, Column, and Box?</li>
+          <li>How does the weight modifier work in Row and Column?</li>
+          <li>Why does modifier order matter in Compose?</li>
+          <li>What happens when you apply size modifiers in different positions in the chain?</li>
+          <li>What is the difference between offset and padding?</li>
+          <li>What are the three phases of Compose rendering?</li>
+          <li>How does clip work in Compose?</li>
+          <li>How do you create a custom shape for clipping?</li>
+          <li>What is graphicsLayer and when would you use it?</li>
+          <li>What are the three main drawing modifiers in Compose?</li>
+          <li>What is Canvas in Compose and how is it different from Android&#x27;s Canvas?</li>
+          <li>What is Brush in Compose?</li>
+          <li>How does the modifier chain work internally?</li>
+          <li>How does the Layout composable work?</li>
+          <li>What is the difference between the layout modifier and the Layout composable?</li>
+          <li>What is the difference between Modifier.layout and Modifier.offset for positioning?</li>
+          <li>What are intrinsic measurements and when are they needed?</li>
+          <li>What is SubcomposeLayout and how does LazyColumn use it?</li>
+          <li>How do alignment lines work in custom layouts?</li>
+          <li>What is CompositingStrategy in graphicsLayer?</li>
+          <li>What are Window Size Classes and how do you build adaptive layouts?</li>
+          <li>How does ConstraintLayout work in Compose?</li>
+        </ul>
+        <div class="subsection-title">Animation APIs</div>
+        <ul class="question-list">
+          <li>What is animate*AsState and when do you use it?</li>
+          <li>How does AnimatedVisibility work?</li>
+          <li>What is the difference between AnimatedContent and Crossfade?</li>
+          <li>What does animateContentSize do?</li>
+          <li>What is the difference between spring, tween, and keyframes animation specs?</li>
+          <li>What is rememberInfiniteTransition and when do you use it?</li>
+          <li>How do you use updateTransition for coordinated animations?</li>
+          <li>What is Animatable and how is it different from animate*AsState?</li>
+          <li>How do you create sequential and concurrent animations?</li>
+          <li>How does Compose handle interrupted animations?</li>
+          <li>What happens to animations during recomposition? How do you prevent resets?</li>
+          <li>When should you use graphicsLayer for animations instead of regular modifiers?</li>
+          <li>How do you animate items in a LazyColumn?</li>
+          <li>What are shared element transitions in Compose?</li>
+          <li>How do you build gesture-driven animations?</li>
+          <li>What is the difference between animateDecay and animateTo?</li>
+          <li>How would you implement a shimmer loading effect?</li>
+          <li>How do you animate navigation transitions in Compose?</li>
+          <li>How does Compose&#x27;s animation system compare to the View system?</li>
+        </ul>
+        <div class="subsection-title">Navigation, Theming &amp;amp; Architecture</div>
+        <ul class="question-list">
+          <li>What are the core components of Navigation Compose?</li>
+          <li>How does type-safe navigation work in Navigation Compose?</li>
+          <li>How do you pass arguments between navigation destinations?</li>
+          <li>What is popUpTo and how does back stack management work?</li>
+          <li>What is Material3 theming in Compose?</li>
+          <li>How do you handle dark theme and light theme switching?</li>
+          <li>How does dynamic color work in Material3?</li>
+          <li>What is CompositionLocal and when should you use it?</li>
+          <li>What is the difference between compositionLocalOf and staticCompositionLocalOf?</li>
+          <li>How do you create and provide a custom CompositionLocal?</li>
+          <li>How do you handle navigation events and avoid duplicate navigation?</li>
+          <li>How do you implement bottom navigation with Navigation Compose?</li>
+          <li>How do you handle deep links in Navigation Compose?</li>
+          <li>How does nested navigation work and when should you use it?</li>
+          <li>How does NavBackStackEntry manage lifecycle and ViewModel scoping?</li>
+          <li>How do you scope a ViewModel to a navigation graph instead of a single destination?</li>
+          <li>How does MaterialTheme work internally with CompositionLocal?</li>
+          <li>How would you implement a custom theming system beyond MaterialTheme?</li>
+          <li>What are the tradeoffs of ViewModel vs the Presenter pattern?</li>
+          <li>What is Navigation 3 and how is it different from Navigation Compose?</li>
+        </ul>
+        <div class="subsection-title">Testing &amp;amp; Accessibility</div>
+        <ul class="question-list">
+          <li>What is ComposeTestRule and how do you set up a Compose UI test?</li>
+          <li>What is the difference between createComposeRule and createAndroidComposeRule?</li>
+          <li>How do node finders work in Compose tests?</li>
+          <li>What are the most common assertions and actions in Compose tests?</li>
+          <li>What is the semantic tree and why does it matter for testing?</li>
+          <li>What is Modifier.testTag and when should you use it?</li>
+          <li>How do you handle scrolling in Compose tests?</li>
+          <li>How do you handle async operations in Compose tests?</li>
+          <li>How do you test composables that depend on a ViewModel?</li>
+          <li>What are common testing pitfalls in Compose?</li>
+          <li>How do you test navigation in Compose?</li>
+          <li>How do you set up Compose testing with Hilt?</li>
+          <li>What are semantics in Compose and how do they support accessibility?</li>
+          <li>How do you set contentDescription correctly in Compose?</li>
+          <li>What are the merged and unmerged semantic trees?</li>
+          <li>What are semantic roles and when do you set them?</li>
+          <li>How do you control traversal order for accessibility?</li>
+          <li>What are live regions in Compose accessibility?</li>
+          <li>How do you test accessibility properties in Compose tests?</li>
+          <li>What is screenshot testing and how does Paparazzi work for Compose?</li>
+          <li>How does Compose Preview testing work?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="architecture">
+        <div class="section-title">Architecture &amp;amp; Design</div>
+        <div class="subsection-title">Clean Architecture &amp;amp; SOLID Principles</div>
+        <ul class="question-list">
+          <li>What is Clean Architecture?</li>
+          <li>What are the three main layers in Clean Architecture for Android?</li>
+          <li>What are the SOLID principles?</li>
+          <li>What is the Single Responsibility Principle in practice?</li>
+          <li>What is the dependency rule?</li>
+          <li>What is a Use Case?</li>
+          <li>What is the Repository pattern in Clean Architecture?</li>
+          <li>What is the difference between domain models, DTOs, and entities?</li>
+          <li>What is the Dependency Inversion Principle and how does it relate to Clean Architecture?</li>
+          <li>What is the difference between Clean Architecture and MVVM?</li>
+          <li>What is the Interface Segregation Principle in practice?</li>
+          <li>Is the domain layer always necessary?</li>
+          <li>How do you structure packages in Clean Architecture?</li>
+          <li>What is the mapper pattern and why does Clean Architecture use it?</li>
+          <li>How do you handle errors across layers in Clean Architecture?</li>
+          <li>How do SOLID principles apply to a real ViewModel?</li>
+          <li>How do you handle data shared across multiple screens?</li>
+          <li>What is the Open-Closed Principle in practice?</li>
+          <li>What is the Liskov Substitution Principle violation in Android?</li>
+        </ul>
+        <div class="subsection-title">MVVM, MVI &amp;amp; Architecture Patterns</div>
+        <ul class="question-list">
+          <li>What is MVVM?</li>
+          <li>What is a ViewModel and why does it survive configuration changes?</li>
+          <li>What is the difference between LiveData and StateFlow for UI state?</li>
+          <li>What is MVI?</li>
+          <li>What is the difference between MVVM and MVI?</li>
+          <li>What is unidirectional data flow?</li>
+          <li>What is MVC and how does it work in Android?</li>
+          <li>What is MVP and how is it different from MVC?</li>
+          <li>What is the Repository pattern?</li>
+          <li>What is the SingleLiveEvent problem?</li>
+          <li>What is separation of concerns and how do architecture patterns enforce it?</li>
+          <li>How does the ViewModel communicate with the View in different patterns?</li>
+          <li>What is a reducer in MVI?</li>
+          <li>How do you handle side effects in MVI?</li>
+          <li>When would you choose MVI over MVVM?</li>
+          <li>How do you test a ViewModel?</li>
+          <li>What are common mistakes when implementing MVVM?</li>
+          <li>What is the role of the domain layer in Clean Architecture?</li>
+        </ul>
+        <div class="subsection-title">Dependency Injection — Hilt, Dagger, Koin</div>
+        <ul class="question-list">
+          <li>What is Dependency Injection and why do I need it?</li>
+          <li>What is the difference between Service Locator and Dependency Injection?</li>
+          <li>What is Dagger 2 and how does it work?</li>
+          <li>What is Hilt and how is it different from Dagger?</li>
+          <li>What is the difference between @Provides and @Binds?</li>
+          <li>What are the main Hilt annotations?</li>
+          <li>What are Hilt components and their scopes?</li>
+          <li>What is Koin and how does it work?</li>
+          <li>What is the difference between compile-time and runtime DI?</li>
+          <li>How does scoping work and what happens if I get it wrong?</li>
+          <li>How does Hilt handle ViewModel injection internally?</li>
+          <li>What is @EntryPoint and when do I need it?</li>
+          <li>What is AssistedInject and when do I use it?</li>
+          <li>How do I test with Hilt?</li>
+          <li>What are Dagger Components and Subcomponents?</li>
+          <li>How do I do manual DI without a framework?</li>
+          <li>How does DI work in a multi-module project?</li>
+        </ul>
+        <div class="subsection-title">Modularization &amp;amp; Multi-Module</div>
+        <ul class="question-list">
+          <li>What is modularization and why do I modularize?</li>
+          <li>What are the common types of modules?</li>
+          <li>What is the difference between feature-based and layer-based modularization?</li>
+          <li>What does the dependency graph look like?</li>
+          <li>What is the difference between api and implementation in Gradle?</li>
+          <li>How do I handle navigation between feature modules?</li>
+          <li>How do I avoid circular dependencies?</li>
+          <li>What are the build time benefits?</li>
+          <li>How does Hilt work across modules?</li>
+          <li>What are Gradle convention plugins?</li>
+          <li>How do I enforce module boundaries?</li>
+          <li>How do I share data across feature modules?</li>
+          <li>How do I decide the right granularity?</li>
+          <li>What are dynamic feature modules?</li>
+          <li>How do I structure shared resources?</li>
+          <li>What is the impact on testing?</li>
+          <li>How do I migrate a monolithic app to multi-module?</li>
+        </ul>
+        <div class="subsection-title">Design Patterns in Android</div>
+        <ul class="question-list">
+          <li>What is the Observer pattern and how does Android use it?</li>
+          <li>What is the Singleton pattern and how is it used in Android?</li>
+          <li>What is the Builder pattern and where do you see it in Android?</li>
+          <li>What is the Factory pattern?</li>
+          <li>What is the Repository pattern and why is it central to Android architecture?</li>
+          <li>What is the Strategy pattern?</li>
+          <li>What is the Adapter pattern?</li>
+          <li>What is the Decorator pattern?</li>
+          <li>What is the Facade pattern?</li>
+          <li>What is the Command pattern and where does Android use it?</li>
+          <li>How does the Observer pattern differ between LiveData and Flow?</li>
+          <li>How does the Android SDK use design patterns internally?</li>
+          <li>When should you prefer composition over inheritance to apply design patterns?</li>
+          <li>How do you decide which design pattern to use in a real Android project?</li>
+          <li>What is the difference between the Template Method pattern and Strategy pattern?</li>
+        </ul>
+        <div class="subsection-title">Error Handling &amp;amp; Resilience</div>
+        <ul class="question-list">
+          <li>How do you model errors using sealed classes?</li>
+          <li>What is the difference between exceptions and errors in Kotlin?</li>
+          <li>What is Kotlin&#x27;s built-in Result type?</li>
+          <li>How does try-catch work with coroutines?</li>
+          <li>What is the difference between coroutineScope and supervisorScope?</li>
+          <li>What is CoroutineExceptionHandler?</li>
+          <li>How do you handle errors in Flow chains?</li>
+          <li>How do you design error states in a ViewModel using UDF?</li>
+          <li>How do you map network errors to user-facing messages?</li>
+          <li>How do you handle timeout in coroutines?</li>
+          <li>What is the difference between Result type and sealed class error modeling?</li>
+          <li>What is exponential backoff and when do you use it?</li>
+          <li>What is the circuit breaker pattern?</li>
+          <li>How do you implement graceful degradation in an Android app?</li>
+          <li>How do you handle global error handling and crash reporting?</li>
+        </ul>
+        <div class="subsection-title">Testing Strategy &amp;amp; Testable Code</div>
+        <ul class="question-list">
+          <li>What is the test pyramid and why does it matter?</li>
+          <li>What makes code testable?</li>
+          <li>What are the different types of test doubles?</li>
+          <li>How do you write unit tests with JUnit and MockK?</li>
+          <li>What is the difference between Mockito and MockK?</li>
+          <li>What is the role of dependency injection in writing testable code?</li>
+          <li>How do you test coroutines with TestDispatcher?</li>
+          <li>How do you test a ViewModel that uses SavedStateHandle?</li>
+          <li>How do you test Flows?</li>
+          <li>How do you test Compose UI?</li>
+          <li>How does Robolectric work and when should you use it?</li>
+          <li>What is Espresso and how does it differ from Compose testing?</li>
+          <li>How do you structure tests for a Clean Architecture app?</li>
+          <li>How do you handle flaky tests?</li>
+          <li>What is code coverage and how much should you aim for?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="dsa">
+        <div class="section-title">Data Structures &amp;amp; Algorithms</div>
+        <div class="subsection-title">Arrays, Strings &amp;amp; Hash Maps</div>
+        <ul class="question-list">
+          <li>Given an unsorted array, find two numbers that add up to a target (Two Sum).</li>
+          <li>What is the two-pointer technique and when do you use it?</li>
+          <li>Find the longest substring without repeating characters.</li>
+          <li>Explain Kadane&#x27;s algorithm for maximum subarray sum.</li>
+          <li>How do you check if two strings are anagrams?</li>
+          <li>How do you compute product of array except self without using division?</li>
+          <li>What is the sliding window technique?</li>
+          <li>How do you group anagrams from a list of strings?</li>
+          <li>How do you find the first non-repeating character in a string?</li>
+          <li>How do you check if a string is a palindrome?</li>
+          <li>How do you find the container with most water?</li>
+          <li>How do you find the longest palindromic substring?</li>
+          <li>Explain the &quot;subarray sum equals k&quot; problem.</li>
+          <li>How do you merge two sorted arrays into one sorted array?</li>
+          <li>How do you rotate an array by k positions to the right?</li>
+          <li>How do you find the minimum window substring containing all characters of a target?</li>
+          <li>How do you solve the 3Sum problem?</li>
+          <li>What&#x27;s the difference between HashMap and HashSet, and when do you use each?</li>
+          <li>What is a prefix sum and when is it useful?</li>
+          <li>How do you find all anagrams of a pattern in a string?</li>
+        </ul>
+        <div class="subsection-title">Linked Lists</div>
+        <ul class="question-list">
+          <li>How do you reverse a singly linked list?</li>
+          <li>How do you detect a cycle in a linked list?</li>
+          <li>How do you merge two sorted linked lists?</li>
+          <li>How do you find the middle element of a linked list?</li>
+          <li>What is a linked list and how does it differ from an array?</li>
+          <li>How do you remove the nth node from the end of a linked list?</li>
+          <li>How do you find the starting node of a cycle in a linked list?</li>
+          <li>How do you check if a linked list is a palindrome?</li>
+          <li>How do you add two numbers represented as linked lists?</li>
+          <li>How do you find the intersection point of two linked lists?</li>
+          <li>What&#x27;s the difference between singly and doubly linked lists?</li>
+          <li>Explain how an LRU Cache works using a doubly linked list and HashMap.</li>
+          <li>How do you deep copy a linked list with random pointers?</li>
+          <li>How do you reverse nodes in k-group?</li>
+          <li>How do you sort a linked list in O(n log n) time?</li>
+        </ul>
+        <div class="subsection-title">Stacks &amp;amp; Queues</div>
+        <ul class="question-list">
+          <li>How do you check if a string of parentheses is valid?</li>
+          <li>How do you design a Min Stack that supports getMin in O(1)?</li>
+          <li>What is a monotonic stack and how does it solve &quot;next greater element&quot;?</li>
+          <li>How do you find the largest rectangle in a histogram?</li>
+          <li>What is a stack and what are its core operations?</li>
+          <li>What is a queue and how does it differ from a stack?</li>
+          <li>How do you solve Daily Temperatures using a monotonic stack?</li>
+          <li>How do you evaluate a Reverse Polish Notation expression?</li>
+          <li>How do you implement a queue using two stacks?</li>
+          <li>How do you solve the Sliding Window Maximum problem?</li>
+          <li>What is a deque and when would you use one?</li>
+          <li>What is a priority queue and how does it differ from a regular queue?</li>
+          <li>How do you find the Kth largest element using a min-heap?</li>
+          <li>How do you merge K sorted lists using a priority queue?</li>
+          <li>When would you choose a stack over a queue?</li>
+        </ul>
+        <div class="subsection-title">Trees &amp;amp; Binary Search Trees</div>
+        <ul class="question-list">
+          <li>What is the maximum depth of a binary tree and how do you find it?</li>
+          <li>How do you invert a binary tree?</li>
+          <li>How do you validate whether a binary tree is a valid BST?</li>
+          <li>How do you find the lowest common ancestor (LCA) of two nodes in a binary tree?</li>
+          <li>How do you perform a level-order traversal (BFS) of a binary tree?</li>
+          <li>Explain the four standard tree traversals.</li>
+          <li>How do you find the diameter of a binary tree?</li>
+          <li>How do you serialize and deserialize a binary tree?</li>
+          <li>What is a binary tree and how is it represented?</li>
+          <li>How do you delete a node from a BST?</li>
+          <li>How do you find the LCA in a BST specifically?</li>
+          <li>How do you construct a binary tree from in-order and pre-order traversals?</li>
+          <li>How do you check if a binary tree is symmetric?</li>
+          <li>How do you check if a binary tree has a path with a given sum?</li>
+          <li>What is a balanced binary tree and how do AVL trees maintain balance?</li>
+          <li>How do you find all root-to-leaf paths?</li>
+        </ul>
+        <div class="subsection-title">Tries &amp;amp; Advanced Trees</div>
+        <ul class="question-list">
+          <li>What is a Trie and why use it over a HashMap for prefix-based lookups?</li>
+          <li>How do you implement insert and search in a Trie?</li>
+          <li>How does startsWith differ from search in a Trie?</li>
+          <li>How do you solve Word Search II (finding multiple words in a grid)?</li>
+          <li>How would you implement autocomplete using a Trie?</li>
+          <li>How do you delete a word from a Trie?</li>
+          <li>What is the space optimization for Tries when the alphabet is large?</li>
+          <li>What is a Segment Tree and what problem does it solve?</li>
+          <li>How do you implement a Segment Tree for range sum queries?</li>
+          <li>What is a Fenwick Tree and how does it compare to a Segment Tree?</li>
+          <li>What is an N-ary tree and how does traversal differ?</li>
+          <li>What is lazy propagation in a Segment Tree?</li>
+          <li>How would you count the number of distinct words in a Trie?</li>
+        </ul>
+        <div class="subsection-title">Graphs: BFS, DFS &amp;amp; Traversals</div>
+        <ul class="question-list">
+          <li>How do you solve the Number of Islands problem?</li>
+          <li>How does BFS work and when do you use it?</li>
+          <li>How does DFS work and when do you use it?</li>
+          <li>How do you solve the Course Schedule problem?</li>
+          <li>What is the difference between BFS and DFS?</li>
+          <li>What is topological sort and when is it used?</li>
+          <li>How do you implement topological sort using Kahn&#x27;s algorithm?</li>
+          <li>How do you detect a cycle in a directed graph?</li>
+          <li>How do you detect a cycle in an undirected graph?</li>
+          <li>What are the main ways to represent a graph?</li>
+          <li>How do you solve the Word Ladder problem?</li>
+          <li>How do you clone a graph?</li>
+          <li>How do you check if a graph is bipartite?</li>
+          <li>How do you find connected components in an undirected graph?</li>
+        </ul>
+        <div class="subsection-title">Graphs: Shortest Path &amp;amp; Advanced</div>
+        <ul class="question-list">
+          <li>What is Dijkstra&#x27;s algorithm and when do you use it?</li>
+          <li>Why does Dijkstra fail with negative edge weights?</li>
+          <li>What is Union-Find (Disjoint Set Union)?</li>
+          <li>How do you solve Cheapest Flights Within K Stops?</li>
+          <li>What is the Bellman-Ford algorithm?</li>
+          <li>How do you decide which shortest path algorithm to use?</li>
+          <li>What is a Minimum Spanning Tree?</li>
+          <li>Explain Kruskal&#x27;s algorithm and how it uses Union-Find.</li>
+          <li>Explain Prim&#x27;s algorithm for MST.</li>
+          <li>How do you solve the Network Delay Time problem?</li>
+          <li>What are common problems where Union-Find is the right tool?</li>
+          <li>What is the Floyd-Warshall algorithm?</li>
+          <li>When would you use Prim&#x27;s vs Kruskal&#x27;s?</li>
+          <li>How do you find the shortest path with 0 and 1 edge weights?</li>
+          <li>How do you detect a negative-weight cycle?</li>
+        </ul>
+        <div class="subsection-title">Heaps, Priority Queues &amp;amp; Intervals</div>
+        <ul class="question-list">
+          <li>How does a binary heap work?</li>
+          <li>How do you find the Kth largest element using a heap?</li>
+          <li>How do you merge K sorted lists?</li>
+          <li>How do you merge overlapping intervals?</li>
+          <li>How do you solve Meeting Rooms II (minimum rooms needed)?</li>
+          <li>How do you find the median from a data stream?</li>
+          <li>How do you insert a new interval into a sorted non-overlapping list?</li>
+          <li>What is the difference between a min-heap and a max-heap?</li>
+          <li>How do you build a heap from an array and why is it O(n)?</li>
+          <li>How do you solve Top K Frequent Elements?</li>
+          <li>How do you remove covered intervals?</li>
+          <li>What is a non-overlapping interval count problem?</li>
+          <li>How do you check if a person can attend all meetings?</li>
+          <li>How do you find the Kth smallest element in a sorted matrix?</li>
+          <li>What is a heap sort and how does it work?</li>
+        </ul>
+        <div class="subsection-title">Sorting, Searching &amp;amp; Binary Search</div>
+        <ul class="question-list">
+          <li>Explain standard binary search and its common pitfalls.</li>
+          <li>How do you search in a rotated sorted array?</li>
+          <li>Implement merge sort.</li>
+          <li>Implement quick sort and explain the partition step.</li>
+          <li>What is the time complexity of common sorting algorithms?</li>
+          <li>How do you find the peak element in an array?</li>
+          <li>What is the Quickselect algorithm for finding the kth largest?</li>
+          <li>How do you solve the merge intervals problem?</li>
+          <li>What is lower bound and upper bound in binary search?</li>
+          <li>How do you find the minimum in a rotated sorted array?</li>
+          <li>How does binary search apply beyond sorted arrays?</li>
+          <li>What is the difference between comparison-based and non-comparison-based sorting?</li>
+          <li>Explain stability in sorting and why it matters.</li>
+          <li>How do you solve Meeting Rooms II?</li>
+          <li>When should you implement sorting from scratch vs using built-in sort?</li>
+        </ul>
+        <div class="subsection-title">Dynamic Programming Fundamentals</div>
+        <ul class="question-list">
+          <li>How do you solve the Climbing Stairs problem?</li>
+          <li>How do you solve the Coin Change problem?</li>
+          <li>What is dynamic programming and when do you use it?</li>
+          <li>What is the difference between memoization and tabulation?</li>
+          <li>How do you solve the House Robber problem?</li>
+          <li>How do you find the Longest Increasing Subsequence (LIS)?</li>
+          <li>How do you solve the 0/1 Knapsack problem?</li>
+          <li>How do you solve Edit Distance?</li>
+          <li>How do you find the Longest Common Subsequence (LCS)?</li>
+          <li>How do you solve Unique Paths on a grid?</li>
+          <li>How do you solve the Word Break problem?</li>
+          <li>How do you solve the Decode Ways problem?</li>
+          <li>How do you solve the Minimum Path Sum problem?</li>
+          <li>How do you identify whether a problem is a DP problem?</li>
+          <li>How do you convert recursive to bottom-up DP?</li>
+          <li>How do you optimize 2D DP space?</li>
+        </ul>
+        <div class="subsection-title">Dynamic Programming Advanced</div>
+        <ul class="question-list">
+          <li>How do you solve Best Time to Buy and Sell Stock (one transaction)?</li>
+          <li>How do you solve Buy and Sell Stock with unlimited transactions?</li>
+          <li>What is state machine DP?</li>
+          <li>How do you solve Buy and Sell Stock with cooldown?</li>
+          <li>How do you solve Buy and Sell Stock with at most k transactions?</li>
+          <li>How do you solve the Longest Palindromic Subsequence?</li>
+          <li>What is interval DP?</li>
+          <li>How do you solve Burst Balloons?</li>
+          <li>What is bitmask DP and when do you use it?</li>
+          <li>How do you solve Regular Expression Matching?</li>
+          <li>How do you solve Matrix Chain Multiplication?</li>
+          <li>How do you solve Palindrome Partitioning II (minimum cuts)?</li>
+          <li>What is tree DP?</li>
+          <li>How do you solve Interleaving String?</li>
+          <li>How do you approach DP on strings?</li>
+        </ul>
+        <div class="subsection-title">Recursion, Backtracking &amp;amp; Greedy</div>
+        <ul class="question-list">
+          <li>How do you generate all permutations of an array?</li>
+          <li>How do you generate all subsets of an array?</li>
+          <li>What is backtracking and how does it differ from brute force?</li>
+          <li>How do you solve the N-Queens problem?</li>
+          <li>How do you solve the Jump Game problem?</li>
+          <li>What is a greedy algorithm?</li>
+          <li>What is recursion and what are its essential parts?</li>
+          <li>How does the call stack work during recursion?</li>
+          <li>How do you solve Word Search on a board?</li>
+          <li>How do you solve the Gas Station problem?</li>
+          <li>How do you solve Partition Labels?</li>
+          <li>How do you generate combinations of k elements from n?</li>
+          <li>How do you handle duplicates in subsets and combinations?</li>
+          <li>When does greedy work and when does it fail?</li>
+          <li>How does the Activity Selection problem demonstrate greedy?</li>
+        </ul>
+        <div class="subsection-title">Bit Manipulation &amp;amp; Math</div>
+        <ul class="question-list">
+          <li>How does XOR help find a single number where every other number appears twice?</li>
+          <li>How do you check if a number is a power of two?</li>
+          <li>How do you count the number of 1 bits (Hamming weight)?</li>
+          <li>How do you find the missing number in an array of 0 to n?</li>
+          <li>What are the basic bitwise operators?</li>
+          <li>How do you check, set, clear, and toggle a specific bit?</li>
+          <li>How do you find two non-repeating numbers where every other appears twice?</li>
+          <li>How do you count total 1 bits for every number from 0 to n?</li>
+          <li>What is bit masking for representing subsets?</li>
+          <li>How do you compute GCD using Euclid&#x27;s algorithm?</li>
+          <li>How does the Sieve of Eratosthenes work?</li>
+          <li>How do you reverse the bits of a 32-bit integer?</li>
+          <li>How do you find the Hamming distance between two integers?</li>
+          <li>How do you add two integers without + or - operators?</li>
+          <li>How do you compute a^b mod m efficiently?</li>
+          <li>What is modular arithmetic and why does it matter?</li>
+          <li>How do you solve &quot;single number&quot; when one number appears once and others appear three times?</li>
+        </ul>
+        <div class="subsection-title">System-Oriented DSA &amp;amp; Mobile Specific</div>
+        <ul class="question-list">
+          <li>How do you implement an LRU Cache with O(1) get and put?</li>
+          <li>How does an LFU Cache differ from LRU?</li>
+          <li>How do you design a HashMap from scratch?</li>
+          <li>How do you find the median from a data stream?</li>
+          <li>How do you implement a Trie-based autocomplete system?</li>
+          <li>How do you design a Twitter/News Feed system using DSA?</li>
+          <li>How do you implement a stack that supports push, pop, and getMin in O(1)?</li>
+          <li>How do you design a data structure for insert, remove, and getRandom in O(1)?</li>
+          <li>How would you implement a time-based key-value store?</li>
+          <li>How do you implement a basic rate limiter using a queue?</li>
+          <li>How do you solve Top K Frequent Elements?</li>
+          <li>How do you merge K sorted arrays?</li>
+          <li>How do you solve the task scheduler problem?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="system-design">
+        <div class="section-title">Mobile System Design</div>
+        <div class="subsection-title">Fundamentals of Mobile System Design</div>
+        <ul class="question-list">
+          <li>How do you structure the high-level architecture of a mobile app?</li>
+          <li>What is the single source of truth pattern and why does it matter?</li>
+          <li>How do you choose an architecture pattern (MVVM, MVI) and set up dependency injection?</li>
+          <li>How do you design caching in detail?</li>
+          <li>How do you handle threading and concurrency?</li>
+          <li>How do you design offline support?</li>
+          <li>How do you decide on client-server communication?</li>
+          <li>How do you design the API contract from the mobile client&#x27;s perspective?</li>
+          <li>How do you design the data model?</li>
+          <li>How do you implement pagination on the client?</li>
+          <li>What&#x27;s the first thing you should do when given a mobile system design problem?</li>
+          <li>How do you identify functional requirements for a mobile system design?</li>
+          <li>How do you identify non-functional requirements?</li>
+          <li>How do you define scope and resource constraints?</li>
+          <li>How do you address non-functional requirements in the high-level design?</li>
+          <li>How do you approach performance in a system design answer?</li>
+          <li>How do you handle accessibility and localization?</li>
+          <li>How do you address security concerns?</li>
+        </ul>
+        <div class="subsection-title">Design: Chat Application</div>
+        <ul class="question-list">
+          <li>How would you layer the client architecture for a chat app?</li>
+          <li>Why WebSocket over long polling or SSE for real-time messaging?</li>
+          <li>What data model would you use for messages?</li>
+          <li>How does the offline message queue work?</li>
+          <li>How do you handle message ordering? What problems can arise?</li>
+          <li>How do you handle retry logic and delivery guarantees?</li>
+          <li>How do you manage the WebSocket connection lifecycle?</li>
+          <li>How do you structure the local Room database schema?</li>
+          <li>What are the core features you would include in a chat application?</li>
+          <li>What are the key non-functional requirements for a chat app?</li>
+          <li>What&#x27;s in scope and what&#x27;s out of scope for a mobile system design interview?</li>
+          <li>What does the API design look like for conversations and messages?</li>
+          <li>How do push notifications work for a chat app?</li>
+          <li>How do you sync message history after the app has been offline?</li>
+          <li>How do you implement read receipts?</li>
+          <li>How do you implement typing indicators?</li>
+          <li>How do you handle media messages like images and videos?</li>
+          <li>How do you make the chat list screen performant?</li>
+          <li>How would you implement message search?</li>
+          <li>How does end-to-end encryption work at a high level?</li>
+          <li>How does group messaging differ from 1:1 chats?</li>
+        </ul>
+        <div class="subsection-title">Design: News Feed &amp;amp; Social Media</div>
+        <ul class="question-list">
+          <li>What are the core features of a social media feed?</li>
+          <li>What are the non-functional requirements?</li>
+          <li>What&#x27;s in scope and what&#x27;s out of scope for this design?</li>
+          <li>What does the client architecture look like?</li>
+          <li>How do you design the API for feed pagination?</li>
+          <li>How do you model a feed item that supports multiple content types?</li>
+          <li>What caching strategy works best for a feed?</li>
+          <li>How do you handle image loading in the feed?</li>
+          <li>How do you handle pull-to-refresh and real-time updates?</li>
+          <li>How do you optimize RecyclerView or LazyColumn performance for a feed?</li>
+          <li>How does prefetching work for both data and images?</li>
+          <li>How do you implement optimistic UI for the like button?</li>
+          <li>How would you handle video autoplay in the feed?</li>
+          <li>How do you handle multiple view types in a feed?</li>
+          <li>How do you handle offline caching with TTL?</li>
+          <li>How do you track analytics events in a feed?</li>
+          <li>How do you deep link to a specific post in the feed?</li>
+          <li>How do you make the feed accessible?</li>
+        </ul>
+        <div class="subsection-title">Design: Image Loading Library</div>
+        <ul class="question-list">
+          <li>What does the overall loading pipeline look like?</li>
+          <li>How does the memory cache work?</li>
+          <li>How does the disk cache work?</li>
+          <li>How do you handle lifecycle awareness?</li>
+          <li>What is bitmap pooling and why is it important?</li>
+          <li>How would you downsample images to avoid OutOfMemoryError?</li>
+          <li>What&#x27;s the threading strategy?</li>
+          <li>What are the core responsibilities of an image loading library?</li>
+          <li>How would you design the public API?</li>
+          <li>What platforms and use cases should the library support?</li>
+          <li>How do you generate cache keys?</li>
+          <li>How do you handle placeholder and error images?</li>
+          <li>What is request deduplication and how would you implement it?</li>
+          <li>How do you handle image transformations?</li>
+          <li>How do you respond to memory pressure?</li>
+          <li>How do you handle disk cache eviction?</li>
+          <li>How would you implement a priority system for image loads?</li>
+          <li>How do Coil and Glide differ in their architecture?</li>
+        </ul>
+        <div class="subsection-title">Design: File Downloader Library</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements for a file downloader library?</li>
+          <li>What are the non-functional requirements?</li>
+          <li>What would you keep out of scope for an initial design?</li>
+          <li>What are the main components in the architecture?</li>
+          <li>How would you design the public API?</li>
+          <li>What does the data model look like for a download task?</li>
+          <li>How do HTTP Range requests enable resume?</li>
+          <li>What states can a download be in, and how do transitions work?</li>
+          <li>How does notification integration work?</li>
+          <li>Walk through the pause/resume implementation in detail.</li>
+          <li>How do you manage concurrent downloads?</li>
+          <li>How do you implement progress tracking without flooding the UI?</li>
+          <li>How should background downloads work on Android?</li>
+          <li>What disk I/O strategy should you use?</li>
+          <li>How do you verify file integrity after download?</li>
+          <li>How do you handle retry on network failure?</li>
+          <li>How does the priority queue work?</li>
+          <li>How would you test a file downloader library?</li>
+        </ul>
+        <div class="subsection-title">Design: Networking Library</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements?</li>
+          <li>What are the non-functional requirements?</li>
+          <li>What is in scope and what is out of scope?</li>
+          <li>What does the high-level architecture look like?</li>
+          <li>How would you design the public API?</li>
+          <li>How does the interceptor chain pattern work?</li>
+          <li>How does the serialization layer work?</li>
+          <li>How does connection pooling work at a high level?</li>
+          <li>How does HTTP caching work?</li>
+          <li>How would you implement the interceptor chain internally?</li>
+          <li>How do connection pooling and keep-alive work internally?</li>
+          <li>How does TLS and certificate pinning work?</li>
+          <li>How do you implement request cancellation and timeouts?</li>
+          <li>How does retry with exponential backoff work?</li>
+          <li>How do multipart uploads work?</li>
+          <li>How do you handle response streaming for large files?</li>
+          <li>How do thread safety and the dispatcher work?</li>
+          <li>How would you test a networking library?</li>
+        </ul>
+        <div class="subsection-title">Design: Video Streaming App</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements for a video streaming app?</li>
+          <li>What are the key non-functional requirements?</li>
+          <li>What would you keep out of scope for a 45-minute design session?</li>
+          <li>How would you structure the client architecture?</li>
+          <li>Why ExoPlayer / Media3 as the playback engine?</li>
+          <li>What APIs does the client need from the backend?</li>
+          <li>What data models would you use on the client?</li>
+          <li>How would you design the caching strategy?</li>
+          <li>How does video delivery work with a CDN?</li>
+          <li>How does adaptive bitrate streaming work on mobile?</li>
+          <li>How would you configure the buffering strategy?</li>
+          <li>How would you implement background playback with MediaSession?</li>
+          <li>How would you implement offline downloads?</li>
+          <li>How does DRM (Widevine) work on Android?</li>
+          <li>How would you implement picture-in-picture mode?</li>
+          <li>How would you support Chromecast?</li>
+          <li>How would you handle video preloading in a scrollable list?</li>
+          <li>How would you optimize for performance and battery life?</li>
+        </ul>
+        <div class="subsection-title">Design: Music Streaming App</div>
+        <ul class="question-list">
+          <li>What are the core features of a music streaming app?</li>
+          <li>What are the key non-functional requirements?</li>
+          <li>How would you scope this for a 45-minute interview?</li>
+          <li>How would you structure the client architecture?</li>
+          <li>Why use Media3/ExoPlayer for audio playback?</li>
+          <li>What APIs does the app need from the backend?</li>
+          <li>What are the core data models?</li>
+          <li>How do you keep music playing in the background?</li>
+          <li>How does audio focus work in a music app?</li>
+          <li>How would you implement gapless and crossfade playback?</li>
+          <li>How would you handle offline downloads?</li>
+          <li>How would you design the playback queue?</li>
+          <li>How do MediaSession and media controls work together?</li>
+          <li>How would you handle audio streaming and buffering?</li>
+          <li>How would you design the caching strategy?</li>
+          <li>How would you implement an equalizer and audio effects?</li>
+          <li>How would you handle Bluetooth, Cast, and car integration?</li>
+          <li>How would you handle search and recommendation on the client?</li>
+        </ul>
+        <div class="subsection-title">Design: eCommerce App</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements for an e-commerce app?</li>
+          <li>What are the key non-functional requirements?</li>
+          <li>What is out of scope for a typical interview?</li>
+          <li>How would you structure the client architecture?</li>
+          <li>What API endpoints does the client need?</li>
+          <li>What are the core data models?</li>
+          <li>What caching strategy would you use?</li>
+          <li>How would you handle image loading in a product grid?</li>
+          <li>How would you design search with filters and sorting?</li>
+          <li>How would you optimize product listing performance?</li>
+          <li>How would you design cart management — local vs server sync?</li>
+          <li>How would you design the checkout flow with payment integration?</li>
+          <li>How do you handle idempotency in checkout?</li>
+          <li>How would you design order tracking with real-time updates?</li>
+          <li>How would you handle push notifications for deals and delivery updates?</li>
+          <li>How would you implement deep linking to a product page?</li>
+          <li>How would you A/B test product layouts?</li>
+          <li>How would you handle offline catalog browsing?</li>
+          <li>How would you handle security — payment tokenization and certificate pinning?</li>
+        </ul>
+        <div class="subsection-title">Design: Ride Sharing App</div>
+        <ul class="question-list">
+          <li>What are the core features a ride-sharing app needs?</li>
+          <li>What are the non-functional requirements?</li>
+          <li>Should the rider and driver be the same app or separate apps?</li>
+          <li>What does the client architecture look like?</li>
+          <li>How does real-time communication work?</li>
+          <li>What API endpoints does the ride lifecycle need?</li>
+          <li>What data models does the client need?</li>
+          <li>How does map integration work?</li>
+          <li>How does the ride state machine work?</li>
+          <li>How does location tracking work under the hood?</li>
+          <li>How do you animate the driver marker smoothly on the map?</li>
+          <li>How do you optimize map rendering performance?</li>
+          <li>How does ETA calculation work?</li>
+          <li>How do you handle offline or poor connectivity during an active ride?</li>
+          <li>How do you display surge pricing to the rider?</li>
+          <li>What does the fare estimation flow look like?</li>
+          <li>How does background location work during a ride?</li>
+          <li>How does driver matching look from the client side?</li>
+          <li>How would you abstract the map SDK so you could swap Google Maps for Mapbox?</li>
+        </ul>
+        <div class="subsection-title">Design: Location Sharing &amp;amp; Maps</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements for a location sharing app?</li>
+          <li>What are the non-functional requirements?</li>
+          <li>How would you scope the design for a 45-minute interview?</li>
+          <li>What does the client architecture look like?</li>
+          <li>How does real-time location sharing work?</li>
+          <li>What APIs does the client need?</li>
+          <li>What are the key data models?</li>
+          <li>How do you integrate a map SDK?</li>
+          <li>How does the location provider strategy work?</li>
+          <li>How do you track location without killing the battery?</li>
+          <li>How do you implement geofencing?</li>
+          <li>How do you handle map rendering performance?</li>
+          <li>How do you support offline maps?</li>
+          <li>How does background location work on modern Android?</li>
+          <li>How do you implement privacy controls for location sharing?</li>
+          <li>How do you handle real-time updates at scale?</li>
+          <li>How do you filter noisy location data?</li>
+          <li>How do you test location features?</li>
+        </ul>
+        <div class="subsection-title">Design: File Sync App</div>
+        <ul class="question-list">
+          <li>What core features should a file sync app support on the client side?</li>
+          <li>What are the key non-functional requirements?</li>
+          <li>What should we exclude from scope for this interview?</li>
+          <li>How would you structure the client architecture?</li>
+          <li>What API endpoints does the client need?</li>
+          <li>What data models does the client need?</li>
+          <li>How does delta sync work with version vectors?</li>
+          <li>How should the local file storage be structured?</li>
+          <li>How would the sync engine coordinate everything?</li>
+          <li>How would you implement chunked uploads with resume on failure?</li>
+          <li>How does chunked download with resume work?</li>
+          <li>How would you handle conflict resolution?</li>
+          <li>How should background sync be scheduled?</li>
+          <li>How would you detect local file changes?</li>
+          <li>How would you optimize bandwidth usage?</li>
+          <li>How should offline editing work?</li>
+          <li>How should files be encrypted at rest and in transit?</li>
+          <li>How would you implement selective sync?</li>
+          <li>How would you handle very large files without running out of memory?</li>
+        </ul>
+        <div class="subsection-title">Design: Offline-First Application</div>
+        <ul class="question-list">
+          <li>What does &quot;offline-first&quot; actually mean? How is it different from just caching?</li>
+          <li>What are the functional requirements for an offline-first app?</li>
+          <li>What non-functional requirements matter most?</li>
+          <li>How would you architect an offline-first app at a high level?</li>
+          <li>Why use the local database as the source of truth instead of the server?</li>
+          <li>How would you design the data model with sync metadata?</li>
+          <li>How would you design the pending operations queue?</li>
+          <li>How would you design the API for delta sync?</li>
+          <li>How do you detect conflicts during sync?</li>
+          <li>What are the main conflict resolution strategies?</li>
+          <li>How would you implement field-level merge?</li>
+          <li>How do you compact the pending operations queue before syncing?</li>
+          <li>How do you use WorkManager for background sync?</li>
+          <li>How do you monitor network state and trigger sync on reconnect?</li>
+          <li>How do you handle schema migrations when users have unsynced data?</li>
+          <li>How do you implement optimistic UI with rollback?</li>
+          <li>How do you test offline scenarios?</li>
+          <li>How do you handle large file sync like images or documents?</li>
+        </ul>
+        <div class="subsection-title">Design: Analytics &amp;amp; Crash Reporting SDK</div>
+        <ul class="question-list">
+          <li>What are the core functional requirements for an analytics and crash reporting SDK?</li>
+          <li>What are the key non-functional requirements?</li>
+          <li>Where does the SDK&#x27;s responsibility end and the host app&#x27;s begin?</li>
+          <li>What does the overall SDK architecture look like?</li>
+          <li>How would you design the public API?</li>
+          <li>What does the backend ingestion endpoint look like?</li>
+          <li>What do the data models look like?</li>
+          <li>How does the batching strategy work?</li>
+          <li>How should initialization and configuration work?</li>
+          <li>How would you capture crashes?</li>
+          <li>How does the ANR watchdog work internally?</li>
+          <li>How would you implement the event batching and flush logic?</li>
+          <li>How would you design local storage for pending events?</li>
+          <li>How would you handle reliable delivery with retries?</li>
+          <li>How would you handle privacy and consent?</li>
+          <li>How would you minimize performance impact on the host app?</li>
+          <li>How does session tracking work?</li>
+          <li>How would you handle disk and memory limits?</li>
+          <li>How would you test an analytics SDK?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="behavioral">
+        <div class="section-title">Behavioral &amp;amp; Career</div>
+        <div class="subsection-title">STAR Method &amp;amp; Common Questions</div>
+        <ul class="question-list">
+          <li>What is the STAR method and how do you use it in interviews?</li>
+          <li>How do you answer &quot;Tell me about yourself&quot;?</li>
+          <li>How do you answer &quot;What are your strengths&quot;?</li>
+          <li>How do you answer &quot;What are your weaknesses&quot;?</li>
+          <li>How do you handle deadline pressure?</li>
+          <li>How do you answer &quot;What has been your biggest challenge&quot;?</li>
+          <li>How do you answer &quot;Tell me about a conflict with a teammate&quot;?</li>
+          <li>How do you talk about handling failure?</li>
+          <li>Tell me about a time you mentored someone.</li>
+          <li>Describe a time you disagreed with your manager.</li>
+          <li>Tell me about a time you went above and beyond.</li>
+          <li>How do you prioritize when you have multiple competing demands?</li>
+          <li>Tell me about a time you made a decision with incomplete information.</li>
+          <li>How do you give feedback during code reviews?</li>
+          <li>Describe a situation where you received critical feedback.</li>
+          <li>Tell me about a time you pushed back on a product requirement.</li>
+          <li>Tell me about a project where things didn&#x27;t go as planned.</li>
+        </ul>
+        <div class="subsection-title">Career Growth, Failure &amp;amp; Salary Negotiation</div>
+        <ul class="question-list">
+          <li>Walk me through your career trajectory.</li>
+          <li>What&#x27;s your biggest professional failure and what did you learn?</li>
+          <li>What are your strengths?</li>
+          <li>What are your weaknesses?</li>
+          <li>Where do you see yourself in 5 years?</li>
+          <li>Why do you want to work at this company?</li>
+          <li>Why are you leaving your current role?</li>
+          <li>How do you approach salary negotiation?</li>
+          <li>How do you evaluate a job offer beyond salary?</li>
+          <li>How do you handle a counter offer from your current employer?</li>
+          <li>Tell me about a time you failed at something significant. How did you recover?</li>
+          <li>How do you stay current with technology?</li>
+          <li>How do you handle imposter syndrome?</li>
+          <li>Tell me about a production incident you caused. What happened and what changed?</li>
+          <li>How do you talk about gaps in your resume?</li>
+          <li>What questions should you ask the interviewer?</li>
+          <li>How do you handle burnout?</li>
+        </ul>
+        <div class="subsection-title">Leadership, Ownership &amp;amp; Technical Decisions</div>
+        <ul class="question-list">
+          <li>What does technical leadership look like without a management title?</li>
+          <li>What does it mean to own a feature end-to-end?</li>
+          <li>How do you handle ambiguity in requirements?</li>
+          <li>How do you approach making a trade-off between speed and quality?</li>
+          <li>How do you decide whether to refactor or ship?</li>
+          <li>Tell me about a time you influenced a decision without having authority.</li>
+          <li>Describe a time you drove a significant technical decision. How did you get buy-in?</li>
+          <li>How do you choose between two libraries or frameworks when both seem viable?</li>
+          <li>Tell me about a time you made a technical decision that turned out to be wrong. What did you do?</li>
+          <li>How do you approach a large, ambiguous project with no clear solution?</li>
+          <li>How do you manage stakeholders who have conflicting priorities?</li>
+          <li>Tell me about a time you took ownership of something outside your job description.</li>
+          <li>How do you approach architecture decisions for a feature that needs to scale?</li>
+          <li>Describe a time you had to balance technical debt with feature delivery.</li>
+          <li>How do you make decisions when your team is split on an approach?</li>
+          <li>Tell me about a time you had to say no to a stakeholder.</li>
+          <li>How do you evaluate whether a new technology is worth adopting?</li>
+        </ul>
+        <div class="subsection-title">Agile, Scrum &amp;amp; Team Collaboration</div>
+        <ul class="question-list">
+          <li>What is Agile and why do teams use it?</li>
+          <li>What is Scrum and how does it differ from Agile?</li>
+          <li>What happens in each Scrum ceremony?</li>
+          <li>What are story points and how do you estimate work?</li>
+          <li>What is sprint velocity and how is it used?</li>
+          <li>What is the Definition of Done?</li>
+          <li>How do you give effective feedback in code reviews?</li>
+          <li>How do you receive feedback on your own code?</li>
+          <li>How do you collaborate with product managers who don&#x27;t have technical context?</li>
+          <li>How do you handle a blocker that&#x27;s outside your control?</li>
+          <li>How does your team handle knowledge sharing?</li>
+          <li>How do you work effectively in a remote or distributed team?</li>
+          <li>What makes a good sprint retrospective?</li>
+          <li>How do you handle scope creep during a sprint?</li>
+          <li>How do you estimate work when requirements are unclear?</li>
+          <li>What&#x27;s your approach to working with designers?</li>
+        </ul>
+      </div>
+      <div class="section-block" id="coding-tests">
+        <div class="section-title">Coding Tests</div>
+        <div class="subsection-title">What Companies Expect</div>
+        <ul class="question-list">
+          <li>What are the common coding test formats?</li>
+          <li>What do evaluators look for in a submission?</li>
+          <li>What should a good README contain?</li>
+          <li>How important is Git history?</li>
+          <li>How should I structure a coding test project?</li>
+          <li>Should I use Jetpack Compose or XML Views?</li>
+          <li>What are the most common mistakes in coding tests?</li>
+          <li>How should I handle ambiguous requirements?</li>
+          <li>How should I manage time in a timed take-home test?</li>
+          <li>What does good architecture look like for a small coding test app?</li>
+          <li>How should I implement error handling?</li>
+          <li>What level of testing is expected?</li>
+          <li>How do I handle API keys securely?</li>
+          <li>How should I approach a live coding interview vs a take-home test?</li>
+          <li>What should I do if I can&#x27;t finish the coding test in time?</li>
+          <li>What differentiates a good submission from a great one?</li>
+          <li>How do I decide what to include and what to skip when time is limited?</li>
+        </ul>
+        <div class="subsection-title">Machine Coding Round</div>
+        <ul class="question-list">
+          <li>What is a machine coding round and how does it differ from a take-home assignment?</li>
+          <li>What are the common formats?</li>
+          <li>What do evaluators actually watch for?</li>
+          <li>What architecture should I default to?</li>
+          <li>How should I spend the first 10-15 minutes?</li>
+          <li>What&#x27;s a good time management strategy for a 90-minute round?</li>
+          <li>How do I handle API calls in a timed round?</li>
+          <li>How do I display a list quickly in Compose?</li>
+          <li>How do I deal with ambiguous requirements?</li>
+          <li>What patterns should I have memorized?</li>
+          <li>How do I add error handling quickly?</li>
+          <li>What should I NOT do in a machine coding round?</li>
+          <li>How do I write a quick unit test when time is short?</li>
+          <li>How do I handle the last 10 minutes?</li>
+          <li>What separates a strong submission from an average one?</li>
+        </ul>
+        <div class="subsection-title">Build: Todo App</div>
+        <ul class="question-list">
+          <li>How do you set up Room for a notes app?</li>
+          <li>How do you display notes in a LazyColumn?</li>
+          <li>How do you implement swipe-to-delete?</li>
+          <li>How do you implement undo delete with a Snackbar?</li>
+          <li>How do you build the add/edit note screen with form validation?</li>
+          <li>How do you implement search and filter for notes?</li>
+          <li>How do you implement sorting by date or priority?</li>
+          <li>How do you structure clean architecture for a notes app?</li>
+          <li>How do you set up Hilt for dependency injection?</li>
+          <li>How do you handle offline-first architecture in a notes app?</li>
+          <li>How do you support dark mode?</li>
+          <li>How do you unit test the ViewModel?</li>
+          <li>How do you write UI tests for the notes app?</li>
+          <li>Why is the to-do app a good test of fundamentals?</li>
+          <li>How do you handle the back press when editing a note with unsaved changes?</li>
+        </ul>
+        <div class="subsection-title">Build: Weather App</div>
+        <ul class="question-list">
+          <li>How do you set up Retrofit for API integration?</li>
+          <li>How do you parse JSON responses into Kotlin data classes?</li>
+          <li>How do you implement loading, error, and success states?</li>
+          <li>How do you handle network errors properly?</li>
+          <li>How do you structure MVVM for a weather/news feature?</li>
+          <li>How do you implement search functionality?</li>
+          <li>How do you implement pull-to-refresh?</li>
+          <li>How do you implement offline caching with Room?</li>
+          <li>How do you handle the separation between DTOs, entities, and domain models?</li>
+          <li>How do you handle empty states in a list-based app?</li>
+          <li>How do you unit test the repository layer?</li>
+          <li>How do you structure the data layer to make it testable?</li>
+          <li>How do you decide between StateFlow and LiveData for UI state?</li>
+          <li>What&#x27;s the difference between Retrofit and Ktor for API integration?</li>
+          <li>How do you handle configuration changes without losing UI state?</li>
+        </ul>
+        <div class="subsection-title">Build: Movie Listing</div>
+        <ul class="question-list">
+          <li>What is the master-detail pattern and why is it common in coding tests?</li>
+          <li>How do you build a scrollable list using LazyColumn in Compose?</li>
+          <li>How do you build the same list using RecyclerView?</li>
+          <li>How do you handle navigation from the list screen to the detail screen?</li>
+          <li>How do you load images with Coil in a list?</li>
+          <li>How do you structure the data layer for a list-detail feature?</li>
+          <li>How should the detail screen load its data?</li>
+          <li>How do you implement infinite scroll with Paging 3?</li>
+          <li>How do you implement search and filter in a list screen?</li>
+          <li>How do you handle state preservation on configuration changes?</li>
+          <li>How do you design a clean navigation setup for a single-activity app?</li>
+          <li>What is the difference between client-side and server-side pagination?</li>
+          <li>How do you handle error states in a paged list?</li>
+          <li>How do you optimize image loading in a large list?</li>
+        </ul>
+        <div class="subsection-title">Build: StackOverflow Users App</div>
+        <ul class="question-list">
+          <li>How do you set up Retrofit to call the StackOverflow or GitHub API?</li>
+          <li>How do you display the fetched users or repos in a LazyColumn?</li>
+          <li>How do you handle loading, error, and empty states?</li>
+          <li>How do you display user avatars with Coil?</li>
+          <li>How do you navigate to a detail screen?</li>
+          <li>How do you implement search with debounce?</li>
+          <li>How do you structure the project packages?</li>
+          <li>How do you implement pagination with Paging 3?</li>
+          <li>How do you implement manual pagination without Paging 3?</li>
+          <li>How do you separate DTOs from domain models?</li>
+          <li>How do you cache API responses in Room for offline access?</li>
+          <li>How do you set up Hilt dependency injection for this project?</li>
+          <li>How do you handle GitHub API rate limiting?</li>
+          <li>What&#x27;s the difference between the StackOverflow and GitHub API response structures?</li>
+          <li>How do you unit test the ViewModel?</li>
+        </ul>
+        <div class="subsection-title">Build: Custom UI Component</div>
+        <ul class="question-list">
+          <li>What is the difference between invalidate() and requestLayout()?</li>
+          <li>What are the three phases of custom View rendering?</li>
+          <li>How do you implement onMeasure in a custom View?</li>
+          <li>How do you draw on a Canvas in a custom View?</li>
+          <li>How do you handle touch events in a custom View?</li>
+          <li>How do you do custom drawing in Compose?</li>
+          <li>How do you create a custom layout in Jetpack Compose?</li>
+          <li>How do you handle gestures in Compose?</li>
+          <li>How do you animate a custom drawn component?</li>
+          <li>How do you design a reusable API for a custom component?</li>
+          <li>How do you make a custom component accessible?</li>
+          <li>How do you handle intrinsic measurements in a custom Compose layout?</li>
+          <li>How do you handle pinch-to-zoom in Compose?</li>
+          <li>What are common performance pitfalls with custom drawn components?</li>
+          <li>How would you build a custom chart component for a coding test?</li>
+        </ul>
+        <div class="subsection-title">Code Review &amp;amp; Refactoring</div>
+        <ul class="question-list">
+          <li>What are code smells and how do you spot them?</li>
+          <li>How do you improve naming conventions in a codebase?</li>
+          <li>How do you reduce coupling between classes?</li>
+          <li>How do you refactor a God Activity or God ViewModel?</li>
+          <li>What does it mean to refactor toward SOLID principles?</li>
+          <li>How do you spot and remove code duplication?</li>
+          <li>How do you extract use cases from a bloated ViewModel?</li>
+          <li>How do you replace callbacks with coroutines or Flow?</li>
+          <li>How do you improve testability of existing code?</li>
+          <li>What do you look for first when reviewing unfamiliar code?</li>
+          <li>How do you approach a refactoring challenge without breaking existing behavior?</li>
+          <li>How do you spot and fix memory leaks in a code review?</li>
+          <li>How do you identify and fix performance issues in a code review?</li>
+          <li>How do you refactor error handling from scattered try-catch to a structured approach?</li>
+          <li>How do you suggest architectural improvements without rewriting everything?</li>
+        </ul>
+      </div>
+      </div>
+    </div>
+
+    {% include footer.html %}
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
-
-        const TAG_COLORS = [
-          { bg: 'rgba(255, 215, 0, 0.18)', border: 'rgba(255, 215, 0, 0.5)', color: '#FFD700' },
-          { bg: 'rgba(191, 64, 255, 0.18)', border: 'rgba(191, 64, 255, 0.5)', color: '#BF40FF' },
-          { bg: 'rgba(0, 150, 255, 0.18)', border: 'rgba(0, 150, 255, 0.5)', color: '#0096FF' },
-          { bg: 'rgba(0, 224, 0, 0.18)', border: 'rgba(0, 224, 0, 0.5)', color: '#00E000' },
-          { bg: 'rgba(255, 64, 129, 0.18)', border: 'rgba(255, 64, 129, 0.5)', color: '#FF4081' },
-          { bg: 'rgba(0, 230, 210, 0.18)', border: 'rgba(0, 230, 210, 0.5)', color: '#00E6D2' },
-          { bg: 'rgba(255, 145, 0, 0.18)', border: 'rgba(255, 145, 0, 0.5)', color: '#FF9100' },
-          { bg: 'rgba(255, 50, 50, 0.18)', border: 'rgba(255, 50, 50, 0.5)', color: '#FF3232' },
-        ];
-
-        function hashTagName(name) {
-          var hash = 0;
-          for (var i = 0; i < name.length; i++) { hash = ((hash * 7) + name.charCodeAt(i)) | 0; }
-          return Math.abs(hash) % TAG_COLORS.length;
-        }
-
-        const TAG_COLOR_MAP = {
-          'android': 3,
-          'kotlin coroutines': 0,
-          'gradle': 6,
-          'jetpack compose': 2,
-          'technical round': 3,
-          'dsa round': 6,
-          'system design round': 5,
-          'architecture round': 1,
-          'behavioral round': 4,
-          'coding test': 7,
-        };
-
-        function applyTagColor(el) {
-          var tag = el.textContent.trim();
-          if (tag.toLowerCase() === 'all') {
-            el.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-            el.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            el.style.color = '#d1d5db';
-            return;
-          }
-          var idx = TAG_COLOR_MAP[tag.toLowerCase()];
-          var c = idx !== undefined ? TAG_COLORS[idx] : TAG_COLORS[hashTagName(tag)];
-          el.style.backgroundColor = c.bg;
-          el.style.borderColor = c.border;
-          el.style.color = c.color;
-        }
-
-        document.querySelectorAll('.category-chip, .list-post-tag').forEach(applyTagColor);
-
-        // Interview round chip filtering
-        const iChips = document.querySelectorAll('.level-chip');
-        const iPosts = document.querySelectorAll('#tab-interviews .interview-post-link');
-
-        iChips.forEach(chip => {
-          chip.addEventListener('click', function() {
-            const tag = this.dataset.itag;
-            iChips.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            let dayNum = 1;
-            iPosts.forEach(post => {
-              if (tag === 'all') {
-                post.classList.remove('hidden');
-                post.querySelector('.day-num').textContent = dayNum++;
-              } else {
-                const postTags = post.dataset.tags.split('|');
-                const normalizedTag = tag.replace(/_/g, ' ');
-                const match = postTags.includes(normalizedTag);
-                post.classList.toggle('hidden', !match);
-                if (match) post.querySelector('.day-num').textContent = dayNum++;
-              }
-            });
-          });
-        });
-
-        const savedScrollPosition = localStorage.getItem('scrollPosition');
-        if (savedScrollPosition) {
-          window.scrollTo(0, parseInt(savedScrollPosition));
-          localStorage.removeItem('scrollPosition');
-        }
       });
     </script>
-
-    {% include footer.html %}
   </body>
 </html>

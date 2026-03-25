@@ -295,8 +295,8 @@
       }
 
       .section-tab.active[data-tab="weekly"] {
-        color: #FFD700;
-        border-bottom-color: #FFD700;
+        color: #00E5D0;
+        border-bottom-color: #00E5D0;
       }
 
       .tab-count {
@@ -316,8 +316,8 @@
       }
 
       .section-tab.active[data-tab="weekly"] .tab-count {
-        background-color: rgba(255, 215, 0, 0.12);
-        color: #FFD700;
+        background-color: rgba(0, 229, 208, 0.12);
+        color: #00E5D0;
       }
 
       .tab-content {
@@ -484,21 +484,23 @@
         transition: all 0.2s ease;
         font-family: 'Space Mono', 'Courier New', monospace;
         font-weight: 700;
-        border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.04);
-        color: #6b7280;
+        border: 1px solid rgba(255,255,255,0.08);
+        background-color: rgba(255,255,255,0.03);
+        color: #4b5563;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        user-select: none;
       }
 
       .category-chip:hover {
-        filter: brightness(1.4);
-        border-color: currentColor;
+        color: #9ca3af;
+        border-color: rgba(255,255,255,0.15);
       }
 
       .category-chip.active {
-        border-color: currentColor;
-        filter: brightness(1.2);
+        border-color: rgba(0,229,208,0.5);
+        color: #00E5D0;
+        background-color: rgba(0,229,208,0.05);
       }
 
       /* Newsletter chips & card */
@@ -517,24 +519,23 @@
         transition: all 0.2s ease;
         font-family: 'Space Mono', 'Courier New', monospace;
         font-weight: 700;
-        background-color: rgba(180, 140, 20, 0.08);
-        color: #b8920a;
-        border: 1px solid rgba(180, 140, 20, 0.2);
+        background-color: rgba(255,255,255,0.03);
+        color: #4b5563;
+        border: 1px solid rgba(255,255,255,0.08);
         user-select: none;
         letter-spacing: 0.06em;
         text-transform: uppercase;
       }
 
       .nl-issue-chip:hover {
-        background-color: rgba(212, 160, 23, 0.15);
-        border-color: rgba(255, 200, 50, 0.4);
-        color: #FFD700;
+        color: #9ca3af;
+        border-color: rgba(255,255,255,0.15);
       }
 
       .nl-issue-chip.active {
-        background-color: rgba(212, 160, 23, 0.15);
-        border-color: rgba(255, 215, 0, 0.5);
-        color: #FFD700;
+        color: #00E5D0;
+        border-color: rgba(0,229,208,0.4);
+        background-color: rgba(0,229,208,0.05);
       }
 
       .rss-chip {
@@ -563,7 +564,7 @@
 
       .nl-issue-content {
         background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 215, 0, 0.2);
+        border: 1px solid rgba(0,229,208,0.1);
         border-radius: 0;
         padding: 36px;
         display: none;
@@ -585,7 +586,7 @@
         font-family: 'Space Mono', monospace;
         font-size: 2em;
         font-weight: 700;
-        color: #FFD700;
+        color: #00E5D0;
         display: inline;
       }
 
@@ -611,7 +612,7 @@
       .nl-issue-divider {
         width: 60px;
         height: 1px;
-        background: rgba(255, 215, 0, 0.3);
+        background: rgba(0,229,208,0.2);
         margin-bottom: 28px;
       }
 
@@ -904,7 +905,7 @@
       <div class="nav-right">
         <a href="{{ site.site_github }}" class="nav-link" rel="noopener">GitHub</a>
         <a href="{{ site.site_mastodon }}" class="nav-link" rel="me noopener">Mastodon</a>
-        <a href="/resources" class="nav-cta">Learn Android →</a>
+        <a href="/resources" class="nav-cta">Interview Prep →</a>
       </div>
     </nav>
     <div class="gradient-bg"></div>
@@ -963,7 +964,7 @@
           <span class="link-divider">·</span>
           <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link" title="Mastodon">⬡ Mastodon</a>
           <span class="link-divider">·</span>
-          <a href="/resources" class="contact-link contact-link-golden">Learn Android →</a>
+          <a href="/resources" class="contact-link contact-link-golden">Interview Prep →</a>
         </div>
       </div>
 
@@ -1043,48 +1044,6 @@
         // Set dark theme as default
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
-
-        // Tag color mapping
-        const TAG_COLORS = [
-          { bg: 'rgba(255, 215, 0, 0.18)', border: 'rgba(255, 215, 0, 0.5)', color: '#FFD700' },
-          { bg: 'rgba(191, 64, 255, 0.18)', border: 'rgba(191, 64, 255, 0.5)', color: '#BF40FF' },
-          { bg: 'rgba(0, 150, 255, 0.18)', border: 'rgba(0, 150, 255, 0.5)', color: '#0096FF' },
-          { bg: 'rgba(0, 224, 0, 0.18)', border: 'rgba(0, 224, 0, 0.5)', color: '#00E000' },
-          { bg: 'rgba(255, 64, 129, 0.18)', border: 'rgba(255, 64, 129, 0.5)', color: '#FF4081' },
-          { bg: 'rgba(0, 230, 210, 0.18)', border: 'rgba(0, 230, 210, 0.5)', color: '#00E6D2' },
-          { bg: 'rgba(255, 145, 0, 0.18)', border: 'rgba(255, 145, 0, 0.5)', color: '#FF9100' },
-          { bg: 'rgba(255, 50, 50, 0.18)', border: 'rgba(255, 50, 50, 0.5)', color: '#FF3232' },
-        ];
-
-        function hashTagName(name) {
-          var hash = 0;
-          for (var i = 0; i < name.length; i++) { hash = ((hash * 7) + name.charCodeAt(i)) | 0; }
-          return Math.abs(hash) % TAG_COLORS.length;
-        }
-
-        const TAG_COLOR_MAP = {
-          'android': 3,
-          'kotlin coroutines': 0,
-          'gradle': 6,
-          'jetpack compose': 2,
-        };
-
-        function applyTagColor(el) {
-          var tag = el.textContent.trim();
-          if (tag.toLowerCase() === 'all') {
-            el.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-            el.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-            el.style.color = '#d1d5db';
-            return;
-          }
-          var idx = TAG_COLOR_MAP[tag.toLowerCase()];
-          var c = idx !== undefined ? TAG_COLORS[idx] : TAG_COLORS[hashTagName(tag)];
-          el.style.backgroundColor = c.bg;
-          el.style.borderColor = c.border;
-          el.style.color = c.color;
-        }
-
-        document.querySelectorAll('.category-chip, .list-post-tag').forEach(applyTagColor);
 
         // Tab switching
         const tabs = document.querySelectorAll('.section-tab');
