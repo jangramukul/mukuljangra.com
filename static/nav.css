@@ -41,9 +41,9 @@
 .nav-link {
   font-family: 'Space Mono', 'Courier New', monospace;
   font-size: 0.72em;
-  color: #6b7280;
+  color: #ffffff;
   text-decoration: none;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   transition: color 0.2s ease;
   text-transform: uppercase;
 }
