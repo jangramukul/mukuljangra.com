@@ -20,28 +20,3 @@
   z-index: -1000;
   pointer-events: none;
 }
-
-/* Twinkling stars */
-.star-subtle {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: white;
-  border-radius: 50%;
-  animation: twinkle 4s ease-in-out infinite;
-}
-
-.star-subtle.lg {
-  width: 3px;
-  height: 3px;
-}
-
-.star-subtle.sm {
-  width: 1px;
-  height: 1px;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.08; }
-  50% { opacity: 0.8; }
-}
