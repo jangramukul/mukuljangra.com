@@ -182,67 +182,6 @@
         color: #7ffff4;
       }
 
-      /* Section tabs */
-      .section-tabs {
-        display: flex;
-        gap: 0;
-        margin-bottom: 28px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        width: 100%;
-      }
-
-      .section-tab {
-        padding: 12px 20px;
-        font-size: 0.78em;
-        font-weight: 700;
-        color: #4b5563;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-family: 'Space Mono', 'Courier New', monospace;
-        white-space: nowrap;
-        user-select: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .section-tab:hover { color: #9ca3af; }
-
-      .section-tab.active {
-        color: #00E5D0;
-        border-bottom-color: #00E5D0;
-      }
-
-      .section-tab.active[data-tab="interviews"] {
-        color: #FFD700;
-        border-bottom-color: #FFD700;
-      }
-
-      .tab-count {
-        font-size: 11px;
-        font-weight: 700;
-        background-color: rgba(255, 255, 255, 0.05);
-        color: #4b5563;
-        padding: 1px 7px;
-        border-radius: 2px;
-        margin-left: 6px;
-        font-family: 'Space Mono', monospace;
-      }
-
-      .section-tab.active .tab-count {
-        background-color: rgba(0, 229, 208, 0.12);
-        color: #00E5D0;
-      }
-
-      .section-tab.active[data-tab="interviews"] .tab-count {
-        background-color: rgba(255, 215, 0, 0.12);
-        color: #FFD700;
-      }
-
-      .tab-content { display: none !important; }
-      .tab-content.active { display: block !important; }
-
       /* List container */
       .list-container {
         margin: 0 auto;
@@ -586,18 +525,8 @@
       </div>
 
       <div class="list-container">
-        <div class="section-tabs">
-          <div class="section-tab active" data-tab="quiz">Quiz <span class="tab-count" id="quiz-tab-count"></span></div>
-          <div class="section-tab" data-tab="interviews">Interview Prep <span class="tab-count">{{ site.interviews | size }}</span></div>
-        </div>
-
-        <!-- Quiz tab -->
-        <div class="tab-content active" id="tab-quiz">
-          {% include quiz-tab.html %}
-        </div>
-
         <!-- Interview Prep tab -->
-        <div class="tab-content" id="tab-interviews">
+        <div class="tab-content active" id="tab-interviews">
           <div class="interview-level-chips">
             <div class="category-chip level-chip active" data-itag="all">All</div>
             <div class="category-chip level-chip" data-itag="Technical_Round">Technical Round</div>
@@ -697,27 +626,6 @@
 
         document.querySelectorAll('.category-chip, .list-post-tag').forEach(applyTagColor);
 
-        // Tab switching
-        const tabs = document.querySelectorAll('.section-tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            const targetTab = this.dataset.tab;
-            tabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            tabContents.forEach(tc => tc.classList.remove('active'));
-            document.getElementById('tab-' + targetTab).classList.add('active');
-            const url = new URL(window.location);
-            if (targetTab === 'quiz') {
-              url.searchParams.delete('tab');
-            } else {
-              url.searchParams.set('tab', targetTab);
-            }
-            window.history.replaceState({}, '', url);
-          });
-        });
-
         // Interview round chip filtering
         const iChips = document.querySelectorAll('.level-chip');
         const iPosts = document.querySelectorAll('#tab-interviews .interview-post-link');
@@ -743,28 +651,11 @@
           });
         });
 
-        // Restore state from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const tabParam = urlParams.get('tab');
-        if (tabParam) {
-          const targetTabEl = Array.from(tabs).find(t => t.dataset.tab === tabParam);
-          if (targetTabEl) targetTabEl.click();
-        }
-
         const savedScrollPosition = localStorage.getItem('scrollPosition');
         if (savedScrollPosition) {
           window.scrollTo(0, parseInt(savedScrollPosition));
           localStorage.removeItem('scrollPosition');
         }
-
-        // Populate quiz tab count
-        fetch('/static/quiz-questions.json')
-          .then(r => r.json())
-          .then(data => {
-            var countEl = document.getElementById('quiz-tab-count');
-            if (countEl) countEl.textContent = data.length;
-          })
-          .catch(() => {});
       });
     </script>
 

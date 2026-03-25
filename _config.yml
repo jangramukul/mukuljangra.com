@@ -21,10 +21,6 @@ collections:
     output: true
     permalink: /article/:title/
 
-  guides:
-    output: true
-    permalink: /guide/:title/
-
   presentations:
     output: true
     permalink: /:title/
@@ -38,10 +34,6 @@ collections:
   interviews:
     output: true
     permalink: /interview/:title/
-
-  courses:
-    output: true
-    permalink: /course/:title/
 
   newsletters:
     output: true
