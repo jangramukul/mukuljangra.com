@@ -34,7 +34,7 @@
       }
 
       body {
-        background-color: #030c10;
+        background-color: #000000;
         color: var(--text-color);
         margin: 0;
         padding: 0;
@@ -797,17 +797,17 @@
           font-size: 0.68em;
         }
       }
-      /* ── Homepage-only: subtle cyan edge glow ── */
+      /* ── Homepage-only: hair-thin cyan edge glow ── */
       .gradient-bg {
-        background: #04080d;
+        background: #000000;
       }
       .gradient-bg::before {
         content: '';
         position: absolute;
         inset: 0;
         background:
-          radial-gradient(ellipse 18% 100% at 0%   50%, rgba(0, 229, 208, 0.18) 0%, transparent 100%),
-          radial-gradient(ellipse 18% 100% at 100% 50%, rgba(0, 229, 208, 0.18) 0%, transparent 100%);
+          radial-gradient(ellipse 8% 100% at 0%   50%, rgba(0, 229, 208, 0.10) 0%, transparent 100%),
+          radial-gradient(ellipse 8% 100% at 100% 50%, rgba(0, 229, 208, 0.10) 0%, transparent 100%);
         pointer-events: none;
       }
     </style>
