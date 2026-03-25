@@ -1,11 +1,11 @@
-/* Space-themed gradient background */
+/* Pure black space background */
 .gradient-bg {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to bottom, #111827, #000000);
+  background: #000000;
   z-index: -999;
   pointer-events: none;
 }
@@ -31,7 +31,17 @@
   animation: twinkle 4s ease-in-out infinite;
 }
 
+.star-subtle.lg {
+  width: 3px;
+  height: 3px;
+}
+
+.star-subtle.sm {
+  width: 1px;
+  height: 1px;
+}
+
 @keyframes twinkle {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.7; }
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.8; }
 }
