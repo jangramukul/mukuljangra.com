@@ -1,0 +1,28 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#000000"/>
+  <!-- Helmet dome -->
+  <path d="M7 17C7 11.477 11.477 7 17 7 H15 C9.477 7 5 11.477 5 17 V21 C5 22.105 5.895 23 7 23 H25 C26.105 23 27 22.105 27 21 V17 C27 11.477 22.523 7 17 7 H15 C20.523 7 25 11.477 25 17" fill="none"/>
+  <ellipse cx="16" cy="16" rx="10" ry="10" fill="#0a0a0a" stroke="#00E5D0" stroke-width="1.5"/>
+  <!-- Visor (cyan glowing window) -->
+  <rect x="10.5" y="13" width="11" height="7" rx="2.5" fill="#00E5D0"/>
+  <!-- Visor inner glow -->
+  <rect x="10.5" y="13" width="11" height="7" rx="2.5" fill="url(#visorGrad)"/>
+  <!-- Visor highlight reflection -->
+  <rect x="11.5" y="14" width="3.5" height="1.5" rx="0.8" fill="white" opacity="0.35"/>
+  <!-- Neck connector -->
+  <rect x="12.5" y="23" width="7" height="2.5" rx="1" fill="#0a0a0a" stroke="#00E5D0" stroke-width="1"/>
+  <!-- Antenna -->
+  <line x1="23" y1="8" x2="26" y2="5" stroke="#00E5D0" stroke-width="1" stroke-linecap="round"/>
+  <circle cx="26.5" cy="4.5" r="1" fill="#00E5D0"/>
+  <!-- Stars -->
+  <circle cx="3.5" cy="4" r="0.7" fill="white" opacity="0.6"/>
+  <circle cx="28" cy="22" r="0.5" fill="white" opacity="0.5"/>
+  <circle cx="4" cy="26" r="0.4" fill="#00E5D0" opacity="0.7"/>
+  <defs>
+    <linearGradient id="visorGrad" x1="10.5" y1="13" x2="21.5" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5D0" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#007a72" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+</svg>
