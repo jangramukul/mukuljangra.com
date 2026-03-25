@@ -258,115 +258,17 @@
         gap: 8px;
       }
 
-      /* Blog post cards */
-      .list-post {
-        margin-bottom: 0;
-        padding: 20px 24px;
-        width: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 16px;
-        transition: all 0.2s ease;
-        border-radius: 0;
-        background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        cursor: pointer;
-        height: 100%;
-      }
-
-      .list-post:hover {
-        background-color: rgba(0, 229, 208, 0.04);
-        border-color: rgba(0, 229, 208, 0.4);
-      }
-
-      .list-post-icon {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 0;
-        background: rgba(0, 229, 208, 0.06);
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #00E5D0;
-        font-size: 16px;
-      }
-
-      .list-post-content {
-        flex: 1;
-        min-width: 0;
+      /* Blog post cards — same style as interview prep list */
+      .articles-grid {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-      }
-
-      .list-post h2 {
-        font-family: 'Inter', -apple-system, sans-serif;
-        font-size: 1em;
-        margin: 0;
-        border: none !important;
-        padding: 0;
-        font-weight: 600;
-        line-height: 1.4;
-        color: #d1d5db;
-      }
-
-      .list-post h2 a {
-        color: inherit !important;
-        text-decoration: none !important;
-      }
-
-      .list-post h2 a:hover {
-        color: inherit !important;
-        text-decoration: none !important;
-      }
-
-      .list-post-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 4px;
-      }
-
-      .list-post-tag {
-        padding: 2px 8px;
-        border-radius: 0;
-        font-size: 0.68em;
-        font-weight: 700;
-        font-family: 'Space Mono', monospace;
-        border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.04);
-        color: #6b7280;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-
-      .list-post .date {
-        color: #374151;
-        font-size: 0.75em;
-        white-space: nowrap;
-        font-family: 'Space Mono', 'Courier New', monospace;
-        letter-spacing: 0.04em;
-      }
-
-      .list-post-excerpt {
-        color: #6b7280;
-        font-size: 0.82em;
-        line-height: 1.6;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        gap: 0;
       }
 
       .list-post-link {
         text-decoration: none !important;
         color: inherit !important;
-        display: flex;
+        display: block;
       }
 
       .list-post-link:hover,
@@ -376,11 +278,76 @@
         color: inherit !important;
       }
 
-      .list-post-link:hover .list-post h2 {
-        color: #ffffff;
+      .list-post-link.hidden {
+        display: none;
       }
 
-      .list-post-link.hidden {
+      .list-post {
+        padding: 16px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        background: transparent;
+        border-radius: 0;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        display: block;
+      }
+
+      .list-post:hover {
+        background: rgba(0, 229, 208, 0.02);
+      }
+
+      /* Title — matches .subsection-title from resources */
+      .list-post h2 {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.9em;
+        font-weight: 700;
+        color: #00E5D0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin: 0 0 6px 0;
+        border: none !important;
+        padding: 0;
+        line-height: 1.4;
+      }
+
+      .list-post h2 a {
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+
+      /* Excerpt — matches .question-list li from resources */
+      .list-post-excerpt {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95em;
+        color: #6b7280;
+        line-height: 1.7;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .list-post-excerpt::before {
+        content: '→ ';
+        color: rgba(0, 229, 208, 0.4);
+        font-family: 'Space Mono', monospace;
+        font-size: 0.9em;
+      }
+
+      .list-post:hover .list-post-excerpt {
+        color: #d1d5db;
+      }
+
+      /* Hide unused elements */
+      .list-post-icon,
+      .list-post-tags,
+      .list-post-tag,
+      .list-post .date,
+      .list-post-content {
         display: none;
       }
 
@@ -833,13 +800,8 @@
           {% unless post.tags contains "Book" %}
           <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
             <article class="list-post">
-              <div class="list-post-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E5D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-              <div class="list-post-content">
-                <h2>{{ post.title }}</h2>
-
-                <div class="date">{{ post.date | date:"%A, %B %d, %Y" }}</div>
-                <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
-              </div>
+              <h2>{{ post.title }}</h2>
+              <p class="list-post-excerpt">{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
             </article>
           </a>
           {% endunless %}
