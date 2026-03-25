@@ -337,13 +337,13 @@
         align-items: center;
         width: auto;
         height: 34px;
-        background-color: #00E5D0;
+        background-color: transparent;
         border-radius: 0;
         text-decoration: none;
-        color: #000000;
+        color: #00E5D0;
         font-size: 0.75em;
         transition: all 0.2s ease;
-        border: none;
+        border: 1px solid rgba(0, 229, 208, 0.5);
         line-height: 1;
         padding: 0 16px;
         font-family: 'Space Mono', monospace;
@@ -354,14 +354,15 @@
       }
       
       .back-button:hover {
-        background-color: #7ffff4;
-        color: #000000;
-        box-shadow: 0 0 18px rgba(0, 229, 208, 0.4);
+        background-color: rgba(0, 229, 208, 0.08);
+        color: #00E5D0;
+        border-color: #00E5D0;
+        box-shadow: 0 0 14px rgba(0, 229, 208, 0.2);
       }
       
       .back-button .nav-arrow,
       .back-button .nav-text {
-        color: #000000;
+        color: #00E5D0;
       }
 
       .back-button .nav-arrow {
