@@ -1,29 +1,16 @@
-/* Dark teal base — the room */
+/* Dark base — all pages */
 .gradient-bg {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: #030c10;
+  background: #000000;
   z-index: -999;
   pointer-events: none;
 }
 
-/* Intense cyan room glow — blazing from all 4 edges inward */
-.gradient-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 60% 100% at 0% 50%,   rgba(0, 229, 208, 0.55) 0%, rgba(0, 229, 208, 0.12) 45%, transparent 70%),
-    radial-gradient(ellipse 60% 100% at 100% 50%,  rgba(0, 229, 208, 0.55) 0%, rgba(0, 229, 208, 0.12) 45%, transparent 70%),
-    radial-gradient(ellipse 100% 45% at 50% 0%,    rgba(0, 229, 208, 0.30) 0%, rgba(0, 229, 208, 0.06) 50%, transparent 70%),
-    radial-gradient(ellipse 100% 45% at 50% 100%,  rgba(0, 229, 208, 0.30) 0%, rgba(0, 229, 208, 0.06) 50%, transparent 70%);
-  pointer-events: none;
-}
-
-/* Static film grain — heavier, visible, no animation */
+/* Static film grain — site-wide, no animation */
 .gradient-bg::after {
   content: '';
   position: absolute;
