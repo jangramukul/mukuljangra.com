@@ -48,17 +48,13 @@
       a, a:focus { transition: color .2s ease; color: var(--link-color); }
       a:hover, a:active { color: var(--link-color-hover); }
 
-      .content {
-        max-width: 1000px;
-        margin: 0 auto;
-      }
+      /* ── Hero ──────────────────────────────────────────────────── */
 
-      /* Hero / Introduction section */
       .intro-section {
-        padding: 180px 0 24px 0;
+        padding: 160px 0 60px 0;
         text-align: left;
-        max-width: 1000px;
-        margin: 0 auto 15px;
+        max-width: 900px;
+        margin: 0 auto 0;
         position: relative;
       }
 
@@ -73,204 +69,326 @@
 
       .intro-headline {
         font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 5em;
+        font-size: 4.6em;
         font-weight: 700;
         color: #ffffff;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         line-height: 1.05;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
         position: relative;
         animation: glitch 3s linear infinite;
       }
 
       @keyframes glitch {
-        0%, 55%, 100% {
-          text-shadow: none;
-          transform: none;
-          opacity: 1;
-        }
-        57% {
-          text-shadow: -4px 0 #00E5D0, 4px 0 #ff3366;
-          transform: translate(3px, 0);
-          opacity: 0.9;
-        }
-        60% {
-          text-shadow: 4px 0 #00E5D0, -4px 0 #ff3366;
-          transform: translate(-3px, 0);
-          opacity: 0.85;
-        }
-        63% {
-          text-shadow: none;
-          transform: translate(2px, -1px);
-          opacity: 1;
-        }
-        66% {
-          text-shadow: -3px 0 #00E5D0, 3px 0 #ff3366;
-          transform: translate(-2px, 1px);
-          opacity: 0.9;
-        }
-        69% {
-          text-shadow: 2px 0 #00E5D0;
-          transform: translate(1px, 0);
-          opacity: 1;
-        }
-        72% {
-          text-shadow: none;
-          transform: none;
-          opacity: 1;
-        }
+        0%, 55%, 100% { text-shadow: none; transform: none; opacity: 1; }
+        57% { text-shadow: -4px 0 #00E5D0, 4px 0 #ff3366; transform: translate(3px, 0); opacity: 0.9; }
+        60% { text-shadow: 4px 0 #00E5D0, -4px 0 #ff3366; transform: translate(-3px, 0); opacity: 0.85; }
+        63% { text-shadow: none; transform: translate(2px, -1px); opacity: 1; }
+        66% { text-shadow: -3px 0 #00E5D0, 3px 0 #ff3366; transform: translate(-2px, 1px); opacity: 0.9; }
+        69% { text-shadow: 2px 0 #00E5D0; transform: translate(1px, 0); opacity: 1; }
+        72% { text-shadow: none; transform: none; opacity: 1; }
       }
 
       .intro-tagline {
         font-family: 'Inter', -apple-system, sans-serif;
         font-size: 1.05em;
-        line-height: 1.7;
-        margin-bottom: 28px;
+        line-height: 1.75;
+        margin-bottom: 32px;
         color: #6b7280;
-        max-width: 600px;
+        max-width: 580px;
       }
 
       .contact-links {
-        margin: 0 0 40px 0;
-        padding: 0;
-        width: 100%;
         display: flex;
-        justify-content: flex-start;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
+        flex-wrap: wrap;
       }
 
       .contact-link {
         color: #6b7280;
         text-decoration: none;
-        padding: 6px 16px;
+        padding: 6px 14px;
         display: inline-flex;
         align-items: center;
         font-weight: 500;
         transition: all 0.2s ease;
-        font-size: 0.88em;
+        font-size: 0.82em;
         font-family: 'Space Mono', 'Courier New', monospace;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
       }
 
-      .contact-link:first-child {
-        padding-left: 0;
+      .contact-link:first-child { padding-left: 0; }
+
+      .contact-link:hover { color: #00E5D0; text-decoration: none; }
+
+      .link-divider {
+        color: #1f2937;
+        display: inline-block;
+        padding: 0 2px;
+        font-size: 0.9em;
       }
 
-      .contact-link:hover {
+      /* ── Shared section layout ─────────────────────────────────── */
+
+      .page-section {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 64px 0 0 0;
+      }
+
+      .section-label {
+        font-family: 'Space Mono', 'Courier New', monospace;
+        font-size: 0.72em;
         color: #00E5D0;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+
+      .section-title {
+        font-family: 'Space Mono', 'Courier New', monospace;
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 0 0 32px 0;
+      }
+
+      .section-divider {
+        width: 40px;
+        height: 2px;
+        background: #00E5D0;
+        margin-bottom: 36px;
+        opacity: 0.6;
+      }
+
+      /* ── Experience ────────────────────────────────────────────── */
+
+      .experience-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .exp-card {
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.015);
+        padding: 28px 32px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .exp-card:hover {
+        border-color: rgba(0, 229, 208, 0.2);
+        background: rgba(0, 229, 208, 0.02);
+      }
+
+      .exp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 10px;
+      }
+
+      .exp-role {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.92em;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin: 0 0 6px 0;
+      }
+
+      .exp-company {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.78em;
+        font-weight: 700;
+        color: #00E5D0;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .exp-location {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.72em;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .exp-period {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.72em;
+        color: #374151;
+        white-space: nowrap;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        flex-shrink: 0;
+        margin-top: 4px;
+      }
+
+      .exp-period .exp-duration {
+        display: block;
+        color: #1f2937;
+        font-size: 0.88em;
+        margin-top: 4px;
+        text-align: right;
+      }
+
+      .exp-desc {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9em;
+        color: #6b7280;
+        line-height: 1.7;
+        margin: 12px 0 0 0;
+      }
+
+      .exp-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(0, 229, 208, 0.08);
+        border: 1px solid rgba(0, 229, 208, 0.2);
+        font-family: 'Space Mono', monospace;
+        font-size: 0.68em;
+        color: #00E5D0;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      /* ── Open Source ───────────────────────────────────────────── */
+
+      .oss-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2px;
+      }
+
+      .oss-card {
+        padding: 24px 28px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.015);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .oss-card:hover {
+        border-color: rgba(0, 229, 208, 0.25);
+        background: rgba(0, 229, 208, 0.025);
+        color: inherit;
         text-decoration: none;
       }
 
-      .contact-link-golden {
-        color: #000000 !important;
-        background-color: #00E5D0;
-        border: none;
-        padding: 8px 20px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.10em;
-        transition: all 0.2s ease;
-        border-radius: 0;
-      }
-
-      .contact-link-golden:hover {
-        background-color: #7ffff4 !important;
-        color: #000000 !important;
-        box-shadow: 0 0 18px rgba(0, 229, 208, 0.4);
-      }
-
-      .link-divider {
-        color: #374151;
+      .oss-type-badge {
         display: inline-block;
-        padding: 4px 2px;
-      }
-
-      /* Section tabs */
-      .section-tabs {
-        display: flex;
-        gap: 0;
-        margin-bottom: 28px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        width: 100%;
-      }
-
-      .section-tab {
-        padding: 12px 20px;
-        font-size: 0.78em;
-        font-weight: 700;
-        color: #4b5563;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-family: 'Space Mono', 'Courier New', monospace;
-        white-space: nowrap;
-        user-select: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .section-tab:hover {
-        color: #9ca3af;
-      }
-
-      .section-tab.active {
-        color: #00E5D0;
-        border-bottom-color: #00E5D0;
-      }
-
-      .section-tab.active[data-tab="weekly"] {
-        color: #00E5D0;
-        border-bottom-color: #00E5D0;
-      }
-
-      .tab-count {
-        font-size: 11px;
-        font-weight: 700;
-        background-color: rgba(255, 255, 255, 0.05);
-        color: #4b5563;
-        padding: 1px 7px;
-        border-radius: 2px;
-        margin-left: 6px;
+        padding: 2px 8px;
         font-family: 'Space Mono', monospace;
+        font-size: 0.64em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        border: 1px solid;
+        align-self: flex-start;
       }
 
-      .section-tab.active .tab-count {
-        background-color: rgba(0, 229, 208, 0.12);
+      .oss-type-badge.contrib {
+        color: #a78bfa;
+        border-color: rgba(167, 139, 250, 0.25);
+        background: rgba(167, 139, 250, 0.06);
+      }
+
+      .oss-type-badge.project {
         color: #00E5D0;
+        border-color: rgba(0, 229, 208, 0.25);
+        background: rgba(0, 229, 208, 0.06);
       }
 
-      .section-tab.active[data-tab="weekly"] .tab-count {
-        background-color: rgba(0, 229, 208, 0.12);
-        color: #00E5D0;
+      .oss-name {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.85em;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        line-height: 1.4;
       }
 
-      .tab-content {
-        display: none !important;
+      .oss-desc {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.84em;
+        color: #4b5563;
+        line-height: 1.6;
+        flex: 1;
       }
 
-      .tab-content.active {
-        display: block !important;
-      }
-
-      /* List container */
-      .list-container {
-        margin: 0 auto;
-        padding: 0;
-        max-width: 1000px;
-      }
-
-      /* Articles grid */
-      .articles-grid {
+      .oss-link {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.68em;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         display: flex;
-        flex-direction: column;
-        gap: 8px;
+        align-items: center;
+        gap: 5px;
+        margin-top: auto;
+        transition: color 0.2s ease;
       }
 
-      /* Blog post cards — same style as interview prep list */
+      .oss-card:hover .oss-link {
+        color: #00E5D0;
+      }
+
+      /* ── Community ─────────────────────────────────────────────── */
+
+      .community-content {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px;
+      }
+
+      .community-card {
+        padding: 24px 28px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.015);
+      }
+
+      .community-card-icon {
+        font-family: 'Space Mono', monospace;
+        font-size: 1.2em;
+        margin-bottom: 12px;
+        color: #00E5D0;
+      }
+
+      .community-card-title {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.8em;
+        font-weight: 700;
+        color: #d1d5db;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 10px;
+      }
+
+      .community-card-desc {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.84em;
+        color: #4b5563;
+        line-height: 1.65;
+      }
+
+      /* ── Writing / Articles ─────────────────────────────────────── */
+
       .articles-grid {
         display: flex;
         flex-direction: column;
@@ -290,14 +408,9 @@
         color: inherit !important;
       }
 
-      .list-post-link.hidden {
-        display: none;
-      }
-
       .list-post {
         padding: 16px 14px;
         background: transparent;
-        border-radius: 0;
         border: none;
         cursor: pointer;
         transition: background 0.15s ease;
@@ -306,33 +419,33 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 24px;
+        border-left: 2px solid transparent;
       }
 
       .list-post:hover {
         background: rgba(0, 229, 208, 0.02);
+        border-left-color: rgba(0, 229, 208, 0.3);
       }
 
-      /* Title */
       .list-post h2 {
         font-family: 'Space Mono', monospace;
-        font-size: 0.9em;
+        font-size: 0.88em;
         font-weight: 700;
-        color: #00E5D0;
+        color: #d1d5db;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         margin: 0;
         border: none !important;
         padding: 0;
         line-height: 1.4;
         flex: 1;
+        transition: color 0.2s ease;
       }
 
-      .list-post h2 a {
-        color: inherit !important;
-        text-decoration: none !important;
+      .list-post-link:hover .list-post h2 {
+        color: #00E5D0;
       }
 
-      /* Date */
       .list-post .date {
         font-family: 'Space Mono', monospace;
         font-size: 0.72em;
@@ -340,58 +453,21 @@
         white-space: nowrap;
         letter-spacing: 0.06em;
         flex-shrink: 0;
-        display: block;
       }
 
-      .list-post:hover .date {
-        color: #6b7280;
-      }
+      .list-post:hover .date { color: #6b7280; }
 
-      /* Hide unused elements */
-      .list-post-excerpt,
-      .list-post-icon,
-      .list-post-tags,
-      .list-post-tag,
-      .list-post-content {
-        display: none;
-      }
+      /* ── Newsletter ─────────────────────────────────────────────── */
 
-      /* Category chips */
-      .category-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 24px;
-      }
-
-      .category-chip {
-        padding: 4px 14px;
-        border-radius: 0;
-        font-size: 0.75em;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-weight: 700;
-        border: 1px solid rgba(255,255,255,0.08);
-        background-color: rgba(255,255,255,0.03);
+      .nl-section-intro {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9em;
         color: #4b5563;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        user-select: none;
+        line-height: 1.7;
+        margin-bottom: 28px;
+        max-width: 560px;
       }
 
-      .category-chip:hover {
-        color: #9ca3af;
-        border-color: rgba(255,255,255,0.15);
-      }
-
-      .category-chip.active {
-        border-color: rgba(0,229,208,0.5);
-        color: #00E5D0;
-        background-color: rgba(0,229,208,0.05);
-      }
-
-      /* Newsletter chips & card */
       .nl-issue-chips {
         display: flex;
         flex-wrap: wrap;
@@ -401,7 +477,6 @@
 
       .nl-issue-chip {
         padding: 5px 14px;
-        border-radius: 0;
         font-size: 0.72em;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -415,20 +490,11 @@
         text-transform: uppercase;
       }
 
-      .nl-issue-chip:hover {
-        color: #9ca3af;
-        border-color: rgba(255,255,255,0.15);
-      }
-
-      .nl-issue-chip.active {
-        color: #00E5D0;
-        border-color: rgba(0,229,208,0.4);
-        background-color: rgba(0,229,208,0.05);
-      }
+      .nl-issue-chip:hover { color: #9ca3af; border-color: rgba(255,255,255,0.15); }
+      .nl-issue-chip.active { color: #00E5D0; border-color: rgba(0,229,208,0.4); background-color: rgba(0,229,208,0.05); }
 
       .rss-chip {
         padding: 5px 12px;
-        border-radius: 0;
         font-size: 0.72em;
         font-family: 'Space Mono', monospace;
         font-weight: 700;
@@ -443,32 +509,20 @@
         letter-spacing: 0.06em;
       }
 
-      .rss-chip:hover {
-        background-color: rgba(255, 255, 255, 0.08);
-        color: #9ca3af;
-        text-decoration: none;
-        border-color: rgba(255, 255, 255, 0.15);
-      }
+      .rss-chip:hover { background-color: rgba(255,255,255,0.08); color: #9ca3af; text-decoration: none; border-color: rgba(255,255,255,0.15); }
 
       .nl-issue-content {
         background-color: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(0,229,208,0.1);
-        border-radius: 0;
         padding: 36px;
         display: none;
-        overflow: visible;
-        max-height: none;
         width: 100%;
         box-sizing: border-box;
       }
 
-      .nl-issue-content.active {
-        display: block;
-      }
+      .nl-issue-content.active { display: block; }
 
-      .nl-issue-header {
-        margin-bottom: 16px;
-      }
+      .nl-issue-header { margin-bottom: 16px; }
 
       .nl-issue-number {
         font-family: 'Space Mono', monospace;
@@ -535,20 +589,9 @@
         letter-spacing: 0.06em;
       }
 
-      .nl-issue-body p {
-        margin-bottom: 1.3em;
-        font-size: 15px;
-      }
-
-      .nl-issue-body ul, .nl-issue-body ol {
-        padding-left: 1.5em;
-        margin-bottom: 1em;
-      }
-
-      .nl-issue-body li {
-        margin-bottom: 0.5em;
-        font-size: 15px;
-      }
+      .nl-issue-body p { margin-bottom: 1.3em; font-size: 15px; }
+      .nl-issue-body ul, .nl-issue-body ol { padding-left: 1.5em; margin-bottom: 1em; }
+      .nl-issue-body li { margin-bottom: 0.5em; font-size: 15px; }
 
       .nl-issue-body a {
         color: #00E5D0;
@@ -559,22 +602,15 @@
         z-index: 1;
       }
 
-      .nl-issue-body a:hover {
-        color: #7ffff4;
-      }
+      .nl-issue-body a:hover { color: #7ffff4; }
 
-      .nl-issue-body hr {
-        border: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        margin: 2em 0;
-      }
+      .nl-issue-body hr { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 2em 0; }
 
       .nl-issue-body blockquote {
-        border-left: 2px solid rgba(0, 229, 208, 0.4);
+        border-left: 2px solid rgba(0,229,208,0.4);
         padding: 8px 16px;
         color: #6b7280;
-        background-color: rgba(0, 229, 208, 0.03);
-        border-radius: 0;
+        background-color: rgba(0,229,208,0.03);
         margin: 1em 0;
       }
 
@@ -582,7 +618,6 @@
         background-color: #0d0d0d;
         color: #e5e7eb;
         padding: 2px 6px;
-        border-radius: 0;
         font-size: 0.88em;
         font-family: 'Space Mono', monospace;
         border: 1px solid rgba(255,255,255,0.06);
@@ -591,365 +626,281 @@
       .nl-issue-body pre {
         background-color: #0d0d0d;
         padding: 16px;
-        border-radius: 0;
         overflow-x: auto;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255,255,255,0.06);
         margin: 0;
       }
 
-      .nl-issue-body pre code {
-        padding: 0;
-        background: transparent;
-        border: none;
-      }
+      .nl-issue-body pre code { padding: 0; background: transparent; border: none; }
 
-      .nl-issue-body .highlight {
-        border-radius: 0;
-        overflow: hidden;
-        margin-bottom: 16px;
-      }
+      .nl-issue-body .highlight { overflow: hidden; margin-bottom: 16px; }
+      .nl-issue-body .highlight pre { margin: 0; }
 
-      .nl-issue-body .highlight pre {
-        margin: 0;
-        border-radius: 0;
-      }
+      /* ── Responsive ─────────────────────────────────────────────── */
 
-      /* Tools grid */
-      .tools-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
+      @media (max-width: 768px) {
+        .right-column { padding: 20px; }
+        .intro-section { padding: 90px 0 40px 0; }
+        .intro-headline { font-size: 2.4em; }
+        .intro-tagline { max-width: 100%; }
+        .contact-links { gap: 4px; flex-wrap: wrap; }
+        .contact-link { font-size: 0.76em; padding: 6px 10px; }
+        .contact-link:first-child { padding-left: 0; }
+        .page-section { padding: 48px 0 0 0; }
+        .section-title { font-size: 1.2em; }
+        .oss-grid { grid-template-columns: 1fr; }
+        .community-content { grid-template-columns: 1fr; }
+        .exp-header { flex-direction: column; gap: 6px; }
+        .exp-period { text-align: left; }
+        .exp-period .exp-duration { text-align: left; }
+        .exp-card { padding: 20px; }
+        .oss-card { padding: 20px; }
+        .list-post { padding: 14px 10px; }
+        .list-post h2 { font-size: 0.82em; }
+        .nl-issue-content { padding: 20px; }
+        .nl-issue-number { font-size: 1.4em; }
+        .nl-issue-chip { font-size: 0.68em; padding: 5px 10px; }
       }
-
-      .tool-card {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 20px;
-        border-radius: 0;
-        background-color: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.2s ease;
-        height: 100%;
-        box-sizing: border-box;
-      }
-
-      .tool-card:hover {
-        background-color: rgba(0, 229, 208, 0.04);
-        border-color: rgba(0, 229, 208, 0.3);
-      }
-
-      .tool-card-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-      }
-
-      .tool-card-link:hover,
-      .tool-card-link:focus {
-        text-decoration: none;
-        color: inherit;
-      }
-
-      .tool-icon {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 0;
-        background: rgba(0, 229, 208, 0.06);
-        border: 1px solid rgba(0, 229, 208, 0.12);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-      }
-
-      .tool-icon img {
-        width: 26px;
-        height: 26px;
-        object-fit: contain;
-        border-radius: 0;
-      }
-
-      .tool-name {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.82em;
-        font-weight: 700;
-        color: #d1d5db;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .tool-desc {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.78em;
-        color: #4b5563;
-        line-height: 1.5;
-      }
-
-      /* Empty state */
-      .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #374151;
-        font-family: 'Space Mono', monospace;
-      }
-
-      .empty-state p {
-        font-size: 0.9em;
-        margin-bottom: 8px;
-        letter-spacing: 0.05em;
-      }
-
-      .empty-state .empty-hint {
-        font-size: 0.8em;
-        color: #1f2937;
-      }
-
-      @media (max-width: 768px) {        .right-column {
-          padding: 20px;
-        }
-        .list-container {
-          padding: 0;
-          max-width: 100%;
-        }
-        .content {
-          padding: 0;
-          max-width: 100%;
-        }
-        .intro-headline {
-          font-size: 2.2em;
-        }
-        .intro-tagline {
-          max-width: 100%;
-        }
-        .intro-section {
-          padding: 80px 0 16px 0;
-          margin: 0 auto 10px;
-        }
-        .contact-links {
-          margin: 8px 0 0 0;
-          padding: 0;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .contact-link {
-          font-size: 0.78em;
-          padding: 6px 0;
-        }
-        .list-post {
-          padding: 16px;
-        }
-        .tools-grid {
-          grid-template-columns: 1fr;
-        }
-        .list-post-icon {
-          width: 34px;
-          height: 34px;
-          min-width: 34px;
-          font-size: 14px;
-        }
-        .list-post h2 {
-          font-size: 0.88em;
-        }
-        .nl-issue-content {
-          padding: 20px;
-        }
-        .nl-issue-number {
-          font-size: 1.4em;
-        }
-        .nl-issue-label {
-          font-size: 0.9em;
-        }
-        .nl-issue-chip {
-          padding: 6px 12px;
-          font-size: 0.68em;
-        }
-      }
-
     </style>
   </head>
   <body>
     {% include site-nav.html %}
     <div class="gradient-bg"></div>
     <div class="main-background"></div>
-    <div class="right-column">
-      <!-- Introduction Section -->
-      <div class="intro-section">
 
-        <div class="hero-eyebrow">// Android Engineer</div>
+    <div class="right-column">
+
+      <!-- ── Hero ──────────────────────────────────────────────────── -->
+      <section class="intro-section">
+        <div class="hero-eyebrow">// Senior Android Engineer &nbsp;·&nbsp; 5+ Years</div>
         <h1 class="intro-headline">Mukul Jangra</h1>
-        <div class="intro-tagline">{{ site.site_tagline }}</div>
+        <p class="intro-tagline">I build clean, performant Android applications with a focus on architecture, Kotlin, and open source. Passionate about crafting great developer and user experiences — from architecture decisions to pixel-perfect UI.</p>
         <div class="contact-links">
           <a href="{{ site.site_github }}" rel="noopener" class="contact-link" title="GitHub">GitHub</a>
           <span class="link-divider">·</span>
+          <a href="{{ site.site_linkedin }}" rel="noopener" class="contact-link" title="LinkedIn">LinkedIn</a>
+          <span class="link-divider">·</span>
           <a href="{{ site.site_mastodon }}" rel="me noopener" class="contact-link" title="Mastodon">Mastodon</a>
         </div>
-      </div>
+      </section>
 
-      <div class="list-container">
-        <!-- Tabs -->
-        <div class="section-tabs">
-          <div class="section-tab active" data-tab="blog">Blog <span class="tab-count">{{ site.articles | size | minus: 1 }}</span></div>
-          <div class="section-tab" data-tab="weekly">Weekly Newsletter <span class="tab-count">{{ site.newsletters | size }}</span></div>
-          <div class="section-tab" data-tab="tools">Tools I Use</div>
+      <!-- ── Experience ─────────────────────────────────────────────── -->
+      <section class="page-section" id="experience">
+        <div class="section-label">// Experience</div>
+        <h2 class="section-title">Work</h2>
+        <div class="section-divider"></div>
+
+        <div class="experience-list">
+
+          <div class="exp-card">
+            <div class="exp-header">
+              <div>
+                <div class="exp-role">Android Engineer</div>
+                <div class="exp-company">
+                  BuiltByPixel
+                  <span class="exp-location">· London, UK</span>
+                  <span class="exp-badge">Current</span>
+                </div>
+              </div>
+              <div class="exp-period">
+                2022 — Present
+              </div>
+            </div>
+            <p class="exp-desc">Building polished, production-grade Android applications for clients across industries. Focused on clean architecture, Compose UI, and Kotlin-first development. Leading technical decisions and setting engineering standards for mobile projects.</p>
+          </div>
+
+          <div class="exp-card">
+            <div class="exp-header">
+              <div>
+                <div class="exp-role">Android Developer</div>
+                <div class="exp-company">
+                  Scogo
+                  <span class="exp-location">· Mumbai, India</span>
+                </div>
+              </div>
+              <div class="exp-period">
+                2019 — 2022
+                <span class="exp-duration">3 years</span>
+              </div>
+            </div>
+            <p class="exp-desc">Developed and maintained the Scogo Android app serving field engineers and logistics teams. Built real-time tracking features, offline-first data layers, and a modularised codebase using MVVM and Clean Architecture patterns.</p>
+          </div>
+
         </div>
+      </section>
 
-        <!-- Blog tab -->
-        <div class="tab-content active" id="tab-blog">
+      <!-- ── Open Source ─────────────────────────────────────────────── -->
+      <section class="page-section" id="open-source">
+        <div class="section-label">// Open Source</div>
+        <h2 class="section-title">Contributions &amp; Projects</h2>
+        <div class="section-divider"></div>
 
-          <div class="articles-grid">
+        <div class="oss-grid">
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1651" class="oss-card" rel="noopener" target="_blank">
+            <span class="oss-type-badge contrib">Contribution</span>
+            <div class="oss-name">Pocket Casts — LiveData → Coroutines Flow</div>
+            <p class="oss-desc">Migrated LiveData observers to Kotlin Coroutines Flow across the Pocket Casts Android codebase, modernising the reactive layer and aligning with current Android architecture guidelines.</p>
+            <span class="oss-link">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View PR on GitHub
+            </span>
+          </a>
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1658" class="oss-card" rel="noopener" target="_blank">
+            <span class="oss-type-badge contrib">Contribution</span>
+            <div class="oss-name">Pocket Casts — Artwork in Miniplayer, Notification &amp; Widget</div>
+            <p class="oss-desc">Added episode artwork display to the Pocket Casts miniplayer, system notification, and home-screen widget — improving visual context for users across every entry point of the player.</p>
+            <span class="oss-link">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View PR on GitHub
+            </span>
+          </a>
+
+          <a href="https://github.com/jangramukul/LastKey" class="oss-card" rel="noopener" target="_blank">
+            <span class="oss-type-badge project">Project</span>
+            <div class="oss-name">LastKey — Multiplatform</div>
+            <p class="oss-desc">A Kotlin Multiplatform password and credentials manager sharing business logic across Android and other platforms, with a focus on security and clean architecture.</p>
+            <span class="oss-link">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View on GitHub
+            </span>
+          </a>
+
+          <a href="https://github.com/jangramukul/ReactiveStore" class="oss-card" rel="noopener" target="_blank">
+            <span class="oss-type-badge project">Project</span>
+            <div class="oss-name">Reactive Store</div>
+            <p class="oss-desc">A lightweight reactive state management library for Android built on Kotlin Coroutines and Flow, providing a predictable unidirectional data flow for app state.</p>
+            <span class="oss-link">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View on GitHub
+            </span>
+          </a>
+
+          <a href="https://github.com/jangramukul/FastMapper" class="oss-card" rel="noopener" target="_blank">
+            <span class="oss-type-badge project">Project</span>
+            <div class="oss-name">FastMapper</div>
+            <p class="oss-desc">A Kotlin annotation processor and runtime library for generating fast, type-safe data class mappers — eliminating boilerplate when translating between domain, data, and UI layers.</p>
+            <span class="oss-link">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View on GitHub
+            </span>
+          </a>
+
+        </div>
+      </section>
+
+      <!-- ── Community ───────────────────────────────────────────────── -->
+      <section class="page-section" id="community">
+        <div class="section-label">// Community</div>
+        <h2 class="section-title">In The Ecosystem</h2>
+        <div class="section-divider"></div>
+
+        <div class="community-content">
+
+          <div class="community-card">
+            <div class="community-card-icon">✍</div>
+            <div class="community-card-title">Technical Writing</div>
+            <p class="community-card-desc">Writing in-depth articles on Android architecture, Kotlin patterns, Jetpack Compose, and system design — translating production experience into practical guides for the developer community.</p>
+          </div>
+
+          <div class="community-card">
+            <div class="community-card-icon">📡</div>
+            <div class="community-card-title">Weekly Newsletter</div>
+            <p class="community-card-desc">Curating a weekly Android engineering newsletter covering new releases, tooling, architecture discussions, and interesting reading from across the ecosystem — delivered every week.</p>
+          </div>
+
+          <div class="community-card">
+            <div class="community-card-icon">⚙</div>
+            <div class="community-card-title">Open Source</div>
+            <p class="community-card-desc">Contributing to high-profile open source Android projects like Pocket Casts, and publishing developer-focused libraries that reduce boilerplate and improve code quality across teams.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── Writing ─────────────────────────────────────────────────── -->
+      <section class="page-section" id="writing">
+        <div class="section-label">// Writing</div>
+        <h2 class="section-title">Articles</h2>
+        <div class="section-divider"></div>
+
+        <div class="articles-grid">
           {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
           {% for post in sorted_articles %}
           {% unless post.tags contains "Book" %}
-          <a href="{{ post.url }}" class="list-post-link" data-tags="{{ post.tags | join: '|' }}">
+          <a href="{{ post.url }}" class="list-post-link">
             <article class="list-post">
               <h2>{{ post.title }}</h2>
-              <div class="date">{{ post.date | date:"%b %Y" }}</div>
+              <div class="date">{{ post.date | date: "%b %Y" }}</div>
             </article>
           </a>
           {% endunless %}
           {% endfor %}
-          </div>
         </div>
+      </section>
 
-        <!-- Newsletter tab -->
-        <div class="tab-content" id="tab-weekly">
-          {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
-          {% if newsletters.size > 0 %}
-            <div class="nl-issue-chips">
-              {% for newsletter in newsletters %}
-              <div class="nl-issue-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date:"%Y-%m-%d" }}</div>
-              {% endfor %}
-              <a href="/newsletter.xml" class="rss-chip" target="_blank" rel="noopener" title="Subscribe via RSS">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>RSS
-              </a>
-            </div>
+      <!-- ── Newsletter ──────────────────────────────────────────────── -->
+      <section class="page-section" id="newsletter" style="padding-bottom: 80px;">
+        <div class="section-label">// Newsletter</div>
+        <h2 class="section-title">Weekly Android</h2>
+        <div class="section-divider"></div>
+
+        <p class="nl-section-intro">A weekly digest of Android engineering — architecture patterns, Kotlin tips, library releases, and curated reading from across the ecosystem. Published every week.</p>
+
+        {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
+        {% if newsletters.size > 0 %}
+          <div class="nl-issue-chips">
             {% for newsletter in newsletters %}
-            <div class="nl-issue-content{% if forloop.first %} active{% endif %}" id="issue-{{ forloop.index0 }}">
-              <div class="nl-issue-header">
-                <span class="nl-issue-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
-                <span class="nl-issue-label">Weekly</span>
-              </div>
-              <div class="nl-issue-date">{{ newsletter.date | date:"%A, %B %d, %Y" }}</div>
-              <div class="nl-issue-divider"></div>
-              <div class="nl-issue-body">
-                {{ newsletter.content }}
-              </div>
-            </div>
+            <div class="nl-issue-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} Weekly · {{ newsletter.date | date: "%Y-%m-%d" }}</div>
             {% endfor %}
-          {% else %}
-            <div class="empty-state">
-              <p>No newsletters yet.</p>
-              <p class="empty-hint">Stay tuned — the first issue is coming soon!</p>
+            <a href="/newsletter.xml" class="rss-chip" target="_blank" rel="noopener" title="Subscribe via RSS">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.766 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>RSS
+            </a>
+          </div>
+          {% for newsletter in newsletters %}
+          <div class="nl-issue-content{% if forloop.first %} active{% endif %}" id="issue-{{ forloop.index0 }}">
+            <div class="nl-issue-header">
+              <span class="nl-issue-number">#{{ newsletters.size | minus: forloop.index0 }}</span>
+              <span class="nl-issue-label">Weekly</span>
             </div>
-          {% endif %}
-        </div>
+            <div class="nl-issue-date">{{ newsletter.date | date: "%A, %B %d, %Y" }}</div>
+            <div class="nl-issue-divider"></div>
+            <div class="nl-issue-body">
+              {{ newsletter.content }}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="font-family:'Space Mono',monospace;font-size:0.8em;color:#374151;letter-spacing:0.06em;">No issues yet — the first one is coming soon.</p>
+        {% endif %}
+      </section>
 
-        <!-- Tools tab -->
-        <div class="tab-content" id="tab-tools">
-          {% include tools-tab.html %}
-        </div>
-      </div>
     </div>
+
+    {% include footer.html %}
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Set dark theme as default
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('theme', 'dark');
-
-        // Tab switching
-        const tabs = document.querySelectorAll('.section-tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            const targetTab = this.dataset.tab;
-            tabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            tabContents.forEach(tc => tc.classList.remove('active'));
-            document.getElementById('tab-' + targetTab).classList.add('active');
-
-            const url = new URL(window.location);
-            if (targetTab === 'blog') {
-              url.searchParams.delete('tab');
-            } else {
-              url.searchParams.set('tab', targetTab);
-            }
-            url.searchParams.delete('tag');
-            window.history.replaceState({}, '', url);
-          });
-        });
-
-        // Tag filtering (blog tab)
-        const chips = document.querySelectorAll('#tab-blog .category-chip');
-        const posts = document.querySelectorAll('#tab-blog .list-post-link');
-
-        function selectTag(tag) {
-          chips.forEach(c => c.classList.remove('active'));
-          const selectedChip = Array.from(chips).find(c => c.dataset.tag === tag);
-          if (selectedChip) selectedChip.classList.add('active');
-
-          posts.forEach(post => {
-            if (tag === 'all') {
-              post.classList.remove('hidden');
-            } else {
-              const postTags = post.dataset.tags.split('|');
-              const normalizedTag = tag.replace(/_/g, ' ');
-              post.classList.toggle('hidden', !postTags.includes(normalizedTag));
-            }
-          });
-
-          const url = new URL(window.location);
-          if (tag === 'all') {
-            url.searchParams.delete('tag');
-          } else {
-            url.searchParams.set('tag', tag);
-          }
-          window.history.replaceState({}, '', url);
-        }
-
-        chips.forEach(chip => {
-          chip.addEventListener('click', function() {
-            selectTag(this.dataset.tag);
-          });
-        });
 
         // Newsletter chip switching
         const nlChips = document.querySelectorAll('.nl-issue-chip');
         const nlCards = document.querySelectorAll('.nl-issue-content');
 
-        nlChips.forEach(chip => {
+        nlChips.forEach(function(chip) {
           chip.addEventListener('click', function() {
-            nlChips.forEach(c => c.classList.remove('active'));
-            nlCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            const idx = this.dataset.issue;
-            document.getElementById('issue-' + idx).classList.add('active');
+            nlChips.forEach(function(c) { c.classList.remove('active'); });
+            nlCards.forEach(function(c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            var idx = chip.dataset.issue;
+            var card = document.getElementById('issue-' + idx);
+            if (card) card.classList.add('active');
           });
         });
-
-        // Restore state from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const tabParam = urlParams.get('tab');
-        if (tabParam) {
-          const targetTabEl = Array.from(tabs).find(t => t.dataset.tab === tabParam);
-          if (targetTabEl) targetTabEl.click();
-        }
-        const tagParam = urlParams.get('tag');
-        selectTag(tagParam || 'all');
-
-        // Restore scroll position
-        const savedScrollPosition = localStorage.getItem('scrollPosition');
-        if (savedScrollPosition) {
-          window.scrollTo(0, parseInt(savedScrollPosition));
-          localStorage.removeItem('scrollPosition');
-        }
       });
     </script>
 
-    {% include footer.html %}
   </body>
 </html>
