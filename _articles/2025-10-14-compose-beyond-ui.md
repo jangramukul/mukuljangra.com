@@ -49,7 +49,7 @@ The main problem with this pattern is that it leads to a proliferation of fields
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
 	val username by viewModel.username.collectAsStateWithLifecycle()
-	
+
 	Text(
 	  modifier = Modifier,
 	  text = username,
@@ -59,14 +59,14 @@ fun LoginScreen(viewModel: LoginViewModel) {
 class LoginViewModel: ViewModel() {
     private val _username = MutableStateFlow<String?>("")
     val username = _username.asStateFlow()
-    
+
     private val _name = MutableStateFlow<String?>("")
     val name = _name.asStateFlow()
 
     fun updateUsername(value: String) {
 	  _username.value = value  
     }
-    
+
     fun updateName(value: String) {
 	  _name.value = value 
     }
@@ -87,7 +87,7 @@ Also, one more problem with this approach is, if I've multiple input sources lik
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
 	val state by viewModel.uiState.collectAsStateWithLifecycle()
-	
+
 	Text(
 	   modifier = Modifier,
 	   text = state.username,
@@ -106,7 +106,7 @@ class LoginViewModel(
 ): ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
     val uiState = _state.asStateFlow()
-    
+
     init {
         viewModelScope.launch {
             observeUsers().collectLatest { users ->
@@ -116,7 +116,7 @@ class LoginViewModel(
             }
         }
     }
-    
+
     fun updateUsername(value: String) {
         _state.update { it.copy(username = value) }
     }
@@ -179,7 +179,7 @@ fun LoginScreen(viewModel: LoginViewModel) {
         onValueChange = { viewModel.username = it },
         //...
     )
-    
+
     TextField(
         value = viewModel.password,
         onValueChange = { viewModel.password = it },
@@ -194,11 +194,11 @@ class LoginViewModel(
         private set
     var password by mutableStateOf("")
         private set
-        
+
     val isUsernameValid by derivedStateOf {
         repository.isUsernameValid(username)
     }
-        
+
     val isPasswordValid: StateFlow<Boolean> =
         snapshotFlow { password }
             .mapLatest { repository.isPasswordValid(it) }
@@ -207,7 +207,7 @@ class LoginViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = false
             )
-    
+
     fun login() {
         viewModelScope.launch {
             // login
@@ -224,7 +224,7 @@ class LoginViewModel(
 ) : ViewModel() {
     var isLoggedIn by mutableStateOf(false)
         private set
-        
+
     fun login() {
         viewModelScope.launch {
             withContext(defaultDispatcher) {
@@ -243,7 +243,7 @@ The real benefits come when compose states are combined with the recomposition p
 ```kotlin
 class Presenter() {
     private val stateFlow = MutableStateFlow<State>()
-    
+
     fun state(): StateFlow<State> {
         scope.launch {
             events.collectLatest { event ->
@@ -262,7 +262,7 @@ class Presenter() {
     @Composable
     fun state(): State {
         var query by remember { mutableStateOf("") }
-        
+
         return State(search = query) { event ->
             query = event.query
         }
@@ -277,28 +277,28 @@ class LoginViewModel: ViewModel() {
     private val usernameState = mutableStateOf("")
     private val nameState = mutableStateOf("")
     private val passwordState = MutableStateFlow("")
-    
+
     // Example 1: Using state from ViewModel
     val uiState: StateFlow<UiState> = viewModelScope.launchMolecule(mode = ContextClock) {
         val username by usernameState
         val name by nameState
         val password by passwordState.collectAsState()
-        
+
         UiState(
             username = username, 
             name = name, 
             password = password,
         )
     }
-    
+
     // Example 2: Using remember and side effects internally
     val uiState2: StateFlow<UiState> = viewModelScope.launchMolecule(mode = ContextClock) {
         var username by remember { mutableStateOf("") }
-        
+
         LaunchedEffect(Unit) {
             // side effect also possible
         }
-        
+
         UiState(username = username, ...)
     }
 }

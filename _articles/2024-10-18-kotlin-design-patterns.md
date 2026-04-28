@@ -128,7 +128,7 @@ private class GooglePaymentStrategy : PaymentStrategy {
 
 private class PaymentContext {
    private lateinit var strategy: PaymentStrategy
-   
+
    fun setStrategy(strategy: PaymentStrategy) {
        this.strategy = strategy
    }
@@ -303,10 +303,10 @@ fun main() {
    val heading = Heading()
    val subtitle = Subtitle()
    val document = setOf(heading, subtitle)
-  
+
    val exportToPdfVisitor = ExportToPdfVisitor()
    val exportToCsvVisitor = ExportToCsvVisitor()
-  
+
    document.forEach {
        it.accept(exportToCsvVisitor)
        it.accept(exportToPdfVisitor)
@@ -390,7 +390,7 @@ private interface Store {
 
 private class Memento: Store {
    private val states = hashMapOf<String, State>()
-   
+
    override fun save(save: State) {
        states[save.id] = save
    }
@@ -421,15 +421,15 @@ class Dialog private constructor(
    class Builder constructor() {
        private var title: String = ""
        private var message: String = ""
-      
+
        fun setTitle(title: String) {
            this.title = title
        }
-      
+
        fun setMessage(message: String) {
            this.message = message
        }
-      
+
        fun build(): Dialog {
            return Dialog(
                title = title,
@@ -585,11 +585,11 @@ private class Circle: Shape
 
 private class ShapeFactory {
    private val cache = hashMapOf<Int, Shape>()
-   
+
    fun create(size: Int): Shape {
        val cachedShape = cache[size]
        if(cachedShape != null) return cachedShape
-      
+
        val shape = if(size == 1) Rectangle()
        else Circle()
 

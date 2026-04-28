@@ -17,7 +17,7 @@ Let's explore multiple solutions for cache management:
 ```kotlin
 class CacheManager<T> {
     private val cache = HashMap<String, T>()
-    
+
     fun put(key: String, value: T) {
         cache[key] = value
     }
