@@ -6,7 +6,7 @@ tags:
   - Android
   - Kotlin
   - Best Practices
-thumbnail: /static/thumbnails/mountain-stars.jpg
+thumbnail: /static/thumbnails/iss.jpg
 ---
 
 1. **Resource Management**

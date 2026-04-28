@@ -5,7 +5,7 @@ categories: post
 tags:
   - Android
   - Best Practices
-thumbnail: /static/thumbnails/aerial-city.jpg
+thumbnail: /static/thumbnails/space.jpg
 ---
 
 1. **Use App Startup for Initialization**
