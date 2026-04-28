@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Newsletter · {{ site.site_name }}</title>
+  <link rel="icon" type="image/jpeg" href="/static/profile.jpg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/sidebar.css">
+  <meta name="theme-color" content="#252829">
+  <style>
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    .shell { display: flex; min-height: 100vh; }
+
+    .main { margin-left: 380px; flex: 1; background: #ffffff; }
+
+    .main-inner { max-width: 760px; padding: 60px 56px 80px; }
+
+    .section { margin-bottom: 52px; }
+
+    .section-heading {
+      font-size: 0.9em; font-weight: 600;
+      color: #1a1a1a; display: block;
+      padding-bottom: 10px; margin-bottom: 0;
+    }
+
+    .nl-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .nl-chip {
+      font-size: 0.75em;
+      padding: 4px 10px;
+      border: 1px solid #e0e0e0;
+      color: #666;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .nl-chip:hover, .nl-chip.active {
+      border-color: #1a1a1a;
+      color: #1a1a1a;
+    }
+
+    .nl-content {
+      display: none;
+      margin-top: 20px;
+      padding: 24px;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 3px;
+      font-size: 0.88em;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .nl-content.active { display: block; }
+
+    .nl-content h2, .nl-content h3 {
+      font-size: 1em;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 1.4em 0 0.6em;
+    }
+
+    .nl-content p { margin-bottom: 1em; }
+    .nl-content ul, .nl-content ol { padding-left: 1.4em; margin-bottom: 1em; }
+    .nl-content li { margin-bottom: 0.35em; }
+    .nl-content a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 2px; }
+    .nl-content a:hover { color: #555; }
+    .nl-content code { font-size: 0.88em; background: #f0f0f0; }
+    .nl-content hr { margin: 1.4em 0; }
+    .nl-content blockquote { border-left: 2px solid #ddd; padding-left: 14px; color: #888; }
+
+    @media (max-width: 720px) {
+      .shell { flex-direction: column; }
+      .sidebar { position: static; width: 100%; min-width: 0; padding: 28px 24px 24px; }
+      .main { margin-left: 0; }
+      .main-inner { padding: 32px 24px 60px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  {% include sidebar.html %}
+
+  <main class="main">
+    <div class="main-inner">
+
+      <section class="section">
+        <span class="section-heading">Weekly Newsletter</span>
+
+        {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
+        {% if newsletters.size > 0 %}
+        <div class="nl-chips">
+          {% for nl in newsletters %}
+          <div class="nl-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} · {{ nl.date | date: "%b %d, %Y" }}</div>
+          {% endfor %}
+          <a href="/newsletter.xml" style="font-size:0.75em;padding:4px 10px;border:1px solid #e0e0e0;color:#aaa;border-radius:2px;text-decoration:none;" target="_blank" rel="noopener">RSS</a>
+        </div>
+        {% for nl in newsletters %}
+        <div class="nl-content{% if forloop.first %} active{% endif %}" id="nl-{{ forloop.index0 }}">
+          <strong style="display:block;margin-bottom:12px;font-size:0.95em;color:#1a1a1a;">{{ nl.title }}</strong>
+          <div style="font-size:0.8em;color:#aaa;margin-bottom:16px;">{{ nl.date | date: "%A, %B %d, %Y" }}</div>
+          {{ nl.content }}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="font-size:0.85em;color:#aaa;padding:14px 0;">No issues yet — first one coming soon.</p>
+        {% endif %}
+      </section>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var chips = document.querySelectorAll('.nl-chip');
+  var cards = document.querySelectorAll('.nl-content');
+  chips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      chips.forEach(function(c) { c.classList.remove('active'); });
+      cards.forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      var card = document.getElementById('nl-' + chip.dataset.issue);
+      if (card) card.classList.add('active');
+    });
+  });
+});
+</script>
+</body>
+</html>

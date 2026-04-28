@@ -223,84 +223,10 @@
   <main class="main">
     <div class="main-inner">
 
-      <!-- Writing -->
-      <section class="section" id="writing">
-        <span class="section-heading">Writing</span>
-        <ul class="row-list">
-          {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
-          {% for post in sorted_articles %}
-          {% unless post.tags contains "Book" %}
-          <a href="{{ post.url }}" class="row-item">
-            <span class="row-title">{{ post.title }}</span>
-            <span class="row-meta">{{ post.date | date: "%b '%y" }}</span>
-          </a>
-          {% endunless %}
-          {% endfor %}
-        </ul>
-      </section>
-
-      <!-- Newsletter -->
-      <section class="section" id="newsletter">
-        <span class="section-heading">Weekly Newsletter</span>
-
-        {% assign newsletters = site.newsletters | sort: 'date' | reverse %}
-        {% if newsletters.size > 0 %}
-        <div class="nl-chips">
-          {% for nl in newsletters %}
-          <div class="nl-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} · {{ nl.date | date: "%b %d, %Y" }}</div>
-          {% endfor %}
-          <a href="/newsletter.xml" style="font-size:0.75em;padding:4px 10px;border:1px solid #e0e0e0;color:#aaa;border-radius:2px;text-decoration:none;" target="_blank" rel="noopener">RSS</a>
-        </div>
-        {% for nl in newsletters %}
-        <div class="nl-content{% if forloop.first %} active{% endif %}" id="nl-{{ forloop.index0 }}">
-          <strong style="display:block;margin-bottom:12px;font-size:0.95em;color:#1a1a1a;">{{ nl.title }}</strong>
-          <div style="font-size:0.8em;color:#aaa;margin-bottom:16px;">{{ nl.date | date: "%A, %B %d, %Y" }}</div>
-          {{ nl.content }}
-        </div>
-        {% endfor %}
-        {% else %}
-        <p style="font-size:0.85em;color:#aaa;padding:14px 0;">No issues yet — first one coming soon.</p>
-        {% endif %}
-      </section>
-
     </div>
 
-    <footer class="main-footer">
-      mukuljangra.com &mdash; Senior Android Engineer
-    </footer>
   </main>
 
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Newsletter chip switching
-  var chips = document.querySelectorAll('.nl-chip');
-  var cards = document.querySelectorAll('.nl-content');
-  chips.forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      chips.forEach(function(c) { c.classList.remove('active'); });
-      cards.forEach(function(c) { c.classList.remove('active'); });
-      chip.classList.add('active');
-      var card = document.getElementById('nl-' + chip.dataset.issue);
-      if (card) card.classList.add('active');
-    });
-  });
-
-  // Highlight active nav based on scroll
-  var sections = document.querySelectorAll('section[id]');
-  var navLinks = document.querySelectorAll('.sidebar-nav a');
-  window.addEventListener('scroll', function() {
-    var scrollY = window.scrollY + 120;
-    sections.forEach(function(sec) {
-      if (scrollY >= sec.offsetTop) {
-        navLinks.forEach(function(a) { a.classList.remove('active'); });
-        var link = document.querySelector('.sidebar-nav a[href="#' + sec.id + '"]');
-        if (link) link.classList.add('active');
-      }
-    });
-  }, { passive: true });
-});
-</script>
 </body>
 </html>
