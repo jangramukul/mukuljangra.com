@@ -91,21 +91,21 @@
 }
 
 .search-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.08);
   border: none;
-  padding: 6px;
-  margin: -6px;
+  padding: 10px;
   cursor: pointer;
   color: #9a9a9e;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: color 0.15s;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
 }
 
 .search-btn:hover,
 .search-btn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
 
