@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About · {{ site.site_name }}</title>
+  <link rel="icon" type="image/jpeg" href="/static/profile.jpg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/static/app.css">
+  <meta name="theme-color" content="#252829">
+  <style>
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    .shell { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 380px; min-width: 380px;
+      background: #252829;
+      color: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      padding: 64px 48px 56px;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .sidebar-top { flex: 1; }
+
+    .avatar { width: 130px; height: 130px; border-radius: 50%; margin-bottom: 28px; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .sidebar-name { font-size: 1em; font-weight: 400; color: #ffffff; margin-bottom: 14px; line-height: 1.3; }
+
+    .sidebar-bio { font-size: 0.9375em; color: #9a9a9e; line-height: 1.7; margin-bottom: 36px; }
+    .sidebar-bio a { color: #ffffff; font-weight: 600; text-decoration: none; }
+    .sidebar-bio a:hover { text-decoration: underline; }
+
+    .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 0; }
+    .sidebar-nav li a { display: block; font-size: 1em; color: #ffffff; padding: 5px 0; text-decoration: none; transition: color 0.15s; }
+    .sidebar-nav li a:hover, .sidebar-nav li a.active { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Main */
+    .main { margin-left: 380px; flex: 1; background: #ffffff; }
+
+    .main-inner { max-width: 760px; padding: 60px 56px 80px; }
+
+    /* Section */
+    .section { margin-bottom: 52px; }
+
+    .section-heading {
+      font-size: 0.75em; font-weight: 500;
+      color: #aeaeb2; display: block;
+      padding-bottom: 10px; margin-bottom: 0;
+    }
+
+    /* About bio */
+    .about-bio {
+      font-size: 0.9375em;
+      color: #444;
+      line-height: 1.8;
+      margin-bottom: 40px;
+    }
+
+    /* Row list */
+    .row-list { list-style: none; }
+
+    .row-item {
+      display: flex; align-items: baseline;
+      justify-content: space-between; gap: 24px;
+      padding: 14px 0; border-top: 1px solid #ebebeb;
+      text-decoration: none; color: inherit;
+    }
+    .row-item:last-child { border-bottom: 1px solid #ebebeb; }
+    a.row-item:hover .row-title { text-decoration: underline; text-decoration-color: #bbb; text-underline-offset: 3px; }
+
+    .row-title { font-size: 0.9375em; color: #1a1a1a; line-height: 1.4; flex: 1; }
+    .row-meta { font-size: 0.84em; color: #aeaeb2; white-space: nowrap; flex-shrink: 0; text-align: right; }
+
+    .row-item-block { padding: 16px 0; border-top: 1px solid #ebebeb; }
+    .row-item-block:last-child { border-bottom: 1px solid #ebebeb; }
+
+    .row-block-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    .row-block-title { font-size: 0.9375em; color: #1a1a1a; line-height: 1.4; }
+    .row-block-meta { font-size: 0.84em; color: #aeaeb2; white-space: nowrap; text-align: right; flex-shrink: 0; }
+    .row-block-sub { font-size: 0.82em; color: #aeaeb2; margin-top: 3px; }
+    .row-block-desc { font-size: 0.84em; color: #666; margin-top: 8px; line-height: 1.6; }
+
+    @media (max-width: 720px) {
+      .shell { flex-direction: column; }
+      .sidebar { position: static; width: 100%; min-width: 0; padding: 28px 24px 24px; }
+      .main { margin-left: 0; }
+      .main-inner { padding: 32px 24px 60px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="avatar"><img src="/static/profile.jpg" alt="Mukul Jangra"></div>
+      <div class="sidebar-name">Mukul Jangra</div>
+      <p class="sidebar-bio">
+        For the past 7+ years, I've been working mostly in <span style="color:#fff;font-weight:600">Android</span>. I'm passionate about Kotlin, Architecture, and Compose. In my free time, I write <span style="color:#fff;font-weight:600">blog</span> posts and contribute to <span style="color:#fff;font-weight:600">open source</span>.
+      </p>
+      <ul class="sidebar-nav">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about/" class="active">About Me</a></li>
+        <li><a href="/#open-source">Open Source</a></li>
+        <li><a href="/#writing">Writing</a></li>
+        <li><a href="/#newsletter">Newsletter</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-inner">
+
+      <!-- About -->
+      <section class="section">
+        <span class="section-heading">About Me</span>
+        <p class="about-bio">
+          For the past 7+ years I've been building Android apps — from early-stage products to apps used by thousands of users daily. I care deeply about clean architecture, performance, and writing code that's easy to maintain and scale. Outside of work I write blog posts and contribute to open source.
+        </p>
+      </section>
+
+      <!-- Experience -->
+      <section class="section">
+        <span class="section-heading">Experience</span>
+        <ul class="row-list">
+
+          <li class="row-item-block">
+            <div class="row-block-header">
+              <span class="row-block-title">Android Engineer</span>
+              <span class="row-block-meta">2022 — Present</span>
+            </div>
+            <div class="row-block-sub">BuiltByPixel · London, UK</div>
+            <p class="row-block-desc">Building production Android apps for clients. Leading architecture decisions, Compose UI, and Kotlin-first development.</p>
+          </li>
+
+          <li class="row-item-block">
+            <div class="row-block-header">
+              <span class="row-block-title">Android Developer</span>
+              <span class="row-block-meta">2019 — 2022</span>
+            </div>
+            <div class="row-block-sub">Scogo · Mumbai, India</div>
+            <p class="row-block-desc">Built and maintained the Scogo Android app for field engineers. Implemented real-time tracking, offline-first architecture, and Clean Architecture with MVVM.</p>
+          </li>
+
+        </ul>
+      </section>
+
+      <!-- Social -->
+      <section class="section">
+        <span class="section-heading">Find me on</span>
+        <ul class="row-list">
+          <a href="{{ site.site_github }}" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">GitHub</span>
+            <span class="row-meta">@jangramukul</span>
+          </a>
+          <a href="{{ site.site_linkedin }}" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">LinkedIn</span>
+            <span class="row-meta">@mukuljangra</span>
+          </a>
+          <a href="{{ site.site_mastodon }}" class="row-item" rel="me noopener" target="_blank">
+            <span class="row-title">Mastodon</span>
+            <span class="row-meta">@mukuljangra</span>
+          </a>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+</div>
+</body>
+</html>
