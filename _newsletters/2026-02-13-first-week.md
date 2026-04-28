@@ -1,6 +1,6 @@
 ---
 layout: newsletter
-title: "Weekly #1 — Compose December Release, Kotlin 2.3, Navigation 3 & More"
+title: "Compose December Release, Kotlin 2.3, Navigation 3 & More"
 date: 2026-02-13
 tags: [Android, Jetpack Compose, Kotlin, Navigation]
 ---
