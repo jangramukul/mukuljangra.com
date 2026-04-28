@@ -264,7 +264,7 @@
           {% unless post.tags contains "Book" %}
           <a href="{{ post.url }}" class="row-item">
             <span class="row-title">{{ post.title }}</span>
-            <span class="row-meta">{{ post.date | date: "%b '%y" }}</span>
+            <span class="row-meta">{{ post.date | date: "%b %d, %Y" }}</span>
           </a>
           {% endunless %}
           {% endfor %}
