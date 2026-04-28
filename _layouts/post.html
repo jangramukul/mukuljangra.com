@@ -1,590 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.site_name }}</title>
-    <!-- Emoji favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/space-favicon.svg">
-    <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" type="text/css">
-    <link rel="stylesheet" href="/static/app.css" type="text/css">
-    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
-    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
-    <meta name="theme-color" content="#000000">
-    <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
-    <link rel="stylesheet" href="/static/nav.css" type="text/css">
-    <link rel="stylesheet" href="/static/footer.css" type="text/css">
-    <style type="text/css">
-      :root {
-        --background-color: #000000;
-        --text-color: #e5e7eb;
-        --sidebar-bg: #0a0a0a;
-        --code-bg: #0d0d0d;
-        --blockquote-color: #6b7280;
-        --blockquote-border: rgba(0, 229, 208, 0.35);
-        --link-color: #00E5D0;
-        --link-color-hover: #7ffff4;
-        --accent: #00E5D0;
-        --accent-dim: rgba(0, 229, 208, 0.15);
-        --accent-border: rgba(0, 229, 208, 0.3);
-      }
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.site_name }}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/space-favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/syntax.css">
+  <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
+  <meta name="theme-color" content="#1c1c1e">
+  <style>
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
-      /* Ensure backgrounds are transparent to show gradient */
-      body, .right-column, .content, .content.post {
-        background-color: transparent !important;
-      }
+    #read-progress {
+      position: fixed; top: 0; left: 0;
+      height: 2px; width: 0%;
+      background: #1a1a1a;
+      z-index: 9999;
+      transition: width 0.08s linear;
+    }
 
-      body {
-        color: var(--text-color);
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      }
+    .shell { display: flex; min-height: 100vh; }
 
-      .right-column {
-        width: 100%;
-        flex: 1;
-        padding: 40px;
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      
-      .content {
-        max-width: 1000px;
-        margin: 0 auto;
-      }
-      
-      .content.post {
-        font-size: 20px;
-        line-height: 1.8;
-        margin: 0 auto;
-        color: var(--text-color);
-        max-width: 1000px;
-        overflow-x: hidden;
-        box-sizing: border-box;
-        padding: 0;
-        width: 100%;
-      }
+    /* Sidebar */
+    .sidebar {
+      width: 240px; min-width: 240px;
+      background: #1c1c1e;
+      color: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
 
-      .back-header {
-        font-family: 'Space Mono', monospace;
-        font-size: 0.9em;
-        margin-bottom: 15px;
-        color: var(--text-color);
-        font-weight: normal;
-        text-decoration: none;
-      }
+    .sidebar-name {
+      font-size: 0.9em; font-weight: 600;
+      color: #ffffff; margin-bottom: 20px;
+    }
 
-      .back-header:hover {
-        color: var(--link-color-hover);
-      }
+    .sidebar-name a { color: #ffffff; text-decoration: none; }
+    .sidebar-name a:hover { text-decoration: underline; }
 
-      .back-header a {
-        color: var(--text-color);
-        text-decoration: underline;
-      }
+    .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-nav li a { font-size: 0.82em; color: #636366; padding: 6px 0; display: block; text-decoration: none; transition: color 0.15s; }
+    .sidebar-nav li a:hover { color: #e8e8e8; text-decoration: none; }
 
-      .back-header a:hover {
-        color: var(--link-color-hover);
-        text-decoration: underline;
-      }
+    /* Main */
+    .main { margin-left: 240px; flex: 1; background: #ffffff; }
 
-      .content.post h2 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.35em;
-        margin-top: 2em;
-        margin-bottom: 0.8em;
-        color: #00E5D0;
-        border-left: 2px solid #00E5D0;
-        padding: 4px 0 4px 14px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        width: 100%;
-        max-width: 100%;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-      }
+    .article-wrap {
+      max-width: 680px;
+      padding: 64px 56px 80px;
+    }
 
-      .content.post h3 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.1em;
-        margin-top: 1.8em;
-        margin-bottom: 0.8em;
-        color: #00E5D0;
-        border-left: 2px solid rgba(0, 229, 208, 0.5);
-        padding: 2px 0 2px 12px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8em;
+      color: #aaa;
+      text-decoration: none;
+      margin-bottom: 36px;
+      transition: color 0.15s;
+    }
 
-      .content.post h4 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.95em;
-        margin-top: 1.5em;
-        margin-bottom: 0.8em;
-        color: rgba(0, 229, 208, 0.7);
-        border-left: 1px solid rgba(0, 229, 208, 0.3);
-        padding: 1px 0 1px 10px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
+    .back-link:hover { color: #1a1a1a; text-decoration: none; }
 
-      .content.post h1 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.6em;
-        margin-top: 2em;
-        margin-bottom: 0.8em;
-        color: #00E5D0;
-        border-left: 3px solid #00E5D0;
-        padding: 6px 0 6px 14px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-      }
+    .article-title {
+      font-size: 1.75em;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
 
-      .content.post h5 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.85em;
-        margin-top: 1.2em;
-        margin-bottom: 0.6em;
-        color: rgba(0, 229, 208, 0.6);
-        padding-left: 8px;
-        border-left: 1px solid rgba(0, 229, 208, 0.2);
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
+    .article-meta {
+      font-size: 0.8em;
+      color: #aaa;
+      margin-bottom: 36px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-      .content.post h6 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.78em;
-        margin-top: 1em;
-        margin-bottom: 0.6em;
-        color: rgba(0, 229, 208, 0.5);
-        padding-left: 8px;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
+    .article-tag {
+      font-size: 0.9em;
+      padding: 1px 7px;
+      border: 1px solid #e0e0e0;
+      color: #888;
+      border-radius: 3px;
+    }
 
-      .content.post h2 + p,
-      .content.post h3 + p,
-      .content.post h4 + p,
-      .content.post h2 + ul,
-      .content.post h3 + ul,
-      .content.post h4 + ul,
-      .content.post h2 + ol,
-      .content.post h3 + ol,
-      .content.post h4 + ol {
-        font-size: 1.05em;
-      }
+    .article-divider { border-top: 1px solid #ebebeb; margin-bottom: 36px; }
 
-      .content.post p {
-        font-size: 1.05em;
-        margin-bottom: 1.5em;
-        color: #9ca3af;
-        max-width: 100%;
-        box-sizing: border-box;
-        line-height: 1.85;
-      }
+    /* Body */
+    .article-body {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #333;
+    }
 
-      .content.post p.date {
-        font-size: 0.8em;
-        color: #374151;
-        font-family: 'Space Mono', monospace;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-      }
+    .article-body h1, .article-body h2 {
+      font-size: 1.15em; font-weight: 600;
+      color: #1a1a1a; margin: 2em 0 0.7em;
+      line-height: 1.3;
+    }
 
-      .content.post ul,
-      .content.post ol {
-        font-size: 1.05em;
-        margin-top: 0.5em;
-        margin-bottom: 1.5em;
-        padding-left: 2em;
-        color: #9ca3af;
-        max-width: 100%;
-        box-sizing: border-box;
-        list-style-position: outside;
-      }
+    .article-body h3 {
+      font-size: 1em; font-weight: 600;
+      color: #333; margin: 1.8em 0 0.6em;
+    }
 
-      .content.post h2 + ul,
-      .content.post h2 + ol,
-      .content.post h3 + ul,
-      .content.post h3 + ol,
-      .content.post h4 + ul,
-      .content.post h4 + ol {
-        padding-left: 2.5em;
-        margin-top: 1em;
-      }
+    .article-body h4 { font-size: 0.95em; font-weight: 600; color: #555; margin: 1.5em 0 0.5em; }
 
-      .content.post li {
-        font-size: 1em;
-        margin-bottom: 0.5em;
-        color: #9ca3af;
-        padding-left: 0.25em;
-      }
+    .article-body p { margin-bottom: 1.4em; }
+    .article-body a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 2px; }
+    .article-body a:hover { color: #555; }
 
-      .content.post li:last-child {
-        margin-bottom: 0;
-      }
+    .article-body ul, .article-body ol { padding-left: 1.6em; margin-bottom: 1.4em; }
+    .article-body li { margin-bottom: 0.4em; }
 
-      .content.post code {
-        background-color: #0d0d0d;
-        color: #00E5D0;
-        word-wrap: break-word;
-        white-space: pre-wrap;
-        padding: 2px 6px;
-        border-radius: 0;
-        font-size: 0.88em;
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        font-family: 'Space Mono', 'Courier New', monospace;
-      }
+    .article-body code {
+      font-family: 'SF Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875em; background: #f4f4f4;
+      padding: 2px 5px; border-radius: 3px; color: #1a1a1a;
+    }
 
-      .content.post pre {
-        background-color: #0d0d0d;
-        color: #e5e7eb;
-        max-width: 100%;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        width: 100%;
-        box-sizing: border-box;
-        border-radius: 0;
-        padding: 20px;
-        border: 1px solid rgba(0, 229, 208, 0.1);
-      }
+    .article-body pre {
+      background: #f6f6f6; border: 1px solid #e8e8e8;
+      padding: 18px 20px; overflow-x: auto;
+      border-radius: 4px; margin-bottom: 1.4em;
+    }
 
-      .content.post .highlight {
-        border-radius: 0;
-        overflow: hidden;
-        margin-bottom: 1.5em;
-        border: 1px solid rgba(0, 229, 208, 0.1);
-      }
+    .article-body pre code { background: none; padding: 0; font-size: 0.88em; }
 
-      .content.post .highlight pre {
-        margin: 0;
-        border-radius: 0;
-        border: none;
-      }
+    .article-body .highlight { margin-bottom: 1.4em; border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden; }
+    .article-body .highlight pre { margin: 0; border: none; border-radius: 0; }
 
-      .content.post pre code {
-        padding: 0;
-        border-radius: 0;
-        background-color: transparent;
-        border: none;
-        color: inherit;
-      }
+    .article-body blockquote {
+      border-left: 3px solid #ddd; padding: 4px 0 4px 18px;
+      color: #666; margin: 1.4em 0; font-style: italic;
+    }
 
-      .content.post blockquote {
-        border-left: 3px solid #00E5D0;
-        border-right: none;
-        border-top: none;
-        border-bottom: none;
-        padding: 12px 0 12px 20px;
-        color: #9ca3af;
-        border-radius: 0;
-        background-color: rgba(0, 229, 208, 0.03);
-        font-style: italic;
-        margin: 1.5em 0;
-      }
+    .article-body img { border: 1px solid #ebebeb; border-radius: 3px; margin: 1.4em auto; }
+    .article-body hr { border: none; border-top: 1px solid #ebebeb; margin: 2em 0; }
+    .article-body strong { color: #1a1a1a; }
 
-      .content.post a {
-        color: #00E5D0;
-      }
+    .article-body table { margin-bottom: 1.4em; }
+    .article-body th { background: #f6f6f6; }
 
-      .content.post a:hover {
-        color: #7ffff4;
-      }
+    .article-footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #ebebeb;
+    }
 
-      .category-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      
-      /* Back button styles */
-      .back-navigation {
-        margin-bottom: 20px;
-        width: 100%;
-        padding-top: 140px;
-        padding-bottom: 80px;
-      }
-      
-      .back-button {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        width: auto;
-        height: 34px;
-        background-color: transparent;
-        border-radius: 0;
-        text-decoration: none;
-        color: #00E5D0;
-        font-size: 0.75em;
-        transition: all 0.2s ease;
-        border: 1px solid rgba(0, 229, 208, 0.5);
-        line-height: 1;
-        padding: 0 16px;
-        font-family: 'Space Mono', monospace;
-        gap: 8px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      
-      .back-button:hover {
-        background-color: rgba(0, 229, 208, 0.08);
-        color: #00E5D0;
-        border-color: #00E5D0;
-        box-shadow: 0 0 14px rgba(0, 229, 208, 0.2);
-      }
-      
-      .back-button .nav-arrow,
-      .back-button .nav-text {
-        color: #00E5D0;
-      }
+    .back-link-footer {
+      font-size: 0.82em; color: #aaa;
+      text-decoration: none; display: inline-flex;
+      align-items: center; gap: 6px; transition: color 0.15s;
+    }
 
-      .back-button .nav-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        font-size: 14px;
-      }
-      
-      .back-button .nav-text {
-        font-size: 0.9em;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-      }
-      
-      @media (max-width: 600px) {
-        .back-navigation {
-          padding-top: 70px;
-          padding-bottom: 32px;
-        }
-        
-        .back-button {
-          height: 30px;
-          padding: 0 12px;
-          font-size: 0.7em;
-        }
-        
-        .back-button .nav-arrow {
-          font-size: 12px;
-        }
-      }
+    .back-link-footer:hover { color: #1a1a1a; text-decoration: none; }
 
-      .category-chip {
-        padding: 3px 10px;
-        background-color: rgba(255, 255, 255, 0.04);
-        border-radius: 0;
-        font-size: 0.7em;
-        transition: all 0.2s ease;
-        user-select: none;
-        color: #6b7280;
-        border: 1px solid transparent;
-        font-family: 'Space Mono', monospace;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-weight: 700;
-      }
-      
-      .date-tag-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 32px;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .content.post p.date {
-        font-size: 0.78em;
-        color: #374151;
-        margin-bottom: 0;
-        margin-right: 0;
-        font-family: 'Space Mono', monospace;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-      
-      /* Post title */
-      .post-title {
-        border: none !important;
-        border-bottom: none !important;
-        border-image: none !important;
-        border-left: none !important;
-        background: none !important;
-        display: block !important;
-        margin-top: 0 !important;
-        margin-bottom: 16px !important;
-        padding: 0 !important;
-        text-decoration: none !important;
-        font-size: 2.4em !important;
-        color: #00E5D0 !important;
-        font-family: 'Space Mono', 'Courier New', monospace !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        line-height: 1.1 !important;
-        letter-spacing: 0.04em !important;
-      }
-      
-      h2.post-title {
-        border: none !important;
-        border-bottom: none !important;
-        border-image: none !important;
-        border-left: none !important;
-        background: none !important;
-        padding: 0 !important;
-        text-decoration: none !important;
-        display: block !important;
-        color: #00E5D0 !important;
-        position: static !important;
-        font-size: 2.4em !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-      }
-      
-      h2.post-title::before,
-      h2.post-title::after,
-      .post-title::before,
-      .post-title::after {
-        display: none !important;
-        content: none !important;
-      }
+    @media (max-width: 720px) {
+      .shell { flex-direction: column; }
+      .sidebar { position: static; width: 100%; min-width: 0; padding: 20px 24px; }
+      .main { margin-left: 0; }
+      .article-wrap { padding: 32px 24px 60px; }
+      .article-title { font-size: 1.4em; }
+    }
+  </style>
+</head>
+<body>
+<div id="read-progress"></div>
+<div class="shell">
 
-      @media (max-width: 768px) {        .right-column {
-          padding: 20px;
-        }
-        
-        .content {
-          padding: 0;
-          max-width: 100%;
-          width: 100%;
-        }
-        
-        .content.post {
-          padding: 0;
-          max-width: 100%;
-          width: 100%;
-        }
+  <aside class="sidebar">
+    <div class="sidebar-name"><a href="/">Mukul Jangra</a></div>
+    <ul class="sidebar-nav">
+      <li><a href="/#experience">Experience</a></li>
+      <li><a href="/#open-source">Open Source</a></li>
+      <li><a href="/#writing">Writing</a></li>
+      <li><a href="/#newsletter">Newsletter</a></li>
+    </ul>
+  </aside>
 
-        .post-title {
-          font-size: 1.7em !important;
-        }
+  <main class="main">
+    <div class="article-wrap">
+      <a href="javascript:history.length>1?history.back():window.location='/'" class="back-link">← Writing</a>
 
-        h2.post-title {
-          font-size: 1.7em !important;
-        }
-      }
+      <h1 class="article-title">{{ page.title }}</h1>
+      <div class="article-meta">
+        <span>{{ page.date | date: "%B %d, %Y" }}</span>
+        <span id="reading-time"></span>
+        {% if page.tags %}
+          {% for tag in page.tags %}<span class="article-tag">{{ tag }}</span>{% endfor %}
+        {% endif %}
+      </div>
 
-      .post-navigation {
-        margin-top: 80px;
-        padding-top: 20px;
-        border-top: 1px solid rgba(0, 229, 208, 0.08);
-        width: 100%;
-      }
+      <div class="article-divider"></div>
 
-      .nav-links {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-      }
-
-      .prev-post {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        height: 34px;
-        background-color: transparent;
-        border-radius: 0;
-        text-decoration: none;
-        color: #4b5563;
-        font-size: 0.75em;
-        transition: all 0.2s ease;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 0 16px;
-        font-family: 'Space Mono', monospace;
-        gap: 8px;
-        font-weight: 700;
-        margin-right: auto;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .prev-post:hover {
-        background-color: rgba(0, 229, 208, 0.06);
-        color: #00E5D0;
-        border-color: rgba(0, 229, 208, 0.4);
-        text-decoration: none;
-      }
-
-      @media (max-width: 600px) {
-        .post-navigation { margin-top: 60px; }
-        .prev-post { height: 30px; padding: 0 12px; font-size: 0.7em; }
-      }
-    </style>
-  </head>
-  <body>
-    {% include site-nav.html %}
-    <div class="gradient-bg"></div>
-    <div class="main-background" style="z-index: -2;"></div>
-
-    <div class="right-column">
-      <div class="content post" style="background-color: transparent !important;">
-        <div class="back-navigation">
-          <a href="#" id="back-to-home" class="back-button" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
-            <span class="nav-arrow">←</span>
-            <span class="nav-text">Back</span>
-          </a>
-        </div>
-        <h2 class="post-title">{{ page.title }}</h2>
-        <div class="date-tag-container">
-          <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
-        </div>
-
+      <div class="article-body" id="article-content">
         {{ content }}
-        
-        <!-- Back button -->
-        <div class="post-navigation">
-          <div class="nav-links">
-            <a href="#" class="prev-post" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
-              <span class="nav-arrow">←</span>
-              <span class="nav-text">Back</span>
-            </a>
-          </div>
-        </div>
+      </div>
+
+      <div class="article-footer">
+        <a href="javascript:history.length>1?history.back():window.location='/'" class="back-link-footer">← Back to Writing</a>
       </div>
     </div>
+  </main>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      });
-    </script>
-    
-    {% include footer.html %}
-  </body>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var bar = document.getElementById('read-progress');
+  window.addEventListener('scroll', function() {
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? Math.min(100, window.scrollY / h * 100) : 0) + '%';
+  }, { passive: true });
+
+  var content = document.getElementById('article-content');
+  if (content) {
+    var words = content.innerText.trim().split(/\s+/).length;
+    var mins = Math.max(1, Math.round(words / 200));
+    document.getElementById('reading-time').textContent = mins + ' min read';
+  }
+});
+</script>
+</body>
 </html>

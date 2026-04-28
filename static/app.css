@@ -1,272 +1,63 @@
-:root {
-  --background-color: #111827;
-  --foreground-color: #e5e7eb;
-  --link-color: #60a5fa;
-  --link-color-hover: #93c5fd;
-  --signature-color: #9ca3af;
-  --date-color: #9ca3af;
-  --header-background-color: #1e293b;
-  --header-foreground-color: #f3f4f6;
-  --header-link-color: #d1d5db;
-  --code-background-color: #1e293b;
-  --code-foreground-color: #e5e7eb;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  height: 100%;
-}
+html { height: 100%; }
+
 body {
-  min-height: 100%;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--background-color);
-  color: var(--foreground-color);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 
-a, a:focus {
-  transition: color .3s ease-in-out;
-  color: var(--link-color);
-}
-a:hover, a:active {
-  color: var(--link-color-hover);
-}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-ul, ol {
-  padding-left: 25px;
-}
+img { max-width: 100%; display: block; }
 
 code {
-  color: var(--code-foreground-color);
-  background-color: var(--code-background-color);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+  background: #f4f4f4;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #1a1a1a;
 }
-pre code {
+
+pre {
+  background: #f6f6f6;
+  border: 1px solid #e8e8e8;
+  padding: 18px 20px;
   overflow-x: auto;
-  overflow-wrap: normal;
-  white-space: pre;
-}
-blockquote {
-  font-size: 14px;
+  border-radius: 4px;
+  margin: 1.4em 0;
 }
 
-header {
-  background-color: var(--header-background-color);
-  color: var(--header-foreground-color);
-  padding: 30px 40px;
-}
-header h1 {
-  text-transform: uppercase;
-  font-size: 50px;
-  letter-spacing: 15px;
-  margin: 0 0 0 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-@media (max-width: 767px) {
-  header {
-    padding: 30px;
-  }
-  header h1 {
-    letter-spacing: 5px;
-    font-size: 40px;
-  }
-  .list-inline li {
-    display: list-item;
-  }
-}
-
-header h1 a, header h1 a:focus {
-  color: #eee;
-}
-header h1 a:hover {
-  text-decoration: none;
-}
-header ul {
-  margin: 25px 0 0;
-}
-header ul li {
-  padding-bottom: 20px;
-}
-header ul a {
-  color: var(--header-link-color-primary);
-  font-weight: 700;
-}
-header ul a:hover, header ul a:active {
-  color: var(--link-color);
-  text-decoration: none;
-}
-header ul a span {
-  opacity: 0.7;
-  font-weight: 300;
-  padding-right: 2px;
-}
-
-.content {
-  padding: 40px;
-  line-height: 24px;
-  margin-bottom: 100px;
-}
-@media (max-width: 767px) {
-  .content {
-    padding: 30px;
-  }
-}
-.content h2, .content h3, .content h4 {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-.content h2 {
-  margin-top: 0;
-}
-.content h3 {
-  margin-top: 25px;
-  margin-bottom: 15px;
-}
-.content h4 {
-  margin-top: 25px;
-  margin-bottom: 15px;
-}
-.content p {
-  margin-bottom: 15px;
-}
-.content p:last-child {
-  margin-bottom: 0;
-}
-.content ul {
-  margin-bottom: 15px;
-}
-.content li {
-  margin-bottom: 15px;
-}
-.content img {
-  max-width: 100%;
-}
-.content .footnotes {
-  margin-top: 60px;
-  font-size: 12px;
-}
-.content .footnotes:before {
-  content: "Footnotes:";
-  margin-bottom: 10px;
-  display: block;
-  font-style: italic;
-}
-/* Not the foot note items themselves, but any list items contained inside. */
-.content .footnotes ol li li {
-  margin-bottom: 10px;
-}
-
-p.date {
-  color: #666;
-  font-size: 0.9em;
-}
-p.date a, p.date a:visited {
-  color: #666 !important;
-  text-decoration: underline;
-}
-p.date a:hover, p.date a:active {
-  color: var(--link-color) !important;
-}
-p.signature {
-  margin-top: 60px;
-  color: var(--signature-color);
-}
-
-.post h2 {
-  margin-bottom: 20px;
-}
-
-.date-header {
-  font-weight: bold;
-  font-family: monospace;
-}
-
-.presentation-list .date {
-  font-family: monospace;
-  padding-right: 10px;
-}
-.presentation-list small {
-  padding-left: 5px;
-}
-@media (max-width: 767px) {
-  .presentation-list .date {
-    display: block;
-  }
-  .presentation-list small {
-    display: block;
-    padding-left: 0;
-  }
-}
-
-.presentation section {
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-.presentation .description {
-  margin-bottom: 50px;
-}
-
-.presentation .youtube,
-.presentation .vimeo {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-}
-.presentation .youtube iframe,
-.presentation .vimeo iframe,
-.presentation .youtube object,
-.presentation .vimeo object,
-.presentation .youtube embed,
-.presentation .vimeo embed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-img.float-right {
-  margin: 0 1em .5em 1em;
-  float: right;
-}
-@media (max-width: 500px) {
-  img.float-right {
-    float: none;
-    display: block;
-    margin: 1em auto;
-  }
-}
-
-.anchorjs-link, .anchorjs-link:hover {
-  text-decoration: none;
-}
-
-b, strong {
-  margin: 0;
+pre code {
+  background: none;
   padding: 0;
-  font-weight: bold;
+  font-size: 0.9em;
+  color: #1a1a1a;
 }
 
-/* Blog post date and tag styles */
-.date-tag-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
+blockquote {
+  border-left: 3px solid #d0d0d0;
+  padding: 4px 0 4px 18px;
+  color: #666;
+  margin: 1.4em 0;
 }
 
-.post-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-left: 10px;
+hr {
+  border: none;
+  border-top: 1px solid #ebebeb;
+  margin: 0;
 }
 
-.post-tag {
-  padding: 3px 10px;
-  background-color: rgba(55, 65, 81, 0.5);
-  border-radius: 9999px;
-  font-size: 0.8em;
-  color: #d1d5db;
-  display: inline-block;
-  border: 1px solid rgba(75, 85, 99, 0.5);
-}
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #e8e8e8; color: #555; font-weight: 600; font-size: 0.85em; }
+td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
+tr:last-child td { border-bottom: none; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
