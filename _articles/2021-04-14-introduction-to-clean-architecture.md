@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-blueprint.jpg
 title: Introduction to Clean Architecture
 layout: post
 categories: post

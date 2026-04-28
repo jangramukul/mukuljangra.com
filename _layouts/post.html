@@ -28,22 +28,9 @@
     /* Main */
     .main { margin-left: 380px; flex: 1; background: #ffffff; min-width: 0; overflow-x: hidden; }
 
-    .article-hero {
-      width: 100%;
-      height: 380px;
-      overflow: hidden;
-    }
-
-    .article-hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
     .article-wrap {
       width: 70%;
-      padding: 48px 0 80px 56px;
+      padding: 60px 0 80px 56px;
     }
 
     .back-link {
@@ -163,7 +150,6 @@
       .shell { flex-direction: column; }
       .sidebar { position: static; width: 100%; min-width: 0; padding: 20px 24px; }
       .main { margin-left: 0; }
-      .article-hero { height: 220px; }
       .article-wrap { padding: 32px 24px 60px; }
       .article-title { font-size: 1.4em; }
     }
@@ -176,11 +162,6 @@
   {% include sidebar.html %}
 
   <main class="main">
-    {% if page.thumbnail %}
-    <div class="article-hero">
-      <img src="{{ page.thumbnail }}" alt="{{ page.title }}">
-    </div>
-    {% endif %}
     <div class="article-wrap">
       <a href="javascript:history.length>1?history.back():window.location='/'" class="back-link">← Writing</a>
 

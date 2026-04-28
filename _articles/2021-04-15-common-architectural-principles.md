@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-laptop-work.jpg
 title: Common Architectural Principles Guide
 layout: post
 categories: post

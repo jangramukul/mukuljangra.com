@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-macbook-pro.jpg
 title: Jetpack Compose Best Practises Guide
 layout: post
 categories: post

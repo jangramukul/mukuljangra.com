@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-mobile-dev.jpg
 title: Application Level Best Practises Guide
 layout: post
 categories: post

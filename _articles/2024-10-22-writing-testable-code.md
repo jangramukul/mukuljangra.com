@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-focused-dev.jpg
 title: How To Write Testable Code?
 layout: post
 categories: post

@@ -1,5 +1,4 @@
 ---
-thumbnail: /static/post-image/thumb-books.jpg
 title: Essentialism By Greg McKeown Book Summary
 layout: post
 categories: post
