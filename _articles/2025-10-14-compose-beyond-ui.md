@@ -5,7 +5,7 @@ categories: post
 tags:
   - Android
   - Kotlin
-thumbnail: /static/thumbnails/art-08.jpg
+thumbnail: /static/thumbnails/obj-18.jpg
 ---
 
 A few years ago, I remember managing almost everything with `Threads`, `AsyncTask`, and `Handlers` for background tasks and UI updates. It was quite messy, specifically writing business logic.
