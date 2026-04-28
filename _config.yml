@@ -21,16 +21,6 @@ collections:
     output: true
     permalink: /article/:title/
 
-  presentations:
-    output: true
-    permalink: /:title/
-
-  podcasts:
-
-  notes:
-    output: true
-    permalink: /:title/
-
   newsletters:
     output: true
     permalink: /newsletter/:title/
