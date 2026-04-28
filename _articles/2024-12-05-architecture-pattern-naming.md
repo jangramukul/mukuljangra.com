@@ -1,5 +1,6 @@
 ---
 title: Follow Right Architecture Patterns Naming
+layout: post
 categories: post
 tags:
   - Android
@@ -7,35 +8,24 @@ tags:
 thumbnail: /static/thumbnails/img-12.jpg
 ---
 
-This explores common naming patterns used in software architecture and explains their purposes. Each pattern serves a specific role in creating maintainable and well-structured code. Understanding these patterns helps developers choose appropriate names that clearly communicate a component's responsibility.
+Naming is one of the most overlooked parts of software architecture. Good names make it obvious what a component does without reading its implementation. Here's a breakdown of common naming patterns and what each one communicates.
 
-A factory is responsible for creating objects. For example, `TicketStatusFactory` creates different ticket status instances.
+**Factory** — responsible for creating objects. For example, `TicketStatusFactory` creates different ticket status instances based on input.
 
-Utils are utility functions that provide general-purpose reusable methods, like `FileUtils` for handling file-related operations.
+**Utils** — holds general-purpose reusable functions. `FileUtils` is a typical example, grouping all file-related helpers in one place.
 
-A manager is a class that handles a specific responsibility completely, such as `WebsocketManager` which manages everything related to websockets.
+**Manager** — owns and handles a specific responsibility end-to-end. `WebsocketManager` is a good example — it manages the full lifecycle of a websocket connection.
 
-A provider is used to expose an API, for example, `IntentProvider` gives access to certain intents.
+**Provider** — exposes an API or resource to other parts of the codebase. `IntentProvider` gives access to certain intents without callers knowing how they're built.
 
-A processor is used to handle specific logic or API processing, like `WebsocketMessageProcessor` which processes incoming websocket messages.
+**Processor** — handles logic around processing a specific input or event. `WebsocketMessageProcessor` processes incoming websocket messages.
 
-A wrapper hides the complexity of low-level APIs and prevents direct access, such as `WebsocketConnectionWrapper` which wraps the connection logic.
+**Wrapper** — hides the complexity of a low-level API and prevents direct access from spreading across the codebase. `WebsocketConnectionWrapper` is a clean example.
 
-A repository is used to manage business logic with a focus on a single responsibility.
+**Repository** — manages data access with a single responsibility. It abstracts where the data comes from — network, database, or cache — so callers don't need to know.
 
-A usecase represents a specific action that needs to be performed, like `SendMessageUsecase` which triggers the action of sending a message.
+**UseCase** — represents one specific action to be performed. `SendMessageUseCase` does exactly one thing: triggers the send message flow.
 
-An observer listens for changes and responds to them, for example, `MessagesPagingObserver` reacts to updates in message paging.
+**Observer** — listens for changes and reacts to them. `MessagesPagingObserver` reacts to updates in message paging.
 
-
-Thank You!
-
-
-
-
-
-
-
-
-
-
+Consistent naming across the codebase makes it much easier to navigate and understand responsibilities at a glance.
