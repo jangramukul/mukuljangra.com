@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-kotlin.jpg
+thumbnail: /static/post-image/thumb-code-review.jpg
 title: Design Patterns Guide in Kotlin
 layout: post
 categories: post

@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-architecture.jpg
+thumbnail: /static/post-image/thumb-blueprint.jpg
 title: Understanding the Layers of Clean Architecture
 layout: post
 categories: post

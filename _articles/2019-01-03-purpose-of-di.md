@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-di.jpg
+thumbnail: /static/post-image/thumb-planning.jpg
 title: What's the main purpose of DI?
 layout: post
 categories: post

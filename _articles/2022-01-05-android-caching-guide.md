@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-caching.jpg
+thumbnail: /static/post-image/thumb-server-room.jpg
 title: How To Cache In Android?
 layout: post
 categories: post

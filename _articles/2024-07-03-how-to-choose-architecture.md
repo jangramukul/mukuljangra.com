@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-system-design.jpg
+thumbnail: /static/post-image/thumb-team.jpg
 title: How to Choose the Right Architecture?
 layout: post
 categories: post

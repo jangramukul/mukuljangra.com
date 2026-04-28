@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-compose.jpg
+thumbnail: /static/post-image/thumb-code-dark.jpg
 title: Compose Beyond The UI?
 layout: post
 categories: post

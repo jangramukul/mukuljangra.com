@@ -1,5 +1,5 @@
 ---
-thumbnail: /static/post-image/thumb-kotlin.jpg
+thumbnail: /static/post-image/thumb-code-colorful.jpg
 title: Kotlin Best Practises Guide
 layout: post
 categories: post
