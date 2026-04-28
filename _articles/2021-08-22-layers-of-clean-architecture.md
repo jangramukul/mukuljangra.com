@@ -1,5 +1,5 @@
 ---
-title: Layers of Clean Architecture
+title: Layers of Android Architecture
 layout: post
 categories: post
 tags:
