@@ -23,14 +23,15 @@
       transition: width 0.08s linear;
     }
 
-    .shell { display: flex; min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; overflow-x: hidden; }
 
     /* Main */
-    .main { margin-left: 380px; flex: 1; background: #ffffff; }
+    .main { margin-left: 380px; flex: 1; background: #ffffff; min-width: 0; overflow-x: hidden; }
 
     .article-wrap {
       max-width: 100%;
       padding: 64px 72px 80px;
+      box-sizing: border-box;
     }
 
     .back-link {
@@ -79,6 +80,8 @@
       font-size: 1.0625rem;
       line-height: 1.85;
       color: #333;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
 
     .article-body h1, .article-body h2 {
