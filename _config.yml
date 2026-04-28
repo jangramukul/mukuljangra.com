@@ -51,4 +51,3 @@ exclude:
   - package-lock.json
   - README.md
   - LICENSE.txt
-  - CNAME
