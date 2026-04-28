@@ -5,7 +5,7 @@ categories: post
 tags:
   - Architecture
   
-thumbnail: /static/thumbnails/london-tower.jpg
+thumbnail: /static/thumbnails/mountains-minimal.jpg
 ---
 
 Choosing the right software architecture is a crucial decision that can significantly impact your project's success. While there's no one-size-fits-all solution, there are clear principles and considerations that can guide your decision-making process.

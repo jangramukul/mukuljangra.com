@@ -6,7 +6,7 @@ tags:
   - Android
   - Architecture
   - Best Practices
-thumbnail: /static/thumbnails/london.jpg
+thumbnail: /static/thumbnails/minimal-arch.jpg
 ---
 As Android apps grow in size, it's important to design architecture that allows the app to scale, increases the app's robustness, and makes the app easier to test. Here are some design principles we can follow to design our app:
 

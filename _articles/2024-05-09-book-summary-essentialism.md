@@ -4,7 +4,7 @@ layout: post
 categories: post
 tags:
   - Book
-thumbnail: /static/thumbnails/hot-air-balloon.jpg
+thumbnail: /static/thumbnails/sand-minimal.jpg
 ---
 
 In Essentialism, Greg McKeown draws on experience and insight from working with the leaders of the most innovative companies in the world to show how to achieve the disciplined pursuit of less.

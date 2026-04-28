@@ -6,7 +6,7 @@ tags:
   - Android
   - Best Practices
   - Jetpack Compose
-thumbnail: /static/thumbnails/space-shuttle.jpg
+thumbnail: /static/thumbnails/color-field.jpg
 ---
 
 1. **Survive Recomposition**
