@@ -221,6 +221,10 @@
   color: inherit;
 }
 
+.search-item-link:hover {
+  text-decoration: none;
+}
+
 .search-item-link:hover .search-item-title {
   text-decoration: underline;
   text-decoration-color: #1a1a1a;
