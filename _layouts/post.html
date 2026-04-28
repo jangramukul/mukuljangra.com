@@ -8,6 +8,7 @@
   <link rel="icon" type="image/jpeg" href="/static/profile.jpg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/sidebar.css">
   <link rel="stylesheet" href="/static/syntax.css">
   <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
   <meta name="theme-color" content="#2d2d2f">
@@ -23,32 +24,6 @@
     }
 
     .shell { display: flex; min-height: 100vh; }
-
-    /* Sidebar */
-    .sidebar {
-      width: 380px; min-width: 380px;
-      background: #252829;
-      color: #e8e8e8;
-      display: flex;
-      flex-direction: column;
-      padding: 64px 48px 56px;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      overflow-y: auto;
-      z-index: 10;
-    }
-
-    .sidebar-name {
-      font-size: 1.2em; font-weight: 600;
-      color: #ffffff; margin-bottom: 20px;
-    }
-
-    .sidebar-name a { color: #ffffff; text-decoration: none; }
-    .sidebar-name a:hover { text-decoration: underline; }
-
-    .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 0; }
-    .sidebar-nav li a { font-size: 1em; color: #ffffff; padding: 3px 0; display: block; text-decoration: none; transition: color 0.15s; }
-    .sidebar-nav li a:hover { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
 
     /* Main */
     .main { margin-left: 380px; flex: 1; background: #ffffff; }
@@ -182,16 +157,7 @@
 <div id="read-progress"></div>
 <div class="shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-name"><a href="/">Mukul Jangra</a></div>
-    <ul class="sidebar-nav">
-      <li><a href="/">Home</a></li>
-      <li><a href="/#about">About Me</a></li>
-      <li><a href="/#open-source">Open Source</a></li>
-      <li><a href="/#writing">Writing</a></li>
-      <li><a href="/#newsletter">Newsletter</a></li>
-    </ul>
-  </aside>
+  {% include sidebar.html %}
 
   <main class="main">
     <div class="article-wrap">
