@@ -1,69 +1,93 @@
+/* Dark mode enhancements */
 blockquote {
   background-color: rgba(0, 229, 208, 0.03);
-  border-left: 2px solid rgba(0, 229, 208, 0.4);
+  border-left: 3px solid rgba(0, 229, 208, 0.4);
   color: #9ca3af;
   border-radius: 0;
   padding: 12px 16px 12px 20px;
 }
 
 pre, code {
-  background-color: #0d0d0d;
-  color: #e5e7eb;
-  border-radius: 0;
+  background-color: #1e293b !important;
+  color: #e5e7eb !important;
+  border-radius: 8px;
 }
 
-a { color: var(--link-color); }
-a:hover { color: var(--link-color-hover); }
+a {
+  color: var(--link-color);
+}
+
+a:hover {
+  color: var(--link-color-hover);
+}
 
 table {
-  border-color: rgba(0, 229, 208, 0.1);
-  border-collapse: collapse;
-  width: 100%;
+  border-color: rgba(55, 65, 81, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 table th, table td {
-  border-color: rgba(0, 229, 208, 0.08);
-  padding: 10px 14px;
-  font-size: 0.9em;
+  border-color: rgba(55, 65, 81, 0.5);
 }
 
 table th {
-  background-color: rgba(0, 229, 208, 0.04);
-  color: #d1d5db;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.78em;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  background-color: rgba(30, 41, 59, 0.8);
 }
 
-table tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
-table tr:hover { background-color: rgba(0, 229, 208, 0.02); }
+table tr:nth-child(even) {
+  background-color: rgba(30, 41, 59, 0.3);
+}
 
-hr { border: none; border-top: 1px solid rgba(0, 229, 208, 0.08); margin: 2em 0; }
+table tr:hover {
+  background-color: rgba(55, 65, 81, 0.4);
+}
+
+hr {
+  border-color: rgba(55, 65, 81, 0.5);
+}
 
 input, textarea, select {
-  background-color: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(30, 41, 59, 0.6);
+  border-color: rgba(55, 65, 81, 0.5);
   color: #e5e7eb;
-  border-radius: 0;
+  border-radius: 8px;
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: rgba(0, 229, 208, 0.5);
-  outline: none;
+  border-color: var(--link-color);
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #000000; }
-::-webkit-scrollbar-thumb { background-color: rgba(0, 229, 208, 0.15); border-radius: 0; }
-::-webkit-scrollbar-thumb:hover { background-color: rgba(0, 229, 208, 0.3); }
+::-webkit-scrollbar {
+  width: 10px;
+}
 
-/* Syntax highlight — teal palette */
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(55, 65, 81, 0.6);
+  border-radius: 5px;
+  border: 2px solid #0f172a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.8);
+}
+
+/* Code block base — deep dark space */
+pre, code {
+  background-color: #050d15 !important;
+  color: #c9d6e0 !important;
+  border-radius: 0;
+}
+
+/* Override dark-mode highlight colors — all replaced by syntax.css */
 .highlight .c, .highlight .cm, .highlight .c1, .highlight .cs { color: #3d6b75; }
 .highlight .k, .highlight .kc, .highlight .kd, .highlight .kp, .highlight .kr { color: #00E5D0; }
 .highlight .kt { color: #7ffff4; }
-.highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2,
-.highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .s1 { color: #80e8d8; }
+.highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .s1 { color: #80e8d8; }
 .highlight .na { color: #4dd8cc; }
 .highlight .nb { color: #00E5D0; }
 .highlight .nc { color: #7ffff4; }
