@@ -8,8 +8,6 @@ tags:
 thumbnail: /static/thumbnails/img-03.jpg
 ---
 
-Naming is one of the most overlooked parts of software architecture. Good names make it obvious what a component does without reading its implementation. Here's a breakdown of common naming patterns and what each one communicates.
-
 **Factory** — responsible for creating objects. For example, `TicketStatusFactory` creates different ticket status instances based on input.
 
 **Utils** — holds general-purpose reusable functions. `FileUtils` is a typical example, grouping all file-related helpers in one place.
@@ -27,5 +25,3 @@ Naming is one of the most overlooked parts of software architecture. Good names 
 **UseCase** — represents one specific action to be performed. `SendMessageUseCase` does exactly one thing: triggers the send message flow.
 
 **Observer** — listens for changes and reacts to them. `MessagesPagingObserver` reacts to updates in message paging.
-
-Consistent naming across the codebase makes it much easier to navigate and understand responsibilities at a glance.
