@@ -5,7 +5,7 @@ categories: post
 tags:
   - Android
   - Kotlin
-thumbnail: /static/thumbnails/art-17.jpg
+thumbnail: /static/thumbnails/obj-17.jpg
 ---
 
 In the early days of development, I had no idea about testing. I kept avoiding testable code and ended up with multiple production bugs and issues. After realising the importance of writing clean and testable code, I started to explore multiple solutions and testing frameworks for creating an easily testable environment. Apart from frameworks and libraries, there are some principles that make testing easier. Most of the testable code issues, like code coverage issues, can be tackled using these principles.
