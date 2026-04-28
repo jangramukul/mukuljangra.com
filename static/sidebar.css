@@ -150,6 +150,14 @@
   align-items: center;
   gap: 10px;
   flex: 1;
+  border: 1px solid #e0e0e0;
+  border-radius: 2px;
+  padding: 8px 12px;
+  transition: border-color 0.15s;
+}
+
+.search-input-wrap:focus-within {
+  border-color: #1a1a1a;
 }
 
 .search-input-icon {
