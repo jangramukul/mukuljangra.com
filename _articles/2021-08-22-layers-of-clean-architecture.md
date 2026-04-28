@@ -1,5 +1,5 @@
 ---
-title: Data, Domain, and Presentation — Clean Architecture Layers
+title: Layers of Clean Architecture
 layout: post
 categories: post
 tags:
