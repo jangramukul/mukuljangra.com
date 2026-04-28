@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Source · {{ site.site_name }}</title>
+  <link rel="icon" type="image/jpeg" href="/static/profile.jpg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/sidebar.css">
+  <meta name="theme-color" content="#252829">
+  <style>
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    .shell { display: flex; min-height: 100vh; }
+
+    /* Main */
+    .main { margin-left: 380px; flex: 1; background: #ffffff; }
+
+    .main-inner { max-width: 760px; padding: 60px 56px 80px; }
+
+    /* Section */
+    .section { margin-bottom: 52px; }
+
+    .section-heading {
+      font-size: 0.9em; font-weight: 600;
+      color: #1a1a1a; display: block;
+      padding-bottom: 10px; margin-bottom: 0;
+    }
+
+    /* Row list */
+    .row-list { list-style: none; }
+
+    .row-item {
+      display: flex; align-items: baseline;
+      justify-content: space-between; gap: 24px;
+      padding: 14px 0; border-top: 1px solid #ebebeb;
+      text-decoration: none; color: inherit;
+    }
+    .row-item:last-child { border-bottom: 1px solid #ebebeb; }
+    a.row-item:hover .row-title { text-decoration: underline; text-decoration-color: #bbb; text-underline-offset: 3px; }
+
+    .row-title { font-size: 1em; color: #1a1a1a; line-height: 1.4; flex: 1; }
+    .row-meta { font-size: 0.9em; color: #aeaeb2; white-space: nowrap; flex-shrink: 0; text-align: right; }
+
+    /* OSS badge */
+    .oss-badge {
+      display: inline-block;
+      font-size: 0.72em;
+      padding: 1px 7px;
+      border: 1px solid #ddd;
+      color: #888;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 720px) {
+      .shell { flex-direction: column; }
+      .sidebar { position: static; width: 100%; min-width: 0; padding: 28px 24px 24px; }
+      .main { margin-left: 0; }
+      .main-inner { padding: 32px 24px 60px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  {% include sidebar.html %}
+
+  <main class="main">
+    <div class="main-inner">
+
+      <!-- Open Source -->
+      <section class="section">
+        <span class="section-heading">Open Source</span>
+        <ul class="row-list">
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1651" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title"><span class="oss-badge">PR</span>Pocket Casts — Migrate LiveData to Coroutines Flow</span>
+            <span class="row-meta">Automattic</span>
+          </a>
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1658" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title"><span class="oss-badge">PR</span>Pocket Casts — Artwork in Miniplayer, Notification &amp; Widget</span>
+            <span class="row-meta">Automattic</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/LastKey" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">LastKey — Multiplatform password manager</span>
+            <span class="row-meta">Kotlin Multiplatform</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/ReactiveStore" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">Reactive Store — Coroutines-based state management</span>
+            <span class="row-meta">Android library</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/FastMapper" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">FastMapper — Type-safe data class mapper generator</span>
+            <span class="row-meta">Kotlin KSP</span>
+          </a>
+
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+</div>
+</body>
+</html>
