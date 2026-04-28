@@ -4,587 +4,445 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.site_name }}</title>
-    <!-- Emoji favicon -->
+    <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.site_name }}</title>
     <link rel="icon" type="image/svg+xml" href="/static/space-favicon.svg">
     <link rel="stylesheet" href="/static/bootstrap-3.1.1.min.css" type="text/css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" type="text/css">
-    <link rel="stylesheet" href="/static/app.css" type="text/css">
-    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
-    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
-    <meta name="theme-color" content="#000000">
     <link rel="stylesheet" href="/static/gradient-bg.css" type="text/css">
     <link rel="stylesheet" href="/static/nav.css" type="text/css">
+    <link rel="stylesheet" href="/static/syntax.css" type="text/css">
+    <link rel="stylesheet" href="/static/dark-mode.css" type="text/css">
     <link rel="stylesheet" href="/static/footer.css" type="text/css">
+    <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/atom.xml" />
+    <meta name="theme-color" content="#000000">
     <style type="text/css">
       :root {
-        --background-color: #000000;
-        --text-color: #e5e7eb;
-        --sidebar-bg: #0a0a0a;
-        --code-bg: #0d0d0d;
-        --blockquote-color: #6b7280;
-        --blockquote-border: rgba(0, 229, 208, 0.35);
         --link-color: #00E5D0;
         --link-color-hover: #7ffff4;
         --accent: #00E5D0;
-        --accent-dim: rgba(0, 229, 208, 0.15);
-        --accent-border: rgba(0, 229, 208, 0.3);
-      }
-
-      /* Ensure backgrounds are transparent to show gradient */
-      body, .right-column, .content, .content.post {
-        background-color: transparent !important;
       }
 
       body {
-        color: var(--text-color);
+        background-color: #000000;
+        color: #e5e7eb;
         margin: 0;
         padding: 0;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Reading progress bar */
+      #read-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        width: 0%;
+        background: #00E5D0;
+        z-index: 9999;
+        transition: width 0.1s linear;
+        box-shadow: 0 0 8px rgba(0, 229, 208, 0.5);
       }
 
       .right-column {
         width: 100%;
         flex: 1;
-        padding: 40px;
+        padding: 0 40px 80px;
         max-width: 1200px;
         margin: 0 auto;
-      }
-      
-      .content {
-        max-width: 1000px;
-        margin: 0 auto;
-      }
-      
-      .content.post {
-        font-size: 20px;
-        line-height: 1.8;
-        margin: 0 auto;
-        color: var(--text-color);
-        max-width: 1000px;
-        overflow-x: hidden;
         box-sizing: border-box;
-        padding: 0;
-        width: 100%;
       }
 
-      .back-header {
+      /* Article header area */
+      .article-header {
+        max-width: 720px;
+        margin: 0 auto;
+        padding-top: 110px;
+        padding-bottom: 48px;
+      }
+
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 32px;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #4b5563;
         font-family: 'Space Mono', monospace;
-        font-size: 0.9em;
-        margin-bottom: 15px;
-        color: var(--text-color);
-        font-weight: normal;
+        font-size: 0.68em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-bottom: 40px;
+      }
+
+      .back-button:hover {
+        color: #00E5D0;
+        border-color: rgba(0, 229, 208, 0.35);
+        background: rgba(0, 229, 208, 0.04);
         text-decoration: none;
       }
 
-      .back-header:hover {
-        color: var(--link-color-hover);
-      }
-
-      .back-header a {
-        color: var(--text-color);
-        text-decoration: underline;
-      }
-
-      .back-header a:hover {
-        color: var(--link-color-hover);
-        text-decoration: underline;
-      }
-
-      .content.post h2 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.35em;
-        margin-top: 2em;
-        margin-bottom: 0.8em;
+      .article-eyebrow {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.72em;
         color: #00E5D0;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+
+      .article-title {
+        font-family: 'Space Mono', 'Courier New', monospace;
+        font-size: 2.2em;
+        font-weight: 700;
+        color: #ffffff;
+        line-height: 1.15;
+        letter-spacing: 0.02em;
+        margin: 0 0 24px 0;
+      }
+
+      .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 0;
+      }
+
+      .article-date {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.72em;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .meta-dot {
+        color: #1f2937;
+        font-size: 0.6em;
+      }
+
+      .article-reading-time {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.72em;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .article-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .article-tag {
+        padding: 2px 9px;
+        background: rgba(0, 229, 208, 0.06);
+        border: 1px solid rgba(0, 229, 208, 0.15);
+        font-family: 'Space Mono', monospace;
+        font-size: 0.65em;
+        font-weight: 700;
+        color: rgba(0, 229, 208, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      /* Article divider */
+      .article-divider {
+        max-width: 720px;
+        margin: 0 auto 48px;
+        height: 1px;
+        background: rgba(0, 229, 208, 0.1);
+      }
+
+      /* Article body */
+      .article-body {
+        max-width: 720px;
+        margin: 0 auto;
+        font-size: 18px;
+        line-height: 1.85;
+        color: #9ca3af;
+      }
+
+      .article-body h1,
+      .article-body h2 {
+        font-family: 'Space Mono', monospace;
+        font-size: 1.2em;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         border-left: 2px solid #00E5D0;
         padding: 4px 0 4px 14px;
-        border-bottom: none;
-        border-image: none;
+        margin: 2.2em 0 0.9em;
+        line-height: 1.3;
+      }
+
+      .article-body h3 {
+        font-family: 'Space Mono', monospace;
+        font-size: 1em;
         font-weight: 700;
-        width: 100%;
-        max-width: 100%;
-        display: block;
+        color: #d1d5db;
         text-transform: uppercase;
         letter-spacing: 0.04em;
+        border-left: 2px solid rgba(0, 229, 208, 0.4);
+        padding: 3px 0 3px 12px;
+        margin: 1.8em 0 0.8em;
       }
 
-      .content.post h3 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.1em;
-        margin-top: 1.8em;
-        margin-bottom: 0.8em;
-        color: #00E5D0;
-        border-left: 2px solid rgba(0, 229, 208, 0.5);
-        padding: 2px 0 2px 12px;
-        border-bottom: none;
-        border-image: none;
+      .article-body h4 {
+        font-family: 'Space Mono', monospace;
+        font-size: 0.88em;
         font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
-
-      .content.post h4 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.95em;
-        margin-top: 1.5em;
-        margin-bottom: 0.8em;
-        color: rgba(0, 229, 208, 0.7);
-        border-left: 1px solid rgba(0, 229, 208, 0.3);
-        padding: 1px 0 1px 10px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
-
-      .content.post h1 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 1.6em;
-        margin-top: 2em;
-        margin-bottom: 0.8em;
-        color: #00E5D0;
-        border-left: 3px solid #00E5D0;
-        padding: 6px 0 6px 14px;
-        border-bottom: none;
-        border-image: none;
-        font-weight: 700;
-        display: block;
+        color: #9ca3af;
         text-transform: uppercase;
         letter-spacing: 0.04em;
+        border-left: 1px solid rgba(0, 229, 208, 0.25);
+        padding: 2px 0 2px 10px;
+        margin: 1.5em 0 0.7em;
       }
 
-      .content.post h5 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.85em;
-        margin-top: 1.2em;
-        margin-bottom: 0.6em;
-        color: rgba(0, 229, 208, 0.6);
-        padding-left: 8px;
-        border-left: 1px solid rgba(0, 229, 208, 0.2);
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
-
-      .content.post h6 {
-        font-family: 'Space Mono', 'Courier New', monospace;
-        font-size: 0.78em;
-        margin-top: 1em;
-        margin-bottom: 0.6em;
-        color: rgba(0, 229, 208, 0.5);
-        padding-left: 8px;
-        font-weight: 700;
-        display: block;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-      }
-
-      .content.post h2 + p,
-      .content.post h3 + p,
-      .content.post h4 + p,
-      .content.post h2 + ul,
-      .content.post h3 + ul,
-      .content.post h4 + ul,
-      .content.post h2 + ol,
-      .content.post h3 + ol,
-      .content.post h4 + ol {
-        font-size: 1.05em;
-      }
-
-      .content.post p {
-        font-size: 1.05em;
+      .article-body p {
         margin-bottom: 1.5em;
         color: #9ca3af;
-        max-width: 100%;
-        box-sizing: border-box;
         line-height: 1.85;
       }
 
-      .content.post p.date {
-        font-size: 0.8em;
-        color: #374151;
-        font-family: 'Space Mono', monospace;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-      }
-
-      .content.post ul,
-      .content.post ol {
-        font-size: 1.05em;
-        margin-top: 0.5em;
-        margin-bottom: 1.5em;
-        padding-left: 2em;
-        color: #9ca3af;
-        max-width: 100%;
-        box-sizing: border-box;
-        list-style-position: outside;
-      }
-
-      .content.post h2 + ul,
-      .content.post h2 + ol,
-      .content.post h3 + ul,
-      .content.post h3 + ol,
-      .content.post h4 + ul,
-      .content.post h4 + ol {
-        padding-left: 2.5em;
-        margin-top: 1em;
-      }
-
-      .content.post li {
-        font-size: 1em;
-        margin-bottom: 0.5em;
-        color: #9ca3af;
-        padding-left: 0.25em;
-      }
-
-      .content.post li:last-child {
-        margin-bottom: 0;
-      }
-
-      .content.post code {
-        background-color: #0d0d0d;
+      .article-body a {
         color: #00E5D0;
-        word-wrap: break-word;
-        white-space: pre-wrap;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      .article-body a:hover { color: #7ffff4; }
+
+      .article-body ul,
+      .article-body ol {
+        padding-left: 1.8em;
+        margin-bottom: 1.5em;
+        color: #9ca3af;
+      }
+
+      .article-body li {
+        margin-bottom: 0.6em;
+        line-height: 1.75;
+      }
+
+      .article-body code {
+        background: #0d0d0d;
+        color: #00E5D0;
         padding: 2px 6px;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.84em;
+        border: 1px solid rgba(0, 229, 208, 0.12);
         border-radius: 0;
-        font-size: 0.88em;
-        border: 1px solid rgba(0, 229, 208, 0.15);
-        font-family: 'Space Mono', 'Courier New', monospace;
+        word-break: break-word;
       }
 
-      .content.post pre {
-        background-color: #0d0d0d;
-        color: #e5e7eb;
-        max-width: 100%;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        width: 100%;
-        box-sizing: border-box;
-        border-radius: 0;
-        padding: 20px;
+      .article-body pre {
+        background: #0d0d0d;
         border: 1px solid rgba(0, 229, 208, 0.1);
+        padding: 20px 24px;
+        overflow-x: auto;
+        margin: 0 0 1.5em;
+        border-radius: 0;
       }
 
-      .content.post .highlight {
-        border-radius: 0;
-        overflow: hidden;
+      .article-body pre code {
+        background: transparent;
+        border: none;
+        color: #e5e7eb;
+        padding: 0;
+        font-size: 0.88em;
+        word-break: normal;
+      }
+
+      .article-body .highlight {
         margin-bottom: 1.5em;
         border: 1px solid rgba(0, 229, 208, 0.1);
+        overflow: hidden;
       }
 
-      .content.post .highlight pre {
+      .article-body .highlight pre {
         margin: 0;
-        border-radius: 0;
         border: none;
       }
 
-      .content.post pre code {
-        padding: 0;
-        border-radius: 0;
-        background-color: transparent;
-        border: none;
-        color: inherit;
-      }
-
-      .content.post blockquote {
-        border-left: 3px solid #00E5D0;
-        border-right: none;
-        border-top: none;
-        border-bottom: none;
-        padding: 12px 0 12px 20px;
-        color: #9ca3af;
-        border-radius: 0;
-        background-color: rgba(0, 229, 208, 0.03);
-        font-style: italic;
+      .article-body blockquote {
+        border-left: 2px solid rgba(0, 229, 208, 0.5);
+        padding: 12px 20px;
         margin: 1.5em 0;
-      }
-
-      .content.post a {
-        color: #00E5D0;
-      }
-
-      .content.post a:hover {
-        color: #7ffff4;
-      }
-
-      .category-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      
-      /* Back button styles */
-      .back-navigation {
-        margin-bottom: 20px;
-        width: 100%;
-        padding-top: 140px;
-        padding-bottom: 80px;
-      }
-      
-      .back-button {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        width: auto;
-        height: 34px;
-        background-color: transparent;
-        border-radius: 0;
-        text-decoration: none;
-        color: #00E5D0;
-        font-size: 0.75em;
-        transition: all 0.2s ease;
-        border: 1px solid rgba(0, 229, 208, 0.5);
-        line-height: 1;
-        padding: 0 16px;
-        font-family: 'Space Mono', monospace;
-        gap: 8px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      
-      .back-button:hover {
-        background-color: rgba(0, 229, 208, 0.08);
-        color: #00E5D0;
-        border-color: #00E5D0;
-        box-shadow: 0 0 14px rgba(0, 229, 208, 0.2);
-      }
-      
-      .back-button .nav-arrow,
-      .back-button .nav-text {
-        color: #00E5D0;
-      }
-
-      .back-button .nav-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        font-size: 14px;
-      }
-      
-      .back-button .nav-text {
-        font-size: 0.9em;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-      }
-      
-      @media (max-width: 600px) {
-        .back-navigation {
-          padding-top: 70px;
-          padding-bottom: 32px;
-        }
-        
-        .back-button {
-          height: 30px;
-          padding: 0 12px;
-          font-size: 0.7em;
-        }
-        
-        .back-button .nav-arrow {
-          font-size: 12px;
-        }
-      }
-
-      .category-chip {
-        padding: 3px 10px;
-        background-color: rgba(255, 255, 255, 0.04);
-        border-radius: 0;
-        font-size: 0.7em;
-        transition: all 0.2s ease;
-        user-select: none;
+        background: rgba(0, 229, 208, 0.03);
         color: #6b7280;
-        border: 1px solid transparent;
-        font-family: 'Space Mono', monospace;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-weight: 700;
-      }
-      
-      .date-tag-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 32px;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .content.post p.date {
-        font-size: 0.78em;
-        color: #374151;
-        margin-bottom: 0;
-        margin-right: 0;
-        font-family: 'Space Mono', monospace;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-      }
-      
-      /* Post title */
-      .post-title {
-        border: none !important;
-        border-bottom: none !important;
-        border-image: none !important;
-        border-left: none !important;
-        background: none !important;
-        display: block !important;
-        margin-top: 0 !important;
-        margin-bottom: 16px !important;
-        padding: 0 !important;
-        text-decoration: none !important;
-        font-size: 2.4em !important;
-        color: #00E5D0 !important;
-        font-family: 'Space Mono', 'Courier New', monospace !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        line-height: 1.1 !important;
-        letter-spacing: 0.04em !important;
-      }
-      
-      h2.post-title {
-        border: none !important;
-        border-bottom: none !important;
-        border-image: none !important;
-        border-left: none !important;
-        background: none !important;
-        padding: 0 !important;
-        text-decoration: none !important;
-        display: block !important;
-        color: #00E5D0 !important;
-        position: static !important;
-        font-size: 2.4em !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-      }
-      
-      h2.post-title::before,
-      h2.post-title::after,
-      .post-title::before,
-      .post-title::after {
-        display: none !important;
-        content: none !important;
+        font-style: italic;
       }
 
-      @media (max-width: 768px) {        .right-column {
-          padding: 20px;
-        }
-        
-        .content {
-          padding: 0;
-          max-width: 100%;
-          width: 100%;
-        }
-        
-        .content.post {
-          padding: 0;
-          max-width: 100%;
-          width: 100%;
-        }
+      .article-body blockquote p { margin-bottom: 0; color: inherit; }
 
-        .post-title {
-          font-size: 1.7em !important;
-        }
-
-        h2.post-title {
-          font-size: 1.7em !important;
-        }
+      .article-body img {
+        max-width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        display: block;
+        margin: 1.5em auto;
       }
 
-      .post-navigation {
-        margin-top: 80px;
-        padding-top: 20px;
+      .article-body hr {
+        border: none;
         border-top: 1px solid rgba(0, 229, 208, 0.08);
-        width: 100%;
+        margin: 2.5em 0;
       }
 
-      .nav-links {
+      .article-body strong { color: #e5e7eb; font-weight: 600; }
+      .article-body em { color: #9ca3af; }
+
+      /* Table */
+      .article-body table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5em;
+        font-size: 0.88em;
+      }
+
+      .article-body th {
+        background: rgba(0, 229, 208, 0.04);
+        color: #d1d5db;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.78em;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(0, 229, 208, 0.12);
+        text-align: left;
+      }
+
+      .article-body td {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        color: #9ca3af;
+        vertical-align: top;
+      }
+
+      .article-body tr:last-child td { border-bottom: none; }
+      .article-body tr:hover td { background: rgba(0, 229, 208, 0.015); }
+
+      /* Post footer nav */
+      .article-footer {
+        max-width: 720px;
+        margin: 64px auto 0;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 229, 208, 0.08);
         display: flex;
         justify-content: space-between;
-        width: 100%;
-      }
-
-      .prev-post {
-        display: inline-flex;
-        justify-content: center;
         align-items: center;
-        height: 34px;
-        background-color: transparent;
-        border-radius: 0;
-        text-decoration: none;
-        color: #4b5563;
-        font-size: 0.75em;
-        transition: all 0.2s ease;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 0 16px;
-        font-family: 'Space Mono', monospace;
+        gap: 16px;
+      }
+
+      .article-footer-back {
+        display: inline-flex;
+        align-items: center;
         gap: 8px;
+        height: 32px;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #4b5563;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.68em;
         font-weight: 700;
-        margin-right: auto;
-        letter-spacing: 0.08em;
         text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        transition: all 0.2s ease;
       }
 
-      .prev-post:hover {
-        background-color: rgba(0, 229, 208, 0.06);
+      .article-footer-back:hover {
         color: #00E5D0;
-        border-color: rgba(0, 229, 208, 0.4);
+        border-color: rgba(0, 229, 208, 0.35);
+        background: rgba(0, 229, 208, 0.04);
         text-decoration: none;
       }
 
-      @media (max-width: 600px) {
-        .post-navigation { margin-top: 60px; }
-        .prev-post { height: 30px; padding: 0 12px; font-size: 0.7em; }
+      @media (max-width: 768px) {
+        .right-column { padding: 0 20px 60px; }
+        .article-header { padding-top: 80px; padding-bottom: 32px; }
+        .article-title { font-size: 1.6em; }
+        .article-body { font-size: 16px; }
+        .article-footer { margin-top: 48px; }
       }
     </style>
   </head>
   <body>
+    <div id="read-progress"></div>
     {% include site-nav.html %}
     <div class="gradient-bg"></div>
-    <div class="main-background" style="z-index: -2;"></div>
+    <div class="main-background"></div>
 
     <div class="right-column">
-      <div class="content post" style="background-color: transparent !important;">
-        <div class="back-navigation">
-          <a href="#" id="back-to-home" class="back-button" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
-            <span class="nav-arrow">←</span>
-            <span class="nav-text">Back</span>
-          </a>
-        </div>
-        <h2 class="post-title">{{ page.title }}</h2>
-        <div class="date-tag-container">
-          <p class="date">{{ page.date | date:"%d %B %Y" }}</p>
-        </div>
 
-        {{ content }}
-        
-        <!-- Back button -->
-        <div class="post-navigation">
-          <div class="nav-links">
-            <a href="#" class="prev-post" onclick="event.preventDefault(); if (history.length > 1) { history.back(); } else { window.location.href = '/'; }">
-              <span class="nav-arrow">←</span>
-              <span class="nav-text">Back</span>
-            </a>
+      <div class="article-header">
+        <a href="javascript:history.length>1?history.back():window.location='/'" class="back-button">
+          ← Back
+        </a>
+
+        <div class="article-eyebrow">// Article</div>
+        <h1 class="article-title">{{ page.title }}</h1>
+
+        <div class="article-meta">
+          <span class="article-date">{{ page.date | date: "%d %B %Y" }}</span>
+          <span class="meta-dot">◆</span>
+          <span class="article-reading-time" id="reading-time">— min read</span>
+          {% if page.tags and page.tags != empty %}
+          <span class="meta-dot">◆</span>
+          <div class="article-tags">
+            {% for tag in page.tags %}<span class="article-tag">{{ tag }}</span>{% endfor %}
           </div>
+          {% endif %}
         </div>
       </div>
+
+      <div class="article-divider"></div>
+
+      <div class="article-body" id="article-content">
+        {{ content }}
+      </div>
+
+      <div class="article-footer">
+        <a href="javascript:history.length>1?history.back():window.location='/'" class="article-footer-back">
+          ← Back to Writing
+        </a>
+      </div>
+
     </div>
 
+    {% include footer.html %}
+
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
+
+        // Reading progress bar
+        var bar = document.getElementById('read-progress');
+        window.addEventListener('scroll', function() {
+          var scrollTop = window.scrollY || document.documentElement.scrollTop;
+          var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          bar.style.width = (docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0) + '%';
+        }, { passive: true });
+
+        // Reading time estimate
+        var content = document.getElementById('article-content');
+        if (content) {
+          var words = content.innerText.trim().split(/\s+/).length;
+          var mins = Math.max(1, Math.round(words / 200));
+          document.getElementById('reading-time').textContent = mins + ' min read';
+        }
       });
     </script>
-    
-    {% include footer.html %}
   </body>
 </html>
