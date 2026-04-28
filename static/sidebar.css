@@ -129,16 +129,19 @@
 }
 
 .search-header {
-  padding: 48px 56px 24px;
+  padding: 20px 56px 20px;
   border-bottom: 1px solid #ebebeb;
   flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .search-input-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 600px;
+  flex: 1;
 }
 
 .search-input-icon {
@@ -176,6 +179,7 @@
   flex-shrink: 0;
   cursor: pointer;
   user-select: none;
+  margin-left: 16px;
 }
 
 .search-results {
