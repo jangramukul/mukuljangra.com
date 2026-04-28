@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-android.jpg
 title: Application Level Best Practises Guide
 layout: post
 categories: post

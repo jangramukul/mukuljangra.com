@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-architecture.jpg
 title: Common Architectural Principles Guide
 layout: post
 categories: post

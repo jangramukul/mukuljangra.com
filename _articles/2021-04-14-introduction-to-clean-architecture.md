@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-architecture.jpg
 title: Introduction to Clean Architecture
 layout: post
 categories: post

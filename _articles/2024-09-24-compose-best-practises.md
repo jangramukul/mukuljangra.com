@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-compose.jpg
 title: Jetpack Compose Best Practises Guide
 layout: post
 categories: post

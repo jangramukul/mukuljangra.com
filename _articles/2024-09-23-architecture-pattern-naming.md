@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-architecture.jpg
 title: Follow Right Architecture Patterns Naming
 categories: post
 tags:

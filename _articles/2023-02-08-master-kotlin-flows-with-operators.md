@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-flows.jpg
 title: Kotlin Flows With Operators Guide
 layout: post
 categories: post

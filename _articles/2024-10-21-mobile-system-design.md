@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-android.jpg
 title: Mobile System Design Guide
 layout: post
 categories: post

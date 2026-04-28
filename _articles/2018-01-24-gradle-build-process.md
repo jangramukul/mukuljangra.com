@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-coding.jpg
 title: Gradle Build Process Guide
 layout: post
 categories: post

@@ -1,4 +1,5 @@
 ---
+thumbnail: /static/post-image/thumb-modular.jpg
 title: Modularization Basics Guide
 layout: post
 categories: post
