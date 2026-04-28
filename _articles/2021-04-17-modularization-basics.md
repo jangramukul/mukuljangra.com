@@ -6,7 +6,7 @@ tags:
   - Android
   - Architecture
   
-thumbnail: /static/thumbnails/obj-05.jpg
+thumbnail: /static/thumbnails/img-05.jpg
 ---
 In an ever-growing code base, scalability, readability, testability, and overall code quality often decrease over time. This comes as a result of the codebase increasing in size without its maintainers taking active measures to enforce an easily maintainable structure. Modularization is a means of structuring your codebase in a way that improves maintainability and helps avoid these problems.
 

@@ -4,7 +4,7 @@ categories: post
 tags:
   - Android
   - Architecture
-thumbnail: /static/thumbnails/obj-11.jpg
+thumbnail: /static/thumbnails/img-12.jpg
 ---
 
 This explores common naming patterns used in software architecture and explains their purposes. Each pattern serves a specific role in creating maintainable and well-structured code. Understanding these patterns helps developers choose appropriate names that clearly communicate a component's responsibility.

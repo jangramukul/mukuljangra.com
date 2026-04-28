@@ -6,7 +6,7 @@ tags:
   - Android
   - Best Practices
   - Jetpack Compose
-thumbnail: /static/thumbnails/obj-10.jpg
+thumbnail: /static/thumbnails/img-13.jpg
 ---
 
 1. **Survive Recomposition**
