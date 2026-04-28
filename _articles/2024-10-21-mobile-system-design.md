@@ -4,7 +4,7 @@ layout: post
 categories: post
 tags:
   - Android
-thumbnail: /static/thumbnails/obj-15.jpg
+thumbnail: /static/thumbnails/art-16.jpg
 ---
 
 Before building a product, we need to set some requirements, architecture designs, security concerns etc. These play an important role in organizing, creating fast and scalable applications. A typical mobile system design includes application features, architecture design, and out-of-scope requirements like crash reporting, analytics etc.
