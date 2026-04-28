@@ -62,3 +62,7 @@ tr:last-child td { border-bottom: none; }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+
+@media (max-width: 720px) {
+  body { padding-top: 52px; }
+}

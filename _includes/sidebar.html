@@ -22,6 +22,32 @@
   </div>
 </aside>
 
+<!-- Mobile top bar -->
+<div class="mobile-topbar">
+  <a href="/" class="mobile-topbar-name">Mukul Jangra</a>
+  <div class="mobile-topbar-right">
+    <button class="mobile-search-btn" id="mobileSearchBtn" aria-label="Search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+    <button class="mobile-hamburger" id="mobileMenuBtn" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</div>
+
+<!-- Mobile nav drawer -->
+<div class="mobile-nav-drawer" id="mobileNavDrawer" hidden>
+  <ul class="mobile-nav-list">
+    <li><a href="/" {% if page.url == '/' %}class="active"{% endif %}>Home</a></li>
+    <li><a href="/about-me/" {% if page.url == '/about-me/' %}class="active"{% endif %}>About Me</a></li>
+    <li><a href="/#open-source">Open Source</a></li>
+    <li><a href="/#writing">Writing</a></li>
+    <li><a href="/newsletter/" {% if page.url == '/newsletter/' %}class="active"{% endif %}>Newsletter</a></li>
+  </ul>
+</div>
+
 <!-- Search overlay -->
 <div id="searchOverlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search" hidden>
   <div class="search-inner">
@@ -40,6 +66,35 @@
 
 <script>
 (function () {
+  // ── Mobile menu ──────────────────────────────────────────
+  var menuBtn = document.getElementById('mobileMenuBtn');
+  var drawer = document.getElementById('mobileNavDrawer');
+
+  if (menuBtn && drawer) {
+    menuBtn.addEventListener('click', function () {
+      var open = !drawer.hidden;
+      drawer.hidden = open;
+      menuBtn.setAttribute('aria-expanded', String(!open));
+      menuBtn.classList.toggle('open', !open);
+    });
+    document.addEventListener('click', function (e) {
+      if (!drawer.hidden && !drawer.contains(e.target) && !menuBtn.contains(e.target)) {
+        drawer.hidden = true;
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.classList.remove('open');
+      }
+    });
+  }
+
+  // ── Mobile search button wires to the same overlay ──────
+  var mobileSearchBtn = document.getElementById('mobileSearchBtn');
+  if (mobileSearchBtn) {
+    mobileSearchBtn.addEventListener('click', function () {
+      var btn = document.getElementById('searchBtn');
+      if (btn) btn.click();
+    });
+  }
+
   var btn = document.getElementById('searchBtn');
   var overlay = document.getElementById('searchOverlay');
   var input = document.getElementById('searchInput');
