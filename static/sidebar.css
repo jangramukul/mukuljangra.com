@@ -157,7 +157,7 @@
 }
 
 .search-input-wrap:focus-within {
-  border-color: #1a1a1a;
+  border-color: #c8c8c8;
 }
 
 .search-input-icon {
@@ -175,6 +175,8 @@
   background: transparent;
   padding: 0;
   caret-color: #1a1a1a;
+  text-decoration: none;
+  -webkit-text-decoration: none;
 }
 
 .search-input::placeholder {
@@ -202,6 +204,12 @@
   flex: 1;
   overflow-y: auto;
   padding: 24px 0 80px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.search-results::-webkit-scrollbar {
+  display: none;
 }
 
 .search-status {
