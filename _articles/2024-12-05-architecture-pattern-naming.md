@@ -5,7 +5,7 @@ categories: post
 tags:
   - Android
   - Architecture
-thumbnail: /static/thumbnails/img-12.jpg
+thumbnail: /static/thumbnails/img-03.jpg
 ---
 
 Naming is one of the most overlooked parts of software architecture. Good names make it obvious what a component does without reading its implementation. Here's a breakdown of common naming patterns and what each one communicates.
