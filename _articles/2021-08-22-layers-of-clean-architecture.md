@@ -1,5 +1,5 @@
 ---
-title: Understanding the Layers of Clean Architecture
+title: Data, Domain, and Presentation — Clean Architecture Layers
 layout: post
 categories: post
 tags:
