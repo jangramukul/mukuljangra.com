@@ -127,7 +127,7 @@
         {% if newsletters.size > 0 %}
         <div class="nl-chips">
           {% for nl in newsletters %}
-          <div class="nl-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">#{{ newsletters.size | minus: forloop.index0 }} · {{ nl.date | date: "%b %d, %Y" }}</div>
+          <div class="nl-chip{% if forloop.first %} active{% endif %}" data-issue="{{ forloop.index0 }}">{{ nl.date | date: "%b %d, %Y" }}</div>
           {% endfor %}
           <a href="/newsletter.xml" style="font-size:0.82em;padding:6px 14px;border:1px solid #d0d0d0;color:#999;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;gap:5px;" target="_blank" rel="noopener">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="3.429" cy="20.571" r="3.429"/><path d="M11.429 24h4.57C15.999 15.179 8.821 8.001 0 8.001v4.572c6.302 0 11.429 5.126 11.429 11.427z"/><path d="M24 24C24 10.714 13.234 0 0 0v4.571c10.714 0 19.429 8.714 19.429 19.429z"/></svg>
@@ -138,7 +138,7 @@
         <div class="nl-content{% if forloop.first %} active{% endif %}" id="nl-{{ forloop.index0 }}">
           <div class="nl-content-header">
             <div class="nl-content-title">{{ nl.title }}</div>
-            <div class="nl-content-meta">{{ nl.date | date: "%A, %B %d, %Y" }} · Issue #{{ newsletters.size | minus: forloop.index0 }}</div>
+            <div class="nl-content-meta">{{ nl.date | date: "%A, %B %d, %Y" }}</div>
           </div>
           {{ nl.content }}
         </div>
