@@ -1,61 +1,61 @@
-/* Cyan space theme for syntax highlighting */
+/* GitHub light syntax highlighting theme */
 
-.highlight { background: #050d15; }
+.highlight { background: #f6f8fa; border-radius: 6px; }
 
 /* Base text */
-.highlight .text, .highlight .n { color: #c9d6e0; }
+.highlight .text, .highlight .n { color: #24292f; }
 
-/* Comments — dim cyan */
-.highlight .c, .highlight .cm, .highlight .c1, .highlight .cs, .highlight .cp { color: #3d6b75; font-style: italic; }
+/* Comments */
+.highlight .c, .highlight .cm, .highlight .c1, .highlight .cs, .highlight .cp { color: #6e7781; font-style: italic; }
 
-/* Keywords — bright cyan */
-.highlight .k, .highlight .kc, .highlight .kd, .highlight .kp, .highlight .kr, .highlight .kn { color: #00E5D0; font-weight: bold; }
+/* Keywords */
+.highlight .k, .highlight .kc, .highlight .kd, .highlight .kp, .highlight .kr, .highlight .kn { color: #cf222e; font-weight: bold; }
 
-/* Types — lighter cyan */
-.highlight .kt { color: #7ffff4; font-weight: bold; }
+/* Types */
+.highlight .kt { color: #953800; font-weight: bold; }
 
-/* Strings — soft teal */
+/* Strings */
 .highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se,
-.highlight .sh, .highlight .si, .highlight .sx, .highlight .s1, .highlight .ss { color: #80e8d8; }
+.highlight .sh, .highlight .si, .highlight .sx, .highlight .s1, .highlight .ss { color: #0a3069; }
 
-/* Numbers — aqua */
-.highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .mo, .highlight .il { color: #00bfad; }
+/* Numbers */
+.highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .mo, .highlight .il { color: #0550ae; }
 
 /* Functions / classes */
-.highlight .nf, .highlight .nc, .highlight .ne { color: #7ffff4; font-weight: bold; }
+.highlight .nf, .highlight .nc, .highlight .ne { color: #8250df; font-weight: bold; }
 
 /* Attributes / constants */
-.highlight .na, .highlight .no, .highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi { color: #4dd8cc; }
+.highlight .na, .highlight .no, .highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi { color: #953800; }
 
 /* Built-ins */
-.highlight .nb, .highlight .bp { color: #00E5D0; }
+.highlight .nb, .highlight .bp { color: #0550ae; }
 
 /* Tags */
-.highlight .nt { color: #00E5D0; }
+.highlight .nt { color: #116329; }
 
 /* Namespace */
-.highlight .nn { color: #6b9ea8; }
+.highlight .nn { color: #24292f; }
 
 /* Operators */
-.highlight .o, .highlight .ow { color: #7ffff4; font-weight: bold; }
+.highlight .o, .highlight .ow { color: #cf222e; }
 
 /* Regex */
-.highlight .sr { color: #00d4c0; }
+.highlight .sr { color: #0a3069; }
 
 /* Errors */
-.highlight .err { color: #00E5D0; background-color: rgba(0,229,208,0.1); }
+.highlight .err { color: #cf222e; background-color: #ffebe9; }
 
-/* Generic */
-.highlight .gd { color: #4dd8cc; background-color: rgba(0,229,208,0.05); }
-.highlight .gi { color: #00E5D0; background-color: rgba(0,229,208,0.08); }
+/* Generic diff */
+.highlight .gd { color: #82071e; background-color: #ffebe9; }
+.highlight .gi { color: #116329; background-color: #dafbe1; }
 .highlight .ge { font-style: italic; }
 .highlight .gs { font-weight: bold; }
-.highlight .gh { color: #00E5D0; font-weight: bold; }
-.highlight .gu { color: #4dd8cc; }
-.highlight .go { color: #3d6b75; }
-.highlight .gp { color: #00E5D0; }
-.highlight .gt { color: #4dd8cc; }
-.highlight .gr { color: #4dd8cc; }
+.highlight .gh { color: #0550ae; font-weight: bold; }
+.highlight .gu { color: #8250df; }
+.highlight .go { color: #6e7781; }
+.highlight .gp { color: #6e7781; }
+.highlight .gt { color: #cf222e; }
+.highlight .gr { color: #cf222e; }
 
 /* Whitespace */
-.highlight .w { color: #1a3a45; }
+.highlight .w { color: #24292f; }
