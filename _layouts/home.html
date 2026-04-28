@@ -223,6 +223,55 @@
   <main class="main">
     <div class="main-inner">
 
+      <!-- Open Source -->
+      <section class="section" id="open-source">
+        <span class="section-heading">Open Source</span>
+        <ul class="row-list">
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1651" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">Pocket Casts — Migrate LiveData to Coroutines Flow</span>
+            <span class="row-meta">Automattic</span>
+          </a>
+
+          <a href="https://github.com/Automattic/pocket-casts-android/pull/1658" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">Pocket Casts — Artwork in Miniplayer, Notification &amp; Widget</span>
+            <span class="row-meta">Automattic</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/LastKey" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">LastKey — Multiplatform password manager</span>
+            <span class="row-meta">Kotlin Multiplatform</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/ReactiveStore" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">Reactive Store — Coroutines-based state management</span>
+            <span class="row-meta">Android library</span>
+          </a>
+
+          <a href="https://github.com/jangramukul/FastMapper" class="row-item" rel="noopener" target="_blank">
+            <span class="row-title">FastMapper — Type-safe data class mapper generator</span>
+            <span class="row-meta">Kotlin KSP</span>
+          </a>
+
+        </ul>
+      </section>
+
+      <!-- Writing -->
+      <section class="section" id="writing">
+        <span class="section-heading">Writing</span>
+        <ul class="row-list">
+          {% assign sorted_articles = site.articles | sort: 'date' | reverse %}
+          {% for post in sorted_articles %}
+          {% unless post.tags contains "Book" %}
+          <a href="{{ post.url }}" class="row-item">
+            <span class="row-title">{{ post.title }}</span>
+            <span class="row-meta">{{ post.date | date: "%b '%y" }}</span>
+          </a>
+          {% endunless %}
+          {% endfor %}
+        </ul>
+      </section>
+
     </div>
 
   </main>

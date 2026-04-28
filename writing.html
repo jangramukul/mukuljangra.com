@@ -1,4 +1,0 @@
----
-layout: writing
-permalink: /writing/
----
