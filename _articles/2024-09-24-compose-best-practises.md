@@ -6,6 +6,7 @@ tags:
   - Android
   - Best Practices
   - Jetpack Compose
+thumbnail: /static/thumbnails/northern-lights.jpg
 ---
 
 1. **Survive Recomposition**

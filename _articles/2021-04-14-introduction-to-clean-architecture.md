@@ -5,6 +5,7 @@ categories: post
 tags:
   - Android
   - Architecture
+thumbnail: /static/thumbnails/aerial-city.jpg
 ---
 Let's talk about something that's been bugging Android developers for ages - Clean Architecture. You know how everyone's always like "Should I use MVVM? Or maybe MVP?" Well, let me tell you something cool - it's not just about picking one and sticking with it.
 
