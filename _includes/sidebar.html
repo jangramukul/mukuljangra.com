@@ -13,4 +13,133 @@
       <li><a href="/newsletter/" {% if page.url == '/newsletter/' %}class="active"{% endif %}>Newsletter</a></li>
     </ul>
   </div>
+  <div class="sidebar-bottom">
+    <button class="search-btn" id="searchBtn" aria-label="Search" aria-expanded="false" aria-controls="searchOverlay">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+  </div>
 </aside>
+
+<!-- Search overlay -->
+<div id="searchOverlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search" hidden>
+  <div class="search-header">
+    <div class="search-input-wrap">
+      <svg class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="search" id="searchInput" class="search-input" placeholder="Search posts and newsletters…" autocomplete="off" spellcheck="false">
+      <kbd class="search-esc-hint">esc</kbd>
+    </div>
+  </div>
+  <div id="searchResults" class="search-results" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('searchBtn');
+  var overlay = document.getElementById('searchOverlay');
+  var input = document.getElementById('searchInput');
+  var results = document.getElementById('searchResults');
+  var index = null;
+  var loading = false;
+
+  function openSearch() {
+    overlay.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    input.focus();
+    if (input.value.trim()) renderResults(input.value.trim());
+  }
+
+  function closeSearch() {
+    overlay.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.focus();
+  }
+
+  btn.addEventListener('click', function () {
+    if (!overlay.hidden) {
+      closeSearch();
+    } else {
+      openSearch();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !overlay.hidden) closeSearch();
+  });
+
+  function loadIndex(cb) {
+    if (index !== null) { cb(index); return; }
+    if (loading) return;
+    loading = true;
+    results.innerHTML = '<p class="search-status">Loading…</p>';
+    fetch('/search.json')
+      .then(function (r) { return r.json(); })
+      .then(function (data) { index = data; loading = false; cb(index); })
+      .catch(function () {
+        loading = false;
+        results.innerHTML = '<p class="search-status search-error">Failed to load search index.</p>';
+      });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function highlight(str, query) {
+    var safe = escapeHtml(str);
+    var re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return safe.replace(re, '<mark>$1</mark>');
+  }
+
+  function snippet(content, query) {
+    var idx = content.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return escapeHtml(content.slice(0, 120)) + '…';
+    var start = Math.max(0, idx - 60);
+    var end = Math.min(content.length, idx + query.length + 80);
+    var s = (start > 0 ? '…' : '') + content.slice(start, end) + (end < content.length ? '…' : '');
+    return highlight(s, query);
+  }
+
+  function renderResults(query) {
+    loadIndex(function (data) {
+      var q = query.toLowerCase().trim();
+      if (!q) { results.innerHTML = ''; return; }
+      var matches = data.filter(function (item) {
+        return item.title.toLowerCase().includes(q) || (item.content && item.content.toLowerCase().includes(q));
+      });
+
+      if (matches.length === 0) {
+        results.innerHTML = '<p class="search-status">No results for <strong>' + escapeHtml(query) + '</strong></p>';
+        return;
+      }
+
+      var html = '<p class="search-count">' + matches.length + ' result' + (matches.length === 1 ? '' : 's') + '</p><ul class="search-list">';
+      matches.forEach(function (item) {
+        var badge = item.type === 'newsletter' ? 'Newsletter' : 'Post';
+        var badgeClass = item.type === 'newsletter' ? 'badge-newsletter' : 'badge-post';
+        html += '<li class="search-item">'
+          + '<a href="' + escapeHtml(item.url) + '" class="search-item-link">'
+          + '<div class="search-item-top">'
+          + '<span class="search-item-title">' + highlight(item.title, query) + '</span>'
+          + '<span class="search-badge ' + badgeClass + '">' + badge + '</span>'
+          + '</div>'
+          + '<div class="search-item-meta">' + escapeHtml(item.date) + '</div>'
+          + (item.content ? '<div class="search-item-snippet">' + snippet(item.content, query) + '</div>' : '')
+          + '</a></li>';
+      });
+      html += '</ul>';
+      results.innerHTML = html;
+    });
+  }
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      var q = input.value.trim();
+      if (q) renderResults(q);
+    }
+  });
+})();
+</script>
