@@ -28,9 +28,33 @@
     /* Main */
     .main { margin-left: 380px; flex: 1; background: #ffffff; min-width: 0; overflow-x: hidden; }
 
+    .article-hero {
+      width: 100%;
+      height: 340px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #533483 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .article-hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .article-hero-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #533483 100%);
+    }
+
     .article-wrap {
       width: 70%;
-      padding: 60px 0 80px 56px;
+      padding: 48px 0 80px 56px;
     }
 
     .back-link {
@@ -150,6 +174,7 @@
       .shell { flex-direction: column; }
       .sidebar { position: static; width: 100%; min-width: 0; padding: 20px 24px; }
       .main { margin-left: 0; }
+      .article-hero { height: 200px; }
       .article-wrap { padding: 32px 24px 60px; }
       .article-title { font-size: 1.4em; }
     }
@@ -162,6 +187,13 @@
   {% include sidebar.html %}
 
   <main class="main">
+    <div class="article-hero">
+      {% if page.thumbnail %}
+        <img src="{{ page.thumbnail }}" alt="{{ page.title }}">
+      {% else %}
+        <div class="article-hero-placeholder"></div>
+      {% endif %}
+    </div>
     <div class="article-wrap">
       <a href="javascript:history.length>1?history.back():window.location='/'" class="back-link">← Writing</a>
 
