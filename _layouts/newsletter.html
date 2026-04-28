@@ -8,6 +8,7 @@
   <link rel="icon" type="image/jpeg" href="/static/profile.jpg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/sidebar.css">
   <link rel="stylesheet" href="/static/syntax.css">
   <link type="application/atom+xml" rel="alternate" href="{{ site.url }}/newsletter.xml" title="Weekly Newsletter" />
   <meta name="theme-color" content="#1c1c1e">
@@ -22,30 +23,13 @@
       transition: width 0.08s linear;
     }
 
-    .shell { display: flex; min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; overflow-x: hidden; }
 
-    .sidebar {
-      width: 240px; min-width: 240px;
-      background: #1c1c1e; color: #e8e8e8;
-      display: flex; flex-direction: column;
-      padding: 32px 24px;
-      position: fixed; top: 0; left: 0; bottom: 0;
-      overflow-y: auto; z-index: 10;
-    }
-
-    .sidebar-name { font-size: 0.9em; font-weight: 600; color: #fff; margin-bottom: 20px; }
-    .sidebar-name a { color: #fff; text-decoration: none; }
-    .sidebar-name a:hover { text-decoration: underline; }
-
-    .sidebar-nav { list-style: none; display: flex; flex-direction: column; gap: 2px; }
-    .sidebar-nav li a { font-size: 0.82em; color: #636366; padding: 6px 0; display: block; text-decoration: none; transition: color 0.15s; }
-    .sidebar-nav li a:hover { color: #e8e8e8; text-decoration: none; }
-
-    .main { margin-left: 240px; flex: 1; background: #ffffff; }
+    .main { margin-left: 380px; flex: 1; background: #ffffff; min-width: 0; overflow-x: hidden; }
 
     .nl-wrap {
-      max-width: 680px;
-      padding: 64px 56px 80px;
+      width: 70%;
+      padding: 60px 0 80px 56px;
     }
 
     .back-link {
@@ -76,22 +60,28 @@
     .nl-divider { border-top: 1px solid #ebebeb; margin-bottom: 36px; }
 
     .nl-body {
-      font-size: 1rem; line-height: 1.8; color: #333;
+      font-size: 1.0625rem; line-height: 1.85; color: #333;
+      overflow-wrap: break-word; word-break: break-word;
     }
 
-    .nl-body h1, .nl-body h2 { font-size: 1.1em; font-weight: 600; color: #1a1a1a; margin: 2em 0 0.7em; }
-    .nl-body h3 { font-size: 1em; font-weight: 600; color: #333; margin: 1.6em 0 0.6em; }
-    .nl-body p { margin-bottom: 1.3em; }
+    .nl-body h1, .nl-body h2 { font-size: 1.15em; font-weight: 600; color: #1a1a1a; margin: 2em 0 0.7em; line-height: 1.3; }
+    .nl-body h3 { font-size: 1em; font-weight: 600; color: #333; margin: 1.8em 0 0.6em; }
+    .nl-body h4 { font-size: 0.95em; font-weight: 600; color: #555; margin: 1.5em 0 0.5em; }
+    .nl-body p { margin-bottom: 1.4em; }
     .nl-body a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 2px; }
     .nl-body a:hover { color: #555; }
-    .nl-body ul, .nl-body ol { padding-left: 1.6em; margin-bottom: 1.3em; }
+    .nl-body ul, .nl-body ol { padding-left: 1.6em; margin-bottom: 1.4em; }
     .nl-body li { margin-bottom: 0.4em; }
-    .nl-body code { font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; font-size: 0.875em; background: #f4f4f4; padding: 2px 5px; border-radius: 3px; }
-    .nl-body pre { background: #f6f6f6; border: 1px solid #e8e8e8; padding: 18px 20px; overflow-x: auto; border-radius: 4px; margin-bottom: 1.3em; }
-    .nl-body pre code { background: none; padding: 0; }
-    .nl-body .highlight { margin-bottom: 1.3em; border: 1px solid #e8e8e8; border-radius: 4px; overflow: hidden; }
-    .nl-body .highlight pre { margin: 0; border: none; border-radius: 0; }
-    .nl-body blockquote { border-left: 3px solid #ddd; padding: 4px 0 4px 18px; color: #666; margin: 1.3em 0; font-style: italic; }
+    .nl-body code {
+      font-family: 'SF Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+      font-size: 0.68em; background: #f6f8fa;
+      padding: 1px 4px; border-radius: 3px; color: #24292f;
+    }
+    .nl-body pre { background: #f6f8fa; border: 1px solid #d0d7de; padding: 12px 14px; overflow-x: auto; border-radius: 6px; margin-bottom: 1.2em; }
+    .nl-body pre code { background: none; padding: 0; font-size: 0.7em; color: #24292f; }
+    .nl-body .highlight { margin-bottom: 1.2em; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
+    .nl-body .highlight pre { margin: 0; border: none; border-radius: 0; padding: 12px 14px; }
+    .nl-body blockquote { border-left: 3px solid #ddd; padding: 4px 0 4px 18px; color: #666; margin: 1.4em 0; font-style: italic; }
     .nl-body blockquote p { margin: 0; }
     .nl-body hr { border: none; border-top: 1px solid #ebebeb; margin: 2em 0; }
     .nl-body strong { color: #1a1a1a; }
@@ -108,9 +98,8 @@
 
     @media (max-width: 720px) {
       .shell { flex-direction: column; }
-      .sidebar { position: static; width: 100%; min-width: 0; padding: 20px 24px; }
       .main { margin-left: 0; }
-      .nl-wrap { padding: 32px 24px 60px; }
+      .nl-wrap { width: auto; padding: 32px 24px 60px; }
       .nl-title { font-size: 1.3em; }
     }
   </style>
@@ -119,15 +108,7 @@
 <div id="read-progress"></div>
 <div class="shell">
 
-  <aside class="sidebar">
-    <div class="sidebar-name"><a href="/">Mukul Jangra</a></div>
-    <ul class="sidebar-nav">
-      <li><a href="/#experience">Experience</a></li>
-      <li><a href="/#open-source">Open Source</a></li>
-      <li><a href="/#writing">Writing</a></li>
-      <li><a href="/#newsletter">Newsletter</a></li>
-    </ul>
-  </aside>
+  {% include sidebar.html %}
 
   <main class="main">
     <div class="nl-wrap">
